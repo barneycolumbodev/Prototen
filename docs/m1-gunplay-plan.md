@@ -4,7 +4,14 @@ Owner decision (2026-11-01): start M1 with the core, static gunplay of the suppr
 
 Every slice ends with an APK on `dev-latest` and a short "what to try" list in `docs/playtest-log.md`. Tuning values live in `.tres` files (`data/weapons/`, `data/player/`) and the springs can be tuned on the phone.
 
-## M1a — Core gunplay (now)
+Owner direction (2026-11-01, second message): ADS is **hold LT**; **moderate recoil**, but **supreme simulated accuracy and ballistic destruction**. How that was read:
+- Rounds are simulated projectiles from the eye (drop, drag, travel time, energy-based penetration, ricochet), so the round lands exactly where the sights point, give or take the gun's 1.5 MOA when aimed.
+- Recoil: ~1.1° camera kick that springs back in ~0.15 s; only 18 % stays as climb. The viewmodel kicks harder than the camera so it still looks violent.
+- Destruction: surfaces lose structure to the energy rounds leave in them; drywall and plank walls break out cell by cell and throw debris; props are pushed by lost momentum.
+
+## M1a — Core gunplay (built 2026-11-01, waiting for the phone playtest)
+
+Status: every item below is built and covered by GUT tests (76) and cloud screenshots; feel is unverified until the owner plays it.
 
 1. **Weapon foundation.** `WeaponData` resource for the suppressed Five-seveN: 20-round magazine, semi-auto with a fire-rate cap, damage and falloff, penetration, spread, recoil pattern. Fire state machine: ready / firing / reloading / switching. Hitscan with penetration through a surface material table (flesh, wood, drywall, sheet metal, concrete, armor plate).
 2. **Feel (docs/design.md §5.3 / §5.4).**

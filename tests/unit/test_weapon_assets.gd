@@ -28,8 +28,16 @@ func test_pistol_triangle_budget() -> void:
 func test_pistol_uses_baked_pbr_textures() -> void:
 	var gun: Node = (load(PISTOL) as PackedScene).instantiate()
 	var meshes: Array[MeshInstance3D] = _meshes(gun)
-	assert_eq(meshes.size(), 1, "one mesh, one draw call")
+	# Body, slide and magazine move separately (split_parts.py) but share one baked material.
+	var names: PackedStringArray = PackedStringArray()
+	for mi: MeshInstance3D in meshes:
+		names.append(mi.name)
+	assert_eq(meshes.size(), 3, "body + slide + magazine: %s" % [names])
+	for part: String in ["body", "slide", "magazine"]:
+		assert_true(gun.find_child(part, true, false) != null, "has a %s node" % part)
 	var mat: StandardMaterial3D = meshes[0].mesh.surface_get_material(0) as StandardMaterial3D
+	for mi: MeshInstance3D in meshes:
+		assert_eq(mi.mesh.surface_get_material(0), mat, "one shared material")
 	assert_not_null(mat)
 	assert_not_null(mat.albedo_texture, "base colour")
 	assert_not_null(mat.normal_texture, "normal map")

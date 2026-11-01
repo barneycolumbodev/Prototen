@@ -26,11 +26,21 @@ Goal: the best gunplay in any mobile shooter (CLAUDE.md §2). References: Call o
 - [ ] Controller rumble (`Input.start_joy_vibration`) where Android allows it
 - [ ] Cancelable reloads; separate tactical and empty reloads
 
+## Where the code is (M1a)
+
+- `src/weapons/ballistics.gd` (autoload `Ballistics`): stepped projectiles — drop, drag, energy-based penetration (`thickness × resistance_j_per_cm`), ricochet, exit deflection. Resolves the first tick on the trigger frame.
+- `src/weapons/gun_mechanism.gd`: magazine + chamber, buffered semi-auto, tactical/empty reloads (ammo commits only when the mag seats).
+- `src/weapons/player_weapon.gd`: input (LT held = ADS, RT fire, X reload, Y cancels), camera recoil spring + permanent climb, bloom/spread, sprint-out, rumble, hit-stop.
+- `src/weapons/viewmodel_motion.gd` + `src/core/spring.gd`: exact closed-form springs; `kick(peak)` hits the tuned peak for any damping.
+- `src/vfx/fx.gd`, `src/audio/sfx.gd`: pooled flash/light/shells/holes/particles/debris and sound banks.
+- `src/ui/tuning_menu.gd`: on-device sliders; add new tunables to `WEAPON_PARAMS`. `tools/sync_weapon_tres.py` adds new WeaponData exports to the .tres.
+- Range targets in `src/levels/range/`; `-- --demo=range|fire` drives aimed shots for screenshots (`GunplayDemo`).
+
 ## Implementation notes
 
-- Fast rounds: hitscan with penetration through the material table (flesh, wood, drywall, sheet metal, concrete, armor plate); penetration drops per surface. Slow objects (grenades, drone, whip tip) are physical.
+- Fast rounds are simulated projectiles (ray segments per tick, ≈ hitscan cost) with penetration through the surface table in `data/surfaces/`; penetration costs energy per cm. Slow objects (grenades, drone, whip tip) are physical.
 - Weapon data: damage, falloff, penetration, impulse, spread, recoil pattern.
-- Procedural motion = damped springs integrated in `_process` with the player's time scale (slow motion must still feel right).
+- Procedural motion = damped springs stepped in `_process` with scaled delta (slow motion and hit-stop slow them too).
 - Aiming: response-curve presets, radial deadzones, acceleration on full tilt (see `data/input/`), aim assist in layers: slowdown near targets, slight pull while ADS.
 - 1,200 rpm MG: pooled hitscan, tracer every few rounds, one shared muzzle light, decals-per-second cap, looping fire sound.
 

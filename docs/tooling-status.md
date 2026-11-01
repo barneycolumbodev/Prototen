@@ -20,6 +20,11 @@ Checked 2026-11-01 in the first cloud session (CLAUDE.md §1 step 5, §10.4). Up
 | Benchmark + renderer switch | ✅ Built (cloud-verified) | Pause menu → Run benchmark (20 s fixed sweep), or `-- --bench=<s>` on the command line. Renderer switch writes `user://settings_override.cfg`; after a restart the game ran on Compatibility/OpenGL. Lavapipe frame times are meaningless; phone numbers decide. |
 | Bug-report button, input recording | ⏳ Later | Not started; planned after M0. |
 
+## Session 2 notes (2026-11-01)
+
+- This session had no setup script again: Godot came from the SessionStart fallback; `mesa-vulkan-drivers` had no install candidate, so `tools/screenshot.sh` fell back to the Compatibility renderer (OpenGL/llvmpipe) for all M1a screenshots. Looks are comparable; Mobile-renderer frame times still need the phone.
+- `pip install bpy` failed (pypi.org didn't resolve from the background install). Not needed for M1a: the pistol's moving parts were split from the existing glTF with `split_parts.py` (plain Python).
+
 ## What the owner can fix in the environment settings (claude.ai/code)
 
 1. **Network access → Custom**, keep the defaults, add the hosts in CLAUDE.md §10.1 (at least `download.blender.org`, `extensions.blender.org`, `api.polyhaven.com`, `dl.polyhaven.org`, `ambientcg.com`).

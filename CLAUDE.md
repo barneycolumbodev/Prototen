@@ -154,7 +154,7 @@ Put an empty `.gdignore` file in `raw_assets/`, `tools/` and `docs/` so Godot do
 |---|---|
 | Left stick / L3 | Move / sprint |
 | Right stick / R3 | Look / melee |
-| LT / RT | Aim / fire |
+| LT (hold) / RT | Aim down sights / fire |
 | LB / RB | Active parts 1 and 2 |
 | A | Jump (wall-run on contact) |
 | B | Slide / crouch |
