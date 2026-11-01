@@ -54,6 +54,8 @@ Please try:
 
 ## M1a.1 — 2026-11-01 — MG42 + playtest fixes (waiting for the owner)
 
+Build: `dev-latest` from branch `claude/mg42-light-gun-gu416b` @ 3fad758, CI run #5 (manual run; CI only builds `main` on push). 117 MB: the MG42's 4K textures ship in both ETC2 and ASTC. Throwaway signing key, so uninstall the old APK first.
+
 What's new in the APK:
 - **MG42/A**: press **Y** to switch between the pistol and the MG42. Chrome and black steel, 7.62×51, 1,200 rpm, 150-round belt, tracer every third round. You move slower with it out, hip fire sprays (the cone grows the longer you hold the trigger), aimed fire (hold LT) is tight. **X** reloads the belt: the feed cover opens, the box comes off and on, the cover slams shut.
 - Pistol and MG42 sit lower right; the crosshair is clear of the gun and thinner.
