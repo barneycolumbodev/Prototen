@@ -21,6 +21,9 @@ Run:  tools/blender.sh raw_assets/weapons/pistol_57/build.py \
         --out assets/weapons/pistol_57/pistol_57.gltf --tex 2048 \
         --preview docs/previews/pistol_57.png --samples 160
       Without --out the procedural (unbaked) HIGH model is rendered instead.
+
+After exporting, run split_parts.py on the .gltf: it splits the mesh into
+body / slide / magazine nodes for the viewmodel (slide cycling, mag drop).
 """
 import argparse
 import math

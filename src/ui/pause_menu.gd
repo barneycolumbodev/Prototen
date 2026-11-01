@@ -1,5 +1,5 @@
 extends CanvasLayer
-## Pause menu (Menu/Start button): resume, renderer, render scale, frame cap,
+## Pause menu (Menu/Start button): resume, gun tuning, renderer, render scale, frame cap,
 ## look curve, debug overlay, benchmark, quit. Controller-navigable.
 ## Autoloaded as PauseMenu.
 
@@ -36,6 +36,8 @@ func close() -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if TuningMenu.is_open():
+		return
 	if event.is_action_pressed(&"pause"):
 		if is_open():
 			close()
@@ -68,6 +70,7 @@ func _build() -> void:
 	title.add_theme_font_size_override("font_size", 28)
 	_list.add_child(title)
 	_add("resume", close)
+	_add("tuning", _on_tuning)
 	_add("renderer", _on_renderer)
 	_add("scale", Settings.cycle_render_scale)
 	_add("fps", Settings.cycle_max_fps)
@@ -97,6 +100,7 @@ func _label(id: String, text: String) -> void:
 
 func _refresh() -> void:
 	_label("resume", "Resume")
+	_label("tuning", "Gun tuning")
 	var now: String = Settings.current_renderer()
 	var next: String = Settings.next_start_renderer()
 	_label("renderer", "Renderer: %s%s" % [_pretty(now), "" if next == now else "  →  %s after restart" % _pretty(next)])
@@ -111,6 +115,11 @@ func _refresh() -> void:
 func _on_renderer() -> void:
 	var method: String = Settings.cycle_next_start_renderer()
 	_notice.text = "Close the app and open it again to start with the %s renderer." % _pretty(method)
+
+
+func _on_tuning() -> void:
+	_root.visible = false
+	TuningMenu.open()
 
 
 func _on_bench() -> void:

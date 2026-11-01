@@ -104,7 +104,7 @@ func muzzle_flash(muzzle: Transform3D, data: WeaponData) -> void:
 		_light.visible = true
 		_light_time = 0.06
 	# Suppressor puff.
-	_emit(&"smoke", muzzle.origin, muzzle.basis.x, Color(0.75, 0.75, 0.75, 0.35), 4, 0.6)
+	_emit(&"smoke", muzzle.origin, muzzle.basis.x, Color(0.7, 0.7, 0.7, 0.16), 3, 0.6)
 
 
 # ------------------------------------------------------------------ shells
@@ -375,8 +375,8 @@ func _emit(kind: StringName, at: Vector3, dir: Vector3, color: Color, count: int
 			e.spread = 15.0
 			e.initial_velocity_min = 0.3
 			e.initial_velocity_max = 0.9
-			e.scale_amount_min = 0.02
-			e.scale_amount_max = 0.05
+			e.scale_amount_min = 0.012
+			e.scale_amount_max = 0.03
 			e.gravity = Vector3(0, 0.3, 0)
 			e.damping_min = 1.5
 			e.damping_max = 2.5

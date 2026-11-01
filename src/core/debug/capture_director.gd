@@ -10,6 +10,7 @@ extends Node
 ##   --capture-warmup=<frames>  frames to wait before each shot (default 30)
 ##   --capture-only=<name>      only shoot the camera with this node name
 ##   --capture-pause            open the pause menu before shooting
+##   --capture-tuning           open the gun tuning menu before shooting
 ## Nodes in the "capture_busy" group (e.g. GunplayDemo) delay the first shot.
 
 const GROUP: StringName = &"capture_cameras"
@@ -18,6 +19,7 @@ var _dir: String = ""
 var _warmup: int = 30
 var _only: String = ""
 var _open_pause: bool = false
+var _open_tuning: bool = false
 
 
 func _ready() -> void:
@@ -30,6 +32,8 @@ func _ready() -> void:
 			_only = arg.trim_prefix("--capture-only=")
 		elif arg == "--capture-pause":
 			_open_pause = true
+		elif arg == "--capture-tuning":
+			_open_tuning = true
 	if _dir.is_empty():
 		set_process(false)
 		return
@@ -49,6 +53,8 @@ func _run() -> void:
 		await _frames(5)
 	if _open_pause:
 		get_node("/root/PauseMenu").call("open")
+	if _open_tuning:
+		get_node("/root/TuningMenu").call("open")
 	var scene: Node = get_tree().current_scene
 	var scene_name: String = scene.scene_file_path.get_file().get_basename() if scene else "scene"
 	var start_cam: Camera3D = get_viewport().get_camera_3d()

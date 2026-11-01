@@ -12,6 +12,9 @@ const SETTLE_FRAMES: int = 14
 const WALL_ROUNDS: int = 14
 
 var room: TestRoom
+## "range": aimed shots at every target. "fire": hip-fire a few rounds and
+## freeze time just after the last one (flash, shell and recoil in frame).
+var mode: String = "range"
 var done: bool = false
 var shots_fired: int = 0
 
@@ -26,6 +29,10 @@ func _ready() -> void:
 	Ballistics.show_trajectories = true
 	var r: ShootingRange = room.shooting_range
 	room.player.global_position = Vector3(1.0, 0.0, 9.0)
+	if mode == "fire":
+		for i: int in 4:
+			_queue.append(r.dummies[0].parts[&"chest"].global_position)
+		return
 	for d: TargetDummy in r.dummies:
 		_queue.append(d.parts[&"head"].global_position)
 		_queue.append(d.parts[&"chest"].global_position + Vector3(0.05, 0.02, 0))
@@ -46,7 +53,7 @@ func _physics_process(_delta: float) -> void:
 	var weapon: PlayerWeapon = player.weapon()
 	_frame += 1
 	if done:
-		weapon.script_input(false, true)
+		weapon.script_input(false, mode != "fire")
 		return
 	if _wait > 0:
 		_wait -= 1
@@ -64,9 +71,20 @@ func _physics_process(_delta: float) -> void:
 	aim_at(player, target)
 	weapon.cam_recoil.reset()
 	weapon.bloom = 0.0
-	weapon.script_input(true, true)
+	weapon.script_input(true, mode != "fire")
 	shots_fired += 1
 	_wait = SETTLE_FRAMES
+	if mode == "fire" and _queue.is_empty():
+		_freeze.call_deferred()
+
+
+func _freeze() -> void:
+	# Let the shot frame play out a little, then nearly stop time.
+	await get_tree().physics_frame
+	await get_tree().physics_frame
+	Engine.time_scale = 0.01
+	done = true
+	remove_from_group(&"capture_busy")
 
 
 static func aim_at(player: Player, target: Vector3) -> void:
