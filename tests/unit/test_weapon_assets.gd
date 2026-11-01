@@ -39,9 +39,22 @@ func test_pistol_uses_baked_pbr_textures() -> void:
 	gun.free()
 
 
-func test_pistol_textures_are_vram_compressed() -> void:
-	for name: String in ["basecolor", "orm", "normal", "emission"]:
-		var cfg: ConfigFile = ConfigFile.new()
-		assert_eq(cfg.load("res://assets/weapons/pistol_57/textures/pistol_57_%s.png.import" % name), OK, name)
-		var mode: int = cfg.get_value("params", "compress/mode", -1)
-		assert_eq(mode, 2, "%s uses VRAM compression" % name)
+func test_textures_are_vram_compressed() -> void:
+	for prefix: String in ["res://assets/weapons/pistol_57/textures/pistol_57", "res://assets/characters/fp_arms/textures/fp_arms"]:
+		for name: String in ["basecolor", "orm", "normal", "emission"]:
+			var cfg: ConfigFile = ConfigFile.new()
+			var path: String = "%s_%s.png.import" % [prefix, name]
+			assert_eq(cfg.load(path), OK, path)
+			var mode: int = cfg.get_value("params", "compress/mode", -1)
+			assert_eq(mode, 2, "%s uses VRAM compression" % path)
+
+
+func test_arms_triangle_budget() -> void:
+	var arms: Node = (load("res://assets/characters/fp_arms/fp_arms.gltf") as PackedScene).instantiate()
+	var tris: int = 0
+	for mi: MeshInstance3D in _meshes(arms):
+		for s: int in mi.mesh.get_surface_count():
+			var indices: PackedInt32Array = mi.mesh.surface_get_arrays(s)[Mesh.ARRAY_INDEX]
+			tris += indices.size() / 3
+	arms.free()
+	assert_lt(tris, 12000, "first-person arms")

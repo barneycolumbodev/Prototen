@@ -38,6 +38,7 @@ ap.add_argument("--pose", default="", help="fast unbaked pose check (writes <nam
 ap.add_argument("--samples", type=int, default=128)
 ap.add_argument("--res", default="1600x900")
 ap.add_argument("--gun", default="assets/weapons/pistol_57/pistol_57.gltf")
+ap.add_argument("--render-only", default="", help="skip building: import this exported arms .gltf and render")
 args = ap.parse_args(argv)
 
 bpy.ops.wm.read_factory_settings(use_empty=True)
@@ -466,11 +467,27 @@ FRONT_CAM = ((-0.03, 0.75, -0.05), (-0.03, 0.0, -0.06))  # straight-on left side
 
 
 def import_gun():
+    # Our minimal "glTF Material Output" group (used for export) confuses the importer.
+    group = bpy.data.node_groups.get("glTF Material Output")
+    if group is not None:
+        bpy.data.node_groups.remove(group)
     bpy.ops.import_scene.gltf(filepath=args.gun)
 
 
+def render_finals():
+    cam = setup_render(args.samples, args.res)
+    if args.preview:
+        shoot(cam, args.preview, OVER_CAM[0], OVER_CAM[1], fov_deg=60)
+    if args.beauty:
+        shoot(cam, args.beauty, BEAUTY_CAM[0], BEAUTY_CAM[1], lens=55, fstop=6.0)
+
+
 # ---------------------------------------------------------------- run
-if args.pose:
+if args.render_only:
+    bpy.ops.import_scene.gltf(filepath=args.render_only)
+    import_gun()
+    render_finals()
+elif args.pose:
     build(HIGH)
     import_gun()
     cam = setup_render(16, "960x540")
@@ -493,8 +510,4 @@ elif args.out:
     print(f"fp_arms: exported {args.out} ({bakeutil.tri_count(low)} tris)")
     if args.preview or args.beauty:
         import_gun()
-        cam = setup_render(args.samples, args.res)
-        if args.preview:
-            shoot(cam, args.preview, OVER_CAM[0], OVER_CAM[1], fov_deg=60)
-        if args.beauty:
-            shoot(cam, args.beauty, BEAUTY_CAM[0], BEAUTY_CAM[1], lens=55, fstop=6.0)
+        render_finals()
