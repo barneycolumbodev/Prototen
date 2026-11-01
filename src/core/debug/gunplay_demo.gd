@@ -14,7 +14,12 @@ const WALL_ROUNDS: int = 14
 var room: TestRoom
 ## "range": aimed shots at every target. "fire": hip-fire a few rounds and
 ## freeze time just after the last one (flash, shell and recoil in frame).
+## "hip": no shots, just the hip-fire hold (for checking viewmodel placement).
+## "ads": no shots, aimed (sight picture). "burst": hold the trigger from the
+## hip at a dummy for `BURST_FRAMES`, then freeze time mid-burst.
 var mode: String = "range"
+const BURST_FRAMES: int = 34
+var _burst: int = 0
 var done: bool = false
 var shots_fired: int = 0
 
@@ -29,6 +34,14 @@ func _ready() -> void:
 	Ballistics.show_trajectories = true
 	var r: ShootingRange = room.shooting_range
 	room.player.global_position = Vector3(1.0, 0.0, 9.0)
+	for arg: String in OS.get_cmdline_user_args():
+		if arg.begins_with("--weapon="):
+			room.player.weapon().select_now(arg.trim_prefix("--weapon=").to_int())
+	if mode == "hip" or mode == "ads":
+		return
+	if mode == "burst":
+		_wait = 20
+		return
 	if mode == "fire":
 		for i: int in 4:
 			_queue.append(r.dummies[0].parts[&"chest"].global_position)
@@ -52,17 +65,26 @@ func _physics_process(_delta: float) -> void:
 	var player: Player = room.player
 	var weapon: PlayerWeapon = player.weapon()
 	_frame += 1
+	var aimed: bool = mode == "range" or mode == "ads"
+	if mode == "burst" and not done and _wait <= 0:
+		aim_at(player, room.shooting_range.dummies[0].parts[&"chest"].global_position + Vector3(0.0, 0.1 * sin(_burst * 0.4), 0.0))
+		weapon.script_input(true, false)
+		_burst += 1
+		shots_fired = _burst
+		if _burst >= BURST_FRAMES:
+			_freeze.call_deferred()
+		return
 	if done:
-		weapon.script_input(false, mode != "fire")
+		weapon.script_input(false, aimed)
 		return
 	if _wait > 0:
 		_wait -= 1
-		weapon.script_input(false, true)
+		weapon.script_input(false, aimed)
 		return
 	if _queue.is_empty():
 		done = true
 		# Hold the sights on the poppers for the capture.
-		aim_at(player, Vector3(-4.0, 1.4, -6.5))
+		aim_at(player, Vector3(-4.0, 1.4, -6.5) if aimed else Vector3(-2.0, 1.5, -6.5))
 		weapon.cam_recoil.reset()
 		remove_from_group(&"capture_busy")
 		finished.emit()
@@ -71,7 +93,7 @@ func _physics_process(_delta: float) -> void:
 	aim_at(player, target)
 	weapon.cam_recoil.reset()
 	weapon.bloom = 0.0
-	weapon.script_input(true, mode != "fire")
+	weapon.script_input(true, aimed)
 	shots_fired += 1
 	_wait = SETTLE_FRAMES
 	if mode == "fire" and _queue.is_empty():

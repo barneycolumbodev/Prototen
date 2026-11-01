@@ -71,8 +71,19 @@ static func defaults() -> Array[Binding]:
 	]
 
 
-## Adds every default action that isn't in the InputMap yet. Returns how many were added.
+## Controller buttons for Godot's built-in menu actions. Godot 4.7's defaults
+## give ui_accept and ui_cancel no joypad button at all, so menus could be
+## navigated with the D-pad but nothing could be pressed (playtest 2026-11-01).
+const UI_BUTTONS: Dictionary[StringName, JoyButton] = {
+	&"ui_accept": JOY_BUTTON_A,
+	&"ui_cancel": JOY_BUTTON_B,
+}
+
+
+## Adds every default action that isn't in the InputMap yet, and the
+## controller buttons for menus. Returns how many game actions were added.
 static func register_defaults() -> int:
+	register_ui_buttons()
 	var added: int = 0
 	for b: Binding in defaults():
 		if InputMap.has_action(b.action):
@@ -82,6 +93,24 @@ static func register_defaults() -> int:
 			InputMap.action_add_event(b.action, event)
 		added += 1
 	return added
+
+
+## Makes A press menu buttons and B go back, without duplicating bindings.
+static func register_ui_buttons() -> void:
+	for action: StringName in UI_BUTTONS:
+		if not InputMap.has_action(action):
+			InputMap.add_action(action)
+		var button: JoyButton = UI_BUTTONS[action]
+		var bound: bool = false
+		for ev: InputEvent in InputMap.action_get_events(action):
+			var jb: InputEventJoypadButton = ev as InputEventJoypadButton
+			if jb and jb.button_index == button:
+				bound = true
+		if not bound:
+			var jb: InputEventJoypadButton = InputEventJoypadButton.new()
+			jb.button_index = button
+			jb.device = ALL_DEVICES
+			InputMap.action_add_event(action, jb)
 
 
 static func events_for(b: Binding) -> Array[InputEvent]:

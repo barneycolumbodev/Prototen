@@ -10,10 +10,13 @@ var weapon: PlayerWeapon:
 		weapon = w
 		if w:
 			w.ammo_changed.connect(_on_ammo_changed)
+			w.weapon_changed.connect(_on_weapon_changed)
 
 var _status: Label
 var _pad_notice: Label
 var _ammo: Label
+var _weapon_name: Label
+var _name_time: float = 0.0
 var _reticle: Reticle
 
 
@@ -36,12 +39,14 @@ class Reticle:
 		var col: Color = Color(1, 1, 1, 0.9 * alpha)
 		var shadow: Color = Color(0, 0, 0, 0.5 * alpha)
 		if alpha > 0.01:
+			# Four thin ticks whose gap shows the real spread cone, plus a small centre dot.
 			var g: float = gap_px
-			var l: float = 7.0
+			var l: float = 6.0
 			for d: Vector2 in [Vector2.UP, Vector2.DOWN, Vector2.LEFT, Vector2.RIGHT]:
-				draw_line(c + d * g + Vector2(1, 1), c + d * (g + l) + Vector2(1, 1), shadow, 2.0)
-				draw_line(c + d * g, c + d * (g + l), col, 2.0)
-			draw_rect(Rect2(c - Vector2(1, 1), Vector2(2, 2)), col)
+				draw_line(c + d * (g - 0.5), c + d * (g + l + 0.5), shadow, 3.5, true)
+				draw_line(c + d * g, c + d * (g + l), col, 1.6, true)
+			draw_circle(c, 2.0, shadow, true, -1.0, true)
+			draw_circle(c, 1.2, col, true, -1.0, true)
 		if marker_time > 0.0:
 			var k: float = marker_time / MARKER_SEC
 			var m: Color = marker_color
@@ -87,12 +92,19 @@ func _ready() -> void:
 	_ammo.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	_ammo.grow_horizontal = Control.GROW_DIRECTION_BEGIN
 	_ammo.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	_weapon_name = _make_label(Control.PRESET_BOTTOM_RIGHT, 16)
+	_weapon_name.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_weapon_name.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	_weapon_name.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	_weapon_name.position.y -= 34
 	Input.joy_connection_changed.connect(func(_device: int, _connected: bool) -> void: _update_pad_notice())
 	EventBus.target_hit.connect(_on_target_hit)
 	_update_pad_notice()
 
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
+	_name_time = maxf(0.0, _name_time - delta)
+	_weapon_name.modulate.a = clampf(_name_time, 0.0, 1.0)
 	if bench and bench.is_running():
 		_status.text = "BENCHMARK %d%%  (don't touch the controller)" % roundi(bench.progress() * 100.0)
 	elif not _status.text.is_empty() and not _status.text.begins_with("Benchmark done"):
@@ -121,6 +133,11 @@ func _on_ammo_changed(loaded: int, reserve: int) -> void:
 	_ammo.text = "%d  |  %s" % [loaded, res]
 	var low: bool = weapon != null and loaded <= weapon.data.magazine_size / 4
 	_ammo.add_theme_color_override("font_color", Color(1.0, 0.45, 0.35) if low else Color(0.95, 0.95, 0.95))
+
+
+func _on_weapon_changed(data: WeaponData) -> void:
+	_weapon_name.text = "%s   %s" % [data.display_name, data.caliber]
+	_name_time = 2.5
 
 
 func _on_target_hit(kind: StringName, hit: BallisticHit) -> void:

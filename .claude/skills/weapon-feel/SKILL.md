@@ -30,7 +30,7 @@ Goal: the best gunplay in any mobile shooter (CLAUDE.md §2). References: Call o
 
 - `src/weapons/ballistics.gd` (autoload `Ballistics`): stepped projectiles — drop, drag, energy-based penetration (`thickness × resistance_j_per_cm`), ricochet, exit deflection. Resolves the first tick on the trigger frame.
 - `src/weapons/gun_mechanism.gd`: magazine + chamber, buffered semi-auto, tactical/empty reloads (ammo commits only when the mag seats).
-- `src/weapons/player_weapon.gd`: input (LT held = ADS, RT fire, X reload, Y cancels), camera recoil spring + permanent climb, bloom/spread, sprint-out, rumble, hit-stop.
+- `src/weapons/player_weapon.gd`: loadout of guns with one viewmodel rig each (Y switches and cancels a reload), input (LT held = ADS, RT fire, X reload), carry penalty (`carry_*` in WeaponData), hip walk, tracers, camera recoil spring + permanent climb, bloom/spread, sprint-out, rumble, hit-stop.
 - `src/weapons/viewmodel_motion.gd` + `src/core/spring.gd`: exact closed-form springs; `kick(peak)` hits the tuned peak for any damping.
 - `src/vfx/fx.gd`, `src/audio/sfx.gd`: pooled flash/light/shells/holes/particles/debris and sound banks.
 - `src/ui/tuning_menu.gd`: on-device sliders; add new tunables to `WEAPON_PARAMS`. `tools/sync_weapon_tres.py` adds new WeaponData exports to the .tres.

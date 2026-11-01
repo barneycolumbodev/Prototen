@@ -47,6 +47,28 @@ Please try:
 6. Tune anything that feels off (pause → Gun tuning), then Copy values and paste them back to me.
 7. Screenshot the overlay: the range line shows shots, hit %, headshot % and time between shots.
 
+- Device / renderer / settings: Moto G 5G (2025), controller.
+- Measured: —
+- Notes from the owner: "Feels good." The way the gun is held looks wrong: the crosshair sits above it and looks weird. Gun tuning could be highlighted but not opened. Stick look is a bit too sensitive, hard to aim (first time playing a mobile FPS on a controller).
+- Follow-ups: all three fixed in M1a.1 (see docs/m1-gunplay-plan.md, "Playtest 1").
+
+## M1a.1 — 2026-11-01 — MG42 + playtest fixes (waiting for the owner)
+
+What's new in the APK:
+- **MG42/A**: press **Y** to switch between the pistol and the MG42. Chrome and black steel, 7.62×51, 1,200 rpm, 150-round belt, tracer every third round. You move slower with it out, hip fire sprays (the cone grows the longer you hold the trigger), aimed fire (hold LT) is tight. **X** reloads the belt: the feed cover opens, the box comes off and on, the cover slams shut.
+- Pistol and MG42 sit lower right; the crosshair is clear of the gun and thinner.
+- Pause menu: **A** presses, **B** goes back. Gun tuning opens and tunes the gun in your hands (switch with Y to tune the other one).
+- Look is about 30 % slower. Pause → **Look speed** (press left/right on it) from 50 % to 150 %.
+
+Please try:
+1. Pause → Look speed. Find a speed you like and tell me the number.
+2. Switch to the MG42 (Y). Hold RT on the drywall wall and the plank fence. Do they come apart fast enough?
+3. Hip fire vs aimed (hold LT) at the poppers. Is hip fire too loose, or not loose enough?
+4. Walk and sprint with it out vs the pistol. Is the slowdown noticeable but fair?
+5. Reload the MG42 (X). Does the cover/box animation read?
+6. Watch the overlay FPS while firing long bursts. Does it hold 60?
+7. Pause → Gun tuning with the MG42 out, tune anything, Copy values and send them back.
+
 - Device / renderer / settings:
 - Measured:
 - Notes from the owner:
