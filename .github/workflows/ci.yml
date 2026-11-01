@@ -1,0 +1,129 @@
+# CI (CLAUDE.md §11): import, run GUT, export a signed debug APK (arm64),
+# publish it to the rolling "dev-latest" release.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GODOT_VERSION: "4.7.2"
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache Godot and export templates
+        id: cache-godot
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/godot
+            ~/.local/share/godot/export_templates
+          key: godot-${{ env.GODOT_VERSION }}-android-v1
+
+      - name: Download Godot and export templates
+        if: steps.cache-godot.outputs.cache-hit != 'true'
+        run: |
+          set -euo pipefail
+          base="https://github.com/godotengine/godot-builds/releases/download/${GODOT_VERSION}-stable"
+          tpl_dir="$HOME/.local/share/godot/export_templates/${GODOT_VERSION}.stable"
+          mkdir -p "$HOME/godot" "$tpl_dir"
+          curl -fsSL -o /tmp/godot.zip "$base/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
+          unzip -q /tmp/godot.zip -d "$HOME/godot"
+          mv "$HOME/godot/Godot_v${GODOT_VERSION}-stable_linux.x86_64" "$HOME/godot/godot"
+          chmod +x "$HOME/godot/godot"
+          curl -fsSL -o /tmp/templates.tpz "$base/Godot_v${GODOT_VERSION}-stable_export_templates.tpz"
+          unzip -q /tmp/templates.tpz 'templates/android_*' 'templates/version.txt' -d /tmp/tpl
+          mv /tmp/tpl/templates/* "$tpl_dir/"
+          ls -la "$tpl_dir"
+
+      - name: Put Godot on PATH
+        run: |
+          echo "$HOME/godot" >> "$GITHUB_PATH"
+          "$HOME/godot/godot" --headless --version
+
+      - name: Import project
+        run: timeout 600 godot --headless --import
+
+      - name: Validate scripts and run GUT
+        run: tools/check.sh
+
+      - name: Configure Android SDK and signing
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEYSTORE_ALIAS: ${{ secrets.ANDROID_KEYSTORE_ALIAS }}
+        run: |
+          set -euo pipefail
+          java_home="${JAVA_HOME_17_X64:-$JAVA_HOME}"
+          mkdir -p "$HOME/.config/godot"
+          cat > "$HOME/.config/godot/editor_settings-4.7.tres" <<EOT
+          [gd_resource type="EditorSettings" format=3]
+
+          [resource]
+          export/android/android_sdk_path = "$ANDROID_HOME"
+          export/android/java_sdk_path = "$java_home"
+          EOT
+          keystore="$RUNNER_TEMP/graft.keystore"
+          if [ -n "$KEYSTORE_B64" ]; then
+            echo "$KEYSTORE_B64" | base64 -d > "$keystore"
+            alias="$KEYSTORE_ALIAS"; password="$KEYSTORE_PASSWORD"
+          else
+            echo "::warning::ANDROID_KEYSTORE_* secrets are not set. Signing with a throwaway key: uninstall the old APK before installing this one."
+            alias=graftdebug; password=graftdebug
+            "$java_home/bin/keytool" -genkeypair -v -keystore "$keystore" -alias "$alias" \
+              -keyalg RSA -keysize 2048 -validity 10000 -storepass "$password" -keypass "$password" \
+              -dname "CN=GRAFT Debug, O=GRAFT, C=US" >/dev/null 2>&1
+          fi
+          {
+            echo "GODOT_ANDROID_KEYSTORE_DEBUG_PATH=$keystore"
+            echo "GODOT_ANDROID_KEYSTORE_DEBUG_USER=$alias"
+            echo "GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD=$password"
+          } >> "$GITHUB_ENV"
+          echo "::add-mask::$password"
+          sed -i "s/^version\/code=.*/version\/code=${{ github.run_number }}/" export_presets.cfg
+
+      - name: Export debug APK (arm64)
+        run: |
+          set -euo pipefail
+          mkdir -p build
+          # Explicit import first: headless exports have dropped resources in past versions.
+          timeout 600 godot --headless --import
+          timeout 900 godot --headless --export-debug "Android" build/graft-debug.apk 2>&1 | tee build/export.log
+          test -s build/graft-debug.apk
+          ls -la build/graft-debug.apk
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: graft-debug-apk
+          path: |
+            build/graft-debug.apk
+            build/export.log
+          retention-days: 14
+
+      - name: Publish to dev-latest release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          short="${GITHUB_SHA::7}"
+          notes="Debug build of ${GITHUB_REF_NAME} @ ${short}, CI run #${{ github.run_number }} (${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}).
+          Install graft-debug.apk on the phone. Needs a controller."
+          gh release delete dev-latest --cleanup-tag --yes 2>/dev/null || true
+          sleep 3
+          gh release create dev-latest build/graft-debug.apk \
+            --prerelease --target "$GITHUB_SHA" \
+            --title "dev-latest (${short})" --notes "$notes"
