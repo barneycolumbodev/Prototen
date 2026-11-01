@@ -1,0 +1,169 @@
+# GRAFT — Game design
+
+Moved from `CLAUDE.md` (sections 3–6). Section numbers are kept so references like "§5.3" still work.
+Items marked *(proposal)* are Claude's suggestions and can change. Everything else was decided by the owner.
+
+---
+
+## 3. Augmentation
+
+### 3.1 No classes
+
+There are no classes or archetypes. A character is the set of parts installed in their body, plus their gear. What a character can do comes from how those parts combine.
+
+### 3.2 Parts are physical, and they interact
+
+Every part is a physical component of the body. That is what lets combinations work without scripting each pair.
+
+Each part has:
+
+- a body location and mounting points (it can require a mount or provide one)
+- mass
+- power draw or power output
+- heat output or heat removal
+- data links: values it reads from or sends to other parts
+- stat changes and behavior hooks
+- a visible model and the changes it makes to the body
+
+Parts affect each other through these shared quantities. For example:
+
+- A reinforced skeleton raises carrying capacity and recoil tolerance. That's what lets you fire a belt-fed machine gun from the hip.
+- Muscle actuators raise speed and jump height, but they draw power and make heat, so a cooling part changes how long you can sprint.
+- An optics package that tracks targets can feed a fire-control link in the hand, which changes how the gun handles, but only when both are installed.
+- Heavy armor adds mass, which shortens wall-runs and changes slide distance.
+
+New parts should plug into these quantities instead of adding special cases. When two parts do something useful together that nobody scripted, the system is working.
+
+*(proposal)* Parts are also part of the damage model: hits to a body location can damage the parts installed there, and EMP shuts down powered parts. Try this in M2.
+
+### 3.3 Passive parts
+
+- Chosen before a session. Always on.
+- Technical hardware names, for example "NW-4 Nanoweave Fiber Vest".
+- They change stats and behavior, and they change how you look: your arms and hands in first person, your body in shadows and reflections, and your gear.
+
+### 3.4 Active parts
+
+Assigned to buttons. Pressing one switches you into a separate control mode with its own inputs, camera and HUD. Each has visible hardware and a deploy animation.
+
+The owner's examples:
+
+- **Shoulder-launched suicide drone.** A pod on your shoulder opens and launches the drone. You fly it from its camera and detonate it.
+- **Monofilament whip.** Hold LT to stop looking around; the right stick then moves the whip through the air. A melee weapon.
+- **Time slowdown.** Heavy, F.E.A.R. and S.T.A.L.K.E.R.-style impacts, especially with a SPAS-12. Hits sometimes knock enemies into ragdoll.
+
+### 3.5 Starter parts *(proposal)*
+
+| Part | Location | Effect | Cost or drawback | Appearance |
+|---|---|---|---|---|
+| NW-4 Nanoweave Fiber Vest | Torso | Resists small-arms fire | Adds mass | Woven fiber visible at collar and cuffs |
+| Ceramic Trauma Plating | Torso | Large armor pool; stops rifle rounds | Heavy | Bolted plates over chest and shoulders |
+| Titanium-Lattice Skeleton | Skeleton | Higher carry capacity and recoil tolerance; no fall damage | Adds mass | Anchor bolts at wrists and knuckles |
+| Electroactive Myofibrils | Muscle | Faster sprint, higher jump | Power draw, heat | Synthetic muscle bands through forearm vents |
+| Synaptic Accelerator | Nervous system | Faster aiming, reloads and recoil recovery | Power draw | Port at the base of the skull |
+| Vestibular Stabilizer | Inner ear | Full accuracy while sliding or wall-running | — | Horizon line in the HUD |
+| Ocular Ballistics Suite | Eyes | Shows penetration paths and headshot zones | Vulnerable to flashbangs | Optic glow in reflections; reticle overlay |
+| Fire-Control Link | Hands | Less recoil and faster follow-up shots with linked weapons | Shut off by EMP | Contact pads on the palm; readout on the gun |
+| Dorsal Load Frame | Spine | Hip-fire heavy weapons at full speed | No wall-running | Spinal frame; ammo feed over the shoulder |
+| Subdermal Heat Sinks | Skin | Faster cooling | Hot signature; easier to spot | Fins along the forearms; heat shimmer |
+| Hemostatic Nanites | Blood | Slow healing out of combat; less bleeding | High capacity cost | Wounds visibly close |
+| Kinetic Dampers | Legs | Quiet footsteps, longer slides, softer landings | — | Piston joints at knees and ankles |
+
+More actives *(proposal)*: mark several targets in slow motion and fire at all of them; shoulder ram; brace mode for heavy weapons; grapple line; through-wall scan; take over a turret or drone.
+
+Shared resources *(proposal)*: power, heat, mass, and a capacity budget for the loadout.
+
+---
+
+## 4. Test loadouts
+
+The owner described two combinations. They are benchmarks for the systems, built from the same pool of parts as any other loadout. They are not classes.
+
+### 4.1 Fast pistol loadout (build first)
+
+- **Weapon:** suppressed FN Five-seveN, 5.7×28mm, 20-round magazine, long suppressor. Quiet, precise, fast follow-up shots.
+- **Parts:** myofibrils, synaptic accelerator, vestibular stabilizer, kinetic dampers, fire-control link. Actives: whip and time slowdown.
+- **Movement:** sprint, slide, wall-run, mantle, air dash.
+- **What it should do:** move very fast, land headshots quickly and work through a crowd. Rounds can pass through one enemy into the next.
+- **Test** *(proposal)*: 12 enemies in a two-level room. A skilled player clears it in under about 25 seconds without stopping.
+
+### 4.2 Armored machine-gun loadout
+
+- **Weapon:** belt-fed machine gun modeled on the MG42, about 1,200 rounds per minute, built for an augmented carrier. Barrel heat and barrel changes.
+- **Parts:** trauma plating, titanium skeleton, dorsal load frame, heat sinks. Actives *(proposal)*: shoulder ram, brace mode.
+- **What it should do:** move slowly, absorb a lot of fire, and tear through cover and enemies with sustained fire.
+- **Test** *(proposal)*: two squads behind mixed cover in a warehouse.
+
+### 4.3 Later
+
+SPAS-12 shotgun with time slowdown: clearing rooms in slow motion, with ragdolls.
+
+---
+
+## 5. Combat simulation
+
+### 5.1 Locational damage
+
+Soldier of Fortune's GHOUL engine split bodies into 26 damage zones that each reacted differently. Use the same approach.
+
+- Hitboxes on bones, about 20–26 zones: head, neck, upper and lower torso, groin, upper and lower arms, hands, thighs, shins, feet, each side separate.
+- Each zone has its own reactions. Leg hits cause stumbling or limping. Arm and hand hits ruin aim or drop the weapon. Gut hits double enemies over. Head and neck hits kill or incapacitate.
+- Shooting a weapon out of an enemy's hand can make them surrender.
+- Wounded states: crawling, clutching a wound, calling for help.
+- Armor: helmets and plates with protection levels. Penetration against protection decides whether a round gets through.
+- Dismemberment from heavy rounds, explosions, the whip and the ram.
+
+### 5.2 Ballistics
+
+- Fast rounds are hitscan with penetration. Slow objects (grenades, the drone, the whip tip) are physical.
+- Weapon data: damage, falloff, penetration, impulse, spread, recoil pattern.
+- Material table for penetration: flesh, wood, drywall, sheet metal, concrete, armor plate. Penetration drops with each surface.
+
+### 5.3 Feedback on every shot
+
+- Camera kick and visible gun recoil, both spring-driven
+- Muzzle flash and a brief light
+- Layered sound: mechanism, shot, room tail (the tail changes with room size)
+- Shell or link ejection
+- Hit marker and sound, with separate headshot and kill sounds
+- A hit reaction on every hit
+- Impact decal and particles by surface
+- A few frames of hit-stop on heavy hits and headshots
+- Controller rumble where Android allows it
+- Cancelable reloads; separate tactical and empty reloads
+
+### 5.4 First-person animation
+
+Weapon and arm motion is procedural: springs for sway, bob, recoil, landing, turning inertia, sprint, and slide and wall-run tilt, blended with a few authored poses. Spring values live in weapon resources and in an on-device tuning menu, so the owner can tune by feel and send the numbers back.
+
+### 5.5 Ragdolls and gore
+
+- Partial ragdoll for hit reactions. Godot's `PhysicalBoneSimulator3D` can simulate selected bones and blend them with animation.
+- Full ragdoll on death, with impulse applied at the hit bone and scaled by the weapon.
+- Blood: entry spray, exit spray when a round passes through, bigger bursts on headshots, splatter on the wall behind the target, pools under bodies, wound decals that stay on the body.
+- Dismemberment: pre-split meshes with caps; gibs from a pool.
+- Gore setting: off, standard, maximum.
+- Everything pooled and capped (§8).
+- Slow motion has to hold up: blood, ragdolls and debris still look right at 25% speed.
+
+### 5.6 Enemy behavior
+
+- Awareness from sight, sound (including suppressed shots at close range) and bodies they find.
+- Near misses suppress them: worse accuracy, more time in cover.
+- Morale drops with casualties and with seeing an augment up close. When it breaks they flee, freeze, surrender or fire blindly.
+- Callouts that react to what you do ("Augment!", "Fall back!").
+- Squads flank and suppress together. Only a few enemies shoot at the player at a time.
+- Roles *(proposal)*: rifleman, shotgunner, shield carrier, machine gunner, marksman, launcher, anti-augment specialist (EMP grenades, armor-piercing rounds, drone jammer), officer.
+
+---
+
+## 6. Art direction
+
+Decided: see "Visuals" in §2. No anime or cel shading.
+
+*(proposal)*
+
+- Detail goes first to the first-person arms, weapons and augment hardware, since they're always on screen. Then hit effects and gore, then lighting, then enemies, then environments.
+- Baked lighting with a few dynamic lights. Height fog, dust, smoke, sparks, emissive lights, color grading.
+- Effects built from meshes with scrolling textures, not huge particle counts.
+- Heavy, worn, industrial hardware. Explore palettes with test renders in M4.
