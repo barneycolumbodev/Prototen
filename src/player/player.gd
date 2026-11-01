@@ -8,6 +8,19 @@ extends CharacterBody3D
 ## Turned off while a benchmark or cutscene drives the camera.
 @export var input_enabled: bool = true
 
+signal landed(fall_speed: float)
+
+## Set by the weapon each frame: aiming scales FOV, look speed and move speed.
+var fov_scale: float = 1.0
+var look_scale: float = 1.0
+var move_scale: float = 1.0
+## While true (aiming) a sprint can't start.
+var sprint_blocked: bool = false
+## Look speed in degrees per second: x = turning right, y = looking up.
+var look_velocity: Vector2 = Vector2.ZERO
+## Aim assist (set up by the level; null = off).
+var aim_assist: AimAssist
+
 const PITCH_LIMIT: float = deg_to_rad(88.0)
 
 var yaw: float = 0.0
@@ -20,6 +33,8 @@ var _crouch_blend: float = 0.0
 var _coyote: float = 0.0
 var _jump_buffer: float = 0.0
 var _capsule: CapsuleShape3D
+var _last_yaw: float = 0.0
+var _last_pitch: float = 0.0
 
 @onready var _head: Node3D = $Head
 @onready var _camera: Camera3D = $Head/Camera3D
@@ -28,6 +43,8 @@ var _capsule: CapsuleShape3D
 
 func _ready() -> void:
 	add_to_group(&"player")
+	collision_layer = Ballistics.LAYER_PLAYER
+	collision_mask = Ballistics.LAYER_WORLD | Ballistics.LAYER_HITBOX | Ballistics.LAYER_PROPS
 	_capsule = (_collision.shape as CapsuleShape3D).duplicate() as CapsuleShape3D
 	_collision.shape = _capsule
 	yaw = rotation.y
@@ -49,6 +66,19 @@ func camera() -> Camera3D:
 	return _camera
 
 
+func weapon() -> PlayerWeapon:
+	return get_node_or_null(^"Weapon") as PlayerWeapon
+
+
+func stop_sprint() -> void:
+	_sprinting = false
+
+
+## Camera recoil offset on top of the view, degrees: x = up, y = right, z = roll.
+func set_camera_recoil(deg: Vector3) -> void:
+	_camera.rotation = Vector3(deg_to_rad(deg.x), -deg_to_rad(deg.y), deg_to_rad(deg.z))
+
+
 ## Sets the view directly (radians). Used by the benchmark and spawn points.
 func set_view(new_yaw: float, new_pitch: float) -> void:
 	yaw = new_yaw
@@ -61,7 +91,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	var motion: InputEventMouseMotion = event as InputEventMouseMotion
 	if motion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
-		var k: float = deg_to_rad(Settings.look_config().mouse_deg_per_pixel)
+		var k: float = deg_to_rad(Settings.look_config().mouse_deg_per_pixel) * look_scale
 		set_view(yaw - motion.relative.x * k, pitch - motion.relative.y * k)
 	var click: InputEventMouseButton = event as InputEventMouseButton
 	if click and click.pressed and Input.mouse_mode != Input.MOUSE_MODE_CAPTURED and not CaptureDirector.is_capturing():
@@ -73,9 +103,17 @@ func _process(delta: float) -> void:
 		var look: LookConfig = Settings.look_config()
 		var raw: Vector2 = Input.get_vector(&"look_left", &"look_right", &"look_up", &"look_down", 0.0)
 		_tilt_time = _tilt_time + delta if look.is_full_tilt(raw) else 0.0
-		var rate: Vector2 = look.look_rate(raw, _tilt_time)
+		var rate: Vector2 = look.look_rate(raw, _tilt_time) * look_scale
+		if aim_assist:
+			rate = aim_assist.apply(self, rate, delta)
 		set_view(yaw - deg_to_rad(rate.x) * delta, pitch - deg_to_rad(rate.y) * delta)
 	_update_crouch_pose(delta)
+	_camera.fov = Settings.vertical_fov * fov_scale
+	if delta > 0.0:
+		var measured: Vector2 = Vector2(-angle_difference(_last_yaw, yaw), angle_difference(_last_pitch, pitch)) / delta
+		look_velocity = look_velocity.lerp(Vector2(rad_to_deg(measured.x), rad_to_deg(measured.y)), clampf(delta * 20.0, 0.0, 1.0))
+	_last_yaw = yaw
+	_last_pitch = pitch
 
 
 func _physics_process(delta: float) -> void:
@@ -86,7 +124,7 @@ func _physics_process(delta: float) -> void:
 		stick = Stick.shape(raw, cfg.move_inner_deadzone, cfg.move_outer_deadzone, 1.0)
 
 	# Sprint: press L3 to start; ends when the stick stops pushing forward.
-	if input_enabled and Input.is_action_just_pressed(&"sprint"):
+	if input_enabled and Input.is_action_just_pressed(&"sprint") and not sprint_blocked:
 		_sprinting = true
 	if -stick.y < cfg.sprint_min_forward:
 		_sprinting = false
@@ -94,11 +132,14 @@ func _physics_process(delta: float) -> void:
 	if _crouching:
 		_sprinting = false
 
+	if sprint_blocked:
+		_sprinting = false
 	var speed: float = cfg.walk_speed
 	if _sprinting:
 		speed = cfg.sprint_speed
 	elif _crouching:
 		speed = cfg.crouch_speed
+	speed *= move_scale
 	var wish: Vector3 = global_basis * Vector3(stick.x, 0.0, stick.y)
 	wish.y = 0.0
 	var horizontal: Vector3 = Vector3(velocity.x, 0.0, velocity.z)
@@ -118,7 +159,10 @@ func _physics_process(delta: float) -> void:
 		_coyote = 0.0
 
 	velocity = Vector3(horizontal.x, vy, horizontal.z)
+	var was_on_floor: bool = is_on_floor()
 	move_and_slide()
+	if is_on_floor() and not was_on_floor and vy < -1.0:
+		landed.emit(-vy)
 
 
 func _apply_view() -> void:
@@ -137,4 +181,4 @@ func _update_crouch_pose(delta: float) -> void:
 
 
 func _on_settings_changed() -> void:
-	_camera.fov = Settings.vertical_fov
+	_camera.fov = Settings.vertical_fov * fov_scale

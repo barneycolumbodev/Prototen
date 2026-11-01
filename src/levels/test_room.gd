@@ -46,6 +46,9 @@ const BLOCKS: Array = [
 	["wall", Vector3(4, 4, 0.4), Vector3(15, 2, 8), 0, 0],
 ]
 
+## Ballistic surface of each greybox material (data/surfaces/).
+const SURFACES: Dictionary[String, StringName] = {"floor": &"concrete", "wall": &"concrete", "prop": &"crate"}
+
 const MATERIALS: Dictionary = {
 	"floor": [Color(0.27, 0.28, 0.3), Color(0.5, 0.52, 0.55)],
 	"wall": [Color(0.42, 0.43, 0.45), Color(0.6, 0.62, 0.65)],
@@ -57,6 +60,10 @@ const CAPTURE_CAMERAS: Dictionary = {
 	"CapOverview": [Vector3(13, 9, 14), Vector3(-2, 0, -4)],
 	"CapMezzanine": [Vector3(-12, 5.2, -13), Vector3(6, 1, 6)],
 	"CapFloor": [Vector3(0, 1.65, 13), Vector3(0, 1.4, -10)],
+	"CapPenLane": [Vector3(4.2, 2.2, 6.2), Vector3(10.5, 0.9, 0.8)],
+	"CapRange": [Vector3(-1.5, 2.6, 6.0), Vector3(-2.0, 0.9, -5.0)],
+	"CapWalls": [Vector3(0.5, 1.9, 2.0), Vector3(5.0, 1.0, -6.0)],
+	"CapDummy": [Vector3(1.2, 1.55, 0.7), Vector3(1.5, 1.2, -1.0)],
 }
 
 const PLAYER_SCENE: PackedScene = preload("res://src/player/player.tscn")
@@ -64,6 +71,7 @@ const SPAWN: Vector3 = Vector3(0, 0, 12)
 const BENCH_POINT: Vector3 = Vector3(0, 0, 3)
 
 var player: Player
+var shooting_range: ShootingRange
 var _bench: FrameBench
 var _hud: Node
 var _bench_yaw0: float = 0.0
@@ -74,19 +82,29 @@ func _ready() -> void:
 	_build_geometry()
 	_build_lighting()
 	_build_capture_cameras()
+	shooting_range = ShootingRange.new()
+	shooting_range.name = "ShootingRange"
+	add_child(shooting_range)
+	Sfx.set_room(0.6)
 	player = PLAYER_SCENE.instantiate() as Player
 	add_child(player)
 	player.global_position = SPAWN
 	player.set_view(0.0, 0.0)
+	player.aim_assist = AimAssist.new(load("res://data/input/aim_assist.tres") as AimAssistConfig)
 	_bench = FrameBench.new()
 	add_child(_bench)
 	_bench.finished.connect(_on_bench_finished)
 	_hud = preload("res://src/ui/hud.gd").new()
 	_hud.set("bench", _bench)
+	_hud.set("weapon", player.weapon())
 	add_child(_hud)
 	EventBus.benchmark_requested.connect(start_benchmark)
 	# `-- --bench=<seconds>`: run the benchmark at startup and quit (cloud/CI use).
 	for arg: String in OS.get_cmdline_user_args():
+		if arg.begins_with("--demo="):
+			var demo: GunplayDemo = GunplayDemo.new()
+			demo.room = self
+			add_child(demo)
 		if arg.begins_with("--bench="):
 			_quit_after_bench = true
 			start_benchmark.call_deferred(arg.trim_prefix("--bench=").to_float())
@@ -128,6 +146,7 @@ func _build_geometry() -> void:
 		var combiner: CSGCombiner3D = CSGCombiner3D.new()
 		combiner.name = "Geo_" + key
 		combiner.use_collision = true
+		combiner.set_meta(&"surface", SURFACES[key])
 		combiner.material_override = mat
 		add_child(combiner)
 		combiners[key] = combiner

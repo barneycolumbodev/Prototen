@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="AimAssistConfig" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/weapons/aim_assist_config.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+enabled = true
+slowdown = 0.55
+slowdown_radius_deg = 4.0
+pull_deg_s = 6.0
+pull_radius_deg = 3.0
+pull_needs_input = 0.05
+max_distance = 60.0

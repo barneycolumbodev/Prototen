@@ -111,7 +111,7 @@ extends Resource
 @export_range(0.1, 1.5) var ads_sensitivity: float = 0.75
 @export_range(0.1, 1.0) var ads_move_speed: float = 0.65
 ## Eye position and look point in weapon space when aimed (on the sight line).
-@export var ads_eye_position: Vector3 = Vector3(-0.32, 0.0262, 0.0)
+@export var ads_eye_position: Vector3 = Vector3(-0.5, 0.0262, 0.0)
 @export var ads_look_target: Vector3 = Vector3(1.0, 0.0262, 0.0)
 
 @export_group("Handling")
@@ -125,9 +125,16 @@ extends Resource
 @export_range(0.5, 4.0) var bob_rate: float = 1.9
 ## Dip on landing, metres per (m/s) of fall speed.
 @export_range(0.0, 0.02) var land_dip: float = 0.006
-## Lowered sprint pose: offset (m) and tilt (degrees: pitch, yaw, roll).
-@export var sprint_offset: Vector3 = Vector3(0.02, -0.045, 0.03)
-@export var sprint_rotation_deg: Vector3 = Vector3(-14.0, 28.0, 12.0)
+## Pivot for procedural rotation (in the hand, behind the trigger guard).
+@export var grip_pivot: Vector3 = Vector3(-0.07, -0.055, 0.0)
+## Poses: offset in camera space (m; +X right, +Y up, +Z back) and rotation in
+## weapon space (degrees: x = roll about the bore, y = yaw, z = muzzle rise).
+@export var sprint_offset: Vector3 = Vector3(0.015, -0.05, 0.035)
+@export var sprint_rotation_deg: Vector3 = Vector3(28.0, 18.0, -16.0)
+@export var reload_offset: Vector3 = Vector3(-0.02, -0.03, 0.025)
+@export var reload_rotation_deg: Vector3 = Vector3(32.0, -6.0, 14.0)
+@export var draw_offset: Vector3 = Vector3(0.0, -0.2, 0.05)
+@export var draw_rotation_deg: Vector3 = Vector3(0.0, 0.0, -40.0)
 @export_range(0.5, 30.0) var pose_spring_hz: float = 4.5
 @export_range(0.1, 2.0) var pose_spring_damping: float = 0.85
 

@@ -10,6 +10,7 @@ extends Node
 ##   --capture-warmup=<frames>  frames to wait before each shot (default 30)
 ##   --capture-only=<name>      only shoot the camera with this node name
 ##   --capture-pause            open the pause menu before shooting
+## Nodes in the "capture_busy" group (e.g. GunplayDemo) delay the first shot.
 
 const GROUP: StringName = &"capture_cameras"
 
@@ -43,6 +44,9 @@ func is_capturing() -> bool:
 
 func _run() -> void:
 	await _frames(_warmup)
+	# Scripted demos (GunplayDemo) hold the capture until they finish.
+	while get_tree().get_node_count_in_group(&"capture_busy") > 0:
+		await _frames(5)
 	if _open_pause:
 		get_node("/root/PauseMenu").call("open")
 	var scene: Node = get_tree().current_scene

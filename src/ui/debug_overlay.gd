@@ -75,10 +75,13 @@ func _build_text() -> String:
 		Performance.get_monitor(Performance.RENDER_VIDEO_MEM_USED) / 1048576.0,
 		get_tree().root.scaling_3d_scale,
 		str(Engine.max_fps) if Engine.max_fps > 0 else "off"])
-	lines.append("enemies %d  ragdolls %d  decals %d" % [
+	lines.append("enemies %d  ragdolls %d  holes %d  debris %d  shells %d  rounds in flight %d" % [
 		tree.get_node_count_in_group(&"enemies"),
 		tree.get_node_count_in_group(&"ragdolls"),
-		tree.get_node_count_in_group(&"decals")])
+		Fx.hole_count(), Fx.debris_count(), Fx.live_shells(), Ballistics.live_count()])
+	var stats: RangeStats = tree.get_first_node_in_group(&"range_stats") as RangeStats
+	if stats:
+		lines.append(stats.summary())
 	var pads: Array[int] = Input.get_connected_joypads()
 	lines.append("pad: %s" % (Input.get_joy_name(pads[0]) if not pads.is_empty() else "none"))
 	for method: String in Settings.RENDERERS:

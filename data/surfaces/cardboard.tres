@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="SurfaceMaterial" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/weapons/surface_material.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"cardboard"
+display_name = "Cardboard witness card"
+resistance_j_per_cm = 4.0
+exit_deflection_deg = 2.0
+ricochet_max_angle_deg = 0.0
+ricochet_chance = 0
+ricochet_energy_keep = 0
+structural_damage_scale = 1.0
+spalls = false
+decal_color = Color(0.05, 0.04, 0.03, 1)
+decal_radius = 0.005
+particle_color = Color(0.6, 0.5, 0.35, 1)
+particle_kind = &"chalk"
+particle_count = 6
+impact_sound = &"drywall"
+is_flesh = false

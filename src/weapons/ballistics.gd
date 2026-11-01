@@ -25,6 +25,8 @@ const MIN_SPEED: float = 40.0
 const MAX_CONTACTS_PER_STEP: int = 10
 const MAX_THICKNESS_PROBE: float = 1.2
 const TRAJECTORY_KEEP: int = 14
+## Most speed one round can give a loose prop, m/s (keeps cans on the planet).
+const MAX_PROP_DV: float = 9.0
 
 ## Draws the last few trajectories (tuning menu / range toggle).
 var show_trajectories: bool = false:
@@ -299,7 +301,7 @@ func _push(collider: Object, hit: BallisticHit, mass_kg: float) -> void:
 	var lost: Vector3 = hit.direction * hit.speed_in - hit.direction * hit.speed_out
 	if hit.result == BallisticHit.Result.RICOCHET:
 		lost = hit.direction * hit.speed_in * 0.6
-	var impulse: Vector3 = lost * mass_kg * hit.weapon.impulse_scale
+	var impulse: Vector3 = (lost * mass_kg * hit.weapon.impulse_scale).limit_length(body.mass * MAX_PROP_DV)
 	body.apply_impulse(impulse, hit.point - body.global_position)
 
 

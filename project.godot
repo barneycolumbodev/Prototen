@@ -21,6 +21,9 @@ DebugOverlay="*res://src/ui/debug_overlay.gd"
 PauseMenu="*res://src/ui/pause_menu.gd"
 CaptureDirector="*res://src/core/debug/capture_director.gd"
 Ballistics="*res://src/weapons/ballistics.gd"
+TimeControl="*res://src/core/time_control.gd"
+Fx="*res://src/vfx/fx.gd"
+Sfx="*res://src/audio/sfx.gd"
 
 [debug]
 

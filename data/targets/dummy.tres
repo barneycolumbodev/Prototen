@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="TargetDummyConfig" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/levels/range/target_dummy_config.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+health = 100.0
+zone_multipliers = Dictionary[StringName, float]({
+&"chest": 1.25,
+&"head": 4.0,
+&"l_forearm": 0.5,
+&"l_shin": 0.6,
+&"l_thigh": 0.75,
+&"l_upper_arm": 0.6,
+&"neck": 3.0,
+&"pelvis": 1.0,
+&"r_forearm": 0.5,
+&"r_shin": 0.6,
+&"r_thigh": 0.75,
+&"r_upper_arm": 0.6,
+&"stomach": 1.0
+})
+reset_time = 2.5
+wobble_per_impulse = 1.4
+wobble_hz = 2.2
+wobble_damping = 0.25
