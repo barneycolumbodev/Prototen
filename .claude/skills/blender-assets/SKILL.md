@@ -30,3 +30,12 @@ The owner doesn't make assets; Claude does (CLAUDE.md §7). Build gameplay with 
 ## Budgets
 
 See perf-budget. Keep first-person weapons under ~15k triangles at LOD0 and enemies under ~20k.
+
+## High → low bake (reference: raw_assets/weapons/pistol_57/build.py)
+
+- Build HIGH (smooth bevels, dense cylinders, embossed text) and LOW (game mesh) from the same code with a detail setting.
+- UV-unwrap LOW (smart project, then scale islands for surfaces the player sees most before packing).
+- Bake HIGH → LOW with selected-to-active: channels via EMIT (route each Principled input to an Emission shader), AO, tangent NORMAL. Pack AO/roughness/metal into one ORM texture; multiply AO into base colour for cavity grime.
+- Export glTF **separate** (`.gltf` + `.bin` + `textures/`) so Godot imports each texture on its own.
+- After the first import, set every texture's `.import` to `compress/mode=2` (VRAM, ETC2/ASTC), `mipmaps/generate=true`, and `compress/normal_map=1` on normal maps. Godot's headless import defaults to lossless. `tests/unit/test_weapon_assets.gd` checks this.
+- Check it in-engine: `tools/screenshot.sh res://src/levels/lookdev/weapon_lookdev.tscn /tmp/shots`.
