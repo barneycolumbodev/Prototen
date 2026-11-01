@@ -6,6 +6,7 @@ config_version=5
 [application]
 
 config/name="GRAFT"
+run/main_scene="res://src/levels/test_room.tscn"
 config/description="Prototype: augmented-soldier FPS for Android with a controller."
 config/version="0.0.1"
 config/features=PackedStringArray("4.7", "Mobile")
@@ -14,6 +15,10 @@ config/project_settings_override="user://settings_override.cfg"
 
 [autoload]
 
+EventBus="*res://src/core/event_bus.gd"
+Settings="*res://src/core/settings.gd"
+DebugOverlay="*res://src/ui/debug_overlay.gd"
+PauseMenu="*res://src/ui/pause_menu.gd"
 CaptureDirector="*res://src/core/debug/capture_director.gd"
 
 [debug]

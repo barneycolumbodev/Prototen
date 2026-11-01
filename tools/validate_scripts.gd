@@ -7,6 +7,12 @@ const ROOTS: Array[String] = ["res://src", "res://tests"]
 
 
 func _init() -> void:
+	# Autoload singletons (Settings, EventBus...) are registered after _init;
+	# scripts that use them only compile once they exist.
+	process_frame.connect(_validate, CONNECT_ONE_SHOT)
+
+
+func _validate() -> void:
 	var paths: Array[String] = []
 	for root: String in ROOTS:
 		_collect(root, paths)

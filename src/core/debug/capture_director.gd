@@ -9,12 +9,14 @@ extends Node
 ## Extra user args:
 ##   --capture-warmup=<frames>  frames to wait before each shot (default 30)
 ##   --capture-only=<name>      only shoot the camera with this node name
+##   --capture-pause            open the pause menu before shooting
 
 const GROUP: StringName = &"capture_cameras"
 
 var _dir: String = ""
 var _warmup: int = 30
 var _only: String = ""
+var _open_pause: bool = false
 
 
 func _ready() -> void:
@@ -25,6 +27,8 @@ func _ready() -> void:
 			_warmup = maxi(1, arg.trim_prefix("--capture-warmup=").to_int())
 		elif arg.begins_with("--capture-only="):
 			_only = arg.trim_prefix("--capture-only=")
+		elif arg == "--capture-pause":
+			_open_pause = true
 	if _dir.is_empty():
 		set_process(false)
 		return
@@ -39,6 +43,8 @@ func is_capturing() -> bool:
 
 func _run() -> void:
 	await _frames(_warmup)
+	if _open_pause:
+		get_node("/root/PauseMenu").call("open")
 	var scene: Node = get_tree().current_scene
 	var scene_name: String = scene.scene_file_path.get_file().get_basename() if scene else "scene"
 	var start_cam: Camera3D = get_viewport().get_camera_3d()

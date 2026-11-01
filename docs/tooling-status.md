@@ -16,7 +16,9 @@ Checked 2026-11-01 in the first cloud session (CLAUDE.md §1 step 5, §10.4). Up
 | Android SDK in the session | ❌ Blocked | `dl.google.com` is not reachable. Not needed: Android exports run in CI (§10.1). |
 | SessionStart hook | ✅ Works | `tools/session_start.sh` prints versions and setup errors when `CLAUDE_CODE_REMOTE=true`, silent otherwise. |
 | `.claude/settings.json` permission allowlist | ⚠️ Not added | The session's safety check refused a settings file that pre-approves commands for Claude. Only the SessionStart hook is configured. The owner can add an allowlist if prompts get in the way. |
-| On-phone debug overlay, benchmark | 🚧 M0 | Being built in M0. |
+| On-phone debug overlay | ✅ Built (cloud-verified) | FPS, frame/GPU/CPU time, draw calls, primitives, memory, VRAM, enemy/ragdoll/decal counts, controller name, benchmark results. Needs a phone run. |
+| Benchmark + renderer switch | ✅ Built (cloud-verified) | Pause menu → Run benchmark (20 s fixed sweep), or `-- --bench=<s>` on the command line. Renderer switch writes `user://settings_override.cfg`; after a restart the game ran on Compatibility/OpenGL. Lavapipe frame times are meaningless; phone numbers decide. |
+| Bug-report button, input recording | ⏳ Later | Not started; planned after M0. |
 
 ## What the owner can fix in the environment settings (claude.ai/code)
 

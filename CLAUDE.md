@@ -12,7 +12,7 @@ Items marked *(proposal)* are Claude's suggestions and can change. Everything el
 
 ## 1. Working rules for Claude Code
 
-### First session
+### First session (done 2026-11-01; see `docs/tooling-status.md`)
 
 1. Move sections 3–6 (the game design) into `docs/design.md` and leave a one-line pointer here. This file loads every session, so keep it short.
 2. Scaffold the repository (§9.3).
@@ -227,7 +227,8 @@ The official Blender Lab MCP server (v1.0.3, needs Blender 5.1 or newer) works t
 ### 10.4 Verification
 
 - `tools/check.sh`: import the project, validate scripts, run GUT (`godot --headless -s addons/gut/gut_cmdln.gd -gdir=res://tests -gexit`).
-- `tools/screenshot.sh`: run a scene under Xvfb with software Vulkan and save PNGs. Budget about 30 seconds per shot. Use fixed camera positions in each test room.
+- `tools/screenshot.sh`: run a scene under Xvfb with software Vulkan and save PNGs. Budget about 30 seconds per shot. Use fixed camera positions in each test room (`capture_cameras` group).
+- `godot -- --bench=<seconds>` runs the frame-time benchmark at startup, prints JSON and quits.
 - `godot --doctool <dir>` dumps the class reference for the installed version. Check APIs there instead of relying on memory.
 - `blender --version` and a test render, to confirm Blender works.
 - Godot Agent Loop scenarios: scripted input with assertions (enemy dead, ragdoll active, decal count under the cap).

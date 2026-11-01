@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="LookConfig" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/player/look_config.gd" id="1_look"]
+
+[resource]
+script = ExtResource("1_look")
+display_name = "Standard"
+yaw_speed_deg = 240.0
+pitch_speed_deg = 170.0
+inner_deadzone = 0.12
+curve_exponent = 1.8
+full_tilt_boost = 1.8
