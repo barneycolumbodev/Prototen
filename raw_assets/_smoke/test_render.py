@@ -1,6 +1,6 @@
 """Blender smoke test (CLAUDE.md §10.4): build a bevelled cube, render one frame with Cycles on the CPU.
 
-Run: blender -b --factory-startup --python raw_assets/_smoke/test_render.py -- /path/out.png
+Run: tools/blender.sh raw_assets/_smoke/test_render.py /path/out.png
 """
 import sys
 
@@ -21,7 +21,6 @@ cube = bpy.context.active_object
 bevel = cube.modifiers.new("Bevel", "BEVEL")
 bevel.width, bevel.segments = 0.08, 3
 mat = bpy.data.materials.new("Steel")
-mat.use_nodes = True
 bsdf = mat.node_tree.nodes["Principled BSDF"]
 bsdf.inputs["Base Color"].default_value = (0.35, 0.37, 0.4, 1.0)
 bsdf.inputs["Metallic"].default_value = 0.9
@@ -38,3 +37,10 @@ scene.world = world
 
 bpy.ops.render.render(write_still=True)
 print(f"blender_smoke: wrote {out} with Blender {bpy.app.version_string}")
+
+# glTF export, the format every asset ships in (CLAUDE.md §7).
+glb = out.rsplit(".", 1)[0] + ".glb"
+bpy.ops.object.select_all(action="DESELECT")
+cube.select_set(True)
+bpy.ops.export_scene.gltf(filepath=glb, use_selection=True, export_apply=True)
+print(f"blender_smoke: wrote {glb}")

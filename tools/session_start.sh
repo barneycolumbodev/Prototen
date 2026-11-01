@@ -26,8 +26,13 @@ fi
 echo "Godot:   $(godot --headless --version 2>/dev/null | tail -n1 || echo 'NOT INSTALLED')"
 if command -v blender >/dev/null 2>&1 && [ -x "$(readlink -f "$(command -v blender)")" ]; then
   echo "Blender: $(blender --version 2>/dev/null | head -n1)"
+elif [ -x /opt/bpy-venv/bin/python ]; then
+  echo "Blender: bpy module $(/opt/bpy-venv/bin/python -c 'import bpy; print(bpy.app.version_string)' 2>/dev/null) (no binary; use tools/blender.sh)"
 else
-  echo "Blender: NOT INSTALLED (needs download.blender.org in the network allowlist; see CLAUDE.md §10.1)"
+  echo "Blender: NOT INSTALLED. Installing the bpy module in the background (tools/blender.sh will use it)."
+  if [ -w /opt ]; then
+    nohup bash -c 'python3 -m venv /opt/bpy-venv && /opt/bpy-venv/bin/pip install -q "bpy==${BLENDER_VERSION:-5.2.3}" || echo "bpy fallback install failed (session_start.sh)" >> /opt/setup-errors.log' >/tmp/bpy-install.log 2>&1 &
+  fi
 fi
 if [ -s "$ERR" ]; then
   echo "Setup errors ($ERR):"

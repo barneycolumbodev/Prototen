@@ -10,7 +10,7 @@ The owner doesn't make assets; Claude does (CLAUDE.md §7). Build gameplay with 
 ## Rules
 
 - Every asset has a generator script: `raw_assets/<category>/<asset>/build.py`. Running it rebuilds the asset from nothing. Never hand-edit an exported file.
-- Run: `blender -b --factory-startup --python raw_assets/<...>/build.py -- --out assets/<category>/<asset>.glb --preview /tmp/preview.png`
+- Run: `tools/blender.sh raw_assets/<...>/build.py --out assets/<category>/<asset>.glb --preview /tmp/preview.png` (Blender binary if installed, else the `bpy` module from PyPI)
 - Real dimensions in metres. +Y up in Godot (glTF exporter converts from Blender's Z-up). Pivot where the game needs it (weapons: grip; props: base centre).
 - Hard-surface: modifiers (bevel, boolean, mirror, array, weighted normals). Apply on export.
 - Materials: procedural shaders, baked to texture maps with Cycles on the CPU, then exported as PNG; Godot compresses to ETC2/ASTC on import.
@@ -20,7 +20,7 @@ The owner doesn't make assets; Claude does (CLAUDE.md §7). Build gameplay with 
 
 ## Smoke test
 
-`blender -b --factory-startup --python raw_assets/_smoke/test_render.py -- /tmp/smoke.png` builds a bevelled cube and renders it with Cycles on the CPU.
+`tools/blender.sh raw_assets/_smoke/test_render.py /tmp/smoke.png` builds a bevelled cube and renders it with Cycles on the CPU.
 
 ## Humans and animation
 

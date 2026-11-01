@@ -220,7 +220,7 @@ Cloud VMs have about 4 CPU cores, 16 GB RAM, 30 GB disk and no GPU. Android expo
 
 ### 10.3 Blender tooling
 
-Claude runs Blender directly: `blender -b --factory-startup --python script.py -- <args>`. That covers modeling, materials, baking, rendering and export, so no Blender MCP is needed to start.
+Claude runs Blender directly: `blender -b --factory-startup --python script.py -- <args>`, or `tools/blender.sh script.py <args>`, which falls back to the `bpy` module from PyPI (same version, in `/opt/bpy-venv`) when the binary isn't installed. That covers modeling, materials, baking, rendering and export, so no Blender MCP is needed to start.
 
 The official Blender Lab MCP server (v1.0.3, needs Blender 5.1 or newer) works through a Blender add-on and mainly targets an open Blender window. Its background-mode support is limited. Try it later if direct scripting hits a limit.
 
