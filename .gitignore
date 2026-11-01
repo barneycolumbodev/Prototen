@@ -1,0 +1,22 @@
+# Godot
+.godot/
+/android/
+*.translation
+export_credentials.cfg
+*.tmp
+
+# Build output
+/build/
+*.apk
+*.aab
+*.keystore
+*.jks
+
+# Tool output
+/screenshots/
+/raw_assets/**/__pycache__/
+/raw_assets/**/*.blend1
+
+# OS / editor
+.DS_Store
+*.swp

@@ -1,0 +1,54 @@
+; Engine configuration file.
+; Input actions are registered at startup by src/core/input/input_bindings.gd (CLAUDE.md §9.4).
+
+config_version=5
+
+[application]
+
+config/name="GRAFT"
+config/description="Prototype: augmented-soldier FPS for Android with a controller."
+config/version="0.0.1"
+config/features=PackedStringArray("4.7", "Mobile")
+config/icon="res://icon.svg"
+config/project_settings_override="user://settings_override.cfg"
+
+[debug]
+
+gdscript/warnings/untyped_declaration=2
+gdscript/warnings/inferred_declaration=0
+gdscript/warnings/unsafe_property_access=2
+gdscript/warnings/unsafe_method_access=2
+gdscript/warnings/unsafe_cast=2
+gdscript/warnings/unsafe_call_argument=2
+gdscript/warnings/unsafe_void_return=2
+gdscript/warnings/return_value_discarded=0
+
+[display]
+
+window/size/viewport_width=1280
+window/size/viewport_height=720
+window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
+window/handheld/orientation=4
+window/vsync/vsync_mode=1
+
+[input_devices]
+
+pointing/emulate_touch_from_mouse=false
+
+[physics]
+
+3d/physics_engine="Jolt Physics"
+common/physics_ticks_per_second=60
+
+[rendering]
+
+renderer/rendering_method="mobile"
+renderer/rendering_method.mobile="mobile"
+textures/vram_compression/import_etc2_astc=true
+anti_aliasing/quality/msaa_3d=0
+scaling_3d/mode=0
+scaling_3d/scale=1.0
+lights_and_shadows/directional_shadow/size=2048
+lights_and_shadows/directional_shadow/soft_shadow_filter_quality=1
+environment/defaults/default_clear_color=Color(0.08, 0.09, 0.1, 1)
