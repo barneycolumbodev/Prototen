@@ -75,6 +75,7 @@ func open() -> void:
 	_assist = player.aim_assist.config if player.aim_assist else null
 	_build()
 	_root.visible = true
+	DebugOverlay.visible = false
 	get_tree().paused = true
 	if _first_focus:
 		_first_focus.grab_focus()
@@ -82,6 +83,7 @@ func open() -> void:
 
 func close() -> void:
 	_root.visible = false
+	DebugOverlay.visible = true
 	get_tree().paused = false
 	save()
 
