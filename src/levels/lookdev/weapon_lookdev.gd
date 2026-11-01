@@ -6,7 +6,7 @@ extends Node3D
 
 @export var model: PackedScene = preload("res://assets/weapons/pistol_57/pistol_57.gltf")
 
-## Capture cameras: name -> [position, look-at target]. Model axes: +X muzzle, +Y up, +Z its left side.
+## Capture cameras: name -> [position, look-at target]. Model axes: +X muzzle, +Y up, +Z its right side.
 const CAMERAS: Dictionary[String, Array] = {
 	"CapHero": [Vector3(0.15, 0.17, 0.97), Vector3(0.088, -0.058, 0.0)],
 	"CapFirstPerson": [Vector3(-0.32, 0.075, 0.075), Vector3(0.2, -0.01, -0.01)],

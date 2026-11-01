@@ -14,7 +14,7 @@ Pipeline (CLAUDE.md §7):
   3. Export LOW with the baked textures as glTF (separate .gltf/.bin/PNGs).
   4. Optionally render a preview of the exported (baked) material.
 
-Axes: +X = muzzle, +Z = up, -Y = the shooter's left side. Origin = bore axis
+Axes: +X = muzzle, +Z = up, -Y = the gun's RIGHT side (+Y = left). Origin = bore axis
 above the grip. Units: metres.
 
 Run:  tools/blender.sh raw_assets/weapons/pistol_57/build.py \
