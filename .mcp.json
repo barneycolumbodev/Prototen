@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "godot": {
+      "command": "xvfb-run",
+      "args": ["-a", "-s", "-screen 0 1280x720x24", "npx", "-y", "@beremaran/godot-agent-loop@2"],
+      "env": { "GODOT_PATH": "/opt/godot/godot" }
+    }
+  }
+}

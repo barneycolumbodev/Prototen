@@ -187,44 +187,7 @@ Cloud sessions read this repo's `CLAUDE.md`, `.mcp.json`, hooks in `.claude/sett
 
    Add `api.meshy.ai` and `api.elevenlabs.io` only if you use those services. GitHub, npm, PyPI, Ubuntu packages and Docker Hub are already in the default list.
 
-2. **Setup script:**
-
-   ```bash
-   #!/bin/bash
-   # Runs as root before Claude starts. Must exit 0. Cached if it finishes in about 5 minutes.
-   GODOT_VERSION="${GODOT_VERSION:-4.7.2}"
-   BLENDER_SERIES="${BLENDER_SERIES:-5.2}"
-   BLENDER_VERSION="${BLENDER_VERSION:-5.2.3}"
-   ERR=/opt/setup-errors.log
-
-   apt-get update -qq || true
-   apt-get install -y -qq xvfb xauth mesa-vulkan-drivers libvulkan1 libgl1 libegl1 \
-     libxi6 libxxf86vm1 libxfixes3 libxrender1 libsm6 libxkbcommon0 libxcursor1 \
-     libxinerama1 libxrandr2 libasound2t64 fontconfig unzip xz-utils || echo "apt install failed" >> "$ERR"
-
-   # Godot editor (Linux, runs headless in the session)
-   if [ ! -x /opt/godot/godot ]; then
-     mkdir -p /opt/godot
-     curl -fsSL -o /tmp/godot.zip \
-       "https://github.com/godotengine/godot-builds/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip" \
-       && unzip -q -o /tmp/godot.zip -d /opt/godot \
-       && mv "/opt/godot/Godot_v${GODOT_VERSION}-stable_linux.x86_64" /opt/godot/godot \
-       && chmod +x /opt/godot/godot \
-       || echo "Godot download failed" >> "$ERR"
-     rm -f /tmp/godot.zip
-   fi
-   ln -sf /opt/godot/godot /usr/local/bin/godot
-
-   # Blender (Linux build, used in background mode)
-   if [ ! -x /opt/blender/blender ]; then
-     mkdir -p /opt/blender
-     curl -fsSL "https://download.blender.org/release/Blender${BLENDER_SERIES}/blender-${BLENDER_VERSION}-linux-x64.tar.xz" \
-       | tar -xJ --strip-components=1 -C /opt/blender \
-       || echo "Blender download failed" >> "$ERR"
-   fi
-   ln -sf /opt/blender/blender /usr/local/bin/blender
-   exit 0
-   ```
+2. **Setup script:** paste the contents of [`tools/setup_env.sh`](tools/setup_env.sh). It installs the Xvfb/Vulkan packages, Godot 4.7.2 into `/opt/godot` and Blender 5.2.3 into `/opt/blender`, logs failures to `/opt/setup-errors.log`, and always exits 0.
 
 3. **Environment variables:** only if you use paid services: `MESHY_API_KEY`, `ELEVENLABS_API_KEY`. Anyone who can use the environment can read these. Network secrets in the same dialog keep keys hidden from the session.
 

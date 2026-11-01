@@ -12,6 +12,10 @@ config/features=PackedStringArray("4.7", "Mobile")
 config/icon="res://icon.svg"
 config/project_settings_override="user://settings_override.cfg"
 
+[autoload]
+
+CaptureDirector="*res://src/core/debug/capture_director.gd"
+
 [debug]
 
 gdscript/warnings/untyped_declaration=2
