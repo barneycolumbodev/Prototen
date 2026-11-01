@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="SurfaceLibrary" load_steps=13 format=3]
+
+[ext_resource type="Script" path="res://src/weapons/surface_library.gd" id="1"]
+[ext_resource type="Script" path="res://src/weapons/surface_material.gd" id="0"]
+[ext_resource type="Resource" path="res://data/surfaces/concrete.tres" id="2"]
+[ext_resource type="Resource" path="res://data/surfaces/drywall.tres" id="3"]
+[ext_resource type="Resource" path="res://data/surfaces/wood.tres" id="4"]
+[ext_resource type="Resource" path="res://data/surfaces/sheet_metal.tres" id="5"]
+[ext_resource type="Resource" path="res://data/surfaces/armor_plate.tres" id="6"]
+[ext_resource type="Resource" path="res://data/surfaces/steel_target.tres" id="7"]
+[ext_resource type="Resource" path="res://data/surfaces/flesh.tres" id="8"]
+[ext_resource type="Resource" path="res://data/surfaces/sandbag.tres" id="9"]
+[ext_resource type="Resource" path="res://data/surfaces/thin_metal.tres" id="10"]
+[ext_resource type="Resource" path="res://data/surfaces/glass.tres" id="11"]
+
+[resource]
+script = ExtResource("1")
+materials = Array[ExtResource("0")]([ExtResource("2"), ExtResource("3"), ExtResource("4"), ExtResource("5"), ExtResource("6"), ExtResource("7"), ExtResource("8"), ExtResource("9"), ExtResource("10"), ExtResource("11")])
+fallback = &"concrete"

@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="SurfaceMaterial" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/weapons/surface_material.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"glass"
+display_name = "Glass"
+resistance_j_per_cm = 40.0
+exit_deflection_deg = 6.0
+ricochet_max_angle_deg = 0.0
+ricochet_chance = 0
+ricochet_energy_keep = 0
+structural_damage_scale = 3.0
+spalls = false
+decal_color = Color(0.6, 0.65, 0.7, 1)
+decal_radius = 0.006
+particle_color = Color(0.8, 0.9, 1, 1)
+particle_kind = &"glass"
+particle_count = 16
+impact_sound = &"glass"
+is_flesh = false

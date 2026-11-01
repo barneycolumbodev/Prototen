@@ -20,6 +20,7 @@ Settings="*res://src/core/settings.gd"
 DebugOverlay="*res://src/ui/debug_overlay.gd"
 PauseMenu="*res://src/ui/pause_menu.gd"
 CaptureDirector="*res://src/core/debug/capture_director.gd"
+Ballistics="*res://src/weapons/ballistics.gd"
 
 [debug]
 
@@ -44,6 +45,14 @@ window/vsync/vsync_mode=1
 [input_devices]
 
 pointing/emulate_touch_from_mouse=false
+
+[layer_names]
+
+3d_physics/layer_1="world"
+3d_physics/layer_2="player"
+3d_physics/layer_3="hitbox"
+3d_physics/layer_4="props"
+3d_physics/layer_5="debris"
 
 [physics]
 

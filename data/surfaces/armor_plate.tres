@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="SurfaceMaterial" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/weapons/surface_material.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"armor_plate"
+display_name = "Armor plate (AR500)"
+resistance_j_per_cm = 9000.0
+exit_deflection_deg = 0.0
+ricochet_max_angle_deg = 20.0
+ricochet_chance = 0.7
+ricochet_energy_keep = 0.35
+structural_damage_scale = 0.15
+spalls = false
+decal_color = Color(0.55, 0.55, 0.56, 1)
+decal_radius = 0.011
+particle_color = Color(1, 0.8, 0.4, 1)
+particle_kind = &"sparks"
+particle_count = 18
+impact_sound = &"steel"
+is_flesh = false

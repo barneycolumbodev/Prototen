@@ -12,3 +12,10 @@ signal killed(victim: Node, info: DamageInfo)
 signal benchmark_requested(duration_sec: float)
 @warning_ignore("unused_signal")
 signal benchmark_finished(result: Dictionary)
+## Every bullet contact (ballistics.gd): effects, sound, stats and targets listen.
+@warning_ignore("unused_signal")
+signal ballistic_hit(hit: BallisticHit)
+## A target reports what a hit did to it (hit markers, stats).
+## kind: &"hit", &"headshot", &"kill", &"armor"
+@warning_ignore("unused_signal")
+signal target_hit(kind: StringName, hit: BallisticHit)

@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="SurfaceMaterial" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/weapons/surface_material.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"concrete"
+display_name = "Concrete"
+resistance_j_per_cm = 1800.0
+exit_deflection_deg = 3.0
+ricochet_max_angle_deg = 14.0
+ricochet_chance = 0.6
+ricochet_energy_keep = 0.4
+structural_damage_scale = 1.0
+spalls = true
+decal_color = Color(0.09, 0.09, 0.09, 1)
+decal_radius = 0.008
+particle_color = Color(0.62, 0.61, 0.58, 1)
+particle_kind = &"dust"
+particle_count = 14
+impact_sound = &"concrete"
+is_flesh = false

@@ -1,0 +1,176 @@
+class_name WeaponData
+extends Resource
+## Everything that defines how a gun shoots, handles and feels
+## (docs/design.md §5.2–5.4, docs/m1-gunplay-plan.md). One .tres per weapon
+## in data/weapons/. The on-device tuning menu edits these live.
+##
+## Weapon space follows the glTF models: +X muzzle, +Y up, +Z the gun's right
+## side, origin on the bore axis above the grip.
+
+@export var display_name: String = "Five-seveN SR"
+@export var caliber: String = "5.7×28mm"
+
+@export_group("Magazine")
+@export_range(1, 200) var magazine_size: int = 20
+## A tactical reload keeps the round in the chamber (20 + 1).
+@export var closed_bolt: bool = true
+@export_range(0, 9999) var reserve_ammo: int = 200
+## Range/testing: reserve never runs out.
+@export var infinite_reserve: bool = true
+
+@export_group("Fire")
+## Fastest the mechanism cycles (seconds between shots). Semi-auto.
+@export_range(0.03, 1.0) var fire_interval: float = 0.1
+@export var automatic: bool = false
+## A trigger pull this early before the gun is ready still fires when it is.
+@export_range(0.0, 0.3) var fire_buffer: float = 0.12
+## Delay between leaving a sprint and the first shot.
+@export_range(0.0, 0.5) var sprint_to_fire: float = 0.13
+@export_range(0.0, 1.5) var draw_time: float = 0.4
+
+@export_group("Reload")
+## Magazine change with a round still chambered.
+@export_range(0.3, 5.0) var reload_tactical_time: float = 1.35
+## Empty gun: magazine change plus slide release.
+@export_range(0.3, 5.0) var reload_empty_time: float = 1.75
+## Fraction of the reload where the old magazine leaves the gun.
+@export_range(0.0, 1.0) var mag_out_point: float = 0.22
+## Fraction where the new magazine seats; ammo is committed from here.
+@export_range(0.0, 1.0) var mag_in_point: float = 0.6
+
+@export_group("Ballistics")
+## Metres per second at the muzzle (SS190 from a 4.8" barrel with can ≈ 650).
+@export_range(50.0, 1500.0) var muzzle_velocity: float = 650.0
+@export_range(0.1, 50.0) var bullet_mass_g: float = 2.0
+## Air drag: speed falls as v(x) = v0 * e^(-k x). 0.0015/m ≈ 14 % lost over 100 m.
+@export_range(0.0, 0.05) var drag_per_m: float = 0.0015
+@export_range(0.0, 2.0) var gravity_scale: float = 1.0
+@export_range(10.0, 3000.0) var max_range: float = 600.0
+## How many surfaces one round may pass through.
+@export_range(0, 12) var max_penetrations: int = 6
+## Augment hook: multiplies the energy available for punching through material.
+@export_range(0.1, 5.0) var penetration_scale: float = 1.0
+@export_range(0, 4) var max_ricochets: int = 2
+
+@export_group("Damage")
+## Damage per joule the round leaves inside a body.
+@export_range(0.0, 1.0) var damage_per_joule: float = 0.14
+## Every hit deals at least this much (temporary cavity, shock).
+@export_range(0.0, 100.0) var min_damage: float = 10.0
+## Multiplies real bullet momentum for physics pushes (props, plates, ragdolls).
+@export_range(0.0, 200.0) var impulse_scale: float = 30.0
+
+@export_group("Accuracy")
+## Mechanical precision when aimed, minutes of angle (1 MOA ≈ 3 cm at 100 m).
+@export_range(0.0, 20.0) var mechanical_moa: float = 1.5
+## Hip-fire cone (degrees, full width).
+@export_range(0.0, 10.0) var hip_spread_deg: float = 0.8
+## Extra hip spread at full walking speed.
+@export_range(0.0, 10.0) var move_spread_deg: float = 1.1
+@export_range(0.0, 15.0) var air_spread_deg: float = 2.5
+## Extra spread added per shot, recovers over time.
+@export_range(0.0, 5.0) var bloom_per_shot_deg: float = 0.3
+@export_range(0.0, 10.0) var bloom_max_deg: float = 1.5
+@export_range(0.0, 30.0) var bloom_recovery_deg_s: float = 4.5
+## Fraction of hip spread, movement spread and bloom that still applies aimed.
+@export_range(0.0, 1.0) var ads_spread_scale: float = 0.12
+
+@export_group("Recoil: camera")
+## Peak upward kick per shot, degrees.
+@export_range(0.0, 10.0) var kick_pitch_deg: float = 1.1
+## Random sideways kick, ± degrees.
+@export_range(0.0, 5.0) var kick_yaw_deg: float = 0.28
+## Consistent drift to the right (+) or left (−), degrees per shot.
+@export_range(-2.0, 2.0) var kick_yaw_bias_deg: float = 0.06
+## Fraction of each kick that stays (muzzle climb you pull down yourself).
+@export_range(0.0, 1.0) var kick_permanent: float = 0.18
+@export_range(0.5, 30.0) var camera_spring_hz: float = 6.5
+@export_range(0.1, 2.0) var camera_spring_damping: float = 0.9
+## Recoil multiplier while aiming down sights.
+@export_range(0.0, 2.0) var ads_recoil_scale: float = 0.7
+
+@export_group("Recoil: viewmodel")
+## Gun pushed back into the hand, metres.
+@export_range(0.0, 0.2) var vm_kick_back: float = 0.03
+## Muzzle flip, degrees.
+@export_range(0.0, 30.0) var vm_kick_rise_deg: float = 7.0
+@export_range(0.0, 15.0) var vm_kick_roll_deg: float = 2.5
+@export_range(0.5, 30.0) var vm_spring_hz: float = 8.5
+@export_range(0.1, 2.0) var vm_spring_damping: float = 0.55
+@export_range(0.0, 2.0) var ads_vm_scale: float = 0.45
+## How far the slide travels back and how long it takes to return, s.
+@export_range(0.0, 0.1) var slide_travel: float = 0.032
+@export_range(0.01, 0.3) var slide_cycle_time: float = 0.065
+
+@export_group("Aim down sights")
+## Seconds from hip to fully aimed.
+@export_range(0.03, 1.0) var ads_time: float = 0.15
+## Field of view while aimed, as a fraction of the normal one.
+@export_range(0.3, 1.0) var ads_fov_scale: float = 0.8
+## Look sensitivity while aimed, before the FOV correction.
+@export_range(0.1, 1.5) var ads_sensitivity: float = 0.75
+@export_range(0.1, 1.0) var ads_move_speed: float = 0.65
+## Eye position and look point in weapon space when aimed (on the sight line).
+@export var ads_eye_position: Vector3 = Vector3(-0.32, 0.0262, 0.0)
+@export var ads_look_target: Vector3 = Vector3(1.0, 0.0262, 0.0)
+
+@export_group("Handling")
+## Viewmodel lag when turning: degrees per (degree/second) of look speed.
+@export_range(0.0, 0.1) var sway_per_turn: float = 0.018
+@export_range(0.0, 15.0) var sway_max_deg: float = 6.0
+@export_range(0.5, 30.0) var sway_spring_hz: float = 5.0
+@export_range(0.1, 2.0) var sway_spring_damping: float = 0.7
+## Walk bob amplitude (metres) and steps per second at walking speed.
+@export_range(0.0, 0.05) var bob_amount: float = 0.008
+@export_range(0.5, 4.0) var bob_rate: float = 1.9
+## Dip on landing, metres per (m/s) of fall speed.
+@export_range(0.0, 0.02) var land_dip: float = 0.006
+## Lowered sprint pose: offset (m) and tilt (degrees: pitch, yaw, roll).
+@export var sprint_offset: Vector3 = Vector3(0.02, -0.045, 0.03)
+@export var sprint_rotation_deg: Vector3 = Vector3(-14.0, 28.0, 12.0)
+@export_range(0.5, 30.0) var pose_spring_hz: float = 4.5
+@export_range(0.1, 2.0) var pose_spring_damping: float = 0.85
+
+@export_group("Muzzle and ejection")
+@export var muzzle_point: Vector3 = Vector3(0.284, 0.0, 0.0)
+@export var ejection_point: Vector3 = Vector3(0.012, 0.018, 0.006)
+## Shell launch velocity in weapon space, m/s (+Z = right).
+@export var ejection_velocity: Vector3 = Vector3(-0.6, 1.6, 2.6)
+## Suppressed: small flash and dim light.
+@export_range(0.0, 3.0) var flash_scale: float = 0.35
+@export_range(0.0, 10.0) var flash_light_energy: float = 1.2
+
+@export_group("Feedback")
+## Controller rumble per shot: weak motor, strong motor, seconds.
+@export var rumble_fire: Vector3 = Vector3(0.25, 0.1, 0.06)
+@export var rumble_hit: Vector3 = Vector3(0.0, 0.25, 0.05)
+@export var rumble_kill: Vector3 = Vector3(0.4, 0.6, 0.14)
+## Real-time seconds of hit-stop, and the time scale during it.
+@export_range(0.0, 0.3) var hitstop_headshot: float = 0.055
+@export_range(0.0, 0.3) var hitstop_kill: float = 0.04
+@export_range(0.0, 1.0) var hitstop_time_scale: float = 0.06
+
+
+func muzzle_energy() -> float:
+	return 0.5 * bullet_mass_g * 0.001 * muzzle_velocity * muzzle_velocity
+
+
+## Full-width spread cone in degrees for the current state.
+func spread_deg(aim: float, move_fraction: float, airborne: bool, bloom: float) -> float:
+	var extra: float = move_spread_deg * clampf(move_fraction, 0.0, 1.0) + bloom
+	if airborne:
+		extra += air_spread_deg
+	var mech: float = mechanical_moa / 60.0
+	var hip: float = maxf(hip_spread_deg + extra, mech)
+	# Aimed: the gun's own precision plus a fraction of the movement/bloom penalty.
+	var aimed: float = mech + extra * ads_spread_scale
+	return lerpf(hip, aimed, clampf(aim, 0.0, 1.0))
+
+
+## Energy (J) needed to cross `thickness_m` of `surface`.
+func penetration_cost(surface: SurfaceMaterial, thickness_m: float) -> float:
+	return thickness_m * 100.0 * surface.resistance_j_per_cm / penetration_scale
+
+
+func damage_for(deposited_j: float) -> float:
+	return maxf(min_damage, deposited_j * damage_per_joule)
