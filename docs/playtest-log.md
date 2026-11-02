@@ -80,7 +80,7 @@ Please try:
 
 ## M1a.2 — 2026-11-02 — Saiga-12K (waiting for the owner)
 
-Build: branch `claude/saiga-12k-shotgun-r43ntd`. CI only builds `main` on push, so the APK appears on `dev-latest` once the branch is merged or the workflow is run by hand.
+Build: `dev-latest` from branch `claude/saiga-12k-shotgun-r43ntd` @ d06aaba, CI run #8 (manual run). `graft-debug.apk`, 175 MB (the Saiga's 4K textures ship in both ETC2 and ASTC, like the MG42's). Not playtested yet.
 
 What's new in the APK:
 - **Saiga-12K**: **Y** now cycles pistol → MG42 → Saiga. Semi-auto 12-gauge, 10+1, milled black steel, curved magazine, vertical foregrip, folding stock.
