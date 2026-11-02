@@ -31,7 +31,8 @@ var _wait: int = 30
 func _ready() -> void:
 	process_physics_priority = -20
 	add_to_group(&"capture_busy")
-	Ballistics.show_trajectories = true
+	# Debug bullet paths, unless `--no-paths` (clean shots of tracers and rail trails).
+	Ballistics.show_trajectories = not OS.get_cmdline_user_args().has("--no-paths")
 	var r: ShootingRange = room.shooting_range
 	room.player.global_position = Vector3(1.0, 0.0, 9.0)
 	for arg: String in OS.get_cmdline_user_args():
@@ -101,10 +102,12 @@ func _physics_process(_delta: float) -> void:
 
 
 func _freeze() -> void:
-	# Let the shot frame play out a little, then nearly stop time.
+	# Let the shot frame play out a little, then nearly stop time (software
+	# rendering is slow enough that 1 % speed still ages railgun trails out
+	# during the capture warm-up).
 	await get_tree().physics_frame
 	await get_tree().physics_frame
-	Engine.time_scale = 0.01
+	Engine.time_scale = 0.0005
 	done = true
 	remove_from_group(&"capture_busy")
 

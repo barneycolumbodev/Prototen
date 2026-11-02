@@ -77,3 +77,29 @@ Please try:
 - Measured:
 - Notes from the owner:
 - Follow-ups:
+
+## M1a.2 — 2026-11-02 — RC-6 "Lance" rail carbine (waiting for the owner)
+
+Build: `dev-latest` from branch `claude/rail-carbine-weapon-a4bxsa`, CI run #9 (manual run). This replaces the Saiga-12K build that was on `dev-latest` (branch `claude/saiga-12k-shotgun-r43ntd`, PR #3); the two branches haven't been merged together yet.
+
+What's new in the APK:
+- **RC-6 Lance**: press **Y** twice from the pistol (pistol → MG42 → rail carbine). A bullpup railgun: 7 g tungsten slug at 2,600 m/s (≈24 kJ). It goes through steel plate, walls and bodies; one torso hit kills; every shot leaves a blue-white trail.
+- **Capacitor:** after each shot the gun recharges (rising whine, then a tone; the glow strips and the HUD bar fill). Fire fast and each shot has less energy (quieter, less kick); wait ¾ s for the full hit.
+- **Heat:** spam RT and the rails overheat: three beeps, the top shroud lifts and steams, and it can't fire for 1.6 s. Reloading still works while it vents.
+- **Aim (hold LT):** reflex sight with a ring reticle, 1.6× zoom.
+- **Reload (X):** the top magazine slides back and off.
+- Pause → Gun tuning with the rail carbine out has a **Railgun** section (charge time, power when fired early, heat, vent time, trail).
+
+Please try:
+1. Switch to the rail carbine and put a slug through the steel panel in the penetration lane, then through a dummy behind cover.
+2. Tap fast vs pace your shots: can you feel and hear the difference in power? Is ¾ s to full charge right?
+3. Spam until it overheats. Is the vent too punishing, or not enough?
+4. Aim at the poppers: is the ring reticle clear? Is 1.6× too much zoom?
+5. Look at the gun: P90 + Halo 4 railgun + Tau, does it read? Colours (light ceramic, graphite, cyan glow) OK?
+6. Does it sound unique? Which part do you like least: the crack, the thwack, the charge whine, the tail?
+7. Watch FPS while firing quickly (trails and impact effects are new).
+
+- Device / renderer / settings:
+- Measured:
+- Notes from the owner:
+- Follow-ups:
