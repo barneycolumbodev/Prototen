@@ -159,7 +159,7 @@ Put an empty `.gdignore` file in `raw_assets/`, `tools/` and `docs/` so Godot do
 | A | Jump (wall-run on contact) |
 | B | Slide / crouch |
 | X | Reload (hold to interact) |
-| Y | Switch weapon (hold to change MG barrel) |
+| Y | Tap: previous weapon. Hold: weapon wheel (owner, 2026-11-02; the MG barrel change needs another input in M3) |
 | D-pad | Active part 3, items; left/right pick the shell type on guns that take several (Saiga-12K) |
 | Menu / View | Pause / body status |
 

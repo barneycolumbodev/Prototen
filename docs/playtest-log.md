@@ -128,3 +128,25 @@ Owner (2026-11-02): "The carbine looks good." Asked for a weapon wheel to carry 
 - Measured:
 - Notes from the owner:
 - Follow-ups:
+
+## M1a.4 — 2026-11-02 — Weapon wheel, reticles, M14/P (waiting for the owner)
+
+Build: `dev-latest` from branch `claude/rail-carbine-weapon-a4bxsa` (manual CI run). The Saiga-12K branch is merged in, so this APK has all five guns.
+
+What's new in the APK:
+- **Weapon wheel:** hold **Y** — time slows, push the **right stick** toward a gun, let go of Y to draw it. A quick **tap of Y** swaps back to the gun you had before.
+- **Five guns:** Five-seveN, MG42, Saiga-12K (D-pad left/right for buck / slug / Dragon's Breath), RC-6 rail carbine, and the new **M14/P**.
+- **Reticles:** seaglass green-blue, **crimson** when you're looking at a dummy. The Saiga's reticle is a **circle** the size of its spread, a **dot** with slugs. The PSO scope and the rail carbine's red-dot ring change colour the same way.
+- **M14/P:** black polymer M14 with a pistol grip, stubby foregrip and a suppressor. 7.62×51, semi-auto, 20+1, heavy kick. Aim (LT) through the rear aperture to the front post.
+
+Please try:
+1. Hold Y and pick each gun. Is the slow-down (30 %) right, or should the wheel not slow time at all? Is 0.2 s the right hold before it opens?
+2. Tap Y to flick between two guns. Does it go where you expect?
+3. Sweep the reticle across the dummies: does the crimson read instantly? Is seaglass easy to see on the bright range?
+4. Saiga: buck circle vs slug dot. Does the circle size match where the pellets land?
+5. M14/P: fire fast at the plates, aim through the aperture. Recoil too much or too little? Does it sound suppressed but still powerful?
+
+- Device / renderer / settings:
+- Measured:
+- Notes from the owner:
+- Follow-ups:

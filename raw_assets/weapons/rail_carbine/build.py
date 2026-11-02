@@ -22,9 +22,10 @@ Parts (per-face part id, split after the bake):
   body      everything that doesn't move
   magazine  the top magazine (pulls back and up during a reload)
   vent      the top rail shroud (lifts while the rails vent heat)
-  glow      emissive faces: rail faces, seams, heat fins, reticle. The game
+  glow      emissive faces: rail faces, seams, heat fins. The game
             drives their brightness and colour from capacitor charge and heat.
   lens      optic glass (the game gives it a transparent material)
+  reticle   the reflex ring and dot (the game colours it: seaglass, crimson over an enemy)
 
 The pistol grip is the Pistol 57 / MG42 grip profile at the same place, so
 the firing hand from the existing arms fits it exactly.
@@ -133,7 +134,7 @@ M_RAIL = rail_material()
 MATERIALS = [M_CER, M_CER2, M_GRAPH, M_POLY, M_SMOKE, M_SABOT, M_TUNG, M_GLOW, M_GLASS, M_AMBER, M_PAINT, M_MARK,
              M_RUBBER, M_RAIL]
 
-PART_IDS = {"body": 0, "magazine": 1, "vent": 2, "glow": 3, "lens": 4}
+PART_IDS = {"body": 0, "magazine": 1, "vent": 2, "glow": 3, "lens": 4, "reticle": 5}
 CURRENT = ["body"]
 PART_OF = {}
 
@@ -467,7 +468,9 @@ def build_optic():
         finish(hs.box(f"optic_btn{i}", (0.008, 0.004, 0.005), (x, -0.0275, SIGHT_Z - 0.004)), M_POLY, bevel=0.0009)
     part("glow")
     finish(hs.cyl_x("rf_lens", 0.0042, 0.0935, 0.0950, verts=20, y=0.0305, z=SIGHT_Z - 0.006), M_GLOW, bevel=0)
-    # Reflex reticle: ring and centre dot just behind the front glass.
+    # Reflex reticle: ring and centre dot just behind the front glass. Its own part: the game
+    # colours it like every reticle (seaglass, crimson over an enemy).
+    part("reticle")
     reticle = ring_loft("reticle_ring", [(0.1035, SIGHT_Z, 0.0058, 0.0058, 0.0047, 0.0047),
                                          (0.1043, SIGHT_Z, 0.0058, 0.0058, 0.0047, 0.0047)], n=hs.nverts(48), power=2.0)
     finish(reticle, M_GLOW, bevel=0, smooth=False)

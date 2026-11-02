@@ -1,14 +1,17 @@
 class_name PlayerWeapon
 extends Node
 ## The player's guns (docs/m1-gunplay-plan.md). Holds a small loadout (the
-## suppressed pistol, the MG42, the Saiga-12K and the RC-6 rail carbine), one viewmodel rig per gun. Reads the
+## suppressed pistol, the MG42, the Saiga-12K, the RC-6 rail carbine and the M14/P), one viewmodel rig per gun. Reads the
 ## controller, runs the active gun's GunMechanism, fires rounds through
 ## Ballistics from the eye (so the round goes exactly where the crosshair or
 ## sights point, plus the gun's spread), and drives every piece of feedback:
 ## camera recoil, viewmodel springs, flash, shells, tracers, sound and rumble.
 ##
-## Controls (CLAUDE.md §9.4): RT fire, LT held = aim down sights, X reload,
-## Y switches gun (and cancels a reload). Firing during a sprint drops the
+## Controls (CLAUDE.md §9.4): RT fire, LT held = aim down sights, X reload.
+## Y: a tap swaps back to the previous gun; holding it opens the weapon wheel
+## (time slows, the right stick picks a gun, letting go draws it). Switching
+## cancels a reload. `over_enemy` says whether the line of sight is on an
+## enemy (reticles turn crimson, ReticleStyle). Firing during a sprint drops the
 ## sprint first. The active gun's "Carry" values slow the player down.
 ##
 ## Guns with shell types (WeaponData.ammo_types): D-pad right/left picks the
@@ -70,10 +73,12 @@ class Slot:
 	preload("res://data/weapons/mg42.tres"),
 	preload("res://data/weapons/saiga12k.tres"),
 	preload("res://data/weapons/rail_carbine.tres"),
+	preload("res://data/weapons/m14p.tres"),
 ]
 @export var rig_paths: Array[NodePath] = [^"../Head/Camera3D/Viewmodel", ^"../Head/Camera3D/ViewmodelMG42",
-		^"../Head/Camera3D/ViewmodelSaiga", ^"../Head/Camera3D/ViewmodelRail"]
+		^"../Head/Camera3D/ViewmodelSaiga", ^"../Head/Camera3D/ViewmodelRail", ^"../Head/Camera3D/ViewmodelM14"]
 @export var input_enabled: bool = true
+@export var wheel_config: WeaponWheelConfig = preload("res://data/input/weapon_wheel.tres")
 
 var slots: Array[Slot] = []
 var current: int = 0
@@ -102,6 +107,14 @@ var reticle_spread: float = 0.0
 var cam_recoil: Spring
 ## Gun being switched to (-1 = not switching) and holster time left.
 var switching_to: int = -1
+## Gun drawn before this one (a tap on Y goes back to it; -1 = none yet).
+var previous: int = -1
+## Weapon wheel: open, and the slot the stick points at.
+var wheel_open: bool = false
+var wheel_pick: int = 0
+## The line of sight is on a live enemy; `enemy_amount` eases 0..1 for colour.
+var over_enemy: bool = false
+var enemy_amount: float = 0.0
 
 var _player: Player
 var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
@@ -122,6 +135,12 @@ var _script_reload: bool = false
 var _script_switch: bool = false
 var _script_ammo: int = 0
 var _scripted: bool = false
+## Scripted weapon-wheel input (tests): Y held, right stick.
+var _script_wheel: bool = false
+var _script_y: bool = false
+var _script_stick: Vector2 = Vector2.ZERO
+## Real time (ms) Y went down, -1 when it's up.
+var _y_down_ms: int = -1
 ## Countdown from the last shell-type press to the swap (-1 = none pending).
 var _select_left: float = -1.0
 
@@ -261,6 +280,95 @@ func script_input(pull: bool, aim: bool, reload: bool = false, switch: bool = fa
 
 func end_script_input() -> void:
 	_scripted = false
+	_script_wheel = false
+
+
+## Drives Y and the right stick for the weapon wheel without a controller (tests).
+func script_wheel(y_held: bool, stick: Vector2 = Vector2.ZERO) -> void:
+	_script_wheel = true
+	_script_y = y_held
+	_script_stick = stick
+
+
+## Wheel slot the stick points at: slot 0 at the top, then clockwise.
+## `stick` uses Input.get_vector axes (x right, y down).
+static func wheel_slot(stick: Vector2, count: int) -> int:
+	if count <= 0:
+		return 0
+	var angle: float = atan2(stick.x, -stick.y)
+	return posmod(roundi(angle / (TAU / count)), count)
+
+
+## A tap on Y: back to the gun you had before (the next one if there isn't one).
+func quick_switch() -> void:
+	var target: int = previous if previous >= 0 and previous != current else (current + 1) % slots.size()
+	request_switch(target)
+
+
+func _open_wheel() -> void:
+	wheel_open = true
+	wheel_pick = current
+	_player.look_blocked = true
+	TimeControl.set_slowmo(wheel_config.time_scale)
+	Sfx.play_ui(&"wheel_open", -6.0)
+
+
+## Closes the wheel; `apply` draws the highlighted gun.
+func _close_wheel(apply: bool) -> void:
+	wheel_open = false
+	_player.look_blocked = false
+	TimeControl.set_slowmo(1.0)
+	if apply and wheel_pick != current and wheel_pick != switching_to:
+		request_switch(wheel_pick)
+
+
+## Y and the wheel, in real time (the wheel slows the game down).
+func _update_wheel() -> void:
+	var active: bool = input_enabled and _player.input_enabled
+	var held: bool = _script_y if _script_wheel else (active and not _scripted and Input.is_action_pressed(&"switch_weapon"))
+	var now: int = Time.get_ticks_msec()
+	if held and _y_down_ms < 0:
+		_y_down_ms = now
+	if held and not wheel_open and slots.size() > 2 and now - _y_down_ms >= int(wheel_config.hold_time * 1000.0):
+		_open_wheel()
+	if wheel_open:
+		var stick: Vector2 = _script_stick if _script_wheel else Input.get_vector(&"look_left", &"look_right", &"look_up", &"look_down", 0.0)
+		if stick.length() >= wheel_config.stick_deadzone:
+			var pick: int = wheel_slot(stick, slots.size())
+			if pick != wheel_pick:
+				wheel_pick = pick
+				Sfx.play_ui(&"wheel_tick", -12.0, 0.02)
+	if not held and _y_down_ms >= 0:
+		_y_down_ms = -1
+		if wheel_open:
+			_close_wheel(true)
+		else:
+			quick_switch()
+
+
+## Is the first thing along the line of sight a live enemy?
+func _check_enemy() -> void:
+	var cam: Camera3D = _player.camera()
+	if cam == null or not cam.is_inside_tree():
+		over_enemy = false
+		return
+	var from: Vector3 = cam.global_position
+	var to: Vector3 = from - cam.global_basis.z * minf(round_data().max_range, 400.0)
+	var q: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(from, to, Ballistics.BULLET_MASK)
+	q.collide_with_areas = false
+	var res: Dictionary = cam.get_world_3d().direct_space_state.intersect_ray(q)
+	over_enemy = false
+	if res.is_empty():
+		return
+	var hit_obj: Object = res["collider"]
+	var n: Node = hit_obj as Node
+	for i: int in 6:
+		if n == null:
+			return
+		if n.is_in_group(&"enemies"):
+			over_enemy = true
+			return
+		n = n.get_parent()
 
 
 ## Switches to gun `index` immediately, already drawn (tests, demos, spawn).
@@ -300,6 +408,8 @@ func apply_tuning() -> void:
 
 
 func _activate(index: int) -> void:
+	if index != current:
+		previous = current
 	current = index
 	for i: int in slots.size():
 		slots[i].rig.visible = i == current
@@ -334,7 +444,6 @@ func _physics_process(delta: float) -> void:
 		pull = Input.is_action_just_pressed(&"fire")
 		held = Input.is_action_pressed(&"fire")
 		reload = Input.is_action_just_pressed(&"reload")
-		switch = Input.is_action_just_pressed(&"switch_weapon")
 		aim_held = Input.is_action_pressed(&"aim")
 		if Input.is_action_just_pressed(&"item_next"):
 			ammo_step += 1
@@ -351,8 +460,13 @@ func _physics_process(delta: float) -> void:
 		if _select_left < 0.0 and mechanism.needs_swap():
 			mechanism.request_swap()
 
+	if wheel_open:
+		# Picking a gun: no shooting, aiming or shell swaps until the wheel closes.
+		pull = false
+		held = false
+		aim_held = false
 	if switch:
-		request_switch()
+		quick_switch()
 	if is_switching():
 		_holster_left -= delta
 		pull = false
@@ -401,9 +515,12 @@ func _physics_process(delta: float) -> void:
 	var r: WeaponData = round_data()
 	spread = r.spread_deg(ads, _move_fraction(), not _player.is_on_floor(), bloom, walk)
 	reticle_spread = spread + (r.pattern_deg if r.pellets > 1 else 0.0)
+	_check_enemy()
 
 
 func _process(delta: float) -> void:
+	_update_wheel()
+	enemy_amount = move_toward(enemy_amount, 1.0 if over_enemy else 0.0, delta / maxf(Engine.time_scale, 0.01) / 0.06)
 	var a: float = ads_visual()
 	# Camera: recoil springs back; FOV and look speed follow the sights.
 	cam_recoil.step(delta)
@@ -432,6 +549,7 @@ func _process(delta: float) -> void:
 	s.rig.set_slide(s.motion.slide * data.slide_travel)
 	s.rig.set_magazine_out(_mag_offset(), data.magazine_travel)
 	s.rig.set_aimed(a)
+	s.rig.set_reticle_color(ReticleStyle.color(enemy_amount))
 	if data.is_rail():
 		_update_rail_visuals(delta, s)
 	if has_shell_types():

@@ -112,6 +112,16 @@ The owner described two combinations. They are benchmarks for the systems, built
 - Heat: every shot heats the rails in proportion to its energy. Spamming (~15 rapid shots) overheats them: the top shroud lifts, the rails steam and the gun can't fire for 1.6 s (reloading still works). Paced full-power fire never overheats.
 - Every shot leaves an ionized-air trail through everything it crossed; blue-white arc flash; bigger impact effects. Values in `data/weapons/rail_carbine.tres`.
 
+### 4.5 M14/P battle rifle
+
+- Owner (2026-11-02): "a black polymer M14 style battle rifle, with a suppressor and stubby foregrip."
+- Built *(Claude's reading)*: an M14 action in a one-piece black polymer stock with a pistol grip, after the M14A1 (which had a pistol-grip stock and a forward grip): open-top receiver with the bolt visible, op rod and charging handle on the right, rear aperture sight, ventilated upper handguard, front band, gas cylinder, a front sight post on the gas lock (the can covers the flash suppressor's), 20-round box magazine, steel butt plate, a stubby vertical grip on a short rail, and a suppressor. 7.62×51 ball (9.5 g, 850 m/s, 3.4 kJ), semi-auto, 20+1; heavy but controllable kick. Values in `data/weapons/m14p.tres`.
+
+### 4.6 Weapon wheel and reticles
+
+- Owner (2026-11-02): "I need a weapon wheel for now so I can have both the shotgun and the rail carbine." **Y:** a tap goes back to the previous gun; holding it opens the wheel (time slows to 30 %, the right stick points at a gun, letting go draws it). Tuning in `data/input/weapon_wheel.tres`.
+- Owner (2026-11-02): "the reticle for the shotgun should be a circle, with it being a dot when slugs are attached. The reticle is seaglass green-blue normally but turns crimson when over an enemy, for all weapons." Applies to the hip reticle of every gun, the Saiga's PSO scope reticle and the rail carbine's reflex ring. "Over an enemy" = the first thing along the line of sight is a live enemy (group `enemies`; the range dummies for now).
+
 ---
 
 ## 5. Combat simulation

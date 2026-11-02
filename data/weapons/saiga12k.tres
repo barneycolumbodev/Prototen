@@ -1,13 +1,15 @@
-[gd_resource type="Resource" script_class="WeaponData" load_steps=6 format=3]
+[gd_resource type="Resource" script_class="WeaponData" load_steps=7 format=3]
 
 [ext_resource type="Script" path="res://src/weapons/weapon_data.gd" id="1"]
 [ext_resource type="Script" path="res://src/weapons/ammo_data.gd" id="5_ammo"]
 [ext_resource type="Resource" path="res://data/weapons/ammo/buck_00.tres" id="2_buck"]
 [ext_resource type="Resource" path="res://data/weapons/ammo/slug.tres" id="3_slug"]
 [ext_resource type="Resource" path="res://data/weapons/ammo/dragons_breath.tres" id="4_db"]
+[ext_resource type="Texture2D" path="res://assets/ui/weapon_icons/saiga12k.png" id="wheel_icon"]
 
 [resource]
 script = ExtResource("1")
+icon = ExtResource("wheel_icon")
 display_name = "Saiga-12K"
 caliber = "12 ga"
 magazine_size = 10

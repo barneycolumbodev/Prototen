@@ -1,0 +1,8 @@
+[gd_resource type="Resource" script_class="ViewmodelConfig" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/player/viewmodel_config.gd" id="1_vm"]
+
+[resource]
+script = ExtResource("1_vm")
+eye_position = Vector3(-0.5, 0.14, -0.15)
+look_target = Vector3(0.85, 0.03, -0.05)

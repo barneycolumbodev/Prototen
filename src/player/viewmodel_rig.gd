@@ -15,6 +15,8 @@ extends Node3D
 ##   `vent`     lifts (+Y) while a railgun vents heat
 ##   `glow`     emissive faces; their colour and brightness are set live (charge, heat)
 ##   `lens`     optic glass: gets a transparent, slightly reflective material
+##   `reticle`  a projected optic reticle: self-lit, coloured like every
+##              reticle (seaglass, crimson over an enemy; ReticleStyle)
 ##   `optic`    shown only while the loaded shells use it (Saiga-12K slugs)
 ##   `shell_hull`, `mag_tape`  tinted with the loaded shell type's colour
 
@@ -35,6 +37,8 @@ var _vent_rest: Vector3
 var _glow: GeometryInstance3D
 var _glow_mat: StandardMaterial3D
 var _lens: GeometryInstance3D
+var _reticle: GeometryInstance3D
+var _reticle_mat: StandardMaterial3D
 var _optic: Node3D
 var _tinted: Array[GeometryInstance3D] = []
 var _tint_mat: StandardMaterial3D
@@ -65,6 +69,8 @@ func _ready() -> void:
 			_glow = model.find_child("glow", true, false) as GeometryInstance3D
 		if _lens == null:
 			_lens = model.find_child("lens", true, false) as GeometryInstance3D
+		if _reticle == null:
+			_reticle = model.find_child("reticle", true, false) as GeometryInstance3D
 		if _optic == null:
 			_optic = model.find_child("optic", true, false) as Node3D
 		for part: String in ["shell_hull", "mag_tape"]:
@@ -90,6 +96,11 @@ func _ready() -> void:
 		_glow_mat.emission = Color(0.35, 0.85, 1.0)
 		_glow_mat.emission_energy_multiplier = 2.0
 		_glow.material_override = _glow_mat
+	if _reticle:
+		_reticle_mat = StandardMaterial3D.new()
+		_reticle_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		_reticle_mat.albedo_color = ReticleStyle.SEAGLASS
+		_reticle.material_override = _reticle_mat
 	if _lens:
 		var glass: StandardMaterial3D = StandardMaterial3D.new()
 		glass.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
@@ -122,6 +133,8 @@ func has_part(part_name: StringName) -> bool:
 			return _glow != null
 		&"lens":
 			return _lens != null
+		&"reticle":
+			return _reticle != null
 		&"optic":
 			return _optic != null
 	return false
@@ -167,6 +180,16 @@ func set_glow(color: Color, energy: float) -> void:
 	if _glow_mat:
 		_glow_mat.emission = color
 		_glow_mat.emission_energy_multiplier = energy
+
+
+## Optic reticle colour (seaglass / crimson).
+func set_reticle_color(color: Color) -> void:
+	if _reticle_mat:
+		_reticle_mat.albedo_color = color
+
+
+func reticle_color() -> Color:
+	return _reticle_mat.albedo_color if _reticle_mat else Color.WHITE
 
 
 func glow_energy() -> float:

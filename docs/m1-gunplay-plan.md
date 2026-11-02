@@ -84,6 +84,16 @@ Owner brief and design reading: docs/design.md §4.4. Fourth gun in the loadout.
 - **Sound:** `raw_assets/audio/build_rail_sfx.py`, 13 synthesized files: capacitor snap + plasma arc crackle, magnetic thwack with pitch drop, Mach 7.6 crack, sub punch, rails ringing, long rolling boom tail; charge whine, ready tone, overheat beeps, vent hiss with cooling ticks, magnetic magazine seat.
 - **Tests:** `tests/unit/test_rail_mechanism.gd`, `tests/scene/test_rail_carbine.gd`, budgets in `tests/unit/test_weapon_assets.gd`.
 
+## M1a.4 — Weapon wheel, reticles, M14/P (owner request, 2026-11-02)
+
+"The carbine looks good. I need a weapon wheel for now so I can have both the shotgun and the rail carbine. Additionally the reticle for the shotgun should be a circle, with it being a dot when slugs are attached, additionally the reticle is seaglass green blue normally but turns crimson when over an enemy, for all weapons. Additionally, add in a black polymer M14 style battle rifle, with a suppressor and stubby foregrip."
+
+- **Both new guns in one build:** the Saiga-12K branch (PR #3) was merged into the rail carbine branch, keeping both features everywhere (shell types and pellets, rail capacitor/heat, embers and rail trails). Loadout: pistol, MG42, Saiga-12K, rail carbine, M14/P.
+- **Weapon wheel** (`PlayerWeapon` + `src/ui/weapon_wheel_view.gd`, tuning `data/input/weapon_wheel.tres`): tap Y = previous gun; hold Y 0.2 s = the wheel opens, time slows to 30 % (`TimeControl.set_slowmo`), look stops (`Player.look_blocked`), the right stick highlights a wedge (slot 0 at the top, clockwise), letting go draws it; no shooting or aiming while it's up. Wedges show a rendered icon (`raw_assets/ui/weapon_icons/build.py`, `WeaponData.icon`), the name and rounds loaded; the centre the highlighted gun and calibre. Sounds `wheel_open`, `wheel_tick` (`raw_assets/audio/build_ui_sfx.py`).
+- **Reticles** (`src/ui/reticle_style.gd`): seaglass, crimson while a ray along the line of sight hits a live enemy first (`PlayerWeapon.over_enemy`; target dummies are in group `enemies` while alive). Saiga hip reticle: a circle the size of the pellet pattern plus spread with buck and Dragon's Breath, a dot with slugs. The PSO scope reticle and the rail carbine's reflex ring (now its own `reticle` part) follow the same colours.
+- **M14/P** (`raw_assets/weapons/m14p/build.py`, design §4.5): 7.3k triangles, 4K baked; parts `slide` (bolt, op rod and handle cycle on every shot), `magazine`, `stock` (hidden while aiming). Arms: `raw_assets/characters/fp_arms_m14p/build.py` (the shared grip profile 22 mm lower). Sounds: `raw_assets/audio/build_m14_sfx.py` (suppressed but supersonic crack, deep can thump, op rod and bolt "ka-chunk", rock-in magazine, op rod slap).
+- **Tests:** `tests/scene/test_weapon_wheel.gd`, `tests/scene/test_m14p.gd`, budgets and icons in `tests/unit/test_weapon_assets.gd`.
+
 ## Later M1 slices
 
 - **M1b — Movement:** sprint polish, slide, wall-run, mantle, air dash; viewmodel reacts to all of them.

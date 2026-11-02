@@ -1,5 +1,5 @@
 extends GutTest
-## The RC-6 rail carbine in the real test room: Y cycles to it, every shot
+## The RC-6 rail carbine in the real test room: every shot
 ## leaves an ionized trail and no casing, slugs go through AR500 and through
 ## a dummy, one torso hit kills, spamming RT overheats the rails and the vent
 ## shroud lifts, and the top magazine comes off back and up.
@@ -38,16 +38,6 @@ func _to_rail() -> void:
 	assert_gt(i, 0, "the rail carbine is in the loadout")
 	weapon.select_now(i)
 	await wait_physics_frames(3)
-
-
-func test_y_cycles_pistol_mg42_rail_and_back() -> void:
-	var seen: PackedStringArray = PackedStringArray([weapon.data.display_name])
-	for k: int in 3:
-		var before: WeaponData = weapon.data
-		await _press(&"switch_weapon")
-		await wait_seconds(before.holster_time + 0.9)
-		seen.append(weapon.data.display_name)
-	assert_eq(seen, PackedStringArray(["Five-seveN SR", "MG42/A", "RC-6 Lance", "Five-seveN SR"]))
 
 
 func test_shot_leaves_a_trail_and_no_casing() -> void:

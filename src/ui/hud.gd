@@ -4,7 +4,10 @@ extends CanvasLayer
 ## markers (white hit, gold headshot, red kill), ammo, the loaded shell type
 ## (and the one being swapped to), reload bar, the scope view through the
 ## Saiga's PSO-pattern optic, a capacitor charge / rail heat gauge for
-## railguns, controller prompt, benchmark status.
+## railguns, the weapon wheel (hold Y), controller prompt, benchmark status.
+## Reticles are seaglass, crimson while the line of sight is on an enemy
+## (ReticleStyle); the shotgun's is a circle the size of the pattern, a dot
+## with slugs.
 
 var bench: FrameBench
 ## Set by the level.
@@ -23,6 +26,7 @@ var _shell: Label
 var _name_time: float = 0.0
 var _blink: float = 0.0
 var _reticle: Reticle
+var _wheel: WeaponWheelView
 var _gauge: RailGauge
 
 
@@ -70,7 +74,8 @@ class ScopeView:
 	var amount: float = 0.0
 	var fov_deg: float = 60.0
 	var ammo: AmmoData
-	const LIT: Color = Color(1.0, 0.32, 0.12)
+	## Illuminated reticle colour (seaglass, crimson over an enemy; set by the HUD).
+	var lit_color: Color = ReticleStyle.SEAGLASS
 	const MARKS: Array[float] = [100.0, 200.0, 300.0]
 	var _drops: Dictionary[float, float] = {}
 	var _drops_for: AmmoData
@@ -106,9 +111,9 @@ class ScopeView:
 		# Eyepiece rim: rubber, with a thin glint on the upper edge.
 		draw_arc(c, r + 7.0, 0.0, TAU, 96, Color(0.02, 0.02, 0.025, 0.95 * a), 14.0, true)
 		draw_arc(c, r + 1.0, PI * 1.15, PI * 1.85, 48, Color(0.5, 0.5, 0.55, 0.25 * a), 1.5, true)
-		var lit: Color = LIT
+		var lit: Color = lit_color
 		lit.a = a
-		var glow: Color = LIT
+		var glow: Color = lit_color
 		glow.a = 0.22 * a
 		# Main chevron: the tip is the aim point.
 		_chevron(c, 9.0, 10.0, lit, glow, 2.0)
@@ -165,6 +170,9 @@ class ScopeView:
 
 class Reticle:
 	extends Control
+	enum Shape { CROSS, CIRCLE, DOT }
+	var shape: Shape = Shape.CROSS
+	var color: Color = ReticleStyle.SEAGLASS
 	var gap_px: float = 6.0
 	var alpha: float = 1.0
 	var marker_time: float = 0.0
@@ -179,17 +187,29 @@ class Reticle:
 
 	func _draw() -> void:
 		var c: Vector2 = size * 0.5
-		var col: Color = Color(1, 1, 1, 0.9 * alpha)
+		var col: Color = Color(color.r, color.g, color.b, 0.92 * alpha)
 		var shadow: Color = Color(0, 0, 0, 0.5 * alpha)
 		if alpha > 0.01:
-			# Four thin ticks whose gap shows the real spread cone, plus a small centre dot.
 			var g: float = gap_px
-			var l: float = 6.0
-			for d: Vector2 in [Vector2.UP, Vector2.DOWN, Vector2.LEFT, Vector2.RIGHT]:
-				draw_line(c + d * (g - 0.5), c + d * (g + l + 0.5), shadow, 3.5, true)
-				draw_line(c + d * g, c + d * (g + l), col, 1.6, true)
-			draw_circle(c, 2.0, shadow, true, -1.0, true)
-			draw_circle(c, 1.2, col, true, -1.0, true)
+			match shape:
+				Shape.CIRCLE:
+					# Shotgun: a ring the size of the pellet pattern plus spread, and a centre dot.
+					draw_arc(c, g, 0.0, TAU, 72, shadow, 3.6, true)
+					draw_arc(c, g, 0.0, TAU, 72, col, 1.7, true)
+					draw_circle(c, 2.0, shadow, true, -1.0, true)
+					draw_circle(c, 1.2, col, true, -1.0, true)
+				Shape.DOT:
+					# Slugs: a single dot.
+					draw_circle(c, 3.6, shadow, true, -1.0, true)
+					draw_circle(c, 2.6, col, true, -1.0, true)
+				_:
+					# Four thin ticks whose gap shows the real spread cone, plus a small centre dot.
+					var l: float = 6.0
+					for d: Vector2 in [Vector2.UP, Vector2.DOWN, Vector2.LEFT, Vector2.RIGHT]:
+						draw_line(c + d * (g - 0.5), c + d * (g + l + 0.5), shadow, 3.5, true)
+						draw_line(c + d * g, c + d * (g + l), col, 1.6, true)
+					draw_circle(c, 2.0, shadow, true, -1.0, true)
+					draw_circle(c, 1.2, col, true, -1.0, true)
 		if marker_time > 0.0:
 			var k: float = marker_time / MARKER_SEC
 			var m: Color = marker_color
@@ -233,6 +253,10 @@ func _ready() -> void:
 	_reticle.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_reticle.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_reticle)
+	_wheel = WeaponWheelView.new()
+	_wheel.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_wheel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_wheel)
 	_status = _make_label(Control.PRESET_CENTER_TOP, 18)
 	_pad_notice = _make_label(Control.PRESET_CENTER_BOTTOM, 15)
 	_pad_notice.text = "No controller detected. Connect one to play."
@@ -274,6 +298,10 @@ func _process(delta: float) -> void:
 			_scope.fov_deg = cam.fov
 		_reticle.alpha = clampf(1.0 - weapon.ads_visual() * 2.0, 0.0, 1.0)
 		_reticle.reload = weapon.mechanism.reload_progress()
+		_reticle.shape = reticle_shape(weapon)
+		_reticle.color = ReticleStyle.color(weapon.enemy_amount)
+		_scope.lit_color = _reticle.color
+		_wheel.weapon = weapon
 		_gauge.visible = weapon.data.is_rail()
 		if _gauge.visible:
 			var vp: Vector2 = get_viewport().get_visible_rect().size
@@ -306,6 +334,22 @@ func _update_shell(delta: float) -> void:
 ## Shell-type text shown (tests).
 func shell_text() -> String:
 	return _shell.text if _shell.visible else ""
+
+
+## Hip reticle for the gun in hand: a circle for shotgun pellets, a dot for
+## slugs (a shell-type gun firing single projectiles), ticks for the rest.
+static func reticle_shape(w: PlayerWeapon) -> Reticle.Shape:
+	var r: WeaponData = w.round_data()
+	if r.pellets > 1:
+		return Reticle.Shape.CIRCLE
+	if w.has_shell_types():
+		return Reticle.Shape.DOT
+	return Reticle.Shape.CROSS
+
+
+## Reticle drawn now (tests).
+func reticle_state() -> Dictionary:
+	return {"shape": _reticle.shape, "color": _reticle.color}
 
 
 ## Half the spread cone in screen pixels (vertical FOV, viewport height).

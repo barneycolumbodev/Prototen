@@ -56,6 +56,7 @@ var _burn_shown: float = 0.0
 func _ready() -> void:
 	add_to_group(&"aim_assist_targets")
 	add_to_group(&"range_targets")
+	add_to_group(&"enemies")  # while alive: reticles turn crimson over it
 	set_meta(&"dynamic_holes", true)
 	health = config.health
 	_wobble = Spring.new(config.wobble_hz, config.wobble_damping)
@@ -115,6 +116,7 @@ func reset_target() -> void:
 	_fall.target = Vector3.ZERO
 	zone_hits.clear()
 	add_to_group(&"aim_assist_targets")
+	add_to_group(&"enemies")
 
 
 func _die(axis: Vector3) -> void:
@@ -122,6 +124,7 @@ func _die(axis: Vector3) -> void:
 	_dead_time = 0.0
 	_fall.target = axis.normalized() * deg_to_rad(84.0)
 	remove_from_group(&"aim_assist_targets")
+	remove_from_group(&"enemies")
 
 
 func _process(delta: float) -> void:

@@ -9,6 +9,8 @@ extends Resource
 
 @export var display_name: String = "Five-seveN SR"
 @export var caliber: String = "5.7×28mm"
+## Weapon wheel icon (raw_assets/ui/weapon_icons/build.py renders one per gun).
+@export var icon: Texture2D
 
 @export_group("Magazine")
 @export_range(1, 500) var magazine_size: int = 20

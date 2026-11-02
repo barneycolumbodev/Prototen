@@ -25,6 +25,12 @@ func hitstop(seconds: float, time_scale: float) -> void:
 	_apply()
 
 
+## Slow motion (weapon wheel now, the time-slowdown part in M2). 1 = normal.
+func set_slowmo(time_scale: float) -> void:
+	slowmo_scale = clampf(time_scale, 0.01, 1.0)
+	_apply()
+
+
 func is_hitstopped() -> bool:
 	return Time.get_ticks_msec() < _hitstop_until_ms
 
