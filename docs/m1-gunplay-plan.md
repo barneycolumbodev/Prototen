@@ -71,6 +71,7 @@ Pulled forward from M3: "the next gun is the MG42 light gun — chrome and black
 - **Handling (`data/weapons/saiga12k.tres`):** semi-auto, 0.16 s fastest follow-up, 10+1. Kick 2.8° (×1.3 with slugs, ×0.7 with Dragon's Breath) that recovers quickly. 5 % carry penalty. Tactical reload 2.3 s, empty or swap 2.9 s. 12-gauge hulls eject tinted by load.
 - **Stats and feedback:** pellets from one shell share a volley id, so range stats count a shell as one shot and one hit, and the hit confirm plays once per shell (the strongest one). Pellet impacts are 5 dB quieter than single rounds.
 - **Controls:** Y cycles pistol → MG42 → Saiga-12K.
+- **Previews:** `docs/previews/saiga12k_*.png` (Blender: side, beauty, left, receiver, optic, first person), `fp_arms_saiga.png`, and in-game captures `saiga12k_ingame_hip/irons/scope/dragons_breath.png` (`--demo=hip|ads|fire --weapon=2 --ammo=<0..2>`).
 - Tests: `tests/unit/test_saiga_mechanism.gd` (chamber and magazine loads, swap, cancel, rack), `tests/unit/test_ammo_data.gd` (round data, 12-gauge energies, slug drop matches the simulation, pellet pattern), `tests/scene/test_saiga.gd` (9 pellets count as one shot, D-pad swap mounts the optic and tints the tape, scope view, Dragon's Breath sets a dummy alight).
 
 ## Later M1 slices

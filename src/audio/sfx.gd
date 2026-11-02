@@ -152,6 +152,8 @@ func _pitch(rand: float) -> float:
 
 func _on_hit(hit: BallisticHit) -> void:
 	var vol: float = linear_to_db(clampf(hit.energy_in / maxf(hit.weapon.muzzle_energy(), 1.0), 0.15, 1.0))
+	if hit.weapon.embers and _rng.randf() > 0.3:
+		return  # 14 embers landing together: a few ticks are enough under the roar
 	if hit.weapon.pellets > 1:
 		vol -= 5.0
 	var sound: StringName = &"impact_" + String(hit.surface.impact_sound)

@@ -137,3 +137,13 @@ func test_dragons_breath_sets_the_dummy_alight() -> void:
 	var hp: float = dummy.health
 	await wait_seconds(1.0)
 	assert_true(dummy.dead or dummy.health < hp - 10.0, "it keeps burning (%.0f -> %.0f HP)" % [hp, dummy.health])
+
+
+func test_dragons_breath_flame_jet_survives_the_ember_sparks() -> void:
+	Fx.enabled = true
+	weapon.select_ammo_now(DB)
+	await wait_physics_frames(2)
+	await _press(&"fire")
+	await wait_physics_frames(3)
+	assert_true(Fx.flame_emitting(), "flame jet still playing after 14 embers landed")
+	assert_gt(Fx.fire_count(), 0, "the dummy is on fire")

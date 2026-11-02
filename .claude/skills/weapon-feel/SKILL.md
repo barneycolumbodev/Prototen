@@ -33,8 +33,9 @@ Goal: the best gunplay in any mobile shooter (CLAUDE.md §2). References: Call o
 - `src/weapons/player_weapon.gd`: loadout of guns with one viewmodel rig each (Y switches and cancels a reload), input (LT held = ADS, RT fire, X reload), carry penalty (`carry_*` in WeaponData), hip walk, tracers, camera recoil spring + permanent climb, bloom/spread, sprint-out, rumble, hit-stop.
 - `src/weapons/viewmodel_motion.gd` + `src/core/spring.gd`: exact closed-form springs; `kick(peak)` hits the tuned peak for any damping.
 - `src/vfx/fx.gd`, `src/audio/sfx.gd`: pooled flash/light/shells/holes/particles/debris and sound banks.
-- `src/ui/tuning_menu.gd`: on-device sliders; add new tunables to `WEAPON_PARAMS`. `tools/sync_weapon_tres.py` adds new WeaponData exports to the .tres.
-- Range targets in `src/levels/range/`; `-- --demo=range|fire` drives aimed shots for screenshots (`GunplayDemo`).
+- Shell types (Saiga-12K): `src/weapons/ammo_data.gd` + `data/weapons/ammo/*.tres` override the gun's ballistic/shot/flash/burn values per load (`apply_to()`); the chamber and magazine track their load in GunMechanism; D-pad left/right selects, a swap racks the old shell out. Pellets share a volley id (stats/confirms count a shell once). Tuning-menu ballistic sliders edit the gun, which the loads override, so tune loads in their .tres.
+- `src/ui/tuning_menu.gd`: on-device sliders; add new tunables to `WEAPON_PARAMS`. `tools/sync_weapon_tres.py` adds new WeaponData exports to the .tres (check its output: it writes GDScript defaults such as `Vector3.ZERO`, which a .tres can't hold).
+- Range targets in `src/levels/range/`; `-- --demo=range|fire|hip|ads|burst` drives the gun for screenshots (`GunplayDemo`), with `--weapon=<slot>` and `--ammo=<load>`.
 
 ## Implementation notes
 

@@ -61,6 +61,8 @@ var _fire_left: Array[float] = []
 var _fire_next: int = 0
 var _last_fire_ms: int = -1000
 var _fire_ramp: Gradient
+var _flame: CPUParticles3D
+var _last_ember_spark: int = -1
 var _fire_shrink: Curve
 
 var _debris: Array[RigidBody3D] = []
@@ -102,6 +104,8 @@ func _ready() -> void:
 		e.mesh = q
 		add_child(e)
 		_emitters.append(e)
+	_flame = _emitters[0].duplicate() as CPUParticles3D
+	add_child(_flame)
 	EventBus.ballistic_hit.connect(_on_hit)
 
 
@@ -126,7 +130,8 @@ func muzzle_flash(muzzle: Transform3D, data: WeaponData) -> void:
 		_light_full = data.flash_light_time
 	if data.embers:
 		# Dragon's Breath: a jet of burning metal a couple of metres long, then the embers fly on.
-		_emit(&"flame", muzzle.origin, muzzle.basis.x, Color(1.0, 0.55, 0.16, 0.9), 34, 1.0)
+		# Its own emitter: the embers' impact sparks would recycle a pooled one the same frame.
+		_emit_on(_flame, &"flame", muzzle.origin, muzzle.basis.x, Color(1.0, 0.55, 0.16, 0.9), 34, 1.0)
 	# Suppressor puff / propellant smoke, rate-limited so automatic fire doesn't
 	# take every pooled emitter away from impacts.
 	var now: float = Time.get_ticks_msec() * 0.001
@@ -252,7 +257,11 @@ func _on_hit(hit: BallisticHit) -> void:
 func _ember_hit(hit: BallisticHit, target: Node3D, reflect: Vector3) -> void:
 	var s: SurfaceMaterial = hit.surface
 	var spray: Vector3 = (hit.normal * 0.6 + reflect * 0.4).normalized()
-	_emit(&"sparks", hit.point, spray, Color(1.0, 0.55, 0.18), 8, 0.8)
+	# A shell's embers land together: one shower per frame keeps the pool for everything else.
+	var frame: int = Engine.get_physics_frames()
+	if frame != _last_ember_spark:
+		_last_ember_spark = frame
+		_emit(&"sparks", hit.point, spray, Color(1.0, 0.55, 0.18), 14, 0.8)
 	if _rng.randf() < 0.4:
 		bullet_hole(target, hit.point, hit.normal, s, 1.4)
 	if s.flammable and hit.result != BallisticHit.Result.RICOCHET:
@@ -282,6 +291,11 @@ func burn_at(target: Node3D, point: Vector3, normal: Vector3, seconds: float, fo
 	e.global_position = point + normal * 0.03
 	e.emitting = true
 	Sfx.play_at(&"burn", point, -6.0)
+
+
+## The Dragon's Breath flame jet is playing (tests).
+func flame_emitting() -> bool:
+	return _flame != null and _flame.emitting
 
 
 func fire_count() -> int:
@@ -427,6 +441,10 @@ func _age_debris(delta: float) -> void:
 func _emit(kind: StringName, at: Vector3, dir: Vector3, color: Color, count: int, strength: float) -> void:
 	var e: CPUParticles3D = _emitters[_emit_next]
 	_emit_next = (_emit_next + 1) % _emitters.size()
+	_emit_on(e, kind, at, dir, color, count, strength)
+
+
+func _emit_on(e: CPUParticles3D, kind: StringName, at: Vector3, dir: Vector3, color: Color, count: int, strength: float) -> void:
 	e.global_position = at
 	e.amount = clampi(count, 1, 40)
 	e.direction = Vector3(0, 0, 1)
@@ -533,7 +551,7 @@ func _particle_material(kind: StringName) -> StandardMaterial3D:
 		m.albedo_color = Color(2.5, 2.0, 1.4)
 	elif kind == &"flame" or kind == &"fire":
 		m.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
-		m.albedo_color = Color(2.2, 1.6, 1.1)
+		m.albedo_color = Color(2.0, 1.05, 0.5)
 	_particle_mats[kind] = m
 	return m
 

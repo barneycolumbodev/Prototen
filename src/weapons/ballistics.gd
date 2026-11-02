@@ -340,6 +340,9 @@ func _contact(p: Projectile, res: Dictionary, space: PhysicsDirectSpaceState3D) 
 	var hit: BallisticHit = BallisticHit.new()
 	hit.shot_id = p.id
 	hit.weapon = w
+	# The shooter may have died (or its level been freed) with this round in the air.
+	if not is_instance_valid(p.shooter):
+		p.shooter = null
 	hit.shooter = p.shooter
 	hit.collider = collider
 	hit.surface = surface
