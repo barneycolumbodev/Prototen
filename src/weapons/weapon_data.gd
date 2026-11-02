@@ -64,6 +64,34 @@ extends Resource
 @export_range(0.1, 5.0) var penetration_scale: float = 1.0
 @export_range(0, 4) var max_ricochets: int = 2
 
+@export_group("Shot")
+## Projectiles per shot (shotgun pellets) and the pattern they spread into
+## around the aim point (full width, degrees). 1 / 0 for rifles and pistols.
+@export_range(1, 32) var pellets: int = 1
+@export_range(0.0, 30.0) var pattern_deg: float = 0.0
+## Each projectile is a burning ember (Dragon's Breath): drawn as a glowing
+## streak, and leaves `burn_dps` for `burn_time` seconds on what it hits.
+@export var embers: bool = false
+@export_range(0.0, 200.0) var burn_dps: float = 0.0
+@export_range(0.0, 10.0) var burn_time: float = 0.0
+
+@export_group("Shell types")
+## Loads this gun takes (data/weapons/ammo/). Empty = one fixed load (the
+## values above). D-pad right/left picks the next/previous load, which swaps
+## in a magazine of it and racks the chambered shell out (the empty reload).
+@export var ammo_types: Array[AmmoData] = []
+## Seconds after the last D-pad press before the swap starts (lets two taps skip a load).
+@export_range(0.0, 1.0) var ammo_select_delay: float = 0.3
+
+@export_group("Optic")
+## Eye position and look point in weapon space through the optic (loads with
+## `use_optic`), its zoom and how long it takes to get behind it.
+@export var optic_eye_position: Vector3 = Vector3.ZERO
+@export var optic_look_target: Vector3 = Vector3(1.0, 0.0, 0.0)
+@export_range(0.3, 1.0) var optic_fov_scale: float = 0.9
+@export_range(0.03, 1.0) var optic_ads_time: float = 0.3
+@export_range(0.1, 1.5) var optic_sensitivity: float = 0.75
+
 @export_group("Damage")
 ## Damage per joule the round leaves inside a body.
 @export_range(0.0, 1.0) var damage_per_joule: float = 0.14
@@ -181,12 +209,16 @@ extends Resource
 @export var ejection_point: Vector3 = Vector3(0.012, 0.018, 0.006)
 ## Shell launch velocity in weapon space, m/s (+Z = right).
 @export var ejection_velocity: Vector3 = Vector3(-0.6, 1.6, 2.6)
-@export var flash_color: Color = Color(1.0, 0.78, 0.5)
 ## Brass/case ejection. Railguns have no case.
 @export var ejects_shells: bool = true
 ## Suppressed: small flash and dim light.
 @export_range(0.0, 3.0) var flash_scale: float = 0.35
-@export_range(0.0, 10.0) var flash_light_energy: float = 1.2
+@export_range(0.0, 20.0) var flash_light_energy: float = 1.2
+@export var flash_color: Color = Color(1.0, 0.72, 0.42)
+## Seconds the muzzle light takes to fade.
+@export_range(0.02, 1.0) var flash_light_time: float = 0.06
+## Ejects 12-gauge shells (tinted per load) instead of small brass cases.
+@export var shotshell: bool = false
 ## Every Nth round is a tracer (0 = none).
 @export_range(0, 10) var tracer_every: int = 0
 ## Muzzle smoke puffs per shot (suppressor puff / propellant smoke).

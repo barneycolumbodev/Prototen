@@ -32,7 +32,7 @@ func _switch_to_mg() -> void:
 	await wait_seconds(weapon.loadout[0].holster_time + mg.draw_time + 0.2)
 
 
-func test_y_switches_to_the_mg42_and_on() -> void:
+func test_y_switches_to_the_mg42_and_back() -> void:
 	assert_eq(weapon.data.display_name, "Five-seveN SR")
 	await _switch_to_mg()
 	assert_eq(weapon.data.display_name, "MG42/A")
@@ -40,13 +40,12 @@ func test_y_switches_to_the_mg42_and_on() -> void:
 	assert_true(weapon.rig().visible)
 	assert_false(weapon.slots[0].rig.visible, "pistol put away")
 	assert_eq(weapon.mechanism.loaded(), 150)
-	# Y cycles on: the next gun after the MG42 (the rail carbine), not straight back to the pistol.
-	var next: WeaponData = weapon.loadout[2 % weapon.loadout.size()]
+	# A tap on Y swaps back to the gun you had before (hold Y for the weapon wheel).
 	Input.action_press(&"switch_weapon")
 	await wait_physics_frames(2)
 	Input.action_release(&"switch_weapon")
-	await wait_seconds(weapon.loadout[1].holster_time + next.draw_time + 0.2)
-	assert_eq(weapon.data.display_name, next.display_name)
+	await wait_seconds(weapon.loadout[1].holster_time + weapon.loadout[0].draw_time + 0.2)
+	assert_eq(weapon.data.display_name, "Five-seveN SR")
 
 
 func test_mg42_slows_you_down() -> void:

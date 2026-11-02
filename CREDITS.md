@@ -21,3 +21,7 @@ Every third-party file in the repository, with its source and license (CLAUDE.md
 | First-person arms holding the rail carbine | `assets/characters/fp_arms_rail/` | `raw_assets/characters/fp_arms_rail/build.py`. |
 | Rail carbine sounds (13: shots, tail, charge, ready, vent, overheat, reload beats, dry fire) | `assets/audio/sfx/rail_*` | Synthesized by `raw_assets/audio/build_rail_sfx.py` (numpy/scipy). |
 | Railgun trail shader | `src/vfx/rail_trail.gdshader` | Written for this project. |
+| Saiga-12K shotgun with PSO-pattern 1x optic (model, 4K baked textures, moving parts, tinted shell markers) | `assets/weapons/saiga12k/` | `raw_assets/weapons/saiga12k/build.py` (Blender/bpy, procedural materials, high→low bake). |
+| First-person arms holding the Saiga-12K | `assets/characters/fp_arms_saiga/` | `raw_assets/characters/fp_arms_saiga/build.py`. |
+| Saiga-12K sounds (17: shots, Dragon's Breath roar, tails, AK magazine and charging-handle beats, 12-gauge hulls, ember fire, shell-type click) | `assets/audio/sfx/saiga_*`, `shotshell_*`, `burn_1`, `ammo_select_1` | Synthesized by `raw_assets/audio/build_saiga_sfx.py` (numpy/scipy). |
+| Bullet hole, flash, particle, ember and fire textures | generated at runtime | `src/vfx/fx.gd`, `src/weapons/ballistics.gd` |

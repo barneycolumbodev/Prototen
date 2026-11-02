@@ -20,3 +20,4 @@ particle_kind = &"splinters"
 particle_count = 12
 impact_sound = &"wood"
 is_flesh = false
+flammable = true

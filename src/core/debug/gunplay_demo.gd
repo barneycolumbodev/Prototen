@@ -17,6 +17,7 @@ var room: TestRoom
 ## "hip": no shots, just the hip-fire hold (for checking viewmodel placement).
 ## "ads": no shots, aimed (sight picture). "burst": hold the trigger from the
 ## hip at a dummy for `BURST_FRAMES`, then freeze time mid-burst.
+## Options: `--weapon=<i>` (loadout slot), `--ammo=<i>` (shell type).
 var mode: String = "range"
 const BURST_FRAMES: int = 34
 var _burst: int = 0
@@ -38,6 +39,9 @@ func _ready() -> void:
 	for arg: String in OS.get_cmdline_user_args():
 		if arg.begins_with("--weapon="):
 			room.player.weapon().select_now(arg.trim_prefix("--weapon=").to_int())
+	for arg: String in OS.get_cmdline_user_args():
+		if arg.begins_with("--ammo="):  # shell type for guns that take several (Saiga: 0 buck, 1 slug, 2 dragon's breath)
+			room.player.weapon().select_ammo_now(arg.trim_prefix("--ammo=").to_int())
 	if mode == "hip" or mode == "ads":
 		return
 	if mode == "burst":

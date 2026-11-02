@@ -11,6 +11,11 @@ extends Node3D
 ## or stops and dumps its energy. Exits are slower and slightly deflected.
 ## Whatever was hit gets `on_ballistic_hit(hit: BallisticHit)` if it has it;
 ## rigid bodies are pushed by the momentum the round lost.
+##
+## Shotguns fire several projectiles per shot (`WeaponData.pellets`) that
+## share one `volley` id, so stats count a shell once. Ember rounds (Dragon's
+## Breath) are drawn as glowing streaks from one MultiMesh (one draw call for
+## all of them) and set alight whatever has `on_burn(hit)`.
 
 ## Physics layers (project.godot [layer_names]).
 const LAYER_WORLD: int = 1
@@ -37,6 +42,10 @@ const TRAIL_POOL: int = 6
 const TRAIL_SEGMENTS: int = 10
 const TRAIL_MAX_LENGTH: float = 400.0
 const TRAIL_SHADER: Shader = preload("res://src/vfx/rail_trail.gdshader")
+## Ember streaks (Dragon's Breath): instances in one MultiMesh.
+const EMBER_MAX: int = 64
+const EMBER_LENGTH: float = 1.6
+const EMBER_WIDTH: float = 0.045
 
 ## Draws the last few trajectories (tuning menu / range toggle).
 var show_trajectories: bool = false:
@@ -77,11 +86,17 @@ class Trail:
 
 	func visible() -> bool:
 		return used > 0 and age < life
+var _embers: MultiMeshInstance3D
+var _ember_count: int = 0
+## Projectiles fired since start (a shotgun shell adds one per pellet).
+var rounds_fired: int = 0
 
 
 class Projectile:
 	extends RefCounted
 	var id: int = 0
+	## Shared by every pellet of one shell (the first pellet's id).
+	var volley: int = 0
 	var weapon: WeaponData
 	var shooter: Node
 	var position: Vector3
@@ -102,6 +117,8 @@ class Projectile:
 	## Railgun trail and how far into `path` it has been drawn.
 	var trail: Trail
 	var trail_index: int = 1
+	## Ember streak tail (starts at the muzzle).
+	var ember_tail: Vector3
 
 	func energy() -> float:
 		return 0.5 * mass_kg * velocity.length_squared()
@@ -161,17 +178,46 @@ func _ready() -> void:
 			add_child(seg)
 			trail.segments.append(seg)
 		_trails.append(trail)
+	_build_embers()
 
+
+func _build_embers() -> void:
+	var streak: BoxMesh = BoxMesh.new()
+	streak.size = Vector3(EMBER_WIDTH, EMBER_WIDTH, 1.0)
+	var hot: StandardMaterial3D = StandardMaterial3D.new()
+	hot.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	hot.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+	hot.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	hot.vertex_color_use_as_albedo = true
+	hot.disable_receive_shadows = true
+	streak.material = hot
+	var mm: MultiMesh = MultiMesh.new()
+	mm.transform_format = MultiMesh.TRANSFORM_3D
+	mm.use_colors = true
+	mm.mesh = streak
+	mm.instance_count = EMBER_MAX
+	mm.visible_instance_count = 0
+	_embers = MultiMeshInstance3D.new()
+	_embers.multimesh = mm
+	_embers.top_level = true
+	_embers.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	# Streaks span the whole room; don't let culling drop them.
+	_embers.custom_aabb = AABB(Vector3(-500, -500, -500), Vector3(1000, 1000, 1000))
+	add_child(_embers)
 
 ## Fires one round. `direction` is normalised. Returns the shot id.
 ## `tracer_from`: a finite point (the muzzle) makes this round a visible tracer
-## (or, for guns with `beam_trail_time`, starts its ionized trail there).
+## (for guns with `beam_trail_time`, starts its ionized trail there; for
+## ember rounds, where its glowing streak starts).
+## `volley`: id of the first pellet of the same shell (0 = this round starts one).
 ## `power`: energy fraction (railgun capacitor charge); speed goes with √power.
 func fire(weapon: WeaponData, origin: Vector3, direction: Vector3, shooter: Node = null,
-		tracer_from: Vector3 = Vector3.INF, power: float = 1.0) -> int:
+		tracer_from: Vector3 = Vector3.INF, volley: int = 0, power: float = 1.0) -> int:
 	var p: Projectile = Projectile.new()
 	p.id = _next_id
+	p.volley = volley if volley != 0 else p.id
 	_next_id += 1
+	rounds_fired += 1
 	p.weapon = weapon
 	p.shooter = shooter
 	p.position = origin
@@ -180,7 +226,9 @@ func fire(weapon: WeaponData, origin: Vector3, direction: Vector3, shooter: Node
 	p.mass_kg = weapon.bullet_mass_g * 0.001
 	p.muzzle_speed = speed
 	p.record(origin)
-	if tracer_from.is_finite() and weapon.beam_trail_time > 0.0:
+	if weapon.embers:
+		p.ember_tail = tracer_from if tracer_from.is_finite() else origin
+	elif tracer_from.is_finite() and weapon.beam_trail_time > 0.0:
 		p.trail = _claim_trail(p.id, weapon, tracer_from)
 	elif tracer_from.is_finite():
 		p.tracer = _tracers[_tracer_next]
@@ -348,6 +396,27 @@ func live_count() -> int:
 	return _live.size()
 
 
+## Ember streaks drawn this frame (debug overlay / tests).
+func ember_count() -> int:
+	return _ember_count
+
+
+## Direction of pellet `i` of `n` in a pattern `cone_deg` wide around `dir`:
+## a jittered sunflower spiral, so a pattern is random but has no big holes.
+## `phase` rotates the whole pattern (pick it once per shell).
+static func pattern_dir(dir: Vector3, cone_deg: float, i: int, n: int, phase: float,
+		rng: RandomNumberGenerator) -> Vector3:
+	if cone_deg <= 0.0 or n <= 1:
+		return dir
+	var half: float = deg_to_rad(cone_deg) * 0.5
+	var r: float = sqrt(clampf((i + rng.randf_range(0.15, 0.85)) / n, 0.0, 1.0)) * half
+	var phi: float = phase + i * 2.39996 + rng.randf_range(-0.35, 0.35)
+	var up: Vector3 = Vector3.UP if absf(dir.y) < 0.99 else Vector3.RIGHT
+	var right: Vector3 = dir.cross(up).normalized()
+	var up2: Vector3 = right.cross(dir).normalized()
+	return (dir * cos(r) + (right * cos(phi) + up2 * sin(phi)) * sin(r)).normalized()
+
+
 func clear() -> void:
 	_live.clear()
 	_paths.clear()
@@ -360,11 +429,12 @@ func _physics_process(delta: float) -> void:
 			t.visible = false
 			t.set_meta(&"owner", 0)
 	_tracer_fading.clear()
-	if not _live.is_empty():
+	if not _live.is_empty() or _ember_count > 0:
 		for p: Projectile in _live:
 			_step(p, delta)
 			_update_tracer(p)
 			_extend_trail(p)
+		_update_embers()
 		var still: Array[Projectile] = []
 		for p: Projectile in _live:
 			if p.alive:
@@ -431,6 +501,9 @@ func _contact(p: Projectile, res: Dictionary, space: PhysicsDirectSpaceState3D) 
 	var hit: BallisticHit = BallisticHit.new()
 	hit.shot_id = p.id
 	hit.weapon = w
+	# The shooter may have died (or its level been freed) with this round in the air.
+	if not is_instance_valid(p.shooter):
+		p.shooter = null
 	hit.shooter = p.shooter
 	hit.collider = collider
 	hit.surface = surface
@@ -441,6 +514,7 @@ func _contact(p: Projectile, res: Dictionary, space: PhysicsDirectSpaceState3D) 
 	hit.energy_in = p.energy()
 	hit.prior_penetrations = p.penetrations
 	hit.distance = p.travelled
+	hit.volley_id = p.volley
 
 	var next_pos: Vector3 = point + normal * 0.002
 	# Glancing angle: 0 = skimming the surface, 90 = straight in.
@@ -484,6 +558,8 @@ func _contact(p: Projectile, res: Dictionary, space: PhysicsDirectSpaceState3D) 
 	_push(collider, hit, p.mass_kg)
 	if collider.has_method(&"on_ballistic_hit"):
 		collider.call(&"on_ballistic_hit", hit)
+	if w.burn_time > 0.0 and hit.result != BallisticHit.Result.RICOCHET and collider.has_method(&"on_burn"):
+		collider.call(&"on_burn", hit)
 	EventBus.ballistic_hit.emit(hit)
 	return next_pos
 
@@ -562,6 +638,33 @@ static func random_in_cone(dir: Vector3, cone_deg: float, rng: RandomNumberGener
 	var right: Vector3 = dir.cross(up).normalized()
 	var up2: Vector3 = right.cross(dir).normalized()
 	return (dir * cos_t + right * sin_t * cos(phi) + up2 * sin_t * sin(phi)).normalized()
+
+
+## Glowing streak for every live ember round (and the last segment of any
+## that stopped this tick), brightest while they're fast.
+func _update_embers() -> void:
+	var mm: MultiMesh = _embers.multimesh
+	var n: int = 0
+	for p: Projectile in _live:
+		if not p.weapon.embers or n >= EMBER_MAX:
+			continue
+		var head: Vector3 = p.position
+		var span: Vector3 = head - p.ember_tail
+		var length: float = span.length()
+		if length < 0.02:
+			continue
+		var dir: Vector3 = span / length
+		length = minf(length, EMBER_LENGTH)
+		var up: Vector3 = Vector3.UP if absf(dir.y) < 0.95 else Vector3.RIGHT
+		var basis: Basis = Basis.looking_at(dir, up)
+		basis.z = basis.z * length
+		mm.set_instance_transform(n, Transform3D(basis, head - dir * length * 0.5))
+		var heat: float = clampf(p.velocity.length() / maxf(p.muzzle_speed, 1.0), 0.0, 1.0)
+		mm.set_instance_color(n, Color(1.0, 0.35 + 0.45 * heat, 0.08 + 0.3 * heat * heat, 0.55 + 0.45 * heat))
+		n += 1
+		p.ember_tail = head - dir * minf(length, EMBER_LENGTH * 0.55)
+	mm.visible_instance_count = n
+	_ember_count = n
 
 
 func _rebuild_lines() -> void:

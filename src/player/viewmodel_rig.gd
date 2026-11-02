@@ -15,6 +15,8 @@ extends Node3D
 ##   `vent`     lifts (+Y) while a railgun vents heat
 ##   `glow`     emissive faces; their colour and brightness are set live (charge, heat)
 ##   `lens`     optic glass: gets a transparent, slightly reflective material
+##   `optic`    shown only while the loaded shells use it (Saiga-12K slugs)
+##   `shell_hull`, `mag_tape`  tinted with the loaded shell type's colour
 
 @export var config: ViewmodelConfig
 @export var models: Array[PackedScene] = []
@@ -33,6 +35,10 @@ var _vent_rest: Vector3
 var _glow: GeometryInstance3D
 var _glow_mat: StandardMaterial3D
 var _lens: GeometryInstance3D
+var _optic: Node3D
+var _tinted: Array[GeometryInstance3D] = []
+var _tint_mat: StandardMaterial3D
+var _scoped: bool = false
 
 
 func _ready() -> void:
@@ -59,6 +65,12 @@ func _ready() -> void:
 			_glow = model.find_child("glow", true, false) as GeometryInstance3D
 		if _lens == null:
 			_lens = model.find_child("lens", true, false) as GeometryInstance3D
+		if _optic == null:
+			_optic = model.find_child("optic", true, false) as Node3D
+		for part: String in ["shell_hull", "mag_tape"]:
+			var g: GeometryInstance3D = model.find_child(part, true, false) as GeometryInstance3D
+			if g:
+				_tinted.append(g)
 	if _slide:
 		_slide_rest = _slide.position
 	if _magazine:
@@ -110,6 +122,8 @@ func has_part(part_name: StringName) -> bool:
 			return _glow != null
 		&"lens":
 			return _lens != null
+		&"optic":
+			return _optic != null
 	return false
 
 
@@ -157,6 +171,45 @@ func set_glow(color: Color, energy: float) -> void:
 
 func glow_energy() -> float:
 	return _glow_mat.emission_energy_multiplier if _glow_mat else 0.0
+## Mounts or removes the optic.
+func set_optic(mounted: bool) -> void:
+	if _optic:
+		_optic.visible = mounted
+
+
+func optic_mounted() -> bool:
+	return _optic != null and _optic.visible
+
+
+## Colours the loaded-shell markers (top shell hull, magazine tape).
+func set_shell_color(color: Color) -> void:
+	if _tinted.is_empty():
+		return
+	if _tint_mat == null:
+		_tint_mat = StandardMaterial3D.new()
+		_tint_mat.roughness = 0.55
+		for g: GeometryInstance3D in _tinted:
+			g.material_override = _tint_mat
+	_tint_mat.albedo_color = color
+
+
+func shell_color() -> Color:
+	return _tint_mat.albedo_color if _tint_mat else Color.WHITE
+
+
+## Looking through the optic: the whole viewmodel steps aside for the HUD's scope view.
+func set_scoped(scoped: bool) -> void:
+	if scoped == _scoped:
+		return
+	_scoped = scoped
+	for child: Node in get_children():
+		var n: Node3D = child as Node3D
+		if n:
+			n.visible = not scoped
+
+
+func is_scoped() -> bool:
+	return _scoped
 
 
 ## Belt offset from rest (weapon space), for the feed shake.

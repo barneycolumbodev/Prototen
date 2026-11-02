@@ -1,7 +1,7 @@
 class_name PlayerWeapon
 extends Node
 ## The player's guns (docs/m1-gunplay-plan.md). Holds a small loadout (the
-## suppressed pistol, the MG42 and the RC-6 rail carbine), one viewmodel rig per gun. Reads the
+## suppressed pistol, the MG42, the Saiga-12K and the RC-6 rail carbine), one viewmodel rig per gun. Reads the
 ## controller, runs the active gun's GunMechanism, fires rounds through
 ## Ballistics from the eye (so the round goes exactly where the crosshair or
 ## sights point, plus the gun's spread), and drives every piece of feedback:
@@ -10,6 +10,13 @@ extends Node
 ## Controls (CLAUDE.md §9.4): RT fire, LT held = aim down sights, X reload,
 ## Y switches gun (and cancels a reload). Firing during a sprint drops the
 ## sprint first. The active gun's "Carry" values slow the player down.
+##
+## Guns with shell types (WeaponData.ammo_types): D-pad right/left picks the
+## next/previous load; a moment after the last press the gun swaps to a
+## magazine of it and racks the old shell out (GunMechanism). Each shot fires
+## the load in the chamber (`pellets` projectiles in a pattern). A load with
+## `use_optic` mounts the optic: aiming goes through it, and near full aim the
+## viewmodel hides behind the HUD's scope view (`scope_amount()`).
 ##
 ## Railguns (WeaponData.charge_time > 0): each shot gets the capacitor's
 ## charge as its power (speed, recoil); a rising whine plays while it
@@ -30,6 +37,9 @@ class Slot:
 	var motion: ViewmodelMotion
 	var hip_xform: Transform3D
 	var ads_xform: Transform3D
+	var optic_xform: Transform3D
+	## What one round of each load is fired with (AmmoData.apply_to), same order as data.ammo_types.
+	var rounds: Array[WeaponData] = []
 
 	func _init(p_data: WeaponData, p_rig: ViewmodelRig) -> void:
 		data = p_data
@@ -38,16 +48,31 @@ class Slot:
 		motion = ViewmodelMotion.new(data)
 		hip_xform = rig.config.weapon_transform()
 		ads_xform = PlayerWeapon.ads_transform(data)
+		optic_xform = PlayerWeapon.eye_transform(data.optic_eye_position, data.optic_look_target)
+		build_rounds()
+
+	func build_rounds() -> void:
+		rounds.clear()
+		for a: AmmoData in data.ammo_types:
+			rounds.append(a.apply_to(data))
+
+	## Round data for load `index` (the gun's own data if it has no shell types).
+	func round_for(index: int) -> WeaponData:
+		return rounds[index] if index >= 0 and index < rounds.size() else data
+
+	func ammo(index: int) -> AmmoData:
+		return data.ammo_types[index] if index >= 0 and index < data.ammo_types.size() else null
 
 
 ## Guns in switch order, and the viewmodel rig of each (same order).
 @export var loadout: Array[WeaponData] = [
 	preload("res://data/weapons/pistol_57.tres"),
 	preload("res://data/weapons/mg42.tres"),
+	preload("res://data/weapons/saiga12k.tres"),
 	preload("res://data/weapons/rail_carbine.tres"),
 ]
 @export var rig_paths: Array[NodePath] = [^"../Head/Camera3D/Viewmodel", ^"../Head/Camera3D/ViewmodelMG42",
-		^"../Head/Camera3D/ViewmodelRail"]
+		^"../Head/Camera3D/ViewmodelSaiga", ^"../Head/Camera3D/ViewmodelRail"]
 @export var input_enabled: bool = true
 
 var slots: Array[Slot] = []
@@ -69,8 +94,10 @@ var aim_held: bool = false
 var bloom: float = 0.0
 ## Seconds of sustained fire (drives the hip walk of heavy guns).
 var sustained: float = 0.0
-## Current full-width spread cone in degrees (HUD reticle reads this).
+## Current full-width spread cone in degrees (where the shot is centred).
 var spread: float = 0.0
+## Spread plus the pellet pattern: the cone the whole shot lands in (HUD reticle).
+var reticle_spread: float = 0.0
 ## Camera recoil spring, degrees: x = pitch up, y = yaw right, z = roll.
 var cam_recoil: Spring
 ## Gun being switched to (-1 = not switching) and holster time left.
@@ -93,7 +120,10 @@ var _script_pull: bool = false
 var _script_aim: bool = false
 var _script_reload: bool = false
 var _script_switch: bool = false
+var _script_ammo: int = 0
 var _scripted: bool = false
+## Countdown from the last shell-type press to the swap (-1 = none pending).
+var _select_left: float = -1.0
 
 
 func _ready() -> void:
@@ -116,8 +146,82 @@ func _emit_ammo() -> void:
 
 ## Weapon placement (camera space) that puts the eye on the sight line.
 static func ads_transform(d: WeaponData) -> Transform3D:
-	var eye: Transform3D = Transform3D(Basis.looking_at(d.ads_look_target - d.ads_eye_position, Vector3.UP), d.ads_eye_position)
+	return eye_transform(d.ads_eye_position, d.ads_look_target)
+
+
+## Weapon placement (camera space) with the eye at `eye` looking at `look` (weapon space).
+static func eye_transform(eye_pos: Vector3, look: Vector3) -> Transform3D:
+	var dir: Vector3 = look - eye_pos
+	if dir.length_squared() < 0.0001:
+		dir = Vector3(1, 0, 0)
+	var eye: Transform3D = Transform3D(Basis.looking_at(dir, Vector3.UP), eye_pos)
 	return eye.affine_inverse()
+
+
+func has_shell_types() -> bool:
+	return not data.ammo_types.is_empty()
+
+
+## The load in the chamber (fires next), in the magazine, and selected (null for guns without shell types).
+func chamber_ammo() -> AmmoData:
+	return slots[current].ammo(mechanism.chamber_ammo)
+
+
+func magazine_ammo() -> AmmoData:
+	return slots[current].ammo(mechanism.mag_ammo)
+
+
+func selected_ammo() -> AmmoData:
+	return slots[current].ammo(mechanism.load_ammo)
+
+
+## What the next shot fires: the chambered load's round data.
+func round_data() -> WeaponData:
+	return slots[current].round_for(mechanism.chamber_ammo)
+
+
+## A shell-type press is waiting out its delay, or the swap it asked for hasn't finished.
+func swap_pending() -> bool:
+	return has_shell_types() and (mechanism.needs_swap() or _select_left >= 0.0)
+
+
+## Picks the next (+1) or previous (-1) load. The swap starts after `ammo_select_delay`.
+func select_ammo(step: int) -> void:
+	if not has_shell_types() or step == 0:
+		return
+	mechanism.load_ammo = posmod(mechanism.load_ammo + step, data.ammo_types.size())
+	_select_left = data.ammo_select_delay
+	Sfx.play_ui(&"ammo_select", -6.0)
+
+
+## Loads `index` straight away, chamber and magazine (tests, demos, spawn).
+func select_ammo_now(index: int) -> void:
+	if index < 0 or index >= data.ammo_types.size():
+		return
+	mechanism.load_ammo = index
+	mechanism.mag_ammo = index
+	mechanism.chamber_ammo = index
+	_select_left = -1.0
+
+
+## The load the magazine in view holds: the new one once the old magazine is out of sight.
+func _shown_ammo() -> int:
+	if is_reloading() and mechanism.reload_progress() > (data.mag_out_point + data.mag_in_point) * 0.5:
+		return mechanism.load_ammo
+	return mechanism.mag_ammo
+
+
+## The optic is mounted (the magazine in view holds a load that uses it).
+func optic_on() -> bool:
+	var a: AmmoData = slots[current].ammo(_shown_ammo())
+	return a != null and a.use_optic
+
+
+## 0..1 how far the view has gone through the optic (HUD scope view, viewmodel hidden).
+func scope_amount() -> float:
+	if not optic_on():
+		return 0.0
+	return smoothstep(0.72, 0.96, ads_visual())
 
 
 func rig() -> ViewmodelRig:
@@ -145,12 +249,14 @@ func index_of(display_name: String) -> int:
 
 
 ## Drives the gun without a controller (tests, capture demos).
-func script_input(pull: bool, aim: bool, reload: bool = false, switch: bool = false) -> void:
+## `ammo_step`: a D-pad shell-type press (+1 next, -1 previous).
+func script_input(pull: bool, aim: bool, reload: bool = false, switch: bool = false, ammo_step: int = 0) -> void:
 	_scripted = true
 	_script_pull = pull
 	_script_aim = aim
 	_script_reload = reload
 	_script_switch = switch
+	_script_ammo = ammo_step
 
 
 func end_script_input() -> void:
@@ -187,6 +293,8 @@ func apply_tuning() -> void:
 	for s: Slot in slots:
 		s.motion.apply_tuning()
 		s.ads_xform = ads_transform(s.data)
+		s.optic_xform = eye_transform(s.data.optic_eye_position, s.data.optic_look_target)
+		s.build_rounds()
 	cam_recoil.frequency = data.camera_spring_hz
 	cam_recoil.damping = data.camera_spring_damping
 
@@ -196,6 +304,7 @@ func _activate(index: int) -> void:
 	for i: int in slots.size():
 		slots[i].rig.visible = i == current
 	switching_to = -1
+	_select_left = -1.0
 	bloom = 0.0
 	sustained = 0.0
 	apply_tuning()
@@ -209,23 +318,38 @@ func _physics_process(delta: float) -> void:
 	var held: bool = false
 	var reload: bool = false
 	var switch: bool = false
+	var ammo_step: int = 0
 	if _scripted:
 		pull = _script_pull
 		held = _script_pull
 		reload = _script_reload
 		switch = _script_switch
 		aim_held = _script_aim
+		ammo_step = _script_ammo
 		_script_pull = false
 		_script_reload = false
 		_script_switch = false
+		_script_ammo = 0
 	elif active:
 		pull = Input.is_action_just_pressed(&"fire")
 		held = Input.is_action_pressed(&"fire")
 		reload = Input.is_action_just_pressed(&"reload")
 		switch = Input.is_action_just_pressed(&"switch_weapon")
 		aim_held = Input.is_action_pressed(&"aim")
+		if Input.is_action_just_pressed(&"item_next"):
+			ammo_step += 1
+		if Input.is_action_just_pressed(&"item_prev"):
+			ammo_step -= 1
 	else:
 		aim_held = false
+
+	# Shell type: pick now, swap once the presses stop.
+	if ammo_step != 0 and not is_switching():
+		select_ammo(ammo_step)
+	if _select_left >= 0.0:
+		_select_left -= delta
+		if _select_left < 0.0 and mechanism.needs_swap():
+			mechanism.request_swap()
 
 	if switch:
 		request_switch()
@@ -264,7 +388,8 @@ func _physics_process(delta: float) -> void:
 
 	# ADS: hold LT. Reloading and switching drop the sights.
 	var can_aim: bool = aim_held and not is_reloading() and not _player.is_sprinting() and not is_switching()
-	ads = move_toward(ads, 1.0 if can_aim else 0.0, delta / maxf(data.ads_time, 0.01))
+	var aim_time: float = data.optic_ads_time if optic_on() else data.ads_time
+	ads = move_toward(ads, 1.0 if can_aim else 0.0, delta / maxf(aim_time, 0.01))
 	bloom = maxf(0.0, bloom - data.bloom_recovery_deg_s * delta)
 	_since_shot += delta
 	_tail_cooldown -= delta
@@ -273,7 +398,9 @@ func _physics_process(delta: float) -> void:
 	else:
 		sustained = maxf(0.0, sustained - delta * 3.0)
 	var walk: float = minf(sustained * data.hip_walk_deg_s, data.hip_walk_max_deg)
-	spread = data.spread_deg(ads, _move_fraction(), not _player.is_on_floor(), bloom, walk)
+	var r: WeaponData = round_data()
+	spread = r.spread_deg(ads, _move_fraction(), not _player.is_on_floor(), bloom, walk)
+	reticle_spread = spread + (r.pattern_deg if r.pellets > 1 else 0.0)
 
 
 func _process(delta: float) -> void:
@@ -281,8 +408,11 @@ func _process(delta: float) -> void:
 	# Camera: recoil springs back; FOV and look speed follow the sights.
 	cam_recoil.step(delta)
 	_player.set_camera_recoil(cam_recoil.value)
-	_player.fov_scale = lerpf(1.0, data.ads_fov_scale, a)
-	_player.look_scale = lerpf(1.0, data.ads_sensitivity * data.ads_fov_scale, a) * data.carry_turn_scale
+	var optic: bool = optic_on()
+	var fov: float = data.optic_fov_scale if optic else data.ads_fov_scale
+	var sens: float = data.optic_sensitivity if optic else data.ads_sensitivity
+	_player.fov_scale = lerpf(1.0, fov, a)
+	_player.look_scale = lerpf(1.0, sens * fov, a) * data.carry_turn_scale
 	_player.move_scale = lerpf(1.0, data.ads_move_speed, a) * data.carry_speed_scale
 	_player.sprint_scale = data.carry_sprint_scale
 	_player.jump_scale = data.carry_jump_scale
@@ -298,12 +428,17 @@ func _process(delta: float) -> void:
 		pose = 1
 	var s: Slot = slots[current]
 	s.motion.update(delta, a, _player.look_velocity, _move_fraction(), _player.is_on_floor(), pose)
-	s.rig.transform = s.motion.compose(s.hip_xform, s.ads_xform, a)
+	s.rig.transform = s.motion.compose(s.hip_xform, s.optic_xform if optic else s.ads_xform, a)
 	s.rig.set_slide(s.motion.slide * data.slide_travel)
 	s.rig.set_magazine_out(_mag_offset(), data.magazine_travel)
 	s.rig.set_aimed(a)
 	if data.is_rail():
 		_update_rail_visuals(delta, s)
+	if has_shell_types():
+		var shown: AmmoData = s.ammo(_shown_ammo())
+		s.rig.set_optic(shown.use_optic)
+		s.rig.set_shell_color(shown.color)
+		s.rig.set_scoped(scope_amount() > 0.5)
 	if data.cover_open_deg > 0.0:
 		var cover: float = _cover_open()
 		s.rig.set_cover_open(cover * data.cover_open_deg, data.cover_hinge)
@@ -405,6 +540,13 @@ func _handle(ev: StringName) -> void:
 			_play(&"mag_in")
 			motion.jolt(Vector3(0, 0.01, 0), Vector3(4, 0, 5))
 			_rumble(Vector3(0.0, 0.2, 0.04))
+			if mechanism.swapping:
+				motion.lock_slide()  # hand pulls the charging handle back to rack the old shell out
+		GunMechanism.EV_EJECT_CHAMBERED:
+			var gun: Transform3D = rig().global_transform
+			var spent: AmmoData = slots[current].ammo(mechanism.ejected_ammo)
+			var vel: Vector3 = gun.basis * (data.ejection_velocity * 0.6) + _player.velocity
+			Fx.eject_shell(gun * data.ejection_point, vel, gun.basis, spent.color if spent and data.shotshell else Color(0, 0, 0, 0))
 		GunMechanism.EV_SLIDE_RELEASE:
 			_play(&"slide_release")
 			motion.release_slide()
@@ -426,6 +568,9 @@ func _handle(ev: StringName) -> void:
 
 
 func _fire() -> void:
+	# The round that just left: the load that was in the chamber.
+	var r: WeaponData = slots[current].round_for(mechanism.fired_ammo)
+	var shell: AmmoData = slots[current].ammo(mechanism.fired_ammo)
 	var cam: Camera3D = _player.camera()
 	var eye: Transform3D = cam.global_transform
 	var forward: Vector3 = -eye.basis.z
@@ -433,32 +578,42 @@ func _fire() -> void:
 	var gun: Transform3D = rig().global_transform
 	var muzzle: Transform3D = gun * Transform3D(Basis(), data.muzzle_point)
 	_shots += 1
-	var tracer: bool = (data.tracer_every > 0 and _shots % data.tracer_every == 0) or data.beam_trail_time > 0.0
+	var tracer: bool = (r.tracer_every > 0 and _shots % r.tracer_every == 0) or r.beam_trail_time > 0.0
+	var trail_from: Vector3 = muzzle.origin if tracer or r.embers else Vector3.INF
+	# Railguns: the capacitor's charge sets this shot's energy (1 for other guns).
 	var power: float = mechanism.last_power
-	Ballistics.fire(data, eye.origin, dir, _player, muzzle.origin if tracer else Vector3.INF, power)
+	# Pellets: a pattern around the aim point, all one volley (one shot in the stats).
+	var volley: int = 0
+	var phase: float = _rng.randf() * TAU
+	for i: int in r.pellets:
+		var pellet_dir: Vector3 = Ballistics.pattern_dir(dir, r.pattern_deg, i, r.pellets, phase, _rng)
+		var id: int = Ballistics.fire(r, eye.origin, pellet_dir, _player, trail_from, volley, power)
+		if volley == 0:
+			volley = id
 	EventBus.shot_fired.emit(_player, eye.origin, dir)
 
 	var a: float = ads_visual()
-	# Recoil is the slug's momentum: it goes with speed, √power.
+	# Recoil is the round's momentum: for a railgun it goes with speed, √power.
 	var strength: float = sqrt(power)
 	var s: float = lerpf(1.0, data.ads_recoil_scale, a) * strength
-	var pitch_kick: float = data.kick_pitch_deg * _rng.randf_range(0.9, 1.1) * s
-	var yaw_kick: float = (_rng.randf_range(-1.0, 1.0) * data.kick_yaw_deg + data.kick_yaw_bias_deg) * s
+	var pitch_kick: float = r.kick_pitch_deg * _rng.randf_range(0.9, 1.1) * s
+	var yaw_kick: float = (_rng.randf_range(-1.0, 1.0) * r.kick_yaw_deg + data.kick_yaw_bias_deg) * s
 	cam_recoil.kick(Vector3(pitch_kick, yaw_kick, _rng.randf_range(-0.4, 0.4) * s) * (1.0 - data.kick_permanent))
 	# The part that stays: muzzle climb the player pulls down.
 	_player.set_view(_player.yaw - deg_to_rad(yaw_kick * data.kick_permanent),
 			_player.pitch + deg_to_rad(pitch_kick * data.kick_permanent))
 	bloom = minf(bloom + data.bloom_per_shot_deg, data.bloom_max_deg)
 	_since_shot = 0.0
-	motion.fire(a, _rng, strength)
+	motion.fire(a, _rng, (shell.recoil_scale if shell else 1.0) * strength)
 	if data.belt_jiggle > 0.0:
 		_belt_shake.kick(Vector3(_rng.randf_range(-0.3, 0.3), _rng.randf_range(0.2, 1.0), _rng.randf_range(-1.0, 1.0)) * data.belt_jiggle)
 
-	Fx.muzzle_flash(muzzle, data)
+	Fx.muzzle_flash(muzzle, r)
 	if data.ejects_shells:
 		var eject_vel: Vector3 = gun.basis * data.ejection_velocity + _player.velocity
-		Fx.eject_shell(gun * data.ejection_point, eject_vel, gun.basis)
-	Sfx.play_shot(data, _tail_cooldown <= 0.0, linear_to_db(lerpf(0.55, 1.0, power)))
+		var hull: Color = shell.color if shell and data.shotshell else Color(0, 0, 0, 0)
+		Fx.eject_shell(gun * data.ejection_point, eject_vel, gun.basis, hull)
+	Sfx.play_shot(r, _tail_cooldown <= 0.0, linear_to_db(lerpf(0.55, 1.0, power)))
 	if _tail_cooldown <= 0.0:
 		_tail_cooldown = data.tail_interval
 	if data.is_rail():

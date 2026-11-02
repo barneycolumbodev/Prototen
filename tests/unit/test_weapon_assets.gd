@@ -50,6 +50,7 @@ func test_pistol_uses_baked_pbr_textures() -> void:
 func test_textures_are_vram_compressed() -> void:
 	for prefix: String in ["res://assets/weapons/pistol_57/textures/pistol_57", "res://assets/characters/fp_arms/textures/fp_arms",
 			"res://assets/weapons/mg42/textures/mg42", "res://assets/characters/fp_arms_mg42/textures/fp_arms_mg42",
+			"res://assets/weapons/saiga12k/textures/saiga12k", "res://assets/characters/fp_arms_saiga/textures/fp_arms_saiga",
 			"res://assets/weapons/rail_carbine/textures/rail_carbine",
 			"res://assets/characters/fp_arms_rail/textures/fp_arms_rail"]:
 		for name: String in ["basecolor", "orm", "normal", "emission"]:
