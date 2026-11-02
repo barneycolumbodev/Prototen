@@ -25,6 +25,10 @@ const MIN_SPEED: float = 40.0
 const MAX_CONTACTS_PER_STEP: int = 10
 const MAX_THICKNESS_PROBE: float = 1.2
 const TRAJECTORY_KEEP: int = 14
+## Pooled tracer streaks (CLAUDE.md §8: a tracer every few rounds).
+const TRACER_POOL: int = 12
+const TRACER_LENGTH: float = 7.0
+const TRACER_WIDTH: float = 0.035
 ## Most speed one round can give a loose prop, m/s (keeps cans on the planet).
 const MAX_PROP_DV: float = 9.0
 
@@ -42,6 +46,10 @@ var _lines: MeshInstance3D
 var _mesh: ImmediateMesh
 var _dirty: bool = false
 var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
+var _tracers: Array[MeshInstance3D] = []
+var _tracer_next: int = 0
+## Tracers whose round stopped last frame: node -> round id.
+var _tracer_fading: Dictionary[MeshInstance3D, int] = {}
 
 
 class Projectile:
@@ -61,6 +69,9 @@ class Projectile:
 	var path: PackedVector3Array = PackedVector3Array()
 	var path_speed: PackedFloat32Array = PackedFloat32Array()
 	var muzzle_speed: float = 1.0
+	## Tracer streak drawn from `tracer_tail` (starts at the muzzle) to the round.
+	var tracer: MeshInstance3D
+	var tracer_tail: Vector3
 
 	func energy() -> float:
 		return 0.5 * mass_kg * velocity.length_squared()
@@ -85,10 +96,29 @@ func _ready() -> void:
 	_lines.material_override = mat
 	_lines.visible = false
 	add_child(_lines)
+	var streak: BoxMesh = BoxMesh.new()
+	streak.size = Vector3(TRACER_WIDTH, TRACER_WIDTH, 1.0)
+	var glow: StandardMaterial3D = StandardMaterial3D.new()
+	glow.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	glow.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+	glow.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	glow.albedo_color = Color(1.0, 0.55, 0.22, 0.9)
+	glow.disable_receive_shadows = true
+	for i: int in TRACER_POOL:
+		var t: MeshInstance3D = MeshInstance3D.new()
+		t.mesh = streak
+		t.material_override = glow
+		t.top_level = true
+		t.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		t.visible = false
+		add_child(t)
+		_tracers.append(t)
 
 
 ## Fires one round. `direction` is normalised. Returns the shot id.
-func fire(weapon: WeaponData, origin: Vector3, direction: Vector3, shooter: Node = null) -> int:
+## `tracer_from`: a finite point (the muzzle) makes this round a visible tracer.
+func fire(weapon: WeaponData, origin: Vector3, direction: Vector3, shooter: Node = null,
+		tracer_from: Vector3 = Vector3.INF) -> int:
 	var p: Projectile = Projectile.new()
 	p.id = _next_id
 	_next_id += 1
@@ -99,16 +129,59 @@ func fire(weapon: WeaponData, origin: Vector3, direction: Vector3, shooter: Node
 	p.mass_kg = weapon.bullet_mass_g * 0.001
 	p.muzzle_speed = weapon.muzzle_velocity
 	p.record(origin)
+	if tracer_from.is_finite():
+		p.tracer = _tracers[_tracer_next]
+		_tracer_next = (_tracer_next + 1) % _tracers.size()
+		p.tracer_tail = tracer_from
 	_live.append(p)
 	_paths.append(p)
 	if _paths.size() > TRAJECTORY_KEEP:
 		_paths.pop_front()
 	# Resolve the first tick now: point-blank shots land on the trigger frame.
 	_step(p, 1.0 / Engine.physics_ticks_per_second * Engine.time_scale)
+	_update_tracer(p)
 	if not p.alive:
 		_live.erase(p)
 	_dirty = true
 	return p.id
+
+
+## Live tracer streaks (debug overlay / tests).
+func tracer_count() -> int:
+	var n: int = 0
+	for t: MeshInstance3D in _tracers:
+		if t.visible:
+			n += 1
+	return n
+
+
+func _update_tracer(p: Projectile) -> void:
+	if p.tracer == null:
+		return
+	var owner_id: int = p.tracer.get_meta(&"owner", 0)
+	if owner_id != 0 and owner_id != p.id:
+		p.tracer = null  # the pool slot went to a newer round
+		return
+	var head: Vector3 = p.position
+	var span: Vector3 = head - p.tracer_tail
+	var length: float = span.length()
+	if length > 0.05:
+		if length > TRACER_LENGTH:
+			p.tracer_tail = head - span / length * TRACER_LENGTH
+			length = TRACER_LENGTH
+		var dir: Vector3 = span / span.length()
+		var up: Vector3 = Vector3.UP if absf(dir.y) < 0.95 else Vector3.RIGHT
+		var basis: Basis = Basis.looking_at(dir, up)
+		basis.z = basis.z * length  # the streak mesh is 1 m long along its local Z
+		p.tracer.global_transform = Transform3D(basis, head - dir * length * 0.5)
+		p.tracer.set_meta(&"owner", p.id)
+		p.tracer.visible = true
+		# Next frame the streak starts behind where this one's head is.
+		p.tracer_tail = head - dir * minf(length, TRACER_LENGTH * 0.6)
+	if not p.alive:
+		# Show the last segment (to the impact) for one frame, then hide.
+		_tracer_fading[p.tracer] = p.id
+		p.tracer = null
 
 
 func live_count() -> int:
@@ -122,9 +195,15 @@ func clear() -> void:
 
 
 func _physics_process(delta: float) -> void:
+	for t: MeshInstance3D in _tracer_fading:
+		if t.get_meta(&"owner", 0) == _tracer_fading[t]:
+			t.visible = false
+			t.set_meta(&"owner", 0)
+	_tracer_fading.clear()
 	if not _live.is_empty():
 		for p: Projectile in _live:
 			_step(p, delta)
+			_update_tracer(p)
 		var still: Array[Projectile] = []
 		for p: Projectile in _live:
 			if p.alive:

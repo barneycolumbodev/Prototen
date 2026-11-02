@@ -2,7 +2,9 @@ extends Node3D
 ## Sound playback, pooled (CLAUDE.md §9.2). Autoloaded as Sfx.
 ##
 ## Banks are WAVs in assets/audio/sfx named `<bank>_<n>.wav`; a random
-## variant plays each time. Own-gun shots are non-positional with a room
+## variant plays each time. A gun's own banks use its `sound_prefix`
+## ("mg42_shot") and fall back to the shared ones ("shot"). Shots have their
+## own voice pool so 1,200 rpm can't cut off confirms and reload sounds. Own-gun shots are non-positional with a room
 ## tail on the "Tail" bus, whose reverb size the level sets (`set_room`).
 ## Impacts are positional, heard from where the round landed.
 ## Pitch follows the time scale so hit-stop and slow motion sound right.
@@ -10,10 +12,16 @@ extends Node3D
 const DIR: String = "res://assets/audio/sfx/"
 const VOICES_3D: int = 16
 const VOICES_2D: int = 8
+const VOICES_SHOT: int = 8
+const VOICES_TAIL: int = 3
 
 var _banks: Dictionary[StringName, Array] = {}
 var _voices3d: Array[AudioStreamPlayer3D] = []
 var _voices2d: Array[AudioStreamPlayer] = []
+var _voices_shot: Array[AudioStreamPlayer] = []
+var _voices_tail: Array[AudioStreamPlayer] = []
+var _next_shot: int = 0
+var _next_tail: int = 0
 var _next3d: int = 0
 var _next2d: int = 0
 var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
@@ -36,6 +44,16 @@ func _ready() -> void:
 		p.bus = &"SFX"
 		add_child(p)
 		_voices2d.append(p)
+	for i: int in VOICES_SHOT:
+		var p: AudioStreamPlayer = AudioStreamPlayer.new()
+		p.bus = &"SFX"
+		add_child(p)
+		_voices_shot.append(p)
+	for i: int in VOICES_TAIL:
+		var p: AudioStreamPlayer = AudioStreamPlayer.new()
+		p.bus = &"Tail"
+		add_child(p)
+		_voices_tail.append(p)
 	EventBus.ballistic_hit.connect(_on_hit)
 	EventBus.target_hit.connect(_on_target_hit)
 
@@ -58,11 +76,39 @@ func bank(name: StringName) -> Array:
 	return _banks[name]
 
 
-func play_shot(_data: WeaponData) -> void:
-	play_ui(&"shot", 0.0, 0.04)
-	var tail: AudioStreamPlayer = play_ui(&"tail", -8.0, 0.05)
-	if tail:
-		tail.bus = &"Tail"
+## The gun's bank for `name`: prefix + name if it exists, else the shared one.
+func weapon_bank(data: WeaponData, name: StringName) -> StringName:
+	if not data.sound_prefix.is_empty():
+		var own: StringName = StringName(data.sound_prefix + String(name))
+		if not bank(own).is_empty():
+			return own
+	return name
+
+
+## Own-gun shot, plus the room tail when `with_tail` (automatic guns rate-limit it).
+func play_shot(data: WeaponData, with_tail: bool = true) -> void:
+	_play_pool(_voices_shot, _next_shot, weapon_bank(data, &"shot"), data.shot_volume_db, 0.04)
+	_next_shot = (_next_shot + 1) % _voices_shot.size()
+	if with_tail:
+		_play_pool(_voices_tail, _next_tail, weapon_bank(data, &"tail"), -8.0 + data.shot_volume_db, 0.05)
+		_next_tail = (_next_tail + 1) % _voices_tail.size()
+
+
+## Reload beats, dry fire etc. for this gun (non-positional).
+func play_weapon(data: WeaponData, name: StringName, volume_db: float = 0.0) -> void:
+	play_ui(weapon_bank(data, name), volume_db)
+
+
+func _play_pool(pool: Array[AudioStreamPlayer], index: int, name: StringName, volume_db: float, pitch_rand: float) -> void:
+	var streams: Array = bank(name)
+	if streams.is_empty():
+		return
+	var p: AudioStreamPlayer = pool[index]
+	var stream: AudioStream = streams[_rng.randi() % streams.size()]
+	p.stream = stream
+	p.volume_db = volume_db
+	p.pitch_scale = _pitch(pitch_rand)
+	p.play()
 
 
 ## Non-positional sound (own gun, reload, confirms). Returns the voice used.

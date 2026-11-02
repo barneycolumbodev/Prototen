@@ -43,6 +43,7 @@ var _flash_time: float = 0.0
 var _light: OmniLight3D
 var _light_time: float = 0.0
 var _light_energy: float = 0.0
+var _last_smoke: float = -1.0
 
 var _shells: Array[Shell] = []
 var _shell_next: int = 0
@@ -103,8 +104,12 @@ func muzzle_flash(muzzle: Transform3D, data: WeaponData) -> void:
 		_light.light_energy = _light_energy
 		_light.visible = true
 		_light_time = 0.06
-	# Suppressor puff.
-	_emit(&"smoke", muzzle.origin, muzzle.basis.x, Color(0.7, 0.7, 0.7, 0.16), 3, 0.6)
+	# Suppressor puff / propellant smoke, rate-limited so automatic fire doesn't
+	# take every pooled emitter away from impacts.
+	var now: float = Time.get_ticks_msec() * 0.001
+	if data.smoke_per_shot > 0 and now - _last_smoke > 0.12:
+		_last_smoke = now
+		_emit(&"smoke", muzzle.origin, muzzle.basis.x, Color(0.7, 0.7, 0.7, 0.16), data.smoke_per_shot, 0.6)
 
 
 # ------------------------------------------------------------------ shells

@@ -5,8 +5,8 @@
 [resource]
 script = ExtResource("1_look")
 display_name = "Precise"
-yaw_speed_deg = 200.0
-pitch_speed_deg = 140.0
+yaw_speed_deg = 150.0
+pitch_speed_deg = 100.0
 inner_deadzone = 0.12
 curve_exponent = 2.4
-full_tilt_boost = 2.2
+full_tilt_boost = 1.9

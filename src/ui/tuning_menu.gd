@@ -2,8 +2,9 @@ extends CanvasLayer
 ## On-device gun tuning (docs/m1-gunplay-plan.md item 5, docs/design.md §5.4).
 ## Autoloaded as TuningMenu; opened from the pause menu. Every slider edits
 ## the live WeaponData / AimAssistConfig, so changes are felt immediately.
-## Tuned values persist on the phone (user://tuning.cfg) and "Copy values"
-## puts them on the clipboard in .tres form, ready to send back.
+## Tuned values persist on the phone (user://tuning.cfg, one section per gun)
+## and "Copy values" puts them on the clipboard in .tres form, ready to send
+## back. It tunes the gun in your hands: switch guns (Y) to tune the other.
 ## Controller: D-pad/stick up-down to pick, left-right to change, B to close.
 
 const SAVE_PATH: String = "user://tuning.cfg"
@@ -33,6 +34,10 @@ const WEAPON_PARAMS: Array = [
 	["Accuracy", "bloom_per_shot_deg", 0.0, 2.0, 0.05, "Bloom per shot (°)"],
 	["Fire", "fire_interval", 0.05, 0.3, 0.005, "Fastest follow-up (s)"],
 	["Fire", "fire_buffer", 0.0, 0.3, 0.01, "Trigger buffer (s)"],
+	["Carry", "carry_speed_scale", 0.3, 1.0, 0.01, "Move speed with gun"],
+	["Carry", "carry_sprint_scale", 0.3, 1.0, 0.01, "Sprint speed with gun"],
+	["Carry", "hip_walk_deg_s", 0.0, 10.0, 0.25, "Hip walk (°/s of fire)"],
+	["Carry", "hip_walk_max_deg", 0.0, 10.0, 0.25, "Hip walk max (°)"],
 	["Ballistics", "muzzle_velocity", 300.0, 900.0, 10.0, "Muzzle velocity (m/s)"],
 	["Ballistics", "penetration_scale", 0.3, 3.0, 0.05, "Penetration power"],
 	["Ballistics", "damage_per_joule", 0.05, 0.4, 0.005, "Damage per joule"],
@@ -88,9 +93,20 @@ func close() -> void:
 	save()
 
 
+## B: back to the pause menu. Menu/Start: straight back to the game.
+func back() -> void:
+	close()
+	PauseMenu.open()
+
+
 func _unhandled_input(event: InputEvent) -> void:
-	if is_open() and (event.is_action_pressed(&"ui_cancel") or event.is_action_pressed(&"pause")):
+	if not is_open():
+		return
+	if event.is_action_pressed(&"pause"):
 		close()
+		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed(&"ui_cancel"):
+		back()
 		get_viewport().set_input_as_handled()
 
 
@@ -99,9 +115,14 @@ func save() -> void:
 	if _weapon == null:
 		return
 	var cfg: ConfigFile = ConfigFile.new()
-	for p: Array in WEAPON_PARAMS:
-		var prop: String = p[1]
-		cfg.set_value("weapon", prop, _weapon.data.get(prop))
+	cfg.load(SAVE_PATH)  # keep the other guns' sections
+	if cfg.has_section("weapon"):
+		cfg.erase_section("weapon")  # pre-MG42 single-gun section, migrated below
+	for slot: PlayerWeapon.Slot in _weapon.slots:
+		var section: String = section_for(slot.data)
+		for p: Array in WEAPON_PARAMS:
+			var prop: String = p[1]
+			cfg.set_value(section, prop, slot.data.get(prop))
 	if _assist:
 		cfg.set_value("aim_assist", "enabled", _assist.enabled)
 		for p: Array in ASSIST_PARAMS:
@@ -110,14 +131,31 @@ func save() -> void:
 	cfg.save(SAVE_PATH)
 
 
-## Applies saved tuning to a weapon and aim assist (call at spawn).
+## Save-file section for a gun ("weapon_pistol_57", "weapon_mg42").
+static func section_for(data: WeaponData) -> String:
+	return "weapon_" + data.resource_path.get_file().get_basename()
+
+
+## Applies saved tuning to every gun in the loadout and the aim assist (call at spawn).
+static func load_saved_all(weapon: PlayerWeapon, assist: AimAssistConfig) -> void:
+	for slot: PlayerWeapon.Slot in weapon.slots:
+		load_saved(slot.data, null)
+	load_saved(null, assist)
+
+
+## Applies saved tuning to one gun and/or the aim assist. The section saved
+## before the MG42 existed ("weapon") belonged to the pistol.
 static func load_saved(data: WeaponData, assist: AimAssistConfig) -> void:
 	var cfg: ConfigFile = ConfigFile.new()
 	if cfg.load(SAVE_PATH) != OK:
 		return
-	for prop: String in cfg.get_section_keys("weapon") if cfg.has_section("weapon") else PackedStringArray():
-		if prop in data:
-			data.set(prop, cfg.get_value("weapon", prop))
+	if data:
+		var section: String = section_for(data)
+		if not cfg.has_section(section) and cfg.has_section("weapon") and section == "weapon_pistol_57":
+			section = "weapon"
+		for prop: String in cfg.get_section_keys(section) if cfg.has_section(section) else PackedStringArray():
+			if prop in data:
+				data.set(prop, cfg.get_value(section, prop))
 	if assist and cfg.has_section("aim_assist"):
 		for prop: String in cfg.get_section_keys("aim_assist"):
 			if prop in assist:
@@ -169,7 +207,7 @@ func _build() -> void:
 	title.text = "GUN TUNING — %s" % _weapon.data.display_name
 	title.add_theme_font_size_override("font_size", 22)
 	_list.add_child(title)
-	_button("Close (B)", close)
+	_button("Back (B)", back)
 	_button("Copy values", _on_copy)
 	_toggle("Show bullet paths", Ballistics.show_trajectories, func(on: bool) -> void: Ballistics.show_trajectories = on)
 	if _assist:

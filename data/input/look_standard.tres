@@ -5,8 +5,8 @@
 [resource]
 script = ExtResource("1_look")
 display_name = "Standard"
-yaw_speed_deg = 240.0
-pitch_speed_deg = 170.0
+yaw_speed_deg = 165.0
+pitch_speed_deg = 115.0
 inner_deadzone = 0.12
-curve_exponent = 1.8
-full_tilt_boost = 1.8
+curve_exponent = 2.0
+full_tilt_boost = 1.6

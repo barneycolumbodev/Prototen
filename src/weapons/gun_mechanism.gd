@@ -9,6 +9,15 @@ extends RefCounted
 ## back and the next reload is the longer empty one (with a slide release).
 ## Ammo only changes when the new magazine seats, so a reload cancelled
 ## before that loses nothing.
+##
+## Open bolt (MG42, `closed_bolt = false`): the bolt waits back and strips the
+## next round from the belt as it fires, so there is never a "+1" and every
+## reload is the same length. Internally the round the bolt will strip next
+## counts as `chambered`, so `loaded()` is simply the rounds left on the belt.
+##
+## Cyclic rate is exact: time left over after a cycle carries into the next
+## shot, so 0.05 s (1,200 rpm) fires every third 60 Hz physics tick instead of
+## drifting to every fourth.
 
 enum State { DRAWING, READY, CYCLING, RELOADING }
 
@@ -24,6 +33,8 @@ const EV_LAST_ROUND: StringName = &"last_round"
 
 ## Fraction of an empty reload where the slide closes.
 const SLIDE_RELEASE_POINT: float = 0.86
+## A reload press while the gun is busy (cycling, mid-burst) still counts this long.
+const RELOAD_BUFFER: float = 0.3
 
 var data: WeaponData
 var state: State = State.DRAWING
@@ -35,6 +46,9 @@ var empty_reload: bool = false
 
 var _state_time: float = 0.0
 var _buffered: float = -1.0
+## Overshoot from the last completed cycle (only used by a shot on the same tick).
+var _carry: float = 0.0
+var _reload_buffered: float = -1.0
 var _mag_out_done: bool = false
 var _mag_in_done: bool = false
 var _slide_done: bool = false
@@ -42,11 +56,25 @@ var _slide_done: bool = false
 
 func _init(p_data: WeaponData) -> void:
 	data = p_data
-	# Closed bolt only for now (the open-bolt MG42 comes in M3).
-	magazine = data.magazine_size
+	magazine = data.magazine_size if data.closed_bolt else data.magazine_size - 1
 	chambered = true
 	reserve = data.reserve_ammo
 	_enter(State.DRAWING)
+
+
+## Starts the draw (weapon switched to). A reload in progress is abandoned.
+func draw() -> void:
+	_buffered = -1.0
+	_enter(State.DRAWING)
+
+
+## The gun is being put away: drop any buffered trigger pull and reload.
+func holster() -> Array[StringName]:
+	var events: Array[StringName] = []
+	_buffered = -1.0
+	if state == State.RELOADING:
+		_cancel_reload(events)
+	return events
 
 
 ## Rounds the player can fire before reloading.
@@ -55,7 +83,7 @@ func loaded() -> int:
 
 
 func reload_duration() -> float:
-	return data.reload_empty_time if empty_reload else data.reload_tactical_time
+	return data.reload_empty_time if empty_reload and data.closed_bolt else data.reload_tactical_time
 
 
 ## 0..1 progress through the current reload (0 when not reloading).
@@ -72,7 +100,7 @@ func state_time() -> float:
 func can_reload() -> bool:
 	if state == State.RELOADING or state == State.DRAWING:
 		return false
-	var full: bool = magazine >= data.magazine_size and (chambered or not data.closed_bolt)
+	var full: bool = loaded() >= data.magazine_size + (1 if data.closed_bolt else 0)
 	return not full and (data.infinite_reserve or reserve > 0)
 
 
@@ -88,14 +116,21 @@ func update(delta: float, pull: bool, held: bool, reload: bool, blocked: bool, c
 	elif _buffered >= 0.0:
 		_buffered -= delta
 	var wants_shot: bool = _buffered >= 0.0 or (data.automatic and held)
+	if reload:
+		_reload_buffered = RELOAD_BUFFER
+	elif _reload_buffered >= 0.0:
+		_reload_buffered -= delta
+	reload = _reload_buffered >= 0.0
 
 	match state:
 		State.DRAWING:
 			if _state_time >= data.draw_time:
 				_enter(State.READY)
 		State.CYCLING:
-			if _state_time >= data.fire_interval:
+			if _state_time + 0.00001 >= data.fire_interval:
+				var over: float = _state_time - data.fire_interval
 				_enter(State.READY)
+				_carry = clampf(over, 0.0, data.fire_interval)
 		State.RELOADING:
 			var interrupt: bool = cancel or (pull and (chambered or _mag_in_done))
 			if interrupt and not _mag_in_done:
@@ -119,6 +154,9 @@ func update(delta: float, pull: bool, held: bool, reload: bool, blocked: bool, c
 					_start_reload(events)
 	elif state == State.READY and reload and can_reload():
 		_start_reload(events)
+	# The press was only held for a busy gun; a ready gun that didn't reload (full) drops it.
+	if state == State.READY and not blocked:
+		_reload_buffered = -1.0
 	return events
 
 
@@ -130,11 +168,15 @@ func _fire(events: Array[StringName]) -> void:
 	else:
 		chambered = false
 		events.append(EV_LAST_ROUND)
+	# Fired on the tick the last cycle finished: keep that cycle's overshoot.
+	var carry: float = _carry if _state_time <= 0.0 else 0.0
 	_enter(State.CYCLING)
+	_state_time = carry
 
 
 func _start_reload(events: Array[StringName]) -> void:
-	empty_reload = not chambered
+	_reload_buffered = -1.0
+	empty_reload = not chambered and data.closed_bolt
 	_mag_out_done = false
 	_mag_in_done = false
 	_slide_done = false
@@ -175,12 +217,21 @@ func _cancel_reload(events: Array[StringName]) -> void:
 
 func _seat_magazine() -> void:
 	# The old magazine's rounds go back into reserve; a fresh one comes out.
-	if not data.infinite_reserve:
+	if not data.closed_bolt:
+		# Open bolt: the old belt (including the round the bolt would strip) comes out with the box.
+		if not data.infinite_reserve:
+			reserve += loaded()
+		chambered = false
+		magazine = 0
+	elif not data.infinite_reserve:
 		reserve += magazine
 	var take: int = data.magazine_size if data.infinite_reserve else mini(data.magazine_size, reserve)
 	if not data.infinite_reserve:
 		reserve -= take
 	magazine = take
+	if not data.closed_bolt and magazine > 0:
+		magazine -= 1
+		chambered = true
 
 
 func _release_slide(events: Array[StringName]) -> void:
@@ -194,3 +245,4 @@ func _release_slide(events: Array[StringName]) -> void:
 func _enter(s: State) -> void:
 	state = s
 	_state_time = 0.0
+	_carry = 0.0

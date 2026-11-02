@@ -93,7 +93,7 @@ func _ready() -> void:
 	player.aim_assist = AimAssist.new(load("res://data/input/aim_assist.tres") as AimAssistConfig)
 	# Tuning the owner saved on the phone (pause menu → Gun tuning).
 	if not CaptureDirector.is_capturing():
-		TuningMenu.load_saved(player.weapon().data, player.aim_assist.config)
+		TuningMenu.load_saved_all(player.weapon(), player.aim_assist.config)
 		player.weapon().apply_tuning.call_deferred()
 	_bench = FrameBench.new()
 	add_child(_bench)

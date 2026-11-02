@@ -265,7 +265,7 @@ Each milestone ends with an APK on the owner's phone and an entry in `docs/playt
    Done when the owner wants to keep playing the wave mode.
 3. **M2 – Parts system.** Loadout screen. Power, heat, mass and capacity. At least 8 passives with visible changes. The drone, whip and time slowdown.
    Done when three different loadouts play noticeably differently.
-4. **M3 – Heavy weapons.** MG42-style machine gun with heat and barrel changes. Heavy armor parts, two more actives, dismemberment, machine-gunner and anti-augment enemies.
+4. **M3 – Heavy weapons.** MG42-style machine gun with heat and barrel changes (the gun itself, its handling and a flat carry penalty were pulled into M1 by the owner on 2026-11-01; heat and barrel changes stay here). Heavy armor parts, two more actives, dismemberment, machine-gunner and anti-augment enemies.
    Done when sustained fire tears up a room and the phone holds its frame rate.
 5. **M4 – Look and sound.** Art direction applied to two or three test areas, lighting, an audio pass.
 

@@ -1,6 +1,7 @@
 extends CanvasLayer
 ## Pause menu (Menu/Start button): resume, gun tuning, renderer, render scale, frame cap,
-## look curve, debug overlay, benchmark, quit. Controller-navigable.
+## look curve, look speed, debug overlay, benchmark, quit. Controller: D-pad/stick to
+## move, A to press, B to close (A/B are bound by InputBindings.register_ui_buttons).
 ## Autoloaded as PauseMenu.
 
 const BENCH_SECONDS: float = 20.0
@@ -75,6 +76,12 @@ func _build() -> void:
 	_add("scale", Settings.cycle_render_scale)
 	_add("fps", Settings.cycle_max_fps)
 	_add("look", Settings.cycle_look_preset)
+	_add("look_speed", Settings.cycle_look_sensitivity)
+	# Left/right on the look-speed button steps it down/up.
+	_buttons["look_speed"].gui_input.connect(func(event: InputEvent) -> void:
+		if event.is_action_pressed(&"ui_left") or event.is_action_pressed(&"ui_right"):
+			Settings.step_look_sensitivity(1 if event.is_action_pressed(&"ui_right") else -1)
+			_buttons["look_speed"].accept_event())
 	_add("overlay", func() -> void: Settings.set_overlay_visible(not Settings.overlay_visible))
 	_add("bench", _on_bench)
 	_add("quit", func() -> void: get_tree().quit())
@@ -107,6 +114,7 @@ func _refresh() -> void:
 	_label("scale", "Render scale: %d%%" % roundi(Settings.render_scale * 100.0))
 	_label("fps", "Frame cap: %d fps" % Settings.max_fps)
 	_label("look", "Look curve: %s" % Settings.look_config().display_name)
+	_label("look_speed", "Look speed: %d%%   (< >)" % roundi(Settings.look_sensitivity * 100.0))
 	_label("overlay", "Debug overlay: %s" % ("on" if Settings.overlay_visible else "off"))
 	_label("bench", "Run benchmark (%d s)" % roundi(BENCH_SECONDS))
 	_label("quit", "Quit")
