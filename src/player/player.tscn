@@ -1,4 +1,4 @@
-[gd_scene load_steps=10 format=3]
+[gd_scene load_steps=13 format=3]
 
 [ext_resource type="Script" path="res://src/player/player.gd" id="1_player"]
 [ext_resource type="Script" path="res://src/player/viewmodel_rig.gd" id="2_rig"]
@@ -9,6 +9,9 @@
 [ext_resource type="Resource" path="res://data/player/viewmodel_mg42.tres" id="7_vmmg"]
 [ext_resource type="PackedScene" path="res://assets/weapons/mg42/mg42.gltf" id="8_mg42"]
 [ext_resource type="PackedScene" path="res://assets/characters/fp_arms_mg42/fp_arms_mg42.gltf" id="9_armsmg"]
+[ext_resource type="Resource" path="res://data/player/viewmodel_rail.tres" id="10_vmrail"]
+[ext_resource type="PackedScene" path="res://assets/weapons/rail_carbine/rail_carbine.gltf" id="11_rail"]
+[ext_resource type="PackedScene" path="res://assets/characters/fp_arms_rail/fp_arms_rail.gltf" id="12_armsrail"]
 
 [sub_resource type="CapsuleShape3D" id="capsule"]
 radius = 0.4
@@ -39,6 +42,12 @@ visible = false
 script = ExtResource("2_rig")
 config = ExtResource("7_vmmg")
 models = Array[PackedScene]([ExtResource("8_mg42"), ExtResource("9_armsmg")])
+
+[node name="ViewmodelRail" type="Node3D" parent="Head/Camera3D"]
+visible = false
+script = ExtResource("2_rig")
+config = ExtResource("10_vmrail")
+models = Array[PackedScene]([ExtResource("11_rail"), ExtResource("12_armsrail")])
 
 [node name="Weapon" type="Node" parent="."]
 script = ExtResource("6_weapon")

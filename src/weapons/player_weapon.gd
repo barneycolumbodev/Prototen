@@ -1,7 +1,7 @@
 class_name PlayerWeapon
 extends Node
 ## The player's guns (docs/m1-gunplay-plan.md). Holds a small loadout (the
-## suppressed pistol and the MG42), one viewmodel rig per gun. Reads the
+## suppressed pistol, the MG42 and the RC-6 rail carbine), one viewmodel rig per gun. Reads the
 ## controller, runs the active gun's GunMechanism, fires rounds through
 ## Ballistics from the eye (so the round goes exactly where the crosshair or
 ## sights point, plus the gun's spread), and drives every piece of feedback:
@@ -10,6 +10,11 @@ extends Node
 ## Controls (CLAUDE.md §9.4): RT fire, LT held = aim down sights, X reload,
 ## Y switches gun (and cancels a reload). Firing during a sprint drops the
 ## sprint first. The active gun's "Carry" values slow the player down.
+##
+## Railguns (WeaponData.charge_time > 0): each shot gets the capacitor's
+## charge as its power (speed, recoil); a rising whine plays while it
+## recharges and a tone when it's full; overheating lifts the vent shroud and
+## steams for `vent_time`; the glow strips follow charge and heat.
 
 signal fired
 signal ammo_changed(loaded: int, reserve: int)
@@ -39,8 +44,10 @@ class Slot:
 @export var loadout: Array[WeaponData] = [
 	preload("res://data/weapons/pistol_57.tres"),
 	preload("res://data/weapons/mg42.tres"),
+	preload("res://data/weapons/rail_carbine.tres"),
 ]
-@export var rig_paths: Array[NodePath] = [^"../Head/Camera3D/Viewmodel", ^"../Head/Camera3D/ViewmodelMG42"]
+@export var rig_paths: Array[NodePath] = [^"../Head/Camera3D/Viewmodel", ^"../Head/Camera3D/ViewmodelMG42",
+		^"../Head/Camera3D/ViewmodelRail"]
 @export var input_enabled: bool = true
 
 var slots: Array[Slot] = []
@@ -78,6 +85,9 @@ var _shots: int = 0
 var _tail_cooldown: float = 0.0
 var _belt_shake: Spring
 var _cover_closed_sound: bool = true
+## Railgun charge whine (stopped when the next shot fires).
+var _charge_voice: AudioStreamPlayer
+var _glow_time: float = 0.0
 ## Scripted input for tests and the capture demo (overrides the controller).
 var _script_pull: bool = false
 var _script_aim: bool = false
@@ -166,6 +176,7 @@ func request_switch(index: int = -1) -> void:
 		return
 	for ev: StringName in mechanism.holster():
 		_handle(ev)
+	_stop_charge_whine()
 	switching_to = target
 	_holster_left = data.holster_time
 	Sfx.play_ui(&"holster", -4.0)
@@ -240,6 +251,10 @@ func _physics_process(delta: float) -> void:
 		_sprint_out = maxf(0.0, _sprint_out - delta)
 	var blocked: bool = _player.is_sprinting() or _sprint_out > 0.0 or is_switching()
 
+	# Holstered guns keep recharging and cooling.
+	for i: int in slots.size():
+		if i != current:
+			slots[i].mechanism.idle(delta)
 	var before: int = mechanism.loaded()
 	var events: Array[StringName] = mechanism.update(delta, pull, held, reload, blocked)
 	for ev: StringName in events:
@@ -285,8 +300,10 @@ func _process(delta: float) -> void:
 	s.motion.update(delta, a, _player.look_velocity, _move_fraction(), _player.is_on_floor(), pose)
 	s.rig.transform = s.motion.compose(s.hip_xform, s.ads_xform, a)
 	s.rig.set_slide(s.motion.slide * data.slide_travel)
-	s.rig.set_magazine_out(_mag_offset())
+	s.rig.set_magazine_out(_mag_offset(), data.magazine_travel)
 	s.rig.set_aimed(a)
+	if data.is_rail():
+		_update_rail_visuals(delta, s)
 	if data.cover_open_deg > 0.0:
 		var cover: float = _cover_open()
 		s.rig.set_cover_open(cover * data.cover_open_deg, data.cover_hinge)
@@ -300,6 +317,35 @@ func _process(delta: float) -> void:
 	if data.belt_jiggle > 0.0:
 		_belt_shake.step(delta)
 		s.rig.set_belt_offset(_belt_shake.value)
+
+
+## Glow strips follow the capacitor (dim after a shot, bright when full) and
+## heat (toward orange, pulsing while venting); the vent shroud lifts and
+## steams while the rails vent.
+func _update_rail_visuals(delta: float, s: Slot) -> void:
+	_glow_time += delta
+	var m: GunMechanism = s.mechanism
+	var charge: float = m.charge()
+	var energy: float = lerpf(data.glow_energy.x, data.glow_energy.y, charge * charge)
+	energy *= 1.0 + 0.8 * m.heat
+	# Discharge flash on the shot itself.
+	energy += data.glow_energy.y * 2.5 * exp(-m.since_shot() * 22.0)
+	if m.venting:
+		energy *= 0.75 + 0.25 * sin(_glow_time * 14.0)
+	s.rig.set_glow(data.glow_color.lerp(data.glow_hot_color, pow(m.heat, 0.8)), energy)
+	var p: float = m.vent_progress()
+	var open: float = smoothstep(0.0, 0.1, p) * (1.0 - smoothstep(0.85, 1.0, p)) if m.venting else 0.0
+	s.rig.set_vent(open * data.vent_lift)
+	if open > 0.3:
+		var at: Vector3 = s.rig.global_transform * Vector3(0.2, 0.06, 0.0)
+		Fx.vent_steam(at, s.rig.global_basis.y, 1.0 - p * 0.6)
+
+
+## The charge whine plays on a shared voice; only stop it if it's still ours.
+func _stop_charge_whine() -> void:
+	if _charge_voice and _charge_voice.playing and _charge_voice.stream in Sfx.bank(Sfx.weapon_bank(data, &"charge")):
+		_charge_voice.stop()
+	_charge_voice = null
 
 
 func _move_fraction() -> float:
@@ -366,6 +412,17 @@ func _handle(ev: StringName) -> void:
 			_rumble(Vector3(0.15, 0.1, 0.04))
 		GunMechanism.EV_RELOAD_CANCEL:
 			_play(&"reload_cancel", -8.0)
+		GunMechanism.EV_CHARGED:
+			_play(&"ready", -6.0)
+		GunMechanism.EV_OVERHEAT:
+			_stop_charge_whine()
+			_play(&"overheat", -4.0)
+			_play(&"vent", -2.0)
+			motion.jolt(Vector3(0, -0.004, 0.006), Vector3(-1.5, 0, -2.5))
+			_rumble(Vector3(0.2, 0.15, 0.25))
+		GunMechanism.EV_VENT_DONE:
+			_play(&"ready", -4.0)
+			motion.jolt(Vector3(0, 0.003, 0), Vector3(0, 0, 1.5))
 
 
 func _fire() -> void:
@@ -376,12 +433,15 @@ func _fire() -> void:
 	var gun: Transform3D = rig().global_transform
 	var muzzle: Transform3D = gun * Transform3D(Basis(), data.muzzle_point)
 	_shots += 1
-	var tracer: bool = data.tracer_every > 0 and _shots % data.tracer_every == 0
-	Ballistics.fire(data, eye.origin, dir, _player, muzzle.origin if tracer else Vector3.INF)
+	var tracer: bool = (data.tracer_every > 0 and _shots % data.tracer_every == 0) or data.beam_trail_time > 0.0
+	var power: float = mechanism.last_power
+	Ballistics.fire(data, eye.origin, dir, _player, muzzle.origin if tracer else Vector3.INF, power)
 	EventBus.shot_fired.emit(_player, eye.origin, dir)
 
 	var a: float = ads_visual()
-	var s: float = lerpf(1.0, data.ads_recoil_scale, a)
+	# Recoil is the slug's momentum: it goes with speed, √power.
+	var strength: float = sqrt(power)
+	var s: float = lerpf(1.0, data.ads_recoil_scale, a) * strength
 	var pitch_kick: float = data.kick_pitch_deg * _rng.randf_range(0.9, 1.1) * s
 	var yaw_kick: float = (_rng.randf_range(-1.0, 1.0) * data.kick_yaw_deg + data.kick_yaw_bias_deg) * s
 	cam_recoil.kick(Vector3(pitch_kick, yaw_kick, _rng.randf_range(-0.4, 0.4) * s) * (1.0 - data.kick_permanent))
@@ -390,17 +450,22 @@ func _fire() -> void:
 			_player.pitch + deg_to_rad(pitch_kick * data.kick_permanent))
 	bloom = minf(bloom + data.bloom_per_shot_deg, data.bloom_max_deg)
 	_since_shot = 0.0
-	motion.fire(a, _rng)
+	motion.fire(a, _rng, strength)
 	if data.belt_jiggle > 0.0:
 		_belt_shake.kick(Vector3(_rng.randf_range(-0.3, 0.3), _rng.randf_range(0.2, 1.0), _rng.randf_range(-1.0, 1.0)) * data.belt_jiggle)
 
 	Fx.muzzle_flash(muzzle, data)
-	var eject_vel: Vector3 = gun.basis * data.ejection_velocity + _player.velocity
-	Fx.eject_shell(gun * data.ejection_point, eject_vel, gun.basis)
-	Sfx.play_shot(data, _tail_cooldown <= 0.0)
+	if data.ejects_shells:
+		var eject_vel: Vector3 = gun.basis * data.ejection_velocity + _player.velocity
+		Fx.eject_shell(gun * data.ejection_point, eject_vel, gun.basis)
+	Sfx.play_shot(data, _tail_cooldown <= 0.0, linear_to_db(lerpf(0.55, 1.0, power)))
 	if _tail_cooldown <= 0.0:
 		_tail_cooldown = data.tail_interval
-	_rumble(data.rumble_fire)
+	if data.is_rail():
+		_stop_charge_whine()
+		if not mechanism.venting:
+			_charge_voice = Sfx.play_ui(Sfx.weapon_bank(data, &"charge"), -10.0, 0.0)
+	_rumble(data.rumble_fire * Vector3(strength, strength, 1.0))
 	fired.emit()
 
 

@@ -44,6 +44,7 @@ var _light: OmniLight3D
 var _light_time: float = 0.0
 var _light_energy: float = 0.0
 var _last_smoke: float = -1.0
+var _last_steam: float = -1.0
 
 var _shells: Array[Shell] = []
 var _shell_next: int = 0
@@ -97,6 +98,9 @@ func muzzle_flash(muzzle: Transform3D, data: WeaponData) -> void:
 	_flash.scale = Vector3.ONE * data.flash_scale * _rng.randf_range(0.8, 1.2)
 	_flash.rotate_object_local(Vector3.RIGHT, _rng.randf() * TAU)
 	_flash.visible = data.flash_scale > 0.0
+	(_flash.material_override as StandardMaterial3D).albedo_color = Color(
+			data.flash_color.r * 2.0, data.flash_color.g * 2.0, data.flash_color.b * 2.0)
+	_light.light_color = data.flash_color
 	_flash_time = 0.035
 	if data.flash_light_energy > 0.0:
 		_light.global_position = muzzle.origin + muzzle.basis.x * 0.05
@@ -110,6 +114,17 @@ func muzzle_flash(muzzle: Transform3D, data: WeaponData) -> void:
 	if data.smoke_per_shot > 0 and now - _last_smoke > 0.12:
 		_last_smoke = now
 		_emit(&"smoke", muzzle.origin, muzzle.basis.x, Color(0.7, 0.7, 0.7, 0.16), data.smoke_per_shot, 0.6)
+
+
+## Railgun vent: steam and heat haze rising off the rails (rate-limited).
+func vent_steam(at: Vector3, up: Vector3, strength: float = 1.0) -> void:
+	if not enabled:
+		return
+	var now: float = Time.get_ticks_msec() * 0.001
+	if now - _last_steam < 0.09:
+		return
+	_last_steam = now
+	_emit(&"smoke", at, up, Color(0.85, 0.9, 0.95, 0.22 * strength), 6, 1.2)
 
 
 # ------------------------------------------------------------------ shells
@@ -198,20 +213,26 @@ func _on_hit(hit: BallisticHit) -> void:
 	var s: SurfaceMaterial = hit.surface
 	var target: Node3D = hit.collider as Node3D
 	var reflect: Vector3 = hit.direction.bounce(hit.normal).normalized()
+	# Hypervelocity rounds (railgun) throw more, faster, and flash on contact.
+	var k: float = hit.weapon.impact_fx_scale if hit.weapon else 1.0
+	var count: int = roundi(s.particle_count * k)
 	match hit.result:
 		BallisticHit.Result.RICOCHET:
-			_emit(&"sparks", hit.point, reflect, Color(1.0, 0.8, 0.45), 10, 1.0)
-			bullet_hole(target, hit.point, hit.normal, s, 0.7)
+			_emit(&"sparks", hit.point, reflect, Color(1.0, 0.8, 0.45), roundi(10 * k), k)
+			bullet_hole(target, hit.point, hit.normal, s, 0.7 * k)
 		_:
-			bullet_hole(target, hit.point, hit.normal, s, 1.0)
+			bullet_hole(target, hit.point, hit.normal, s, k)
 			var spray: Vector3 = (hit.normal * 0.7 + reflect * 0.3).normalized()
-			_emit(s.particle_kind, hit.point, spray, s.particle_color, s.particle_count, 1.0)
+			_emit(s.particle_kind, hit.point, spray, s.particle_color, count, k)
 			if s.particle_kind == &"dust" or s.particle_kind == &"chalk":
-				_emit(&"sparks" if s.id == &"concrete" else &"chalk", hit.point, spray, s.particle_color.lightened(0.3), 3, 0.6)
+				_emit(&"sparks" if s.id == &"concrete" else &"chalk", hit.point, spray, s.particle_color.lightened(0.3), roundi(3 * k), 0.6 * k)
+	if k > 1.5 and not s.is_flesh:
+		# Impact flash: the slug's energy turns part of the target to glowing vapour.
+		_emit(&"sparks", hit.point, hit.normal, Color(0.8, 0.95, 1.0), 14, k * 0.8)
 	if hit.result == BallisticHit.Result.PENETRATED:
-		bullet_hole(target, hit.exit_point, hit.exit_normal, s, 1.6)
+		bullet_hole(target, hit.exit_point, hit.exit_normal, s, 1.6 * k)
 		# Exit spall flies along the round's path.
-		_emit(s.particle_kind, hit.exit_point, hit.direction, s.particle_color, s.particle_count + 4, 1.3)
+		_emit(s.particle_kind, hit.exit_point, hit.direction, s.particle_color, count + 4, 1.3 * k)
 
 
 ## Puts a bullet hole on `target` at `point`.

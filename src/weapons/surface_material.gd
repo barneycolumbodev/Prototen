@@ -21,6 +21,11 @@ extends Resource
 @export_range(0.0, 1.0) var ricochet_chance: float = 0.6
 ## Fraction of energy a ricochet keeps.
 @export_range(0.0, 1.0) var ricochet_energy_keep: float = 0.45
+## Water-like materials (flesh): drag grows with speed squared, so a
+## hypervelocity slug dumps far more energy per cm than a bullet. Above this
+## speed (m/s) the resistance scales with (v / speed)²; 0 = constant.
+## Calibrated so pistol and rifle rounds use the table value unchanged.
+@export_range(0.0, 3000.0) var drag_scaling_speed: float = 0.0
 
 @export_group("Destruction")
 ## Multiplies damage the material itself takes (destructible panels, props).
@@ -39,3 +44,10 @@ extends Resource
 ## Sound bank name in Sfx (impact_<name>).
 @export var impact_sound: StringName = &"concrete"
 @export var is_flesh: bool = false
+
+
+## Resistance multiplier for a round arriving at `speed` m/s.
+func speed_factor(speed: float) -> float:
+	if drag_scaling_speed <= 0.0 or speed <= drag_scaling_speed:
+		return 1.0
+	return (speed / drag_scaling_speed) * (speed / drag_scaling_speed)

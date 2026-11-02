@@ -86,8 +86,9 @@ func weapon_bank(data: WeaponData, name: StringName) -> StringName:
 
 
 ## Own-gun shot, plus the room tail when `with_tail` (automatic guns rate-limit it).
-func play_shot(data: WeaponData, with_tail: bool = true) -> void:
-	_play_pool(_voices_shot, _next_shot, weapon_bank(data, &"shot"), data.shot_volume_db, 0.04)
+## `extra_db`: per-shot change (a railgun shot on a half-charged capacitor is quieter).
+func play_shot(data: WeaponData, with_tail: bool = true, extra_db: float = 0.0) -> void:
+	_play_pool(_voices_shot, _next_shot, weapon_bank(data, &"shot"), data.shot_volume_db + extra_db, 0.04)
 	_next_shot = (_next_shot + 1) % _voices_shot.size()
 	if with_tail:
 		_play_pool(_voices_tail, _next_tail, weapon_bank(data, &"tail"), -8.0 + data.shot_volume_db, 0.05)

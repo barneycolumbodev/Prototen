@@ -52,6 +52,17 @@ Pulled forward from M3: "the next gun is the MG42 light gun — chrome and black
 
 "Doesn't look nearly as good as the MG42." It was the first asset: flat extruded frame and slide, few parts, flat finish. Rebuilt with the MG42's tooling, **olive finish kept** (owner): lofted oval grip with stipple texture and finger grooves, rounded dust cover, beavertail, squared trigger-guard loop, slide with lower chamfers, tapered nose, sight channel, extractor, firing-pin cap, chamber indicator, sight dots; lighter cavity grime. Same size and key points (sight line, muzzle, grip frame), so arms, ADS and gameplay are unchanged. 7.9k tris, 2K maps. Previews: `docs/previews/pistol_57_v2.png`.
 
+## M1a.2 — RC-6 "Lance" rail carbine (owner request, 2026-11-02)
+
+Owner brief and design reading: docs/design.md §4.3. Third gun in the loadout (Y cycles pistol → MG42 → rail carbine).
+
+- **Model:** `raw_assets/weapons/rail_carbine/build.py`. Bullpup, 0.85 m: graphite core loft with layered ceramic plates (superellipse bands), glowing seams, capacitor-bank fins in the stock, a 40-slug top magazine with windows onto slugs lying across the gun, reflex optic with a ring reticle, raked support grip inside a front loop, split-rail muzzle fork with heat-tinted rails, swept side vanes, FCL readout, power-cell cap, markings. 14.9k triangles, 4K baked maps. Moving/live parts: `magazine` (pulls back and up), `vent` (top shroud, lifts while venting), `glow` (emission driven by charge and heat), `lens` (real transparent glass).
+- **Arms:** `raw_assets/characters/fp_arms_rail/build.py` (the MG42 arms builder; right hand on the shared pistol-grip profile, left hand on the raked support grip). 7.8k triangles.
+- **Handling (`data/weapons/rail_carbine.tres`):** semi-auto, 0.2 s between shots at the fastest; capacitor full after 0.75 s; 2,600 m/s, 7 g, penetration ×1.8; 2.4° kick (scaled by √power); ADS 0.22 s to a 0.62× FOV reflex sight; 2.0 s reload. Carry penalty light (96 %).
+- **Code:** `WeaponData` "Capacitor and heat" group, `GunMechanism` (charge, heat, forced vent, `EV_CHARGED`/`EV_OVERHEAT`/`EV_VENT_DONE`), `Ballistics.fire(..., power)` + pooled camera-facing trail ribbons (`src/vfx/rail_trail.gdshader`), speed-dependent flesh drag (`SurfaceMaterial.drag_scaling_speed`, only above 900 m/s so the pistol and MG42 are unchanged), `Fx` flash colour / impact scale / vent steam, `ViewmodelRig` vent/glow/lens/magazine direction, HUD charge/heat gauge, "Railgun" section in Gun tuning (only shown for the rail carbine).
+- **Sound:** `raw_assets/audio/build_rail_sfx.py`, 13 synthesized files: capacitor snap + plasma arc crackle, magnetic thwack with pitch drop, Mach 7.6 crack, sub punch, rails ringing, long rolling boom tail; charge whine, ready tone, overheat beeps, vent hiss with cooling ticks, magnetic magazine seat.
+- **Tests:** `tests/unit/test_rail_mechanism.gd`, `tests/scene/test_rail_carbine.gd`, budgets in `tests/unit/test_weapon_assets.gd`.
+
 ## Later M1 slices
 
 - **M1b — Movement:** sprint polish, slide, wall-run, mantle, air dash; viewmodel reacts to all of them.

@@ -38,10 +38,16 @@ const WEAPON_PARAMS: Array = [
 	["Carry", "carry_sprint_scale", 0.3, 1.0, 0.01, "Sprint speed with gun"],
 	["Carry", "hip_walk_deg_s", 0.0, 10.0, 0.25, "Hip walk (°/s of fire)"],
 	["Carry", "hip_walk_max_deg", 0.0, 10.0, 0.25, "Hip walk max (°)"],
-	["Ballistics", "muzzle_velocity", 300.0, 900.0, 10.0, "Muzzle velocity (m/s)"],
+	["Ballistics", "muzzle_velocity", 300.0, 3500.0, 10.0, "Muzzle velocity (m/s)"],
 	["Ballistics", "penetration_scale", 0.3, 3.0, 0.05, "Penetration power"],
 	["Ballistics", "damage_per_joule", 0.05, 0.4, 0.005, "Damage per joule"],
 	["Ballistics", "impulse_scale", 0.0, 80.0, 1.0, "Push on hit"],
+	["Railgun", "charge_time", 0.2, 2.0, 0.05, "Capacitor full after (s)"],
+	["Railgun", "min_charge_power", 0.1, 1.0, 0.05, "Power when fired early"],
+	["Railgun", "heat_per_shot", 0.0, 0.5, 0.01, "Heat per shot"],
+	["Railgun", "heat_cool_per_s", 0.0, 2.0, 0.05, "Cooling per second"],
+	["Railgun", "vent_time", 0.3, 4.0, 0.1, "Vent time (s)"],
+	["Railgun", "beam_trail_time", 0.0, 2.0, 0.05, "Trail lingers (s)"],
 	["Feedback", "hitstop_headshot", 0.0, 0.15, 0.005, "Hit-stop headshot (s)"],
 	["Feedback", "hitstop_kill", 0.0, 0.15, 0.005, "Hit-stop kill (s)"],
 ]
@@ -131,6 +137,11 @@ func save() -> void:
 	cfg.save(SAVE_PATH)
 
 
+## Railgun sliders only appear for railguns.
+static func shows(param: Array, data: WeaponData) -> bool:
+	return param[0] != "Railgun" or data.is_rail()
+
+
 ## Save-file section for a gun ("weapon_pistol_57", "weapon_mg42").
 static func section_for(data: WeaponData) -> String:
 	return "weapon_" + data.resource_path.get_file().get_basename()
@@ -166,6 +177,8 @@ static func load_saved(data: WeaponData, assist: AimAssistConfig) -> void:
 func values_text() -> String:
 	var lines: PackedStringArray = PackedStringArray(["# %s (data/weapons)" % _weapon.data.display_name])
 	for p: Array in WEAPON_PARAMS:
+		if not shows(p, _weapon.data):
+			continue
 		var prop: String = p[1]
 		lines.append("%s = %s" % [prop, var_to_str(_weapon.data.get(prop))])
 	if _assist:
@@ -220,6 +233,8 @@ func _build() -> void:
 	_button("Restore defaults", _on_defaults)
 	var section: String = ""
 	for p: Array in WEAPON_PARAMS + (ASSIST_PARAMS if _assist else []):
+		if not shows(p, _weapon.data):
+			continue
 		var sec: String = p[0]
 		if sec != section:
 			section = sec

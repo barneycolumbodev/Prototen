@@ -17,3 +17,7 @@ Every third-party file in the repository, with its source and license (CLAUDE.md
 | First-person arms holding the MG42 | `assets/characters/fp_arms_mg42/` | `raw_assets/characters/fp_arms_mg42/build.py`. |
 | MG42 sounds (13: shots, tail, belt reload beats, draw/holster) | `assets/audio/sfx/mg42_*`, `draw_1`, `holster_1` | Synthesized by `raw_assets/audio/build_mg42_sfx.py` (numpy/scipy). |
 | Bullet hole, flash and particle textures | generated at runtime | `src/vfx/fx.gd` |
+| RC-6 rail carbine (model, 4K baked textures, magazine/vent/glow/lens parts) | `assets/weapons/rail_carbine/` | `raw_assets/weapons/rail_carbine/build.py` (Blender/bpy, procedural materials, high→low bake). |
+| First-person arms holding the rail carbine | `assets/characters/fp_arms_rail/` | `raw_assets/characters/fp_arms_rail/build.py`. |
+| Rail carbine sounds (13: shots, tail, charge, ready, vent, overheat, reload beats, dry fire) | `assets/audio/sfx/rail_*` | Synthesized by `raw_assets/audio/build_rail_sfx.py` (numpy/scipy). |
+| Railgun trail shader | `src/vfx/rail_trail.gdshader` | Written for this project. |

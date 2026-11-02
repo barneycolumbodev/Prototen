@@ -62,8 +62,9 @@ func apply_tuning() -> void:
 	pose_rot.damping = data.pose_spring_damping
 
 
-func fire(ads: float, rng: RandomNumberGenerator) -> void:
-	var s: float = lerpf(1.0, data.ads_vm_scale, ads)
+## `strength`: 1 for a normal shot (railguns scale it with the slug's momentum).
+func fire(ads: float, rng: RandomNumberGenerator, strength: float = 1.0) -> void:
+	var s: float = lerpf(1.0, data.ads_vm_scale, ads) * strength
 	recoil_pos.kick(Vector3(0.0, data.vm_kick_back * 0.12, data.vm_kick_back) * s)
 	recoil_rot.kick(Vector3(rng.randf_range(-1.0, 1.0) * data.vm_kick_roll_deg,
 			rng.randf_range(-0.3, 0.3) * data.vm_kick_roll_deg,

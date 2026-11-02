@@ -1,7 +1,8 @@
 extends CanvasLayer
 ## In-game HUD: spread reticle (sized from the real spread cone, hidden when
 ## aimed so the iron sights do the work), hit markers (white hit, gold
-## headshot, red kill), ammo, reload bar, controller prompt, benchmark status.
+## headshot, red kill), ammo, reload bar, controller prompt, benchmark status,
+## and for railguns a capacitor charge / rail heat gauge above the ammo.
 
 var bench: FrameBench
 ## Set by the level.
@@ -18,6 +19,38 @@ var _ammo: Label
 var _weapon_name: Label
 var _name_time: float = 0.0
 var _reticle: Reticle
+var _gauge: RailGauge
+
+
+## Railgun gauge: capacitor charge (cyan, full = bright) and rail heat
+## (white to orange; "VENTING" while the rails cool).
+class RailGauge:
+	extends Control
+	var charge: float = 1.0
+	var heat: float = 0.0
+	var venting: bool = false
+	var _t: float = 0.0
+	const W: float = 150.0
+
+	func _process(delta: float) -> void:
+		_t += delta
+		queue_redraw()
+
+	func _draw() -> void:
+		var x0: float = size.x - W
+		var full: bool = charge >= 1.0
+		var c: Color = Color(0.4, 0.88, 1.0, 1.0 if full else 0.75)
+		draw_rect(Rect2(x0, 0, W, 5), Color(0, 0, 0, 0.55))
+		draw_rect(Rect2(x0, 0, W * charge, 5), c)
+		var hot: Color = Color(1, 1, 1, 0.85).lerp(Color(1.0, 0.42, 0.12), heat)
+		if venting:
+			hot.a = 0.55 + 0.45 * sin(_t * 14.0)
+		draw_rect(Rect2(x0, 9, W, 3), Color(0, 0, 0, 0.55))
+		draw_rect(Rect2(x0, 9, W * heat, 3), hot)
+		var font: Font = get_theme_default_font()
+		var label: String = "VENTING" if venting else ("CHARGED" if full else "CHARGING")
+		var col: Color = Color(1.0, 0.5, 0.2, hot.a) if venting else c
+		draw_string(font, Vector2(x0, -4), label, HORIZONTAL_ALIGNMENT_LEFT, W, 12, col)
 
 
 class Reticle:
@@ -97,6 +130,11 @@ func _ready() -> void:
 	_weapon_name.grow_horizontal = Control.GROW_DIRECTION_BEGIN
 	_weapon_name.grow_vertical = Control.GROW_DIRECTION_BEGIN
 	_weapon_name.position.y -= 34
+	_gauge = RailGauge.new()
+	_gauge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_gauge.size = Vector2(RailGauge.W, 14)
+	_gauge.visible = false
+	add_child(_gauge)
 	Input.joy_connection_changed.connect(func(_device: int, _connected: bool) -> void: _update_pad_notice())
 	EventBus.target_hit.connect(_on_target_hit)
 	_update_pad_notice()
@@ -115,6 +153,13 @@ func _process(delta: float) -> void:
 			_reticle.gap_px = spread_to_pixels(weapon.spread, cam.fov, _reticle.size.y) + 3.0
 		_reticle.alpha = clampf(1.0 - weapon.ads_visual() * 2.0, 0.0, 1.0)
 		_reticle.reload = weapon.mechanism.reload_progress()
+		_gauge.visible = weapon.data.is_rail()
+		if _gauge.visible:
+			var vp: Vector2 = get_viewport().get_visible_rect().size
+			_gauge.position = Vector2(vp.x - RailGauge.W - 26.0, vp.y - 96.0)
+			_gauge.charge = weapon.mechanism.charge()
+			_gauge.heat = weapon.mechanism.heat
+			_gauge.venting = weapon.mechanism.venting
 
 
 ## Half the spread cone in screen pixels (vertical FOV, viewport height).
