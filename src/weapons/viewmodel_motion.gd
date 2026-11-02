@@ -35,9 +35,17 @@ func _init(p_data: WeaponData) -> void:
 	pose_rot = Spring.new()
 	land = Spring.new(5.0, 0.6)
 	apply_tuning()
-	# Start lowered so the gun comes up on spawn.
+	start_draw()
+
+
+## Snaps the gun to the lowered pose so it comes up (spawn, weapon switch).
+func start_draw() -> void:
 	pose_pos.reset(data.draw_offset)
 	pose_rot.reset(data.draw_rotation_deg)
+	recoil_pos.reset()
+	recoil_rot.reset()
+	_slide_locked = false
+	_slide_time = 1.0
 
 
 ## Re-reads spring tuning from the data (the tuning menu changes it live).
@@ -74,7 +82,8 @@ func landed(fall_speed: float) -> void:
 
 
 ## `look_rate`: degrees per second, x = turning right, y = looking up.
-## `pose`: 0 = none, 1 = sprint, 2 = reload (draw handled by the start state).
+## `pose`: 0 = none, 1 = sprint, 2 = reload, 3 = holstering (going down to
+## the draw pose; the draw itself starts from there via `start_draw`).
 func update(delta: float, ads: float, look_rate: Vector2, move_fraction: float,
 		on_floor: bool, pose: int) -> void:
 	var still: float = 1.0 - 0.75 * ads
@@ -92,6 +101,9 @@ func update(delta: float, ads: float, look_rate: Vector2, move_fraction: float,
 		2:
 			pose_pos.target = data.reload_offset * (1.0 - ads)
 			pose_rot.target = data.reload_rotation_deg * (1.0 - ads)
+		3:
+			pose_pos.target = data.draw_offset
+			pose_rot.target = data.draw_rotation_deg
 		_:
 			pose_pos.target = Vector3.ZERO
 			pose_rot.target = Vector3.ZERO

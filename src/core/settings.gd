@@ -14,11 +14,15 @@ const RENDER_SCALES: Array[float] = [0.7, 0.8, 0.9, 1.0]
 const FPS_CAPS: Array[int] = [60, 30]
 const RENDERERS: Array[String] = ["mobile", "gl_compatibility"]
 const LOOK_PRESETS: Array[String] = ["standard", "linear", "precise"]
+## Look speed multipliers offered in the pause menu (on top of the preset).
+const LOOK_SPEEDS: Array[float] = [0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.15, 1.3, 1.5]
 
 var render_scale: float = 1.0
 var max_fps: int = 60
 var overlay_visible: bool = true
 var look_preset: String = "standard"
+## Multiplies stick look speed (pause menu → Look speed).
+var look_sensitivity: float = 1.0
 ## Vertical field of view in degrees. 60 vertical ≈ 104 horizontal on the 20:9 target phone.
 var vertical_fov: float = 60.0
 ## Last benchmark per renderer: { "mobile": {...}, "gl_compatibility": {...} }
@@ -42,6 +46,8 @@ func load_settings() -> void:
 	vertical_fov = cfg.get_value("video", "vertical_fov", vertical_fov)
 	overlay_visible = cfg.get_value("debug", "overlay_visible", overlay_visible)
 	look_preset = cfg.get_value("input", "look_preset", look_preset)
+	var sens: float = cfg.get_value("input", "look_sensitivity", look_sensitivity)
+	look_sensitivity = clampf(sens, 0.2, 3.0)
 	var bench: Variant = cfg.get_value("debug", "bench_results", {})
 	if bench is Dictionary:
 		bench_results = bench
@@ -57,6 +63,7 @@ func save_settings() -> void:
 	cfg.set_value("debug", "overlay_visible", overlay_visible)
 	cfg.set_value("debug", "bench_results", bench_results)
 	cfg.set_value("input", "look_preset", look_preset)
+	cfg.set_value("input", "look_sensitivity", look_sensitivity)
 	var err: Error = cfg.save(SETTINGS_PATH)
 	if err != OK:
 		push_warning("Settings: could not save (%s)" % error_string(err))
@@ -90,6 +97,28 @@ func cycle_look_preset() -> void:
 	var i: int = LOOK_PRESETS.find(look_preset)
 	look_preset = LOOK_PRESETS[(i + 1) % LOOK_PRESETS.size()]
 	_commit()
+
+
+## Steps the look speed up (+1) or down (-1) through LOOK_SPEEDS, without wrapping.
+func step_look_sensitivity(direction: int) -> void:
+	var i: int = 0
+	var best: float = INF
+	for k: int in LOOK_SPEEDS.size():
+		var d: float = absf(LOOK_SPEEDS[k] - look_sensitivity)
+		if d < best:
+			best = d
+			i = k
+	look_sensitivity = LOOK_SPEEDS[clampi(i + direction, 0, LOOK_SPEEDS.size() - 1)]
+	_commit()
+
+
+## A on the menu button: next step up, wrapping to the slowest after the fastest.
+func cycle_look_sensitivity() -> void:
+	if is_equal_approx(look_sensitivity, LOOK_SPEEDS[LOOK_SPEEDS.size() - 1]):
+		look_sensitivity = LOOK_SPEEDS[0]
+		_commit()
+	else:
+		step_look_sensitivity(1)
 
 
 func set_overlay_visible(value: bool) -> void:

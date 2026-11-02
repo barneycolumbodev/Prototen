@@ -11,8 +11,9 @@ extends Resource
 @export var caliber: String = "5.7×28mm"
 
 @export_group("Magazine")
-@export_range(1, 200) var magazine_size: int = 20
-## A tactical reload keeps the round in the chamber (20 + 1).
+@export_range(1, 500) var magazine_size: int = 20
+## A tactical reload keeps the round in the chamber (20 + 1). False = open
+## bolt (belt-fed MG): no +1, and every reload is the same length.
 @export var closed_bolt: bool = true
 @export_range(0, 9999) var reserve_ammo: int = 200
 ## Range/testing: reserve never runs out.
@@ -27,6 +28,17 @@ extends Resource
 ## Delay between leaving a sprint and the first shot.
 @export_range(0.0, 0.5) var sprint_to_fire: float = 0.13
 @export_range(0.0, 1.5) var draw_time: float = 0.4
+## Seconds to put the gun away when switching to the other one.
+@export_range(0.05, 1.5) var holster_time: float = 0.2
+
+@export_group("Carry")
+## Movement while this gun is out, as a fraction of normal. Universal for now;
+## later it comes from the body's strength and load parts (docs/design.md §3.2).
+@export_range(0.3, 1.0) var carry_speed_scale: float = 1.0
+@export_range(0.3, 1.0) var carry_sprint_scale: float = 1.0
+@export_range(0.3, 1.0) var carry_jump_scale: float = 1.0
+## Look speed while this gun is out (a heavy gun turns slower).
+@export_range(0.3, 1.0) var carry_turn_scale: float = 1.0
 
 @export_group("Reload")
 ## Magazine change with a round still chambered.
@@ -68,6 +80,10 @@ extends Resource
 ## Extra hip spread at full walking speed.
 @export_range(0.0, 10.0) var move_spread_deg: float = 1.1
 @export_range(0.0, 15.0) var air_spread_deg: float = 2.5
+## Extra hip spread while firing continuously (the gun walks around at the
+## hip), degrees per second of sustained fire, up to `hip_walk_max_deg`.
+@export_range(0.0, 20.0) var hip_walk_deg_s: float = 0.0
+@export_range(0.0, 20.0) var hip_walk_max_deg: float = 0.0
 ## Extra spread added per shot, recovers over time.
 @export_range(0.0, 5.0) var bloom_per_shot_deg: float = 0.3
 @export_range(0.0, 10.0) var bloom_max_deg: float = 1.5
@@ -146,6 +162,26 @@ extends Resource
 ## Suppressed: small flash and dim light.
 @export_range(0.0, 3.0) var flash_scale: float = 0.35
 @export_range(0.0, 10.0) var flash_light_energy: float = 1.2
+## Every Nth round is a tracer (0 = none).
+@export_range(0, 10) var tracer_every: int = 0
+## Muzzle smoke puffs per shot (suppressor puff / propellant smoke).
+@export_range(0, 10) var smoke_per_shot: int = 3
+
+@export_group("Sound")
+## Sfx bank prefix for this gun's sounds ("mg42_" plays mg42_shot, mg42_mag_in...).
+## Banks the prefix doesn't have fall back to the plain names.
+@export var sound_prefix: String = ""
+@export_range(-30.0, 6.0) var shot_volume_db: float = 0.0
+## Shortest gap between room tails (automatic fire would stack dozens).
+@export_range(0.0, 1.0) var tail_interval: float = 0.0
+
+@export_group("Moving parts")
+## Feed cover (node "cover"): hinge point in weapon space, and how far it
+## opens during a reload (degrees, muzzle up).
+@export var cover_hinge: Vector3 = Vector3.ZERO
+@export_range(0.0, 120.0) var cover_open_deg: float = 0.0
+## Belt (node "belt") shake per shot, metres.
+@export_range(0.0, 0.02) var belt_jiggle: float = 0.0
 
 @export_group("Feedback")
 ## Controller rumble per shot: weak motor, strong motor, seconds.
@@ -163,8 +199,8 @@ func muzzle_energy() -> float:
 
 
 ## Full-width spread cone in degrees for the current state.
-func spread_deg(aim: float, move_fraction: float, airborne: bool, bloom: float) -> float:
-	var extra: float = move_spread_deg * clampf(move_fraction, 0.0, 1.0) + bloom
+func spread_deg(aim: float, move_fraction: float, airborne: bool, bloom: float, hip_walk: float = 0.0) -> float:
+	var extra: float = move_spread_deg * clampf(move_fraction, 0.0, 1.0) + bloom + hip_walk
 	if airborne:
 		extra += air_spread_deg
 	var mech: float = mechanical_moa / 60.0

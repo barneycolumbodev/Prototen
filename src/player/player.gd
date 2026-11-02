@@ -14,6 +14,9 @@ signal landed(fall_speed: float)
 var fov_scale: float = 1.0
 var look_scale: float = 1.0
 var move_scale: float = 1.0
+## Set by the weapon: carrying a heavy gun cuts sprint speed and jump height.
+var sprint_scale: float = 1.0
+var jump_scale: float = 1.0
 ## While true (aiming) a sprint can't start.
 var sprint_blocked: bool = false
 ## Look speed in degrees per second: x = turning right, y = looking up.
@@ -103,7 +106,7 @@ func _process(delta: float) -> void:
 		var look: LookConfig = Settings.look_config()
 		var raw: Vector2 = Input.get_vector(&"look_left", &"look_right", &"look_up", &"look_down", 0.0)
 		_tilt_time = _tilt_time + delta if look.is_full_tilt(raw) else 0.0
-		var rate: Vector2 = look.look_rate(raw, _tilt_time) * look_scale
+		var rate: Vector2 = look.look_rate(raw, _tilt_time) * look_scale * Settings.look_sensitivity
 		if aim_assist:
 			rate = aim_assist.apply(self, rate, delta)
 		set_view(yaw - deg_to_rad(rate.x) * delta, pitch - deg_to_rad(rate.y) * delta)
@@ -136,7 +139,7 @@ func _physics_process(delta: float) -> void:
 		_sprinting = false
 	var speed: float = cfg.walk_speed
 	if _sprinting:
-		speed = cfg.sprint_speed
+		speed = cfg.sprint_speed * sprint_scale
 	elif _crouching:
 		speed = cfg.crouch_speed
 	speed *= move_scale
@@ -154,7 +157,7 @@ func _physics_process(delta: float) -> void:
 	if not is_on_floor():
 		vy -= cfg.gravity * delta
 	if _jump_buffer > 0.0 and _coyote > 0.0:
-		vy = cfg.jump_velocity
+		vy = cfg.jump_velocity * jump_scale
 		_jump_buffer = 0.0
 		_coyote = 0.0
 

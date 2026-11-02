@@ -32,3 +32,24 @@ func test_bench_summary_empty() -> void:
 	var avg: float = r["avg_ms"]
 	assert_eq(count, 0)
 	assert_eq(avg, 0.0)
+
+
+func test_look_speed_steps_without_wrapping_and_scales_the_stick() -> void:
+	var saved: float = Settings.look_sensitivity
+	Settings.look_sensitivity = 1.0
+	Settings.step_look_sensitivity(1)
+	assert_almost_eq(Settings.look_sensitivity, 1.15, 0.001)
+	for i: int in 20:
+		Settings.step_look_sensitivity(-1)
+	assert_almost_eq(Settings.look_sensitivity, Settings.LOOK_SPEEDS[0], 0.001, "stops at the slowest")
+	Settings.cycle_look_sensitivity()
+	assert_gt(Settings.look_sensitivity, Settings.LOOK_SPEEDS[0])
+	Settings.look_sensitivity = saved
+	Settings.save_settings()
+
+
+func test_default_look_is_slower_than_m1a() -> void:
+	# Playtest 2026-11-01: "a little too sensitive". M1a's Standard curve turned 240°/s.
+	var look: LookConfig = load("res://data/input/look_standard.tres") as LookConfig
+	assert_lt(look.yaw_speed_deg, 200.0)
+	assert_lt(look.yaw_speed_deg * look.full_tilt_boost, 300.0, "full-tilt turn stays controllable")
