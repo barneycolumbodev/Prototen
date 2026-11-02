@@ -1,266 +1,340 @@
 {
- "asset": {
-  "generator": "Khronos glTF Blender I/O v5.2.41",
-  "version": "2.0"
- },
- "extensionsUsed": [
-  "KHR_materials_emissive_strength"
- ],
- "scene": 0,
- "scenes": [
-  {
-   "name": "Scene",
-   "nodes": [
-    0
-   ]
-  }
- ],
- "nodes": [
-  {
-   "name": "pistol_57",
-   "children": [
-    1,
-    2,
-    3
-   ]
-  },
-  {
-   "name": "body",
-   "mesh": 0
-  },
-  {
-   "name": "slide",
-   "mesh": 1
-  },
-  {
-   "name": "magazine",
-   "mesh": 2
-  }
- ],
- "materials": [
-  {
-   "emissiveFactor": [
-    1,
-    1,
-    1
-   ],
-   "emissiveTexture": {
-    "index": 0
-   },
-   "extensions": {
-    "KHR_materials_emissive_strength": {
-     "emissiveStrength": 4
-    }
-   },
-   "name": "pistol_57",
-   "normalTexture": {
-    "index": 1
-   },
-   "occlusionTexture": {
-    "index": 2
-   },
-   "pbrMetallicRoughness": {
-    "baseColorTexture": {
-     "index": 3
-    },
-    "metallicRoughnessTexture": {
-     "index": 2
-    }
-   }
-  }
- ],
- "meshes": [
-  {
-   "name": "body",
-   "primitives": [
-    {
-     "attributes": {
-      "POSITION": 0,
-      "NORMAL": 1,
-      "TEXCOORD_0": 2
-     },
-     "indices": 4,
-     "material": 0
-    }
-   ]
-  },
-  {
-   "name": "slide",
-   "primitives": [
-    {
-     "attributes": {
-      "POSITION": 0,
-      "NORMAL": 1,
-      "TEXCOORD_0": 2
-     },
-     "indices": 5,
-     "material": 0
-    }
-   ]
-  },
-  {
-   "name": "magazine",
-   "primitives": [
-    {
-     "attributes": {
-      "POSITION": 0,
-      "NORMAL": 1,
-      "TEXCOORD_0": 2
-     },
-     "indices": 6,
-     "material": 0
-    }
-   ]
-  }
- ],
- "textures": [
-  {
-   "sampler": 0,
-   "source": 0
-  },
-  {
-   "sampler": 0,
-   "source": 1
-  },
-  {
-   "sampler": 0,
-   "source": 2
-  },
-  {
-   "sampler": 0,
-   "source": 3
-  }
- ],
- "images": [
-  {
-   "mimeType": "image/png",
-   "name": "pistol_57_emission",
-   "uri": "textures/pistol_57_emission.png"
-  },
-  {
-   "mimeType": "image/png",
-   "name": "pistol_57_normal",
-   "uri": "textures/pistol_57_normal.png"
-  },
-  {
-   "mimeType": "image/png",
-   "name": "pistol_57_orm",
-   "uri": "textures/pistol_57_orm.png"
-  },
-  {
-   "mimeType": "image/png",
-   "name": "pistol_57_basecolor",
-   "uri": "textures/pistol_57_basecolor.png"
-  }
- ],
- "accessors": [
-  {
-   "bufferView": 0,
-   "componentType": 5126,
-   "count": 9961,
-   "max": [
-    0.2840000092983246,
-    0.027249999344348907,
-    0.01860000006854534
-   ],
-   "min": [
-    -0.10775909572839737,
-    -0.14650000631809235,
-    -0.01860000006854534
-   ],
-   "type": "VEC3"
-  },
-  {
-   "bufferView": 1,
-   "componentType": 5126,
-   "count": 9961,
-   "type": "VEC3"
-  },
-  {
-   "bufferView": 2,
-   "componentType": 5126,
-   "count": 9961,
-   "type": "VEC2"
-  },
-  {
-   "bufferView": 3,
-   "componentType": 5123,
-   "count": 19668,
-   "type": "SCALAR"
-  },
-  {
-   "bufferView": 4,
-   "componentType": 5123,
-   "count": 14175,
-   "type": "SCALAR"
-  },
-  {
-   "bufferView": 5,
-   "componentType": 5123,
-   "count": 5268,
-   "type": "SCALAR"
-  },
-  {
-   "bufferView": 6,
-   "componentType": 5123,
-   "count": 225,
-   "type": "SCALAR"
-  }
- ],
- "bufferViews": [
-  {
-   "buffer": 0,
-   "byteLength": 119532,
-   "byteOffset": 0,
-   "target": 34962
-  },
-  {
-   "buffer": 0,
-   "byteLength": 119532,
-   "byteOffset": 119532,
-   "target": 34962
-  },
-  {
-   "buffer": 0,
-   "byteLength": 79688,
-   "byteOffset": 239064,
-   "target": 34962
-  },
-  {
-   "buffer": 0,
-   "byteLength": 39336,
-   "byteOffset": 318752,
-   "target": 34963
-  },
-  {
-   "buffer": 0,
-   "byteOffset": 358088,
-   "byteLength": 28350,
-   "target": 34963
-  },
-  {
-   "buffer": 0,
-   "byteOffset": 386440,
-   "byteLength": 10536,
-   "target": 34963
-  },
-  {
-   "buffer": 0,
-   "byteOffset": 396976,
-   "byteLength": 450,
-   "target": 34963
-  }
- ],
- "samplers": [
-  {
-   "magFilter": 9729,
-   "minFilter": 9987
-  }
- ],
- "buffers": [
-  {
-   "byteLength": 397426,
-   "uri": "pistol_57.bin"
-  }
- ]
+	"asset":{
+		"generator":"Khronos glTF Blender I/O v5.2.41",
+		"version":"2.0"
+	},
+	"extensionsUsed":[
+		"KHR_materials_emissive_strength"
+	],
+	"scene":0,
+	"scenes":[
+		{
+			"name":"Scene",
+			"nodes":[
+				0,
+				1,
+				2
+			]
+		}
+	],
+	"nodes":[
+		{
+			"mesh":0,
+			"name":"body"
+		},
+		{
+			"mesh":1,
+			"name":"magazine"
+		},
+		{
+			"mesh":2,
+			"name":"slide"
+		}
+	],
+	"materials":[
+		{
+			"emissiveFactor":[
+				1,
+				1,
+				1
+			],
+			"emissiveTexture":{
+				"index":0
+			},
+			"extensions":{
+				"KHR_materials_emissive_strength":{
+					"emissiveStrength":4
+				}
+			},
+			"name":"pistol_57",
+			"normalTexture":{
+				"index":1
+			},
+			"occlusionTexture":{
+				"index":2
+			},
+			"pbrMetallicRoughness":{
+				"baseColorTexture":{
+					"index":3
+				},
+				"metallicRoughnessTexture":{
+					"index":2
+				}
+			}
+		}
+	],
+	"meshes":[
+		{
+			"name":"body",
+			"primitives":[
+				{
+					"attributes":{
+						"POSITION":0,
+						"NORMAL":1,
+						"TEXCOORD_0":2
+					},
+					"indices":3,
+					"material":0
+				}
+			]
+		},
+		{
+			"name":"magazine",
+			"primitives":[
+				{
+					"attributes":{
+						"POSITION":4,
+						"NORMAL":5,
+						"TEXCOORD_0":6
+					},
+					"indices":7,
+					"material":0
+				}
+			]
+		},
+		{
+			"name":"slide.002",
+			"primitives":[
+				{
+					"attributes":{
+						"POSITION":8,
+						"NORMAL":9,
+						"TEXCOORD_0":10
+					},
+					"indices":11,
+					"material":0
+				}
+			]
+		}
+	],
+	"textures":[
+		{
+			"sampler":0,
+			"source":0
+		},
+		{
+			"sampler":0,
+			"source":1
+		},
+		{
+			"sampler":0,
+			"source":2
+		},
+		{
+			"sampler":0,
+			"source":3
+		}
+	],
+	"images":[
+		{
+			"mimeType":"image/png",
+			"name":"pistol_57_emission",
+			"uri":"textures/pistol_57_emission.png"
+		},
+		{
+			"mimeType":"image/png",
+			"name":"pistol_57_normal",
+			"uri":"textures/pistol_57_normal.png"
+		},
+		{
+			"mimeType":"image/png",
+			"name":"pistol_57_orm",
+			"uri":"textures/pistol_57_orm.png"
+		},
+		{
+			"mimeType":"image/png",
+			"name":"pistol_57_basecolor",
+			"uri":"textures/pistol_57_basecolor.png"
+		}
+	],
+	"accessors":[
+		{
+			"bufferView":0,
+			"componentType":5126,
+			"count":6266,
+			"max":[
+				0.2840000092983246,
+				0.01915000006556511,
+				0.01889999955892563
+			],
+			"min":[
+				-0.11349999904632568,
+				-0.1371999979019165,
+				-0.01889999955892563
+			],
+			"type":"VEC3"
+		},
+		{
+			"bufferView":1,
+			"componentType":5126,
+			"count":6266,
+			"type":"VEC3"
+		},
+		{
+			"bufferView":2,
+			"componentType":5126,
+			"count":6266,
+			"type":"VEC2"
+		},
+		{
+			"bufferView":3,
+			"componentType":5123,
+			"count":15246,
+			"type":"SCALAR"
+		},
+		{
+			"bufferView":4,
+			"componentType":5126,
+			"count":254,
+			"max":[
+				-0.05550000071525574,
+				-0.13599999248981476,
+				0.013799999840557575
+			],
+			"min":[
+				-0.11500000208616257,
+				-0.14650000631809235,
+				-0.013799999840557575
+			],
+			"type":"VEC3"
+		},
+		{
+			"bufferView":5,
+			"componentType":5126,
+			"count":254,
+			"type":"VEC3"
+		},
+		{
+			"bufferView":6,
+			"componentType":5126,
+			"count":254,
+			"type":"VEC2"
+		},
+		{
+			"bufferView":7,
+			"componentType":5123,
+			"count":828,
+			"type":"SCALAR"
+		},
+		{
+			"bufferView":8,
+			"componentType":5126,
+			"count":3498,
+			"max":[
+				0.09799999743700027,
+				0.027249999344348907,
+				0.013749999925494194
+			],
+			"min":[
+				-0.10134999454021454,
+				-0.009999999776482582,
+				-0.012749999761581421
+			],
+			"type":"VEC3"
+		},
+		{
+			"bufferView":9,
+			"componentType":5126,
+			"count":3498,
+			"type":"VEC3"
+		},
+		{
+			"bufferView":10,
+			"componentType":5126,
+			"count":3498,
+			"type":"VEC2"
+		},
+		{
+			"bufferView":11,
+			"componentType":5123,
+			"count":6024,
+			"type":"SCALAR"
+		}
+	],
+	"bufferViews":[
+		{
+			"buffer":0,
+			"byteLength":75192,
+			"byteOffset":0,
+			"target":34962
+		},
+		{
+			"buffer":0,
+			"byteLength":75192,
+			"byteOffset":75192,
+			"target":34962
+		},
+		{
+			"buffer":0,
+			"byteLength":50128,
+			"byteOffset":150384,
+			"target":34962
+		},
+		{
+			"buffer":0,
+			"byteLength":30492,
+			"byteOffset":200512,
+			"target":34963
+		},
+		{
+			"buffer":0,
+			"byteLength":3048,
+			"byteOffset":231004,
+			"target":34962
+		},
+		{
+			"buffer":0,
+			"byteLength":3048,
+			"byteOffset":234052,
+			"target":34962
+		},
+		{
+			"buffer":0,
+			"byteLength":2032,
+			"byteOffset":237100,
+			"target":34962
+		},
+		{
+			"buffer":0,
+			"byteLength":1656,
+			"byteOffset":239132,
+			"target":34963
+		},
+		{
+			"buffer":0,
+			"byteLength":41976,
+			"byteOffset":240788,
+			"target":34962
+		},
+		{
+			"buffer":0,
+			"byteLength":41976,
+			"byteOffset":282764,
+			"target":34962
+		},
+		{
+			"buffer":0,
+			"byteLength":27984,
+			"byteOffset":324740,
+			"target":34962
+		},
+		{
+			"buffer":0,
+			"byteLength":12048,
+			"byteOffset":352724,
+			"target":34963
+		}
+	],
+	"samplers":[
+		{
+			"magFilter":9729,
+			"minFilter":9987
+		}
+	],
+	"buffers":[
+		{
+			"byteLength":364772,
+			"uri":"pistol_57.bin"
+		}
+	]
 }

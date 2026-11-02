@@ -48,6 +48,10 @@ Pulled forward from M3: "the next gun is the MG42 light gun — chrome and black
 - **Controls:** Y switches guns (and cancels a reload). Pulling the trigger still cancels a reload too.
 - Heat and barrel changes stay in M3.
 
+## Pistol 57 v2 (owner, 2026-11-01)
+
+"Doesn't look nearly as good as the MG42." It was the first asset: flat extruded frame and slide, few parts, flat finish. Rebuilt with the MG42's tooling, **olive finish kept** (owner): lofted oval grip with stipple texture and finger grooves, rounded dust cover, beavertail, squared trigger-guard loop, slide with lower chamfers, tapered nose, sight channel, extractor, firing-pin cap, chamber indicator, sight dots; lighter cavity grime. Same size and key points (sight line, muzzle, grip frame), so arms, ADS and gameplay are unchanged. 7.9k tris, 2K maps. Previews: `docs/previews/pistol_57_v2.png`.
+
 ## Later M1 slices
 
 - **M1b — Movement:** sprint polish, slide, wall-run, mantle, air dash; viewmodel reacts to all of them.

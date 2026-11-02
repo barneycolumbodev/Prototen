@@ -1,9 +1,13 @@
 """Shared hard-surface modelling helpers for weapon generator scripts (CLAUDE.md §7).
 
-Same conventions as raw_assets/weapons/pistol_57/build.py (which predates this
-module and keeps its own copy): +X = muzzle, +Z = up, -Y = the gun's RIGHT side,
-metres. Build at a detail level (HIGH/LOW dicts), call `finish()` on every part,
-then `join_parts()` to apply modifiers and get one mesh.
+Used by raw_assets/weapons/pistol_57/build.py and mg42/build.py. Conventions:
++X = muzzle, +Z = up, -Y = the gun's RIGHT side, metres. Build at a detail level
+(HIGH/LOW dicts), call `finish()` on every part, then `join_parts()` to apply
+modifiers and get one mesh.
+
+Note: box/cyl helpers bake their location into the mesh (object origin at the
+world origin). To rotate a part about its own centre, build it at (0, 0, 0),
+then set `location` and `rotation_euler`.
 
     import hardsurface as hs
     hs.set_detail(hs.HIGH)
@@ -332,3 +336,60 @@ def material(name, base, rough, metal, wear=None, wear_rough=0.25, bump_scale=0.
         bsdf.inputs["Emission Color"].default_value = (*emission[0], 1)
         bsdf.inputs["Emission Strength"].default_value = emission[1]
     return mat
+
+
+def loft(name, stations, n=None, power=2.5, cap=True):
+    """Closed loft through superellipse sections. Each station is
+    (centre, u, v, a, b): centre point, two unit axes of the section plane and
+    the half sizes along them. power 2 = ellipse, higher = boxier."""
+    n = n or nverts(40)
+    bm = bmesh.new()
+    rings = []
+    for centre, u, v, a, b in stations:
+        centre, u, v = Vector(centre), Vector(u), Vector(v)
+        ring = []
+        for i in range(n):
+            t = 2 * math.pi * i / n
+            c, s = math.cos(t), math.sin(t)
+            cu = math.copysign(abs(c) ** (2 / power), c)
+            sv = math.copysign(abs(s) ** (2 / power), s)
+            ring.append(bm.verts.new(centre + u * (a * cu) + v * (b * sv)))
+        rings.append(ring)
+    for r0, r1 in zip(rings[:-1], rings[1:]):
+        for i in range(n):
+            j = (i + 1) % n
+            bm.faces.new((r0[i], r0[j], r1[j], r1[i]))
+    if cap:
+        bm.faces.new(list(reversed(rings[0])))
+        bm.faces.new(rings[-1])
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+    return mesh_object(name, bm)
+
+
+def loft_x(name, stations, n=None, power=5.0):
+    """Loft along X through rounded-rectangle sections: (x, top z, bottom z, half width)."""
+    return loft(name, [((x, 0.0, (zt + zb) / 2), (0, 1, 0), (0, 0, 1), hw, (zt - zb) / 2)
+                       for x, zt, zb, hw in stations], n=n, power=power)
+
+
+def tube_path(name, pts, radius, width_scale=1.0, resolution=6):
+    """Round tube along a smooth path (bezier through pts), optionally squashed across Y."""
+    cu = bpy.data.curves.new(name, "CURVE")
+    cu.dimensions = "3D"
+    cu.bevel_depth = radius
+    cu.bevel_resolution = 3 if D["seg"] > 1 else 1
+    cu.resolution_u = resolution if D["seg"] > 1 else 3
+    cu.use_fill_caps = True
+    sp = cu.splines.new("BEZIER")
+    sp.bezier_points.add(len(pts) - 1)
+    for bp, p in zip(sp.bezier_points, pts):
+        bp.co = p
+        bp.handle_left_type = bp.handle_right_type = "AUTO"
+    ob = link(bpy.data.objects.new(name, cu))
+    ob.scale = (1.0, width_scale, 1.0)
+    bpy.context.view_layer.objects.active = ob
+    bpy.ops.object.select_all(action="DESELECT")
+    ob.select_set(True)
+    bpy.ops.object.convert(target="MESH")
+    bpy.ops.object.transform_apply(scale=True)
+    return bpy.context.active_object

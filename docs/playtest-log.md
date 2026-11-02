@@ -62,6 +62,8 @@ What's new in the APK:
 - Pause menu: **A** presses, **B** goes back. Gun tuning opens and tunes the gun in your hands (switch with Y to tune the other one).
 - Look is about 30 % slower. Pause → **Look speed** (press left/right on it) from 50 % to 150 %.
 
+Update (same day): the pistol model was rebuilt to the MG42's standard, olive finish kept (`docs/previews/pistol_57_v2.png`). New APK on `dev-latest`.
+
 Please try:
 1. Pause → Look speed. Find a speed you like and tell me the number.
 2. Switch to the MG42 (Y). Hold RT on the drywall wall and the plank fence. Do they come apart fast enough?

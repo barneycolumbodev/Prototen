@@ -28,7 +28,7 @@ func test_pistol_triangle_budget() -> void:
 func test_pistol_uses_baked_pbr_textures() -> void:
 	var gun: Node = (load(PISTOL) as PackedScene).instantiate()
 	var meshes: Array[MeshInstance3D] = _meshes(gun)
-	# Body, slide and magazine move separately (split_parts.py) but share one baked material.
+	# Body, slide and magazine move separately (part ids in build.py) but share one baked material.
 	var names: PackedStringArray = PackedStringArray()
 	for mi: MeshInstance3D in meshes:
 		names.append(mi.name)
@@ -101,3 +101,30 @@ func test_mg42_arms_budget() -> void:
 	var tris: int = _tris(arms)
 	arms.free()
 	assert_lt(tris, 12000, "first-person arms (MG42 hold)")
+
+
+func test_pistol_suppressor_is_solid_to_the_muzzle() -> void:
+	# A failed boolean once left the suppressor tube inside out (invisible with
+	# back-face culling) on the game mesh (2026-11-02).
+	var gun: Node = (load(PISTOL) as PackedScene).instantiate()
+	var max_x: float = -1.0
+	var outward: int = 0
+	var inward: int = 0
+	for mi: MeshInstance3D in _meshes(gun):
+		for s: int in mi.mesh.get_surface_count():
+			var arrays: Array = mi.mesh.surface_get_arrays(s)
+			var verts: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+			var normals: PackedVector3Array = arrays[Mesh.ARRAY_NORMAL]
+			for i: int in verts.size():
+				var v: Vector3 = verts[i]
+				max_x = maxf(max_x, v.x)
+				var radial: Vector2 = Vector2(v.y, v.z)
+				if v.x > 0.13 and v.x < 0.245 and radial.length() > 0.0175:
+					if Vector2(normals[i].y, normals[i].z).dot(radial) > 0.0:
+						outward += 1
+					else:
+						inward += 1
+	gun.free()
+	assert_gt(max_x, 0.28, "reaches the muzzle")
+	assert_gt(outward, 60, "suppressor tube faces point outward (%d out, %d in)" % [outward, inward])
+	assert_gt(outward, inward * 3, "suppressor tube isn't inside out (%d out, %d in)" % [outward, inward])
