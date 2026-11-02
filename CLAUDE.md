@@ -159,8 +159,8 @@ Put an empty `.gdignore` file in `raw_assets/`, `tools/` and `docs/` so Godot do
 | A | Jump (wall-run on contact) |
 | B | Slide / crouch |
 | X | Reload (hold to interact) |
-| Y | Switch weapon (hold to change MG barrel) |
-| D-pad | Active part 3, items |
+| Y | Tap: previous weapon. Hold: weapon wheel (owner, 2026-11-02; the MG barrel change needs another input in M3) |
+| D-pad | Active part 3, items; left/right pick the shell type on guns that take several (Saiga-12K) |
 | Menu / View | Pause / body status |
 
 Aiming: response-curve presets, acceleration on full tilt, radial deadzones, aim assist in layers (slowdown near targets, slight pull while aiming down sights). Gyro aiming from the phone if the controller holds it.
@@ -261,7 +261,7 @@ Each milestone ends with an APK on the owner's phone and an entry in `docs/playt
 
 1. **M0 – Foundation.** Repo, tools and CI producing an APK. A test room, controller movement and camera, the debug overlay, and the renderer comparison.
    Done when the APK installs from Releases, the test room runs at 60 fps on the Moto G, and cloud screenshots work.
-2. **M1 – Pistol.** Built in slices, core gunplay first (owner decision 2026-11-01; see `docs/m1-gunplay-plan.md`). Suppressed Five-seveN with the full feedback list (§5.3). Sprint, slide, wall-run, mantle. Locational damage, penetration, gore and ragdolls. Three enemy roles with awareness, suppression and morale. Wave mode. First finished assets: the Five-seveN, first-person arms, one enemy.
+2. **M1 – Pistol.** Built in slices, core gunplay first (owner decision 2026-11-01; see `docs/m1-gunplay-plan.md`). Suppressed Five-seveN with the full feedback list (§5.3). Saiga-12K with buck, slugs and Dragon's Breath (owner, 2026-11-02; design §4.3). Sprint, slide, wall-run, mantle. Locational damage, penetration, gore and ragdolls. Three enemy roles with awareness, suppression and morale. Wave mode. First finished assets: the Five-seveN, first-person arms, one enemy.
    Done when the owner wants to keep playing the wave mode.
 3. **M2 – Parts system.** Loadout screen. Power, heat, mass and capacity. At least 8 passives with visible changes. The drone, whip and time slowdown.
    Done when three different loadouts play noticeably differently.

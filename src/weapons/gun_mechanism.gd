@@ -15,6 +15,18 @@ extends RefCounted
 ## reload is the same length. Internally the round the bolt will strip next
 ## counts as `chambered`, so `loaded()` is simply the rounds left on the belt.
 ##
+## Railguns (`WeaponData.charge_time > 0`): a capacitor bank recharges after
+## every shot. `last_power` is the energy fraction the last shot got
+## (`WeaponData.charge_power`). Every shot heats the rails in proportion to
+## its energy; at full heat the gun vents for `vent_time` and can't fire
+## (reloading still works). Heat bleeds off once the gun has rested.
+## Shell types (guns with `WeaponData.ammo_types`, the Saiga-12K): the
+## chamber and the magazine each remember which load they hold. A reload
+## seats a magazine of `load_ammo`. A swap (`request_swap()`, or reload while
+## another load is selected) is a magazine change followed by racking the
+## bolt, which throws the old chambered shell out (EV_EJECT_CHAMBERED) and
+## chambers one of the new load: the empty-reload length.
+##
 ## Cyclic rate is exact: time left over after a cycle carries into the next
 ## shot, so 0.05 s (1,200 rpm) fires every third 60 Hz physics tick instead of
 ## drifting to every fourth.
@@ -30,6 +42,12 @@ const EV_SLIDE_RELEASE: StringName = &"slide_release"
 const EV_RELOAD_DONE: StringName = &"reload_done"
 const EV_RELOAD_CANCEL: StringName = &"reload_cancel"
 const EV_LAST_ROUND: StringName = &"last_round"
+## Railguns: the capacitor is full again / the rails overheated / venting finished.
+const EV_CHARGED: StringName = &"charged"
+const EV_OVERHEAT: StringName = &"overheat"
+const EV_VENT_DONE: StringName = &"vent_done"
+## A swap racked a live shell out of the chamber (eject it, of `ejected_ammo`).
+const EV_EJECT_CHAMBERED: StringName = &"eject_chambered"
 
 ## Fraction of an empty reload where the slide closes.
 const SLIDE_RELEASE_POINT: float = 0.86
@@ -41,17 +59,35 @@ var state: State = State.DRAWING
 var magazine: int = 0
 var chambered: bool = false
 var reserve: int = 0
-## True while the current reload started from an empty gun.
+## True while the current reload started from an empty gun (or is a swap).
 var empty_reload: bool = false
+## Railguns: rail heat 0..1, forced vent in progress, energy fraction of the last shot.
+var heat: float = 0.0
+var venting: bool = false
+var last_power: float = 1.0
+## True while the current reload is a swap to another load.
+var swapping: bool = false
+## Load (index into WeaponData.ammo_types) in the chamber, in the magazine,
+## and the one the next magazine will hold.
+var chamber_ammo: int = 0
+var mag_ammo: int = 0
+var load_ammo: int = 0
+## Load of the round the last EV_FIRE fired, and of the shell the last swap racked out.
+var fired_ammo: int = 0
+var ejected_ammo: int = 0
 
 var _state_time: float = 0.0
 var _buffered: float = -1.0
 ## Overshoot from the last completed cycle (only used by a shot on the same tick).
 var _carry: float = 0.0
 var _reload_buffered: float = -1.0
+var _swap_wanted: bool = false
 var _mag_out_done: bool = false
 var _mag_in_done: bool = false
 var _slide_done: bool = false
+var _since_shot: float = 999.0
+var _vent_left: float = 0.0
+var _charged_sent: bool = true
 
 
 func _init(p_data: WeaponData) -> void:
@@ -97,6 +133,44 @@ func state_time() -> float:
 	return _state_time
 
 
+## Railguns: 0..1 how full the capacitor is (1 for other guns).
+func charge() -> float:
+	return data.charge_fraction(_since_shot)
+
+
+## Seconds since the last shot.
+func since_shot() -> float:
+	return _since_shot
+
+
+## 0..1 through the forced vent (0 when not venting).
+func vent_progress() -> float:
+	if not venting:
+		return 0.0
+	return clampf(1.0 - _vent_left / maxf(data.vent_time, 0.01), 0.0, 1.0)
+
+
+## Holstered gun: the capacitor recharges and the rails cool, nothing else.
+func idle(delta: float) -> void:
+	var events: Array[StringName] = []
+	_update_rail(delta, events)
+## The gun holds something other than the selected load.
+func needs_swap() -> bool:
+	return mag_ammo != load_ammo or (chambered and chamber_ammo != load_ammo)
+
+
+## Swap to `load_ammo` as soon as the gun is free (cycling, drawing). Dropped
+## by a reload, or if the selection goes back to what's loaded.
+func request_swap() -> void:
+	_swap_wanted = true
+
+
+func can_swap() -> bool:
+	if state == State.RELOADING or state == State.DRAWING:
+		return false
+	return needs_swap() and (data.infinite_reserve or reserve > 0)
+
+
 func can_reload() -> bool:
 	if state == State.RELOADING or state == State.DRAWING:
 		return false
@@ -111,6 +185,7 @@ func can_reload() -> bool:
 func update(delta: float, pull: bool, held: bool, reload: bool, blocked: bool, cancel: bool = false) -> Array[StringName]:
 	var events: Array[StringName] = []
 	_state_time += delta
+	_update_rail(delta, events)
 	if pull:
 		_buffered = data.fire_buffer
 	elif _buffered >= 0.0:
@@ -141,9 +216,18 @@ func update(delta: float, pull: bool, held: bool, reload: bool, blocked: bool, c
 					# Past the point of no return: finish instantly (augmented hands).
 					_finish_reload(events)
 
+	if _swap_wanted and not needs_swap():
+		_swap_wanted = false
 	if state == State.READY and not blocked:
-		if reload and can_reload():
+		if (reload or _swap_wanted) and can_swap():
+			_start_reload(events, true)
+		elif reload and can_reload():
 			_start_reload(events)
+		elif wants_shot and venting:
+			# Rails too hot: the trigger only clicks (once per pull, buffered pulls included).
+			if _buffered >= 0.0:
+				events.append(EV_DRY_FIRE)
+			_buffered = -1.0
 		elif wants_shot:
 			_buffered = -1.0
 			if chambered:
@@ -152,6 +236,8 @@ func update(delta: float, pull: bool, held: bool, reload: bool, blocked: bool, c
 				events.append(EV_DRY_FIRE)
 				if can_reload():
 					_start_reload(events)
+	elif state == State.READY and (reload or _swap_wanted) and can_swap():
+		_start_reload(events, true)
 	elif state == State.READY and reload and can_reload():
 		_start_reload(events)
 	# The press was only held for a busy gun; a ready gun that didn't reload (full) drops it.
@@ -160,11 +246,41 @@ func update(delta: float, pull: bool, held: bool, reload: bool, blocked: bool, c
 	return events
 
 
+func _update_rail(delta: float, events: Array[StringName]) -> void:
+	_since_shot += delta
+	if not data.is_rail():
+		return
+	if not _charged_sent and charge() >= 1.0:
+		_charged_sent = true
+		events.append(EV_CHARGED)
+	if venting:
+		_vent_left -= delta
+		heat = clampf(_vent_left / maxf(data.vent_time, 0.01), 0.0, 1.0)
+		if _vent_left <= 0.0:
+			venting = false
+			heat = 0.0
+			events.append(EV_VENT_DONE)
+	elif _since_shot > data.heat_cool_delay:
+		heat = maxf(0.0, heat - data.heat_cool_per_s * delta)
+
+
 func _fire(events: Array[StringName]) -> void:
+	last_power = data.charge_power(_since_shot)
+	_since_shot = 0.0
+	_charged_sent = not data.is_rail()
 	events.append(EV_FIRE)
+	if data.heat_per_shot > 0.0 and not venting:
+		heat += data.heat_per_shot * last_power
+		if heat >= 1.0:
+			heat = 1.0
+			venting = true
+			_vent_left = data.vent_time
+			events.append(EV_OVERHEAT)
+	fired_ammo = chamber_ammo
 	if magazine > 0:
 		magazine -= 1
 		chambered = true
+		chamber_ammo = mag_ammo
 	else:
 		chambered = false
 		events.append(EV_LAST_ROUND)
@@ -174,9 +290,11 @@ func _fire(events: Array[StringName]) -> void:
 	_state_time = carry
 
 
-func _start_reload(events: Array[StringName]) -> void:
+func _start_reload(events: Array[StringName], swap: bool = false) -> void:
 	_reload_buffered = -1.0
-	empty_reload = not chambered and data.closed_bolt
+	_swap_wanted = false
+	swapping = swap and data.closed_bolt
+	empty_reload = (not chambered or swapping) and data.closed_bolt
 	_mag_out_done = false
 	_mag_in_done = false
 	_slide_done = false
@@ -212,6 +330,7 @@ func _finish_reload(events: Array[StringName]) -> void:
 
 func _cancel_reload(events: Array[StringName]) -> void:
 	events.append(EV_RELOAD_CANCEL)
+	swapping = false
 	_enter(State.READY)
 
 
@@ -229,16 +348,26 @@ func _seat_magazine() -> void:
 	if not data.infinite_reserve:
 		reserve -= take
 	magazine = take
+	mag_ammo = load_ammo
 	if not data.closed_bolt and magazine > 0:
 		magazine -= 1
 		chambered = true
+		chamber_ammo = mag_ammo
 
 
 func _release_slide(events: Array[StringName]) -> void:
 	_slide_done = true
-	if magazine > 0 and not chambered:
+	if swapping and chambered and magazine > 0:
+		# Racked: the live shell flies out and one of the new load goes in.
+		ejected_ammo = chamber_ammo
+		events.append(EV_EJECT_CHAMBERED)
+		magazine -= 1
+		chamber_ammo = mag_ammo
+	elif magazine > 0 and not chambered:
 		magazine -= 1
 		chambered = true
+		chamber_ammo = mag_ammo
+	swapping = false
 	events.append(EV_SLIDE_RELEASE)
 
 

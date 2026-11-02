@@ -40,6 +40,7 @@ func test_y_switches_to_the_mg42_and_back() -> void:
 	assert_true(weapon.rig().visible)
 	assert_false(weapon.slots[0].rig.visible, "pistol put away")
 	assert_eq(weapon.mechanism.loaded(), 150)
+	# A tap on Y swaps back to the gun you had before (hold Y for the weapon wheel).
 	Input.action_press(&"switch_weapon")
 	await wait_physics_frames(2)
 	Input.action_release(&"switch_weapon")

@@ -33,8 +33,12 @@ Goal: the best gunplay in any mobile shooter (CLAUDE.md §2). References: Call o
 - `src/weapons/player_weapon.gd`: loadout of guns with one viewmodel rig each (Y switches and cancels a reload), input (LT held = ADS, RT fire, X reload), carry penalty (`carry_*` in WeaponData), hip walk, tracers, camera recoil spring + permanent climb, bloom/spread, sprint-out, rumble, hit-stop.
 - `src/weapons/viewmodel_motion.gd` + `src/core/spring.gd`: exact closed-form springs; `kick(peak)` hits the tuned peak for any damping.
 - `src/vfx/fx.gd`, `src/audio/sfx.gd`: pooled flash/light/shells/holes/particles/debris and sound banks.
-- `src/ui/tuning_menu.gd`: on-device sliders; add new tunables to `WEAPON_PARAMS`. `tools/sync_weapon_tres.py` adds new WeaponData exports to the .tres.
-- Range targets in `src/levels/range/`; `-- --demo=range|fire` drives aimed shots for screenshots (`GunplayDemo`).
+- Railguns (`data/weapons/rail_carbine.tres`): `WeaponData` "Capacitor and heat" (`charge_time` > 0 makes a gun a railgun), `GunMechanism.charge()/heat/venting/last_power`, `Ballistics.fire(..., power)` and trails (`beam_trail_*`, `src/vfx/rail_trail.gdshader`), `SurfaceMaterial.drag_scaling_speed` (v² drag in flesh above 900 m/s), rig parts `vent`/`glow`/`lens`, `magazine_travel`.
+- Shell types (Saiga-12K): `src/weapons/ammo_data.gd` + `data/weapons/ammo/*.tres` override the gun's ballistic/shot/flash/burn values per load (`apply_to()`); the chamber and magazine track their load in GunMechanism; D-pad left/right selects, a swap racks the old shell out. Pellets share a volley id (stats/confirms count a shell once). Tuning-menu ballistic sliders edit the gun, which the loads override, so tune loads in their .tres.
+- Weapon wheel and switching: `PlayerWeapon._update_wheel()` (real time, the wheel slows the game), `wheel_slot()`, `quick_switch()`, `script_wheel()` for tests; tuning `data/input/weapon_wheel.tres`; view `src/ui/weapon_wheel_view.gd`; icons from `raw_assets/ui/weapon_icons/build.py` → `WeaponData.icon`. A new gun needs a .tres, a rig node in `player.tscn`, an entry in `loadout`/`rig_paths`, and an icon.
+- Reticles: colours in `src/ui/reticle_style.gd` (seaglass / crimson over `enemies`), shape in `hud.gd` `reticle_shape()`; optic reticles that are model parts are named `reticle` (the rig colours them).
+- `src/ui/tuning_menu.gd`: on-device sliders; add new tunables to `WEAPON_PARAMS`. `tools/sync_weapon_tres.py` adds new WeaponData exports to the .tres (check its output: it writes GDScript defaults such as `Vector3.ZERO`, which a .tres can't hold).
+- Range targets in `src/levels/range/`; `-- --demo=range|fire|hip|ads|burst` drives the gun for screenshots (`GunplayDemo`), with `--weapon=<slot>` and `--ammo=<load>`.
 
 ## Implementation notes
 

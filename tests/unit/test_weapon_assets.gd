@@ -49,7 +49,11 @@ func test_pistol_uses_baked_pbr_textures() -> void:
 
 func test_textures_are_vram_compressed() -> void:
 	for prefix: String in ["res://assets/weapons/pistol_57/textures/pistol_57", "res://assets/characters/fp_arms/textures/fp_arms",
-			"res://assets/weapons/mg42/textures/mg42", "res://assets/characters/fp_arms_mg42/textures/fp_arms_mg42"]:
+			"res://assets/weapons/mg42/textures/mg42", "res://assets/characters/fp_arms_mg42/textures/fp_arms_mg42",
+			"res://assets/weapons/saiga12k/textures/saiga12k", "res://assets/characters/fp_arms_saiga/textures/fp_arms_saiga",
+			"res://assets/weapons/rail_carbine/textures/rail_carbine",
+			"res://assets/characters/fp_arms_rail/textures/fp_arms_rail",
+			"res://assets/weapons/m14p/textures/m14p", "res://assets/characters/fp_arms_m14p/textures/fp_arms_m14p"]:
 		for name: String in ["basecolor", "orm", "normal", "emission"]:
 			var cfg: ConfigFile = ConfigFile.new()
 			var path: String = "%s_%s.png.import" % [prefix, name]
@@ -101,6 +105,56 @@ func test_mg42_arms_budget() -> void:
 	var tris: int = _tris(arms)
 	arms.free()
 	assert_lt(tris, 12000, "first-person arms (MG42 hold)")
+
+
+func test_rail_carbine_parts_budget_and_baked_material() -> void:
+	var gun: Node = (load("res://assets/weapons/rail_carbine/rail_carbine.gltf") as PackedScene).instantiate()
+	# Body plus the parts the game drives: top magazine, vent shroud, glow strips, optic glass.
+	for part: String in ["body", "magazine", "vent", "glow", "lens"]:
+		assert_true(gun.find_child(part, true, false) != null, "has a %s node" % part)
+	var body: MeshInstance3D = gun.find_child("body", true, false) as MeshInstance3D
+	var mat: StandardMaterial3D = body.mesh.surface_get_material(0) as StandardMaterial3D
+	assert_not_null(mat.albedo_texture)
+	assert_not_null(mat.normal_texture)
+	assert_not_null(mat.roughness_texture)
+	assert_not_null(mat.metallic_texture)
+	var tris: int = _tris(gun)
+	gun.free()
+	assert_between(tris, 8000, 18000, "first-person rail carbine (%d tris)" % tris)
+
+
+func test_m14p_parts_budget_and_baked_material() -> void:
+	var gun: Node = (load("res://assets/weapons/m14p/m14p.gltf") as PackedScene).instantiate()
+	for part: String in ["body", "slide", "magazine", "stock"]:
+		assert_true(gun.find_child(part, true, false) != null, "has a %s node" % part)
+	var body: MeshInstance3D = gun.find_child("body", true, false) as MeshInstance3D
+	var mat: StandardMaterial3D = body.mesh.surface_get_material(0) as StandardMaterial3D
+	assert_not_null(mat.albedo_texture)
+	assert_not_null(mat.normal_texture)
+	assert_not_null(mat.metallic_texture, "parkerized steel vs polymer comes from the metal map")
+	var tris: int = _tris(gun)
+	gun.free()
+	assert_between(tris, 4000, 18000, "first-person M14/P (%d tris)" % tris)
+
+
+func test_m14p_arms_budget() -> void:
+	var arms: Node = (load("res://assets/characters/fp_arms_m14p/fp_arms_m14p.gltf") as PackedScene).instantiate()
+	var tris: int = _tris(arms)
+	arms.free()
+	assert_lt(tris, 12000, "first-person arms (M14/P hold)")
+
+
+func test_every_gun_has_a_wheel_icon() -> void:
+	for path: String in ["pistol_57", "mg42", "saiga12k", "rail_carbine", "m14p"]:
+		var d: WeaponData = load("res://data/weapons/%s.tres" % path) as WeaponData
+		assert_not_null(d.icon, "%s has a weapon wheel icon" % path)
+
+
+func test_rail_arms_budget() -> void:
+	var arms: Node = (load("res://assets/characters/fp_arms_rail/fp_arms_rail.gltf") as PackedScene).instantiate()
+	var tris: int = _tris(arms)
+	arms.free()
+	assert_lt(tris, 12000, "first-person arms (rail carbine hold)")
 
 
 func test_pistol_suppressor_is_solid_to_the_muzzle() -> void:

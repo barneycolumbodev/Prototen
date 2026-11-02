@@ -77,3 +77,76 @@ Please try:
 - Measured:
 - Notes from the owner:
 - Follow-ups:
+
+## M1a.2 — 2026-11-02 — Saiga-12K (waiting for the owner)
+
+Build: `dev-latest` from branch `claude/saiga-12k-shotgun-r43ntd` @ d06aaba, CI run #8 (manual run). `graft-debug.apk`, 175 MB (the Saiga's 4K textures ship in both ETC2 and ASTC, like the MG42's). Not playtested yet.
+
+What's new in the APK:
+- **Saiga-12K**: **Y** now cycles pistol → MG42 → Saiga. Semi-auto 12-gauge, 10+1, milled black steel, curved magazine, vertical foregrip, folding stock.
+- **Shell types on the D-pad**: right = next, left = previous: **00 Buck** (red tape on the magazine), **Slug** (green), **Dragon's Breath** (orange). The HUD shows `00 BUCK > SLUG` while it's coming. Tap twice quickly to skip one. The gun swaps the magazine and racks the old shell out (you'll see it fly).
+- **Slugs mount the PSO-style 1x optic.** Hold LT to look through it: illuminated chevron, small holdover marks for 100/200/300 m, rangefinder curve lower left.
+- **Dragon's Breath** throws a jet of burning embers about 50 m. Dummies catch fire and burn down, and the crates and wooden fence catch small fires.
+
+Please try:
+1. Buck at the dummies from 5 m, 15 m and 30 m. Does the pattern feel right? Too tight, too loose?
+2. Switch to slugs (D-pad right) and shoot the steel plates through the optic. Does the scope view work for you, or would you rather keep the gun model visible?
+3. Dragon's Breath at a dummy and at the wooden fence. Is the flame big enough? Does the burn feel good?
+4. Swap loads mid-fight: tap D-pad, then pull the trigger before the new magazine is in (it should fire the old shell), and again after (it should fire the new one).
+5. Recoil: buck vs slug vs Dragon's Breath. Too much, too little?
+6. Watch the overlay FPS while firing Dragon's Breath at the fence. Does it hold 60?
+7. Should the optic be on the gun for every load, or only with slugs as now?
+- Device / renderer / settings:
+- Measured:
+- Notes from the owner:
+- Follow-ups:
+
+## M1a.3 — 2026-11-02 — RC-6 "Lance" rail carbine
+
+Build: `dev-latest` from branch `claude/rail-carbine-weapon-a4bxsa`, CI run #9 (manual run). This replaces the Saiga-12K build that was on `dev-latest` (branch `claude/saiga-12k-shotgun-r43ntd`, PR #3); the two branches haven't been merged together yet.
+
+What's new in the APK:
+- **RC-6 Lance**: press **Y** twice from the pistol (pistol → MG42 → rail carbine). A bullpup railgun: 7 g tungsten slug at 2,600 m/s (≈24 kJ). It goes through steel plate, walls and bodies; one torso hit kills; every shot leaves a blue-white trail.
+- **Capacitor:** after each shot the gun recharges (rising whine, then a tone; the glow strips and the HUD bar fill). Fire fast and each shot has less energy (quieter, less kick); wait ¾ s for the full hit.
+- **Heat:** spam RT and the rails overheat: three beeps, the top shroud lifts and steams, and it can't fire for 1.6 s. Reloading still works while it vents.
+- **Aim (hold LT):** reflex sight with a ring reticle, 1.6× zoom.
+- **Reload (X):** the top magazine slides back and off.
+- Pause → Gun tuning with the rail carbine out has a **Railgun** section (charge time, power when fired early, heat, vent time, trail).
+
+Please try:
+1. Switch to the rail carbine and put a slug through the steel panel in the penetration lane, then through a dummy behind cover.
+2. Tap fast vs pace your shots: can you feel and hear the difference in power? Is ¾ s to full charge right?
+3. Spam until it overheats. Is the vent too punishing, or not enough?
+4. Aim at the poppers: is the ring reticle clear? Is 1.6× too much zoom?
+5. Look at the gun: P90 + Halo 4 railgun + Tau, does it read? Colours (light ceramic, graphite, cyan glow) OK?
+6. Does it sound unique? Which part do you like least: the crack, the thwack, the charge whine, the tail?
+7. Watch FPS while firing quickly (trails and impact effects are new).
+
+Owner (2026-11-02): "The carbine looks good." Asked for a weapon wheel to carry both the shotgun and the rail carbine, a circle reticle for the shotgun (a dot with slugs), seaglass reticles that turn crimson over an enemy, and an M14-style battle rifle (see M1a.4).
+
+- Device / renderer / settings:
+- Measured:
+- Notes from the owner:
+- Follow-ups:
+
+## M1a.4 — 2026-11-02 — Weapon wheel, reticles, M14/P (waiting for the owner)
+
+Build: `dev-latest` from branch `claude/rail-carbine-weapon-a4bxsa` (manual CI run). The Saiga-12K branch is merged in, so this APK has all five guns.
+
+What's new in the APK:
+- **Weapon wheel:** hold **Y** — time slows, push the **right stick** toward a gun, let go of Y to draw it. A quick **tap of Y** swaps back to the gun you had before.
+- **Five guns:** Five-seveN, MG42, Saiga-12K (D-pad left/right for buck / slug / Dragon's Breath), RC-6 rail carbine, and the new **M14/P**.
+- **Reticles:** seaglass green-blue, **crimson** when you're looking at a dummy. The Saiga's reticle is a **circle** the size of its spread, a **dot** with slugs. The PSO scope and the rail carbine's red-dot ring change colour the same way.
+- **M14/P:** black polymer M14 with a pistol grip, stubby foregrip and a suppressor. 7.62×51, semi-auto, 20+1, heavy kick. Aim (LT) through the rear aperture to the front post.
+
+Please try:
+1. Hold Y and pick each gun. Is the slow-down (30 %) right, or should the wheel not slow time at all? Is 0.2 s the right hold before it opens?
+2. Tap Y to flick between two guns. Does it go where you expect?
+3. Sweep the reticle across the dummies: does the crimson read instantly? Is seaglass easy to see on the bright range?
+4. Saiga: buck circle vs slug dot. Does the circle size match where the pellets land?
+5. M14/P: fire fast at the plates, aim through the aperture. Recoil too much or too little? Does it sound suppressed but still powerful?
+
+- Device / renderer / settings:
+- Measured:
+- Notes from the owner:
+- Follow-ups:

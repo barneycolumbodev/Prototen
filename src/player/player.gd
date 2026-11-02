@@ -7,6 +7,8 @@ extends CharacterBody3D
 @export var movement: MovementConfig = preload("res://data/player/movement_default.tres")
 ## Turned off while a benchmark or cutscene drives the camera.
 @export var input_enabled: bool = true
+## The weapon wheel is open: the right stick picks a gun instead of looking.
+var look_blocked: bool = false
 
 signal landed(fall_speed: float)
 
@@ -90,7 +92,7 @@ func set_view(new_yaw: float, new_pitch: float) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if not input_enabled:
+	if not input_enabled or look_blocked:
 		return
 	var motion: InputEventMouseMotion = event as InputEventMouseMotion
 	if motion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
@@ -102,7 +104,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _process(delta: float) -> void:
-	if input_enabled:
+	if input_enabled and not look_blocked:
 		var look: LookConfig = Settings.look_config()
 		var raw: Vector2 = Input.get_vector(&"look_left", &"look_right", &"look_up", &"look_down", 0.0)
 		_tilt_time = _tilt_time + delta if look.is_full_tilt(raw) else 0.0

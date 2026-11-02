@@ -7,6 +7,8 @@ extends RefCounted
 enum Result { STOPPED, PENETRATED, RICOCHET }
 
 var shot_id: int = 0
+## Shared by all pellets of one shell (= shot_id for single-projectile guns).
+var volley_id: int = 0
 var weapon: WeaponData
 var shooter: Node
 var collider: Object

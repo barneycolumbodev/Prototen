@@ -12,10 +12,16 @@ extends Node3D
 ##   renderers (Decal nodes don't in Compatibility).
 ## - Impact particles by surface: dust, chalk, sparks, splinters, blood, glass.
 ## - Debris chunks: small rigid bodies for destruction, capped.
+## - Dragon's Breath: a flame jet from the muzzle, orange sparks where embers
+##   land, and small fires (pooled, capped) on flammable surfaces and on
+##   targets that burn. Fires on targets ride along with them.
+## - 12-gauge shells: their own small pool, hull tinted per load.
 
 const MAX_HOLES: int = 24
 const MAX_STATIC_HOLES: int = 128
 const MAX_SHELLS: int = 24
+const MAX_HULLS: int = 10
+const MAX_FIRES: int = 6
 const MAX_EMITTERS: int = 12
 const MAX_DEBRIS: int = 28
 const DEBRIS_LIFETIME: float = 5.0
@@ -43,10 +49,22 @@ var _flash_time: float = 0.0
 var _light: OmniLight3D
 var _light_time: float = 0.0
 var _light_energy: float = 0.0
+var _light_full: float = 0.06
 var _last_smoke: float = -1.0
+var _last_steam: float = -1.0
 
 var _shells: Array[Shell] = []
 var _shell_next: int = 0
+var _hull_next: int = 0
+var _hull_mats: Dictionary[Color, StandardMaterial3D] = {}
+var _fires: Array[CPUParticles3D] = []
+var _fire_left: Array[float] = []
+var _fire_next: int = 0
+var _last_fire_ms: int = -1000
+var _fire_ramp: Gradient
+var _flame: CPUParticles3D
+var _last_ember_spark: int = -1
+var _fire_shrink: Curve
 
 var _debris: Array[RigidBody3D] = []
 var _debris_age: Dictionary[RigidBody3D, float] = {}
@@ -63,6 +81,7 @@ class Shell:
 	var age: float = 999.0
 	var bounces: int = 0
 	var resting: bool = true
+	var bank: StringName = &"shell"
 
 
 func _ready() -> void:
@@ -74,6 +93,7 @@ func _ready() -> void:
 	_build_holes()
 	_build_flash()
 	_build_shells()
+	_build_fires()
 	for i: int in MAX_EMITTERS:
 		var e: CPUParticles3D = CPUParticles3D.new()
 		e.emitting = false
@@ -85,6 +105,8 @@ func _ready() -> void:
 		e.mesh = q
 		add_child(e)
 		_emitters.append(e)
+	_flame = _emitters[0].duplicate() as CPUParticles3D
+	add_child(_flame)
 	EventBus.ballistic_hit.connect(_on_hit)
 
 
@@ -97,13 +119,22 @@ func muzzle_flash(muzzle: Transform3D, data: WeaponData) -> void:
 	_flash.scale = Vector3.ONE * data.flash_scale * _rng.randf_range(0.8, 1.2)
 	_flash.rotate_object_local(Vector3.RIGHT, _rng.randf() * TAU)
 	_flash.visible = data.flash_scale > 0.0
+	(_flash.material_override as StandardMaterial3D).albedo_color = Color(
+			data.flash_color.r * 2.0, data.flash_color.g * 2.0, data.flash_color.b * 2.0)
 	_flash_time = 0.035
 	if data.flash_light_energy > 0.0:
 		_light.global_position = muzzle.origin + muzzle.basis.x * 0.05
 		_light_energy = data.flash_light_energy
 		_light.light_energy = _light_energy
+		_light.light_color = data.flash_color
+		_light.omni_range = 4.0 if data.flash_light_time < 0.1 else 9.0
 		_light.visible = true
-		_light_time = 0.06
+		_light_time = data.flash_light_time
+		_light_full = data.flash_light_time
+	if data.embers:
+		# Dragon's Breath: a jet of burning metal a couple of metres long, then the embers fly on.
+		# Its own emitter: the embers' impact sparks would recycle a pooled one the same frame.
+		_emit_on(_flame, &"flame", muzzle.origin, muzzle.basis.x, Color(1.0, 0.55, 0.16, 0.9), 34, 1.0)
 	# Suppressor puff / propellant smoke, rate-limited so automatic fire doesn't
 	# take every pooled emitter away from impacts.
 	var now: float = Time.get_ticks_msec() * 0.001
@@ -112,13 +143,31 @@ func muzzle_flash(muzzle: Transform3D, data: WeaponData) -> void:
 		_emit(&"smoke", muzzle.origin, muzzle.basis.x, Color(0.7, 0.7, 0.7, 0.16), data.smoke_per_shot, 0.6)
 
 
-# ------------------------------------------------------------------ shells
-
-func eject_shell(at: Vector3, velocity: Vector3, gun_basis: Basis) -> void:
+## Railgun vent: steam and heat haze rising off the rails (rate-limited).
+func vent_steam(at: Vector3, up: Vector3, strength: float = 1.0) -> void:
 	if not enabled:
 		return
-	var s: Shell = _shells[_shell_next]
-	_shell_next = (_shell_next + 1) % _shells.size()
+	var now: float = Time.get_ticks_msec() * 0.001
+	if now - _last_steam < 0.09:
+		return
+	_last_steam = now
+	_emit(&"smoke", at, up, Color(0.85, 0.9, 0.95, 0.22 * strength), 6, 1.2)
+
+
+# ------------------------------------------------------------------ shells
+
+## `hull`: a 12-gauge shell with this hull colour (alpha 0 = a brass pistol/rifle case).
+func eject_shell(at: Vector3, velocity: Vector3, gun_basis: Basis, hull: Color = Color(0, 0, 0, 0)) -> void:
+	if not enabled:
+		return
+	var s: Shell
+	if hull.a > 0.0:
+		s = _shells[MAX_SHELLS + _hull_next]
+		_hull_next = (_hull_next + 1) % MAX_HULLS
+		s.node.material_override = _hull_material(hull)
+	else:
+		s = _shells[_shell_next]
+		_shell_next = (_shell_next + 1) % MAX_SHELLS
 	s.node.global_transform = Transform3D(gun_basis * Basis(Vector3.FORWARD, PI * 0.5), at)
 	s.velocity = velocity + Vector3(_rng.randf_range(-0.3, 0.3), _rng.randf_range(-0.2, 0.4), _rng.randf_range(-0.3, 0.3))
 	s.spin = Vector3(_rng.randf_range(-30, 30), _rng.randf_range(-10, 10), _rng.randf_range(15, 40))
@@ -167,7 +216,7 @@ func _physics_process(delta: float) -> void:
 		s.spin *= 0.5
 		s.node.global_position = p + n * 0.004
 		if s.bounces < 3 and s.velocity.length() > 0.3:
-			Sfx.play_at(&"shell", p, -10.0 - s.bounces * 6.0)
+			Sfx.play_at(s.bank, p, -10.0 - s.bounces * 6.0)
 		s.bounces += 1
 		if s.velocity.length() < 0.35 or s.bounces > 6:
 			s.resting = true
@@ -176,6 +225,7 @@ func _physics_process(delta: float) -> void:
 			axis = axis.rotated(n, _rng.randf() * TAU)
 			s.node.global_basis = Basis(n.cross(axis), axis, n).orthonormalized() * Basis(Vector3.RIGHT, PI * 0.5)
 	_age_debris(delta)
+	_age_fires(delta)
 
 
 func _process(delta: float) -> void:
@@ -185,7 +235,7 @@ func _process(delta: float) -> void:
 			_flash.visible = false
 	if _light_time > 0.0:
 		_light_time -= delta
-		_light.light_energy = _light_energy * clampf(_light_time / 0.06, 0.0, 1.0)
+		_light.light_energy = _light_energy * clampf(_light_time / maxf(_light_full, 0.01), 0.0, 1.0)
 		if _light_time <= 0.0:
 			_light.visible = false
 
@@ -198,20 +248,97 @@ func _on_hit(hit: BallisticHit) -> void:
 	var s: SurfaceMaterial = hit.surface
 	var target: Node3D = hit.collider as Node3D
 	var reflect: Vector3 = hit.direction.bounce(hit.normal).normalized()
+	if hit.weapon.embers:
+		_ember_hit(hit, target, reflect)
+		return
+	# Hypervelocity rounds (railgun) throw more, faster, and flash on contact.
+	var k: float = hit.weapon.impact_fx_scale if hit.weapon else 1.0
+	var count: int = roundi(s.particle_count * k)
 	match hit.result:
 		BallisticHit.Result.RICOCHET:
-			_emit(&"sparks", hit.point, reflect, Color(1.0, 0.8, 0.45), 10, 1.0)
-			bullet_hole(target, hit.point, hit.normal, s, 0.7)
+			_emit(&"sparks", hit.point, reflect, Color(1.0, 0.8, 0.45), roundi(10 * k), k)
+			bullet_hole(target, hit.point, hit.normal, s, 0.7 * k)
 		_:
-			bullet_hole(target, hit.point, hit.normal, s, 1.0)
+			bullet_hole(target, hit.point, hit.normal, s, k)
 			var spray: Vector3 = (hit.normal * 0.7 + reflect * 0.3).normalized()
-			_emit(s.particle_kind, hit.point, spray, s.particle_color, s.particle_count, 1.0)
+			_emit(s.particle_kind, hit.point, spray, s.particle_color, count, k)
 			if s.particle_kind == &"dust" or s.particle_kind == &"chalk":
-				_emit(&"sparks" if s.id == &"concrete" else &"chalk", hit.point, spray, s.particle_color.lightened(0.3), 3, 0.6)
+				_emit(&"sparks" if s.id == &"concrete" else &"chalk", hit.point, spray, s.particle_color.lightened(0.3), roundi(3 * k), 0.6 * k)
+	if k > 1.5 and not s.is_flesh:
+		# Impact flash: the slug's energy turns part of the target to glowing vapour.
+		_emit(&"sparks", hit.point, hit.normal, Color(0.8, 0.95, 1.0), 14, k * 0.8)
 	if hit.result == BallisticHit.Result.PENETRATED:
-		bullet_hole(target, hit.exit_point, hit.exit_normal, s, 1.6)
+		bullet_hole(target, hit.exit_point, hit.exit_normal, s, 1.6 * k)
 		# Exit spall flies along the round's path.
-		_emit(s.particle_kind, hit.exit_point, hit.direction, s.particle_color, s.particle_count + 4, 1.3)
+		_emit(s.particle_kind, hit.exit_point, hit.direction, s.particle_color, count + 4, 1.3 * k)
+
+
+## Ember lands: a shower of orange sparks and a scorch; flammable surfaces catch.
+func _ember_hit(hit: BallisticHit, target: Node3D, reflect: Vector3) -> void:
+	var s: SurfaceMaterial = hit.surface
+	var spray: Vector3 = (hit.normal * 0.6 + reflect * 0.4).normalized()
+	# A shell's embers land together: one shower per frame keeps the pool for everything else.
+	var frame: int = Engine.get_physics_frames()
+	if frame != _last_ember_spark:
+		_last_ember_spark = frame
+		_emit(&"sparks", hit.point, spray, Color(1.0, 0.55, 0.18), 14, 0.8)
+	if _rng.randf() < 0.4:
+		bullet_hole(target, hit.point, hit.normal, s, 1.4)
+	if s.flammable and hit.result != BallisticHit.Result.RICOCHET:
+		burn_at(target, hit.point, hit.normal, hit.weapon.burn_time * 0.6)
+
+
+## Starts a small fire at `point` for `seconds`. On a moving target it rides
+## along. One new fire per 90 ms at most (a shell's embers land together)
+## unless `force` (a target catching fire always shows it).
+func burn_at(target: Node3D, point: Vector3, normal: Vector3, seconds: float, force: bool = false) -> void:
+	if not enabled or seconds <= 0.0:
+		return
+	var now: int = Time.get_ticks_msec()
+	if now - _last_fire_ms < 90 and not force:
+		return
+	_last_fire_ms = now
+	var e: CPUParticles3D = _fires[_fire_next]
+	if not is_instance_valid(e):
+		e = _new_fire()  # its target was freed along with it
+		_fires[_fire_next] = e
+	_fire_left[_fire_next] = seconds
+	_fire_next = (_fire_next + 1) % MAX_FIRES
+	var parent: Node = target if target != null and target.is_inside_tree() and _is_dynamic(target) else self
+	if e.get_parent() != parent:
+		e.get_parent().remove_child(e)
+		parent.add_child(e)
+	e.global_position = point + normal * 0.03
+	e.emitting = true
+	Sfx.play_at(&"burn", point, -6.0)
+
+
+## The Dragon's Breath flame jet is playing (tests).
+func flame_emitting() -> bool:
+	return _flame != null and _flame.emitting
+
+
+func fire_count() -> int:
+	var n: int = 0
+	for t: float in _fire_left:
+		if t > 0.0:
+			n += 1
+	return n
+
+
+func _age_fires(delta: float) -> void:
+	for i: int in MAX_FIRES:
+		if _fire_left[i] <= 0.0:
+			continue
+		_fire_left[i] -= delta
+		var e: CPUParticles3D = _fires[i]
+		if _fire_left[i] <= 0.0 or not is_instance_valid(e) or not e.is_inside_tree():
+			_fire_left[i] = 0.0
+			if is_instance_valid(e):
+				e.emitting = false
+				if e.get_parent() != self:
+					e.get_parent().remove_child(e)
+					add_child(e)
 
 
 ## Puts a bullet hole on `target` at `point`.
@@ -334,6 +461,10 @@ func _age_debris(delta: float) -> void:
 func _emit(kind: StringName, at: Vector3, dir: Vector3, color: Color, count: int, strength: float) -> void:
 	var e: CPUParticles3D = _emitters[_emit_next]
 	_emit_next = (_emit_next + 1) % _emitters.size()
+	_emit_on(e, kind, at, dir, color, count, strength)
+
+
+func _emit_on(e: CPUParticles3D, kind: StringName, at: Vector3, dir: Vector3, color: Color, count: int, strength: float) -> void:
 	e.global_position = at
 	e.amount = clampi(count, 1, 40)
 	e.direction = Vector3(0, 0, 1)
@@ -375,6 +506,17 @@ func _emit(kind: StringName, at: Vector3, dir: Vector3, color: Color, count: int
 			e.initial_velocity_max = 6.0 * strength
 			e.scale_amount_min = 0.006
 			e.scale_amount_max = 0.02
+		&"flame":
+			e.lifetime = 0.32
+			e.spread = 6.0
+			e.initial_velocity_min = 9.0 * strength
+			e.initial_velocity_max = 26.0 * strength
+			e.scale_amount_min = 0.05
+			e.scale_amount_max = 0.14
+			e.gravity = Vector3(0, 1.5, 0)
+			e.damping_min = 30.0
+			e.damping_max = 55.0
+			e.scale_amount_curve = _grow
 		&"smoke":
 			e.lifetime = 0.7
 			e.spread = 15.0
@@ -427,6 +569,9 @@ func _particle_material(kind: StringName) -> StandardMaterial3D:
 	if kind == &"sparks":
 		m.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
 		m.albedo_color = Color(2.5, 2.0, 1.4)
+	elif kind == &"flame" or kind == &"fire":
+		m.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+		m.albedo_color = Color(2.0, 1.05, 0.5)
 	_particle_mats[kind] = m
 	return m
 
@@ -554,6 +699,56 @@ func _build_flash() -> void:
 	add_child(_light)
 
 
+func _build_fires() -> void:
+	for i: int in MAX_FIRES:
+		_fires.append(_new_fire())
+		_fire_left.append(0.0)
+
+
+func _new_fire() -> CPUParticles3D:
+	if _fire_ramp == null:
+		_fire_ramp = Gradient.new()
+		_fire_ramp.set_color(0, Color(1.0, 0.85, 0.45, 0.9))
+		_fire_ramp.add_point(0.35, Color(1.0, 0.45, 0.1, 0.7))
+		_fire_ramp.set_color(_fire_ramp.get_point_count() - 1, Color(0.4, 0.08, 0.02, 0.0))
+		_fire_shrink = Curve.new()
+		_fire_shrink.add_point(Vector2(0, 0.6))
+		_fire_shrink.add_point(Vector2(0.3, 1.0))
+		_fire_shrink.add_point(Vector2(1, 0.2))
+	var e: CPUParticles3D = CPUParticles3D.new()
+	e.emitting = false
+	e.amount = 18
+	e.lifetime = 0.6
+	e.local_coords = false
+	var q: QuadMesh = QuadMesh.new()
+	q.size = Vector2.ONE
+	e.mesh = q
+	e.material_override = _particle_material(&"fire")
+	e.emission_shape = CPUParticles3D.EMISSION_SHAPE_SPHERE
+	e.emission_sphere_radius = 0.05
+	e.direction = Vector3.UP
+	e.spread = 18.0
+	e.gravity = Vector3(0, 1.8, 0)
+	e.initial_velocity_min = 0.3
+	e.initial_velocity_max = 0.9
+	e.scale_amount_min = 0.06
+	e.scale_amount_max = 0.13
+	e.scale_amount_curve = _fire_shrink
+	e.color_ramp = _fire_ramp
+	add_child(e)
+	return e
+
+
+func _hull_material(color: Color) -> StandardMaterial3D:
+	if _hull_mats.has(color):
+		return _hull_mats[color]
+	var m: StandardMaterial3D = StandardMaterial3D.new()
+	m.albedo_color = color
+	m.roughness = 0.5
+	_hull_mats[color] = m
+	return m
+
+
 func _build_shells() -> void:
 	var mesh: CylinderMesh = CylinderMesh.new()
 	mesh.top_radius = 0.0032  # 5.7×28: 7.9 mm rim, 6.4 mm shoulder-ish body, 28.8 mm long
@@ -572,6 +767,34 @@ func _build_shells() -> void:
 		s.node.material_override = brass
 		s.node.visible = false
 		s.node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		add_child(s.node)
+		_shells.append(s)
+	# 12-gauge: plastic hull (tinted per load) with a brass head, 70 mm long.
+	var hull: CylinderMesh = CylinderMesh.new()
+	hull.top_radius = 0.0102
+	hull.bottom_radius = 0.0102
+	hull.height = 0.056
+	hull.radial_segments = 10
+	hull.rings = 1
+	var head: CylinderMesh = CylinderMesh.new()
+	head.top_radius = 0.0108
+	head.bottom_radius = 0.0111
+	head.height = 0.014
+	head.radial_segments = 10
+	head.rings = 1
+	for i: int in MAX_HULLS:
+		var s: Shell = Shell.new()
+		s.bank = &"shotshell"
+		s.node = MeshInstance3D.new()
+		s.node.mesh = hull
+		s.node.visible = false
+		s.node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		var h: MeshInstance3D = MeshInstance3D.new()
+		h.mesh = head
+		h.material_override = brass
+		h.position = Vector3(0, -0.035, 0)
+		h.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		s.node.add_child(h)
 		add_child(s.node)
 		_shells.append(s)
 

@@ -10,3 +10,9 @@ var target: Node
 func on_ballistic_hit(hit: BallisticHit) -> void:
 	if target and target.has_method(&"on_part_hit"):
 		target.call(&"on_part_hit", self, hit)
+
+
+## Embers (Dragon's Breath) set this zone alight.
+func on_burn(hit: BallisticHit) -> void:
+	if target and target.has_method(&"on_part_burn"):
+		target.call(&"on_part_burn", self, hit)

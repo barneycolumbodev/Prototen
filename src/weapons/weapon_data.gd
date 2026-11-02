@@ -9,6 +9,8 @@ extends Resource
 
 @export var display_name: String = "Five-seveN SR"
 @export var caliber: String = "5.7×28mm"
+## Weapon wheel icon (raw_assets/ui/weapon_icons/build.py renders one per gun).
+@export var icon: Texture2D
 
 @export_group("Magazine")
 @export_range(1, 500) var magazine_size: int = 20
@@ -52,25 +54,75 @@ extends Resource
 
 @export_group("Ballistics")
 ## Metres per second at the muzzle (SS190 from a 4.8" barrel with can ≈ 650).
-@export_range(50.0, 1500.0) var muzzle_velocity: float = 650.0
+@export_range(50.0, 3500.0) var muzzle_velocity: float = 650.0
 @export_range(0.1, 50.0) var bullet_mass_g: float = 2.0
 ## Air drag: speed falls as v(x) = v0 * e^(-k x). 0.0015/m ≈ 14 % lost over 100 m.
 @export_range(0.0, 0.05) var drag_per_m: float = 0.0015
 @export_range(0.0, 2.0) var gravity_scale: float = 1.0
-@export_range(10.0, 3000.0) var max_range: float = 600.0
+@export_range(10.0, 6000.0) var max_range: float = 600.0
 ## How many surfaces one round may pass through.
-@export_range(0, 12) var max_penetrations: int = 6
+@export_range(0, 24) var max_penetrations: int = 6
 ## Augment hook: multiplies the energy available for punching through material.
 @export_range(0.1, 5.0) var penetration_scale: float = 1.0
 @export_range(0, 4) var max_ricochets: int = 2
+
+@export_group("Shot")
+## Projectiles per shot (shotgun pellets) and the pattern they spread into
+## around the aim point (full width, degrees). 1 / 0 for rifles and pistols.
+@export_range(1, 32) var pellets: int = 1
+@export_range(0.0, 30.0) var pattern_deg: float = 0.0
+## Each projectile is a burning ember (Dragon's Breath): drawn as a glowing
+## streak, and leaves `burn_dps` for `burn_time` seconds on what it hits.
+@export var embers: bool = false
+@export_range(0.0, 200.0) var burn_dps: float = 0.0
+@export_range(0.0, 10.0) var burn_time: float = 0.0
+
+@export_group("Shell types")
+## Loads this gun takes (data/weapons/ammo/). Empty = one fixed load (the
+## values above). D-pad right/left picks the next/previous load, which swaps
+## in a magazine of it and racks the chambered shell out (the empty reload).
+@export var ammo_types: Array[AmmoData] = []
+## Seconds after the last D-pad press before the swap starts (lets two taps skip a load).
+@export_range(0.0, 1.0) var ammo_select_delay: float = 0.3
+
+@export_group("Optic")
+## Eye position and look point in weapon space through the optic (loads with
+## `use_optic`), its zoom and how long it takes to get behind it.
+@export var optic_eye_position: Vector3 = Vector3.ZERO
+@export var optic_look_target: Vector3 = Vector3(1.0, 0.0, 0.0)
+@export_range(0.3, 1.0) var optic_fov_scale: float = 0.9
+@export_range(0.03, 1.0) var optic_ads_time: float = 0.3
+@export_range(0.1, 1.5) var optic_sensitivity: float = 0.75
 
 @export_group("Damage")
 ## Damage per joule the round leaves inside a body.
 @export_range(0.0, 1.0) var damage_per_joule: float = 0.14
 ## Every hit deals at least this much (temporary cavity, shock).
-@export_range(0.0, 100.0) var min_damage: float = 10.0
+@export_range(0.0, 500.0) var min_damage: float = 10.0
 ## Multiplies real bullet momentum for physics pushes (props, plates, ragdolls).
 @export_range(0.0, 200.0) var impulse_scale: float = 30.0
+
+@export_group("Capacitor and heat")
+## Railguns: seconds after a shot until the capacitor bank is full again.
+## 0 = a conventional gun (every shot full power, no heat).
+@export_range(0.0, 3.0) var charge_time: float = 0.0
+## Energy of a shot fired at the earliest moment (one `fire_interval` after
+## the last), as a fraction of a full-charge shot. Velocity goes with √energy.
+@export_range(0.1, 1.0) var min_charge_power: float = 1.0
+## Rail heat added by a full-power shot (1.0 = overheated, forced vent).
+@export_range(0.0, 1.0) var heat_per_shot: float = 0.0
+## Heat lost per second once the gun has rested `heat_cool_delay` seconds.
+@export_range(0.0, 5.0) var heat_cool_per_s: float = 0.3
+@export_range(0.0, 3.0) var heat_cool_delay: float = 0.4
+## Forced vent after overheating: seconds the gun can't fire.
+@export_range(0.1, 5.0) var vent_time: float = 1.5
+## How far the vent shroud (node "vent") lifts while venting, metres (+Y).
+@export_range(0.0, 0.05) var vent_lift: float = 0.0
+## Emissive parts (node "glow"): colour when cool and when hot, and emission
+## energy from an empty (x) to a full (y) capacitor.
+@export var glow_color: Color = Color(0.35, 0.85, 1.0)
+@export var glow_hot_color: Color = Color(1.0, 0.42, 0.12)
+@export var glow_energy: Vector2 = Vector2(0.5, 4.0)
 
 @export_group("Accuracy")
 ## Mechanical precision when aimed, minutes of angle (1 MOA ≈ 3 cm at 100 m).
@@ -159,13 +211,27 @@ extends Resource
 @export var ejection_point: Vector3 = Vector3(0.012, 0.018, 0.006)
 ## Shell launch velocity in weapon space, m/s (+Z = right).
 @export var ejection_velocity: Vector3 = Vector3(-0.6, 1.6, 2.6)
+## Brass/case ejection. Railguns have no case.
+@export var ejects_shells: bool = true
 ## Suppressed: small flash and dim light.
 @export_range(0.0, 3.0) var flash_scale: float = 0.35
-@export_range(0.0, 10.0) var flash_light_energy: float = 1.2
+@export_range(0.0, 20.0) var flash_light_energy: float = 1.2
+@export var flash_color: Color = Color(1.0, 0.72, 0.42)
+## Seconds the muzzle light takes to fade.
+@export_range(0.02, 1.0) var flash_light_time: float = 0.06
+## Ejects 12-gauge shells (tinted per load) instead of small brass cases.
+@export var shotshell: bool = false
 ## Every Nth round is a tracer (0 = none).
 @export_range(0, 10) var tracer_every: int = 0
 ## Muzzle smoke puffs per shot (suppressor puff / propellant smoke).
 @export_range(0, 10) var smoke_per_shot: int = 3
+## Ionized-air trail along the whole path of every round, seconds it lingers
+## (0 = none). Drawn from the muzzle through every wall it crosses.
+@export_range(0.0, 3.0) var beam_trail_time: float = 0.0
+@export_range(0.001, 0.1) var beam_trail_width: float = 0.012
+@export var beam_trail_color: Color = Color(0.55, 0.85, 1.0)
+## Impact particles and hole size, relative to the surface defaults.
+@export_range(0.5, 4.0) var impact_fx_scale: float = 1.0
 
 @export_group("Sound")
 ## Sfx bank prefix for this gun's sounds ("mg42_" plays mg42_shot, mg42_mag_in...).
@@ -180,6 +246,9 @@ extends Resource
 ## opens during a reload (degrees, muzzle up).
 @export var cover_hinge: Vector3 = Vector3.ZERO
 @export_range(0.0, 120.0) var cover_open_deg: float = 0.0
+## Direction the magazine (node "magazine") leaves the gun during a reload,
+## weapon space. Down for a pistol; back and up for a top-mounted magazine.
+@export var magazine_travel: Vector3 = Vector3(0.0, -1.0, 0.0)
 ## Belt (node "belt") shake per shot, metres.
 @export_range(0.0, 0.02) var belt_jiggle: float = 0.0
 
@@ -194,8 +263,26 @@ extends Resource
 @export_range(0.0, 1.0) var hitstop_time_scale: float = 0.06
 
 
-func muzzle_energy() -> float:
-	return 0.5 * bullet_mass_g * 0.001 * muzzle_velocity * muzzle_velocity
+## Kinetic energy at the muzzle, J (`power`: capacitor charge fraction for railguns).
+func muzzle_energy(power: float = 1.0) -> float:
+	return 0.5 * bullet_mass_g * 0.001 * muzzle_velocity * muzzle_velocity * power
+
+
+## True for guns with a capacitor bank (railguns).
+func is_rail() -> bool:
+	return charge_time > 0.0
+
+
+## 0..1 how full the capacitor is `since_shot` seconds after the last shot.
+func charge_fraction(since_shot: float) -> float:
+	if charge_time <= 0.0:
+		return 1.0
+	return clampf((since_shot - fire_interval) / maxf(charge_time - fire_interval, 0.001), 0.0, 1.0)
+
+
+## Energy fraction of a shot fired `since_shot` seconds after the last one.
+func charge_power(since_shot: float) -> float:
+	return lerpf(min_charge_power, 1.0, charge_fraction(since_shot)) if is_rail() else 1.0
 
 
 ## Full-width spread cone in degrees for the current state.
@@ -210,9 +297,10 @@ func spread_deg(aim: float, move_fraction: float, airborne: bool, bloom: float, 
 	return lerpf(hip, aimed, clampf(aim, 0.0, 1.0))
 
 
-## Energy (J) needed to cross `thickness_m` of `surface`.
-func penetration_cost(surface: SurfaceMaterial, thickness_m: float) -> float:
-	return thickness_m * 100.0 * surface.resistance_j_per_cm / penetration_scale
+## Energy (J) needed to cross `thickness_m` of `surface` at `speed` m/s
+## (speed only matters for water-like materials, see SurfaceMaterial).
+func penetration_cost(surface: SurfaceMaterial, thickness_m: float, speed: float = 0.0) -> float:
+	return thickness_m * 100.0 * surface.resistance_j_per_cm * surface.speed_factor(speed) / penetration_scale
 
 
 func damage_for(deposited_j: float) -> float:

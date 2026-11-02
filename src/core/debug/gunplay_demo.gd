@@ -15,8 +15,11 @@ var room: TestRoom
 ## "range": aimed shots at every target. "fire": hip-fire a few rounds and
 ## freeze time just after the last one (flash, shell and recoil in frame).
 ## "hip": no shots, just the hip-fire hold (for checking viewmodel placement).
+## "wheel": hold Y with the stick on `--wheel-pick=<slot>` (weapon wheel open).
+## `--aim=dummy` holds the final aim on a dummy (crimson reticle).
 ## "ads": no shots, aimed (sight picture). "burst": hold the trigger from the
 ## hip at a dummy for `BURST_FRAMES`, then freeze time mid-burst.
+## Options: `--weapon=<i>` (loadout slot), `--ammo=<i>` (shell type).
 var mode: String = "range"
 const BURST_FRAMES: int = 34
 var _burst: int = 0
@@ -31,12 +34,26 @@ var _wait: int = 30
 func _ready() -> void:
 	process_physics_priority = -20
 	add_to_group(&"capture_busy")
-	Ballistics.show_trajectories = true
+	# Debug bullet paths, unless `--no-paths` (clean shots of tracers and rail trails).
+	Ballistics.show_trajectories = not OS.get_cmdline_user_args().has("--no-paths")
 	var r: ShootingRange = room.shooting_range
 	room.player.global_position = Vector3(1.0, 0.0, 9.0)
 	for arg: String in OS.get_cmdline_user_args():
 		if arg.begins_with("--weapon="):
 			room.player.weapon().select_now(arg.trim_prefix("--weapon=").to_int())
+	for arg: String in OS.get_cmdline_user_args():
+		if arg.begins_with("--ammo="):  # shell type for guns that take several (Saiga: 0 buck, 1 slug, 2 dragon's breath)
+			room.player.weapon().select_ammo_now(arg.trim_prefix("--ammo=").to_int())
+	if mode == "wheel":
+		# Hold Y with the stick on slot `--wheel-pick=<n>` (the wheel stays open for the capture).
+		var pick: int = 3
+		for arg: String in OS.get_cmdline_user_args():
+			if arg.begins_with("--wheel-pick="):
+				pick = arg.trim_prefix("--wheel-pick=").to_int()
+		var n: int = room.player.weapon().slots.size()
+		var ang: float = pick * TAU / n
+		room.player.weapon().script_wheel(true, Vector2(sin(ang), -cos(ang)))
+		return
 	if mode == "hip" or mode == "ads":
 		return
 	if mode == "burst":
@@ -83,8 +100,11 @@ func _physics_process(_delta: float) -> void:
 		return
 	if _queue.is_empty():
 		done = true
-		# Hold the sights on the poppers for the capture.
-		aim_at(player, Vector3(-4.0, 1.4, -6.5) if aimed else Vector3(-2.0, 1.5, -6.5))
+		# Hold the sights on the poppers for the capture (`--aim=dummy`: on a dummy's chest).
+		if OS.get_cmdline_user_args().has("--aim=dummy"):
+			aim_at(player, room.shooting_range.dummies[0].parts[&"chest"].global_position)
+		else:
+			aim_at(player, Vector3(-4.0, 1.4, -6.5) if aimed else Vector3(-2.0, 1.5, -6.5))
 		weapon.cam_recoil.reset()
 		remove_from_group(&"capture_busy")
 		finished.emit()
@@ -101,10 +121,12 @@ func _physics_process(_delta: float) -> void:
 
 
 func _freeze() -> void:
-	# Let the shot frame play out a little, then nearly stop time.
+	# Let the shot frame play out a little, then nearly stop time (software
+	# rendering is slow enough that 1 % speed still ages railgun trails out
+	# during the capture warm-up).
 	await get_tree().physics_frame
 	await get_tree().physics_frame
-	Engine.time_scale = 0.01
+	Engine.time_scale = 0.0005
 	done = true
 	remove_from_group(&"capture_busy")
 
