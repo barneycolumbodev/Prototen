@@ -1,0 +1,34 @@
+[gd_resource type="Resource" script_class="AmmoData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/weapons/ammo_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+display_name = "Dragon's Breath"
+short_name = "DRAGON'S BREATH"
+color = Color(0.96, 0.42, 0.06, 1)
+pellets = 14
+pattern_deg = 9.0
+pellet_mass_g = 0.6
+muzzle_velocity = 380.0
+drag_per_m = 0.035
+max_range = 55.0
+max_penetrations = 0
+penetration_scale = 0.2
+max_ricochets = 0
+damage_per_joule = 0.1
+min_damage = 3.0
+impulse_scale = 2.0
+mechanical_moa = 30.0
+embers = true
+burn_dps = 18.0
+burn_time = 4.0
+recoil_scale = 0.7
+flash_scale = 4.0
+flash_light_energy = 9.0
+flash_color = Color(1, 0.52, 0.18, 1)
+flash_light_time = 0.35
+smoke_per_shot = 6
+sound_prefix = "saiga_db_"
+shot_volume_db = 0.0
+use_optic = false

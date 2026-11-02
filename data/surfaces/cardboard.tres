@@ -20,3 +20,4 @@ particle_kind = &"chalk"
 particle_count = 6
 impact_sound = &"drywall"
 is_flesh = false
+flammable = true

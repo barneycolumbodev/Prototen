@@ -12,6 +12,8 @@ extends Node3D
 ##   `cover`    swings open about a hinge during a reload (MG feed cover)
 ##   `belt`     shakes as the gun feeds, and leaves with the box (MG belt)
 ##   `stock`    hidden while aiming (it would sit against the cheek, filling the screen)
+##   `optic`    shown only while the loaded shells use it (Saiga-12K slugs)
+##   `shell_hull`, `mag_tape`  tinted with the loaded shell type's colour
 
 @export var config: ViewmodelConfig
 @export var models: Array[PackedScene] = []
@@ -25,6 +27,10 @@ var _cover_rest: Transform3D
 var _belt: Node3D
 var _belt_rest: Vector3
 var _stock: Node3D
+var _optic: Node3D
+var _tinted: Array[GeometryInstance3D] = []
+var _tint_mat: StandardMaterial3D
+var _scoped: bool = false
 
 
 func _ready() -> void:
@@ -45,6 +51,12 @@ func _ready() -> void:
 			_belt = model.find_child("belt", true, false) as Node3D
 		if _stock == null:
 			_stock = model.find_child("stock", true, false) as Node3D
+		if _optic == null:
+			_optic = model.find_child("optic", true, false) as Node3D
+		for part: String in ["shell_hull", "mag_tape"]:
+			var g: GeometryInstance3D = model.find_child(part, true, false) as GeometryInstance3D
+			if g:
+				_tinted.append(g)
 	if _slide:
 		_slide_rest = _slide.position
 	if _magazine:
@@ -71,6 +83,8 @@ func has_part(part_name: StringName) -> bool:
 			return _belt != null
 		&"stock":
 			return _stock != null
+		&"optic":
+			return _optic != null
 	return false
 
 
@@ -100,6 +114,47 @@ func set_cover_open(angle_deg: float, hinge: Vector3) -> void:
 func set_aimed(ads: float) -> void:
 	if _stock:
 		_stock.visible = ads < 0.6
+
+
+## Mounts or removes the optic.
+func set_optic(mounted: bool) -> void:
+	if _optic:
+		_optic.visible = mounted
+
+
+func optic_mounted() -> bool:
+	return _optic != null and _optic.visible
+
+
+## Colours the loaded-shell markers (top shell hull, magazine tape).
+func set_shell_color(color: Color) -> void:
+	if _tinted.is_empty():
+		return
+	if _tint_mat == null:
+		_tint_mat = StandardMaterial3D.new()
+		_tint_mat.roughness = 0.55
+		for g: GeometryInstance3D in _tinted:
+			g.material_override = _tint_mat
+	_tint_mat.albedo_color = color
+
+
+func shell_color() -> Color:
+	return _tint_mat.albedo_color if _tint_mat else Color.WHITE
+
+
+## Looking through the optic: the whole viewmodel steps aside for the HUD's scope view.
+func set_scoped(scoped: bool) -> void:
+	if scoped == _scoped:
+		return
+	_scoped = scoped
+	for child: Node in get_children():
+		var n: Node3D = child as Node3D
+		if n:
+			n.visible = not scoped
+
+
+func is_scoped() -> bool:
+	return _scoped
 
 
 ## Belt offset from rest (weapon space), for the feed shake.

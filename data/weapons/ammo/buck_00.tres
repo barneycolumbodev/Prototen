@@ -1,0 +1,34 @@
+[gd_resource type="Resource" script_class="AmmoData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/weapons/ammo_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+display_name = "00 Buck"
+short_name = "00 BUCK"
+color = Color(0.78, 0.1, 0.07, 1)
+pellets = 9
+pattern_deg = 3.4
+pellet_mass_g = 3.5
+muzzle_velocity = 400.0
+drag_per_m = 0.0045
+max_range = 160.0
+max_penetrations = 3
+penetration_scale = 0.5
+max_ricochets = 1
+damage_per_joule = 0.14
+min_damage = 10.0
+impulse_scale = 10.0
+mechanical_moa = 10.0
+embers = false
+burn_dps = 0.0
+burn_time = 0.0
+recoil_scale = 1.0
+flash_scale = 1.7
+flash_light_energy = 4.0
+flash_color = Color(1, 0.72, 0.42, 1)
+flash_light_time = 0.07
+smoke_per_shot = 3
+sound_prefix = ""
+shot_volume_db = 0.0
+use_optic = false

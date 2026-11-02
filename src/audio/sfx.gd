@@ -8,6 +8,8 @@ extends Node3D
 ## tail on the "Tail" bus, whose reverb size the level sets (`set_room`).
 ## Impacts are positional, heard from where the round landed.
 ## Pitch follows the time scale so hit-stop and slow motion sound right.
+## Shotgun pellets: one confirm per shell (the loudest kind wins), and each
+## pellet's impact is a little quieter than a single round's.
 
 const DIR: String = "res://assets/audio/sfx/"
 const VOICES_3D: int = 16
@@ -26,6 +28,9 @@ var _next3d: int = 0
 var _next2d: int = 0
 var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
 var _reverb: AudioEffectReverb
+## Confirm already played for this volley, and how strong (hit 1, headshot 2, kill 3).
+var _confirm_volley: int = 0
+var _confirm_rank: int = 0
 
 
 func _ready() -> void:
@@ -147,6 +152,8 @@ func _pitch(rand: float) -> float:
 
 func _on_hit(hit: BallisticHit) -> void:
 	var vol: float = linear_to_db(clampf(hit.energy_in / maxf(hit.weapon.muzzle_energy(), 1.0), 0.15, 1.0))
+	if hit.weapon.pellets > 1:
+		vol -= 5.0
 	var sound: StringName = &"impact_" + String(hit.surface.impact_sound)
 	if hit.result == BallisticHit.Result.RICOCHET:
 		sound = &"impact_metal"
@@ -156,6 +163,15 @@ func _on_hit(hit: BallisticHit) -> void:
 func _on_target_hit(kind: StringName, hit: BallisticHit) -> void:
 	if hit.shooter == null or not hit.shooter.is_in_group(&"player"):
 		return
+	var rank: int = 1
+	if kind == &"headshot":
+		rank = 2
+	elif kind == &"kill":
+		rank = 3
+	if hit.volley_id != 0 and hit.volley_id == _confirm_volley and rank <= _confirm_rank:
+		return  # another pellet of a shell that already confirmed
+	_confirm_volley = hit.volley_id
+	_confirm_rank = rank
 	match kind:
 		&"headshot":
 			play_ui(&"headshot", -2.0, 0.02)
