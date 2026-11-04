@@ -72,6 +72,7 @@ func _build() -> void:
 	_list.add_child(title)
 	_add("resume", close)
 	_add("tuning", _on_tuning)
+	_add("map", _on_map)
 	_add("waves", _on_waves)
 	_add("gore", Settings.cycle_gore_level)
 	_add("renderer", _on_renderer)
@@ -112,7 +113,9 @@ func _refresh() -> void:
 	var wm: Node = get_tree().current_scene.get_node_or_null(^"WaveMode") if get_tree().current_scene else null
 	var running: Variant = wm.get(&"running") if wm else false
 	var on: bool = running == true
-	_label("waves", "Wave mode: %s" % ("stop" if on else "start"))
+	_label("map", "Map: %s" % MAPS.get(_scene_path(), "?"))
+	var rolling: bool = wm is RollingSpawner
+	_label("waves", ("Enemies: %s" if rolling else "Wave mode: %s") % (("stop" if on else "start") if not rolling else ("on" if on else "off")))
 	_label("gore", "Gore: %s" % Settings.gore_name())
 	_label("tuning", "Gun tuning")
 	var now: String = Settings.current_renderer()
@@ -130,6 +133,26 @@ func _refresh() -> void:
 func _on_renderer() -> void:
 	var method: String = Settings.cycle_next_start_renderer()
 	_notice.text = "Close the app and open it again to start with the %s renderer." % _pretty(method)
+
+
+## Maps the pause menu cycles through (scene path -> name).
+const MAPS: Dictionary[String, String] = {
+	"res://src/levels/chinatown/chinatown.tscn": "Chinatown docks",
+	"res://src/levels/test_room.tscn": "Test range",
+}
+
+
+func _scene_path() -> String:
+	var sc: Node = get_tree().current_scene
+	return sc.scene_file_path if sc else ""
+
+
+func _on_map() -> void:
+	var keys: Array = MAPS.keys()
+	var i: int = keys.find(_scene_path())
+	var next: String = keys[(i + 1) % keys.size()]
+	close()
+	get_tree().change_scene_to_file.call_deferred(next)
 
 
 func _on_waves() -> void:

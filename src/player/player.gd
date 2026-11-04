@@ -85,7 +85,7 @@ func _ready() -> void:
 	health = body_config.max_health
 	collision_layer = Ballistics.LAYER_PLAYER
 	# Corpses and moving hitboxes don't block; living enemies do (their capsules).
-	collision_mask = Ballistics.LAYER_WORLD | Ballistics.LAYER_PROPS | Ballistics.LAYER_ENEMY
+	collision_mask = Ballistics.LAYER_WORLD | Ballistics.LAYER_PROPS | Ballistics.LAYER_ENEMY | Ballistics.LAYER_CLIP
 	_capsule = (_collision.shape as CapsuleShape3D).duplicate() as CapsuleShape3D
 	_collision.shape = _capsule
 	yaw = rotation.y

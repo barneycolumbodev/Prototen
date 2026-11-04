@@ -115,7 +115,7 @@ func _ready() -> void:
 	add_to_group(&"suppressible")
 	add_to_group(&"triad")
 	collision_layer = Ballistics.LAYER_ENEMY
-	collision_mask = Ballistics.LAYER_WORLD | Ballistics.LAYER_PROPS | Ballistics.LAYER_ENEMY
+	collision_mask = Ballistics.LAYER_WORLD | Ballistics.LAYER_PROPS | Ballistics.LAYER_ENEMY | Ballistics.LAYER_CLIP
 	var cs: CollisionShape3D = CollisionShape3D.new()
 	cs.name = "Capsule"
 	var cap: CapsuleShape3D = CapsuleShape3D.new()
