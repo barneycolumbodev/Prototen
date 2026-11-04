@@ -150,3 +150,30 @@ Please try:
 - Measured:
 - Notes from the owner:
 - Follow-ups:
+
+## M1b + M1c — 2026-11-04 — Triad enemies, gore, ragdolls, AI, waves, movement (waiting for the owner)
+
+Build: `dev-latest` from branch `claude/m1-gore-enemies-fkq87x` (manual CI run). Same five guns as M1a.4.
+
+What's new in the APK:
+- **Triad members on the range:** the four target spots hold triad members — Gunmen (black jackets, Type 56), an Enforcer (olive jacket, plate carrier, pump shotgun) and a Red Pole (burgundy jacket, SMG). They turn to face you and react to every hit, but on the range they never fire. A new one walks up 9 s after a kill; bodies stay.
+- **Locational damage:** 17 zones. Head and neck kill; legs make them stumble, limp and crawl; a hit to the gun hand often knocks the gun away (and they may put their hands up); gut shots double them over; wounds that go through bleed.
+- **Gore** (Pause → Gore: Off / Standard / **Maximum**, Maximum by default): wounds open on the body where each round went in and out, blood sprays out of exits onto the wall behind, mist on head shots, drips, pools under bodies. At Maximum, heavy hits take heads, forearms and shins off: the rail carbine does it in one shot, buck does it up close, and the MG42 chews limbs off.
+- **Ragdolls:** they fall the way they were shot and freeze once they settle (at most three move at once).
+- **Plates:** the Enforcer's chest plates stop pistol rounds and buck (you'll see sparks and an armour marker); go for the head or use the rail carbine.
+- **Wave mode:** Pause → Wave mode: start. Waves come in from the edges of the room, take cover behind the crates, peek and fire bursts (only three shoot at you at once; the first rounds go wide). Near misses make them hide; casualties, gore and you getting close break them: they run, cower, fire blind over cover or surrender. Callouts show as subtitles. You have 200 health that comes back after 3 s out of fire; red arcs show where hits came from. Dying restarts at wave 1. Pause → Wave mode: stop brings the range back.
+- **Movement:** B while sprinting **slides** (A out of it hops); jump at a wall while pushing forward to **wall-run** along it (A jumps off); A at a ledge (the three blocks on the west wall: 1, 1.5, 2 m) **mantles** onto it.
+
+Please try:
+1. Range: shoot a Gunman in the chest with the pistol, then the arm. Do the wounds read? Shoot one in the hand: does he drop the gun?
+2. Rail carbine to a head, then to a forearm (Maximum gore). Too much? Not enough?
+3. MG42 at a target's legs. Saiga buck at 3 m.
+4. Enforcer: pistol to the chest (plate), then the head.
+5. Wave mode: play three waves. Are they too accurate or too passive? Does cover-peeking read? Do the callouts help?
+6. Slide into a crowd, wall-run along the free-standing wall on the west side, mantle the blocks.
+7. Watch the overlay with 8–12 enemies and a few bodies: does it hold 60?
+
+- Device / renderer / settings:
+- Measured:
+- Notes from the owner:
+- Follow-ups:

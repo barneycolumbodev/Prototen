@@ -30,3 +30,8 @@ Every third-party file in the repository, with its source and license (CLAUDE.md
 | M14/P sounds (9: shots, tail, reload beats, dry fire) | `assets/audio/sfx/m14_*` | Synthesized by `raw_assets/audio/build_m14_sfx.py` (numpy/scipy). |
 | Weapon wheel icons (5) | `assets/ui/weapon_icons/` | Rendered from the game models by `raw_assets/ui/weapon_icons/build.py`. |
 | Weapon wheel sounds (2) | `assets/audio/sfx/wheel_*` | Synthesized by `raw_assets/audio/build_ui_sfx.py`. |
+| Triad enemy (rigged body and clothes, 2K painted textures, 17 animation clips, severable parts with flesh caps) | `assets/characters/triad/` | `raw_assets/characters/triad/build.py` (Blender/bpy metaballs, voxel remesh, numpy texture painting from baked position maps; IK-posed clips). No MakeHuman/MPFB or Quaternius assets: their sites aren't reachable from the session. |
+| Enemy guns: Type 56 rifle, pump shotgun, SMG (low-poly, factor materials) | `assets/weapons/enemy/` | `raw_assets/weapons/enemy_guns/build.py`. |
+| Blood textures (splat atlas, pool, droplet, mist) | `assets/gore/` | `raw_assets/gore/build_blood_textures.py` (numpy). |
+| Enemy body shader (role tints, painted wounds, char), blood decal shader | `src/ai/triad.gdshader`, `src/gore/blood_decal.gdshader` | Written for this project. |
+| Enemy and gore sounds (enemy shots ×3 guns, whizz/crack, pain, body fall, sever, reload; slide, mantle) | `assets/audio/sfx/enemy_*`, `whizz_*`, `body_fall_1`, `gore_sever_1`, `slide_1`, `mantle_1` | Synthesized by `raw_assets/audio/build_enemy_sfx.py` (numpy/scipy). |

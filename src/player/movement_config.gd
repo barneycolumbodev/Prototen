@@ -23,6 +23,38 @@ extends Resource
 @export_range(0.0, 0.3) var move_outer_deadzone: float = 0.05
 ## Sprint ends when the stick drops below this or points sideways/back.
 @export_range(0.1, 1.0) var sprint_min_forward: float = 0.5
+@export_group("Slide")
+## B while moving this fast (sprinting) starts a slide.
+@export var slide_min_speed: float = 8.0
+## Speed added when the slide starts, and the most it can reach.
+@export var slide_boost: float = 3.0
+@export var slide_max_speed: float = 15.0
+## Deceleration while sliding (m/s²) and the speed it ends at.
+@export var slide_friction: float = 6.5
+@export var slide_end_speed: float = 4.5
+## How fast the stick can bend the slide (rad/s).
+@export var slide_steer: float = 1.4
+@export var slide_cooldown: float = 0.35
+@export var slide_tilt_deg: float = 5.0
+@export_group("Wall-run")
+## Airborne, pushing forward, at least this fast, with a wall at your side.
+@export var wallrun_min_speed: float = 5.5
+@export var wallrun_speed: float = 11.5
+@export var wallrun_time: float = 1.6
+## Gravity on the wall: starts at this fraction and returns to full by the end.
+@export_range(0.0, 1.0) var wallrun_gravity_scale: float = 0.1
+@export var wallrun_detect: float = 0.75
+## Jumping off: push from the wall and up.
+@export var wallrun_jump_out: float = 7.0
+@export var wallrun_jump_up: float = 8.0
+@export var wallrun_tilt_deg: float = 12.0
+@export var wallrun_cooldown: float = 0.4
+@export_group("Mantle")
+## Ledges between these heights (above the feet) can be climbed with A.
+@export var mantle_min_height: float = 0.45
+@export var mantle_max_height: float = 2.2
+@export var mantle_reach: float = 0.85
+@export var mantle_time: float = 0.34
 @export_group("Body")
 @export var stand_height: float = 1.8
 @export var crouch_height: float = 1.1

@@ -5,7 +5,7 @@
 [resource]
 script = ExtResource("1")
 max_health = 200.0
-damage_per_kj = 9.0
-regen_delay = 3.5
-regen_rate = 45.0
+damage_per_kj = 7.0
+regen_delay = 3.0
+regen_rate = 50.0
 respawn_time = 3.0

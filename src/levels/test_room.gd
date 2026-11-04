@@ -66,6 +66,7 @@ const CAPTURE_CAMERAS: Dictionary = {
 	"CapDummy": [Vector3(1.2, 1.55, 0.7), Vector3(1.5, 1.2, -1.0)],
 	"CapGore": [Vector3(-1.6, 1.4, 1.2), Vector3(1.2, 0.4, -1.6)],
 	"CapBodies": [Vector3(-5.2, 1.5, 2.2), Vector3(-7.6, 0.5, -1.2)],
+	"CapSever": [Vector3(-3.6, 1.5, 6.2), Vector3(-5.6, 0.4, 3.6)],
 }
 
 const PLAYER_SCENE: PackedScene = preload("res://src/player/player.tscn")
@@ -120,6 +121,8 @@ func _ready() -> void:
 	for arg: String in OS.get_cmdline_user_args():
 		if arg == "--waves":
 			wave_mode.start.call_deferred()
+		if arg == "--god":
+			player.invulnerable = true
 		if arg == "--demo=gore":
 			var gd: GoreDemo = GoreDemo.new()
 			gd.room = self

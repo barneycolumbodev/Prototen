@@ -487,7 +487,7 @@ func _physics_process(delta: float) -> void:
 		_sprint_out = data.sprint_to_fire
 	else:
 		_sprint_out = maxf(0.0, _sprint_out - delta)
-	var blocked: bool = _player.is_sprinting() or _sprint_out > 0.0 or is_switching()
+	var blocked: bool = _player.is_sprinting() or _sprint_out > 0.0 or is_switching() or _player.is_mantling()
 
 	# Holstered guns keep recharging and cooling.
 	for i: int in slots.size():
@@ -537,7 +537,7 @@ func _process(delta: float) -> void:
 		_player.aim_assist.ads = a
 
 	var pose: int = 0
-	if is_switching():
+	if is_switching() or _player.is_mantling():
 		pose = 3
 	elif is_reloading():
 		pose = 2

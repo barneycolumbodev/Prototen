@@ -22,6 +22,10 @@ const SEQUENCES: Dictionary[String, Array] = {
 		[0, -1, 0, &"stomach", 1],
 		[0, -1, 0, &"l_upper_arm", 1],
 	],
+	"wound1": [
+		[0, -1, 0, &"chest", 1],
+		[0, -1, 0, &"l_upper_arm", 1],
+	],
 	"surrender": [
 		[0, -1, 0, &"r_hand", 1],
 	],

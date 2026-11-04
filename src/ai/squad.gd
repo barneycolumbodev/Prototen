@@ -110,7 +110,7 @@ func report_contact(from: Enemy, where: Vector3) -> void:
 			if e.last_known == Vector3.INF or not e.sees_player:
 				e.last_known = where
 			e.awareness = maxf(e.awareness, 0.9)
-			if e.state == Enemy.State.IDLE:
+			if e.state == Enemy.State.IDLE and not e.passive:
 				e._enter(Enemy.State.ALERT)
 
 

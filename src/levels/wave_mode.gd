@@ -211,6 +211,17 @@ func _build_navigation() -> void:
 	nm.agent_max_slope = 40.0
 	room.add_child(_nav)
 	var source: NavigationMeshSourceGeometryData3D = NavigationMeshSourceGeometryData3D.new()
-	NavigationServer3D.parse_source_geometry_data(nm, source, room)
+	# The range's static bodies are parsed as collision shapes; the greybox
+	# (CSG) is added from its block table, so no render meshes are read back.
+	NavigationServer3D.parse_source_geometry_data(nm, source, room.shooting_range)
+	for block: Array in TestRoom.BLOCKS:
+		var size: Vector3 = block[1]
+		var centre: Vector3 = block[2]
+		var yaw_deg: float = block[3]
+		var pitch_deg: float = block[4]
+		var box: BoxMesh = BoxMesh.new()
+		box.size = size
+		var xform: Transform3D = Transform3D(Basis.from_euler(Vector3(deg_to_rad(pitch_deg), deg_to_rad(yaw_deg), 0.0)), centre)
+		source.add_faces(box.get_faces(), xform)
 	NavigationServer3D.bake_from_source_geometry_data(nm, source)
 	_nav.navigation_mesh = nm

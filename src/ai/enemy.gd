@@ -406,7 +406,7 @@ func on_ally_down(where: Vector3, gory: bool, officer: bool) -> void:
 	morale -= (0.12 + (0.12 if gory else 0.0)) * (1.0 - d / 25.0) + (0.25 if officer else 0.0)
 	last_known = where if last_known == Vector3.INF else last_known
 	awareness = maxf(awareness, 0.7)
-	if state == State.IDLE:
+	if state == State.IDLE and not passive:
 		_enter(State.ALERT)
 
 

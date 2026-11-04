@@ -27,13 +27,12 @@ extends Resource
 	&"l_upper_arm": 0.6, &"l_forearm": 0.5, &"l_hand": 0.35, &"r_upper_arm": 0.6, &"r_forearm": 0.5, &"r_hand": 0.35,
 	&"l_thigh": 0.75, &"l_shin": 0.6, &"l_foot": 0.4, &"r_thigh": 0.75, &"r_shin": 0.6, &"r_foot": 0.4,
 }
-## Zones covered by armour and the energy (J) a round must still carry to get
-## through it. Stopped rounds do `armor_blunt` of their damage (bruising).
-@export var armor_zones: Array[StringName] = []
-@export_range(0.0, 10000.0) var armor_stop_j: float = 0.0
+## Armour is physical: an Enforcer's carrier holds AR500 plates and
+## Ballistics decides what gets through. A stopped round still does this
+## fraction of its damage (blunt trauma).
 @export_range(0.0, 1.0) var armor_blunt: float = 0.15
 ## Damage to a limb before it is crippled (leg: limp/crawl, arm: weapon dropped).
-@export_range(5.0, 200.0) var limb_cripple: float = 28.0
+@export_range(5.0, 200.0) var limb_cripple: float = 18.0
 
 @export_group("Movement")
 @export_range(0.5, 4.0) var walk_speed: float = 1.4

@@ -248,8 +248,9 @@ func _on_hit(hit: BallisticHit) -> void:
 	var s: SurfaceMaterial = hit.surface
 	var target: Node3D = hit.collider as Node3D
 	var reflect: Vector3 = hit.direction.bounce(hit.normal).normalized()
-	# Enemy bodies: Gore paints the wounds and throws the blood.
-	if target and target.is_in_group(&"gore_body") and not hit.weapon.embers:
+	# Enemy bodies: Gore paints the wounds and throws the blood. The player
+	# feels hits through the HUD, not as blood in front of the camera.
+	if target and (target.is_in_group(&"player") or (target.is_in_group(&"gore_body") and not hit.weapon.embers)):
 		return
 	if hit.weapon.embers:
 		_ember_hit(hit, target, reflect)
