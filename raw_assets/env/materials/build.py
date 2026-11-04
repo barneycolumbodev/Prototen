@@ -135,7 +135,7 @@ def asphalt(s):
     f1, f2, cid = s.cells(int(9000 * (S / 1024) ** 2) + 2000)
     stone = s.smooth(f2.mean() * 0.0 + 3.5 * S / 1024, 0.8, f1)
     tone = s.rand_per_id(cid)
-    agg = s.mix(s.col((0.1, 0.1, 0.1)), s.col((0.22, 0.21, 0.2)), tone)
+    agg = s.mix(s.col((0.09, 0.09, 0.09)), s.col((0.16, 0.155, 0.15)), tone)
     binder = s.fill((0.06, 0.06, 0.065))
     alb = s.mix(binder, agg, stone * s.smooth(0.3, 0.9, tone))
     wear = s.smooth(-0.5, 1.5, s.noise(beta=2.4, fmin=2))
@@ -335,7 +335,7 @@ def paint_metal(s):
     peel = s.noise(beta=1.0, fmin=60) * 0.00004
     paint = s.fill((0.5, 0.5, 0.5)) * (1 + s.noise(beta=2.2, fmin=2)[..., None] * 0.06)
     chips, scratches = paint_wear(s, 1.3)
-    primer = s.col((0.36, 0.16, 0.1))
+    primer = s.col((0.26, 0.2, 0.17))
     rust = rust_colour(s)
     deep = chips * s.smooth(1.0, 1.6, s.noise(beta=2.2, fmin=4))
     alb = s.mix(paint, primer, chips)

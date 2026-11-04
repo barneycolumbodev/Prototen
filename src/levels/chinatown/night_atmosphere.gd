@@ -36,6 +36,19 @@ func _ready() -> void:
 
 func follow(n: Node3D) -> void:
 	_follow = n
+	var p: Player = n as Player
+	if p and config.viewmodel_fill_energy > 0.0:
+		var fill: OmniLight3D = OmniLight3D.new()
+		fill.name = "ViewmodelFill"
+		fill.light_color = config.viewmodel_fill_color
+		fill.light_energy = config.viewmodel_fill_energy
+		fill.omni_range = 1.4
+		fill.omni_attenuation = 1.5
+		fill.light_specular = 0.4
+		fill.shadow_enabled = false
+		fill.light_cull_mask = 0xFFFFF & ~ChinatownMap.MAP_LAYER
+		p.camera().add_child(fill)
+		fill.position = Vector3(-0.35, 0.25, 0.15)
 
 
 func _process(_delta: float) -> void:
@@ -83,6 +96,8 @@ func _build_environment() -> void:
 	env.adjustment_enabled = true
 	env.adjustment_saturation = config.saturation
 	env.adjustment_contrast = config.contrast
+	if "--nofog" in OS.get_cmdline_user_args():
+		env.fog_enabled = false
 	var we: WorldEnvironment = WorldEnvironment.new()
 	we.environment = env
 	add_child(we)

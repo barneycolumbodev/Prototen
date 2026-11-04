@@ -240,7 +240,7 @@ class Building:
             self.lbox(ox0, ox1, y_open, y_open + 0.08, 0.47, 0.53, "galv")
             self.k.collider(self.w(((ox0 + ox1) / 2, y_open + 0.1, op_top / 2)), (ox1 - ox0, 0.2, op_top), self.yaw, "glass")
             if interior_lit:
-                P.light(self.k, self.w(((ox0 + ox1) / 2, -0.8, 1.8)), (0.9, 0.95, 1.0), 35.0, radius=1.0, kind="AREA", rng=5.0)
+                P.light(self.k, self.w(((ox0 + ox1) / 2, -0.8, 1.8)), (0.9, 0.95, 1.0), 14.0, radius=1.0, kind="AREA", rng=5.0)
         elif kind == "open":
             # open-fronted shop with a shallow lit interior (shelves of goods)
             d = open_depth
@@ -254,7 +254,7 @@ class Building:
                 xx = ox0 + (i + 0.5) * (ox1 - ox0) / n
                 c = self.w((xx, y_open + d - 0.25, 0))
                 P.shelf_unit(self.k, c, self.yaw, w_=(ox1 - ox0) / n - 0.1, h=min(2.2, op_top - 0.1))
-            P.fluoro(self.k, self.w(((ox0 + ox1) / 2, y_open + d * 0.5, op_top)), self.yaw, length=min(1.8, ox1 - ox0 - 0.4), energy=60.0)
+            P.fluoro(self.k, self.w(((ox0 + ox1) / 2, y_open + d * 0.5, op_top)), self.yaw, length=min(1.8, ox1 - ox0 - 0.4), energy=18.0)
             self.k.collider(self.w(((ox0 + ox1) / 2, y_open + d + 0.4, op_top / 2)), (ox1 - ox0, 0.8, op_top), self.yaw, "concrete")
             for xx in (ox0 - 0.03, ox1 + 0.03):
                 self.k.collider(self.w((xx, y_open + d / 2, op_top / 2)), (0.1, d, op_top), self.yaw, "concrete")

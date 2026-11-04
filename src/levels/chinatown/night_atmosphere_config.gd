@@ -4,13 +4,18 @@ extends Resource
 ## data/levels/chinatown_night.tres holds the Chinatown values.
 
 @export_group("Exposure")
-@export var exposure: float = 1.0
+@export var exposure: float = 1.35
 @export var lightmap_gain: float = 1.0
 @export var emission_gain: float = 1.0
 @export var ambient_color: Color = Color(0.09, 0.1, 0.15)
 @export var ambient_energy: float = 1.0
 @export var saturation: float = 1.08
 @export var contrast: float = 1.06
+
+## A soft light carried with the camera so the gun in your hands reads at
+## night (skips the map; think of it as bounce from the wet street).
+@export var viewmodel_fill_color: Color = Color(0.85, 0.82, 0.9)
+@export var viewmodel_fill_energy: float = 0.5
 
 @export_group("Glow")
 @export var glow_intensity: float = 0.9

@@ -82,7 +82,8 @@ def fish_crate(k, pos, yaw=0.0, tint=None, full=True, col=True):
         k.box(w((ix * (sx / 2 - t / 2), 0, sz / 2)), (t, sy - 2 * t, sz), "plastic", tint, yaw=yaw, chamfer=0.006)
         k.box(w((ix * (sx / 2 + 0.001), 0, sz - 0.06)), (0.004, 0.16, 0.04), "plastic", (0.02, 0.02, 0.02), yaw=yaw)
     if full:
-        k.box(w((0, 0, sz - 0.05)), (sx - 2 * t, sy - 2 * t, 0.02), "props", (0.5, 0.5, 0.5), yaw=yaw)  # ice
+        with k.atlas("props", "ice"):
+            k.box(w((0, 0, sz - 0.05)), (sx - 2 * t, sy - 2 * t, 0.02), "props", (0.5, 0.5, 0.5), yaw=yaw)
     if col:
         k.collider(w((0, 0, sz / 2)), (sx, sy, sz), yaw, "crate")
 
@@ -154,7 +155,8 @@ def tyre(k, centre, R, r=0.38, tube=0.11, sides=14):
 
 
 def rope(k, pts, r=0.02, tint=(0.5, 0.45, 0.35)):
-    k.tube(pts, r, "props", tint, sides=5)
+    with k.atlas("props", "rope"):
+        k.tube(pts, r, "props", tint, sides=5)
 
 
 def catenary(p0, p1, sag, n=12):
@@ -182,7 +184,8 @@ def net_pile(k, pos, size=1.2, tint=(0.3, 0.55, 0.45)):
     pts = []
     a = np.linspace(0, 2 * math.pi, 13)[:-1]
     prof = [(size * 0.5, 0.0), (size * 0.55, 0.08), (size * 0.45, 0.22), (size * 0.28, 0.36), (0.0, 0.42)]
-    k.lathe(np.asarray(pos), prof, "props", tint, sides=12, R=rot_z(rnd(0, 90)))
+    with k.atlas("props", "net"):
+        k.lathe(np.asarray(pos), prof, "props", tint, sides=12, R=rot_z(rnd(0, 90)))
     for i in range(7):
         ang = rnd(0, 6.28)
         rr = rnd(0.1, size * 0.45)
@@ -201,8 +204,9 @@ def lantern(k, pos, r=0.22, tint=(0.75, 0.08, 0.05), energy=18.0, tassel=True, d
     prof = [(r * 0.55, 0.0)] + [(r * math.sin(math.pi * (0.12 + 0.76 * t)), h * t) for t in np.linspace(0.04, 0.96, 9)] + [(r * 0.55, h)]
     k.lathe(base, prof, "lantern", tint, sides=14, emit=2.6, cap_top=False, cap_bottom=False)
     gold = (0.55, 0.42, 0.18)
-    k.cyl(base + (0, 0, h - 0.005), base + (0, 0, h + 0.04), r * 0.58, "props", gold, sides=12)
-    k.cyl(base + (0, 0, -0.04), base + (0, 0, 0.005), r * 0.58, "props", gold, sides=12)
+    with k.atlas("props", "gold_pad"):
+        k.cyl(base + (0, 0, h - 0.005), base + (0, 0, h + 0.04), r * 0.58, "props", gold, sides=12)
+        k.cyl(base + (0, 0, -0.04), base + (0, 0, 0.005), r * 0.58, "props", gold, sides=12)
     k.cyl(base + (0, 0, h + 0.04), (cx, cy, cz), 0.006, "galv", sides=4, caps=False)
     if tassel:
         k.cyl(base + (0, 0, -0.04), base + (0, 0, -0.06 - r * 0.9), 0.025, "lantern", tint, sides=6, emit=0.4, r1=0.04)
@@ -497,8 +501,10 @@ def stall(k, pos, yaw=0.0, length=3.0, depth=1.2, species=None):
             k.cyl(w((ix * (length / 2 - 0.08), iy * (depth / 2 - 0.08), 0)), w((ix * (length / 2 - 0.08), iy * (depth / 2 - 0.08), top - 0.04)), 0.025, "galv", sides=8)
     k.box(w((0, 0, 0.18)), (length - 0.1, depth - 0.1, 0.02), "galv", yaw=yaw)  # shelf
     # crushed ice: a lumpy slab
-    k.box(w((0, 0, top + 0.04)), (length - 0.08, depth - 0.08, 0.06), "props", (0.55, 0.55, 0.55), yaw=yaw)
-    k.extrude([(-depth / 2 + 0.06, 0), (depth / 2 - 0.06, 0), (depth / 2 - 0.2, 0.08), (-depth / 2 + 0.2, 0.08)], w((-length / 2 + 0.06, 0, top + 0.07)), w((length / 2 - 0.06, 0, top + 0.07)), "props", (0.55, 0.55, 0.55))
+    with k.atlas("props", "ice"):
+        k.box(w((0, 0, top + 0.04)), (length - 0.08, depth - 0.08, 0.06), "props", (0.36, 0.38, 0.4), yaw=yaw)
+        k.extrude([(-depth / 2 + 0.06, 0), (depth / 2 - 0.06, 0), (depth / 2 - 0.2, 0.08), (-depth / 2 + 0.2, 0.08)],
+                  w((-length / 2 + 0.06, 0, top + 0.07)), w((length / 2 - 0.06, 0, top + 0.07)), "props", (0.36, 0.38, 0.4))
     species = species or ["fish_mackerel", "fish_snapper", "fish_grouper", "fish_pomfret"]
     nsec = max(1, int(length / 0.75))
     for s in range(nsec):
@@ -531,7 +537,7 @@ def seafood_tank(k, pos, yaw=0.0, length=1.6):
         p = w((rnd(-length / 2 + 0.15, length / 2 - 0.15), rnd(-0.25, 0.25), 0.62))
         k.lathe(np.asarray(p), [(0.0, 0), (0.09, 0.02), (0.07, 0.06), (0.0, 0.07)], "plastic", (0.45, 0.12, 0.05), sides=7)
     k.tube([w((length / 2 - 0.1, 0.2, 0.6 + h)), w((length / 2 - 0.1, 0.2, 0.6 + h + 0.3)), w((length / 2 + 0.1, 0.25, 0.6 + h + 0.35))], 0.008, "plastic", (0.6, 0.6, 0.6), sides=4)
-    light(k, w((0, -0.5, 0.9)), (0.3, 0.7, 1.0), 12.0, radius=0.3)
+    light(k, w((0, -0.5, 0.9)), (0.3, 0.7, 1.0), 5.0, radius=0.3)
 
 
 def hand_trolley(k, pos, yaw=0.0):
@@ -656,9 +662,11 @@ def roast_rack(k, x0, x1, y, z, n=5):
         k.cyl((x, y, z), (x, y, z - 0.12), 0.003, "galv", sides=3, caps=False)
         if i % 2 == 0:
             prof = [(0.0, 0.0), (0.06, 0.04), (0.12, 0.16), (0.13, 0.3), (0.09, 0.42), (0.03, 0.5), (0.0, 0.52)]
-            k.lathe(np.array((x, y, z - 0.64)), prof, "props", (0.5, 0.5, 0.5), sides=9, R=rot_z(rnd(0, 360)))
+            with k.atlas("props", "duck"):
+                k.lathe(np.array((x, y, z - 0.64)), prof, "props", (0.5, 0.5, 0.5), sides=9, R=rot_z(rnd(0, 360)))
         else:
-            k.box((x, y, z - 0.3), (0.06, 0.08, 0.32), "props", (0.5, 0.5, 0.5))
+            with k.atlas("props", "charsiu"):
+                k.box((x, y, z - 0.3), (0.06, 0.08, 0.32), "props", (0.5, 0.5, 0.5))
 
 
 def fish_tank_wall(k, x0, x1, y, z0, facing=-1):
@@ -672,7 +680,7 @@ def fish_tank_wall(k, x0, x1, y, z0, facing=-1):
             p = (x0 + 0.3 + i * 0.5 + rnd(-0.1, 0.1), y + facing * 0.31, zc + rnd(-0.12, 0.12))
             fish(k, p, 90 * facing + rnd(-20, 20), rnd(0.25, 0.4), pick(["fish_grouper", "fish_snapper"]), lying=False)
     k.box(((x0 + x1) / 2, y, z0 + 0.1), (L + 0.04, 0.64, 0.2), "galv")
-    light(k, ((x0 + x1) / 2, y + facing * 0.8, z0 + 0.9), (0.3, 0.75, 1.0), 25.0, radius=0.4)
+    light(k, ((x0 + x1) / 2, y + facing * 0.8, z0 + 0.9), (0.3, 0.75, 1.0), 10.0, radius=0.4)
     k.collider(((x0 + x1) / 2, y, z0 + 0.7), (L, 0.64, 1.4), 0, "glass")
 
 
@@ -713,7 +721,8 @@ def shelf_unit(k, pos, yaw=0.0, w_=1.2, h=2.0, d=0.4, goods=True, mat="darkwood"
                 elif kind == 1:  # boxes
                     bw = rnd(0.12, 0.25)
                     bh = rnd(0.12, (h - 0.15) / 4 - 0.05)
-                    k.box(w((x + bw / 2, 0, z + 0.013 + bh / 2)), (bw, d * 0.8, bh), "props", pick([(0.5, 0.5, 0.5)]), yaw=yaw)
+                    with k.atlas("props", pick(["posters", "styro", "crate", "newspaper", "red_pad"])):
+                        k.box(w((x + bw / 2, 0, z + 0.013 + bh / 2)), (bw, d * 0.8, bh), "props", (0.5, 0.5, 0.5), yaw=yaw)
                     x += bw + 0.02
                 elif kind == 2:  # tins
                     r = 0.04

@@ -171,7 +171,7 @@ def boat():
     k.mesh(V, lower, np.eye(3), np.zeros(3), "paint_metal", (0.45, 0.1, 0.08), smooth=True, uv_origin=np.zeros(3))
     # transom
     y, hw, sheer = secs[0]
-    k.quad((cx + hw, y, WATER_Z + 0.3), (cx - hw, y, WATER_Z + 0.3), (cx - hw, y, sheer), (cx + hw, y, sheer), "paint_metal", (0.12, 0.3, 0.38))
+    k.quad((cx - hw, y, WATER_Z + 0.3), (cx + hw, y, WATER_Z + 0.3), (cx + hw, y, sheer), (cx - hw, y, sheer), "paint_metal", (0.12, 0.3, 0.38))
     # inner bulwark (inside faces) and deck
     for i in range(n):
         y0_, hw0, s0 = secs[i]
@@ -181,10 +181,10 @@ def boat():
             b = (cx + sgn * (hw1 - 0.06), y1_, deck)
             c_ = (cx + sgn * (hw1 - 0.06), y1_, s1)
             d = (cx + sgn * (hw0 - 0.06), y0_, s0)
-            if sgn < 0:
-                k.quad(b, a, d, c_, "paint_metal", (0.5, 0.5, 0.48))
-            else:
+            if sgn < 0:  # inside faces look toward the centreline
                 k.quad(a, b, c_, d, "paint_metal", (0.5, 0.5, 0.48))
+            else:
+                k.quad(b, a, d, c_, "paint_metal", (0.5, 0.5, 0.48))
             # rubbing strake
             k.tube([(cx + sgn * (hw0 + 0.02), y0_, s0 - 0.25), (cx + sgn * (hw1 + 0.02), y1_, s1 - 0.25)], 0.06, "darkwood", (0.4, 0.38, 0.35), sides=5)
         k.quad((cx - hw0 + 0.06, y0_, deck), (cx + hw0 - 0.06, y0_, deck), (cx + hw1 - 0.06, y1_, deck), (cx - hw1 + 0.06, y1_, deck), "planks", (0.45, 0.42, 0.38))
@@ -224,9 +224,10 @@ def boat():
     # string of work lights along the mast stay
     for t in np.linspace(0.15, 0.85, 5):
         p = np.array((cx, yb - 0.5, top + 0.5)) * (1 - t) + np.array((cx, wy0 + 1.5, deck + 7.8)) * t
-        P.bulb(k, tuple(p), (1.0, 0.85, 0.6), 10.0, cord=0.1)
+        P.bulb(k, tuple(p), (1.0, 0.85, 0.6), 4.0, cord=0.1)
     # deck clutter: net drum, crates, buoys, ropes, tyres over the side
-    k.cyl((cx - 1.2, wy1 + 1.6, deck + 0.75), (cx + 1.2, wy1 + 1.6, deck + 0.75), 0.6, "props", (0.3, 0.55, 0.45), sides=14)
+    with k.atlas("props", "net"):
+        k.cyl((cx - 1.2, wy1 + 1.6, deck + 0.75), (cx + 1.2, wy1 + 1.6, deck + 0.75), 0.6, "props", (0.3, 0.55, 0.45), sides=14)
     for sgn in (-1, 1):
         k.cyl((cx + sgn * 1.25, wy1 + 1.6, deck + 0.75), (cx + sgn * 1.32, wy1 + 1.6, deck + 0.75), 0.75, "rust", sides=14)
         k.box((cx + sgn * 1.3, wy1 + 1.6, deck + 0.35), (0.1, 0.4, 0.7), "rust")
@@ -430,7 +431,7 @@ def market():
             P.stall(k, (x + 0.0, yrow, 0.0), 0 if yrow != -6.0 else 180, length=3.2, depth=1.25, species=sp)
             # red-shaded lamps over each stall: the market's signature light
             for dx in (-0.9, 0.9):
-                P.bulb(k, (x + dx, yrow, eave - 0.1), (1.0, 0.25, 0.18), 38.0, cord=2.1, shade=(0.6, 0.06, 0.04))
+                P.bulb(k, (x + dx, yrow, eave - 0.1), (1.0, 0.25, 0.18), 20.0, cord=2.1, shade=(0.6, 0.06, 0.04))
             P.scale_hanging(k, (x + 1.6, yrow - 0.4, eave - 0.1))
     # live seafood tanks along the quay-side wall, hoses on the floor
     for x in (-11.0, -8.6, 5.0):
@@ -447,7 +448,7 @@ def market():
     # rows of fluorescent tubes hanging over the aisles
     for y in (-8.1, -3.9):
         for x in np.arange(MK_X0 + 2.0, MK_X1 - 1.0, 4.0):
-            P.fluoro(k, (x, y, eave + 0.6), 0, length=1.5, energy=35.0, hang=1.4)
+            P.fluoro(k, (x, y, eave + 0.6), 0, length=1.5, energy=11.0, hang=1.4)
     # cold room (insulated box with strip curtain) in the south-east corner
     cx0, cx1, cy0, cy1 = 10.0, 15.7, -12.7, -8.0
     k.box(((cx0 + cx1) / 2, (cy0 + cy1) / 2, 1.5), (cx1 - cx0, cy1 - cy0, 3.0), "paint_metal", (0.62, 0.62, 0.6), col="thin_metal", faces=["+z", "-x", "+x", "-y"])
@@ -460,7 +461,7 @@ def market():
         xx = cx0 + 1.05 + i * 0.13
         k.quad((xx, cy1 + 0.02, 0.05), (xx + 0.12, cy1 + 0.02, 0.05), (xx + 0.12, cy1 + 0.02, 2.4), (xx, cy1 + 0.02, 2.4), "glass", (0.6, 0.65, 0.65), double=True)
     k.box((cx0 + 1.5, cy1 + 0.05, 2.5), (1.2, 0.1, 0.15), "galv")
-    k.quad((cx0 + 1.0, cy1 - 0.2, 0.0), (cx0 + 2.1, cy1 - 0.2, 0.0), (cx0 + 2.1, cy1 - 0.2, 2.4), (cx0 + 1.0, cy1 - 0.2, 2.4), "emissive", (0.12, 0.18, 0.22), emit=0.8)
+    k.quad((cx0 + 2.1, cy1 - 0.2, 0.0), (cx0 + 1.0, cy1 - 0.2, 0.0), (cx0 + 1.0, cy1 - 0.2, 2.4), (cx0 + 2.1, cy1 - 0.2, 2.4), "emissive", (0.12, 0.18, 0.22), emit=0.8)
     P.fluoro(k, (cx0 + 3.0, cy0 + 2.0, 2.95), 90, length=1.2, energy=20.0, color=(0.8, 0.9, 1.0))
     k.marker("spawn", (cx0 + 3.0, cy0 + 2.0, 0.0), name="cold_room")
     k.sign((cx0 + 4.4, cy1 + 0.07, 2.2), 1.2, 0.3, 180, "signs_b", "danger")
@@ -536,7 +537,7 @@ def warehouse():
         k.box((x, -6.0, H - 0.4), (0.25, WH_Y1 - WH_Y0, 0.5), "paint_metal", (0.3, 0.3, 0.3))
     for x in np.arange(-43.0, -21.0, 4.0):
         for y in (-10.0, -2.0):
-            P.fluoro(k, (x, y, H - 0.2), 0, length=1.5, energy=25.0, hang=1.2)
+            P.fluoro(k, (x, y, H - 0.2), 0, length=1.5, energy=9.0, hang=1.2)
     # pallet stacks: cover in aisles
     stacks = [(-43.0, -11.5, 0), (-43.2, -4.0, 90), (-37.5, -6.0, 10), (-35.5, -11.0, -5), (-31.0, -2.0, 85), (-29.5, -8.0, 0), (-24.0, -11.0, 30), (-23.5, -1.5, 0), (-40.0, -0.5, 0)]
     for (x, y, yaw) in stacks:
@@ -619,7 +620,8 @@ def east_tenement():
     k.marker("spawn", (42.0, gy1 - 1.0, gz), name="gallery_east")
     # ground floor (quay side): chandlery shutters and a door
     for (xa, xb) in ((26.0, 31.0), (32.0, 37.0)):
-        k.quad((xb, yb_world := -13.0 - 0.13, 0.0), (xa, yb_world, 0.0), (xa, yb_world, 3.0), (xb, yb_world, 3.0), "shutter", (0.35, 0.42, 0.45))
+        yb_world = -13.0 - 0.13
+        k.quad((xa, yb_world, 0.0), (xb, yb_world, 0.0), (xb, yb_world, 3.0), (xa, yb_world, 3.0), "shutter", (0.35, 0.42, 0.45))
         k.box(((xa + xb) / 2, -13.0 - 0.3, 3.15), (xb - xa + 0.2, 0.4, 0.4), "paint_metal", (0.3, 0.3, 0.3))
     k.collider((34.0, -13.0 + 0.2, 2.0), (24.0, 0.5, 4.0), 0, "concrete")
     b.top()
@@ -738,7 +740,8 @@ def pawn_sign(pos):
     for s in (-1, 1):
         wing = [(x, y, z + 0.5), (x + s * 0.55, y, z + 0.85), (x + s * 0.7, y, z + 0.55), (x + s * 0.45, y, z + 0.35)]
         k.quad(wing[0], wing[1], wing[2], wing[3], "props", rect="red_pad", double=True)
-    k.cyl((x, y - 0.03, z + 0.2), (x, y + 0.03, z + 0.2), 0.32, "props", (0.5, 0.5, 0.5), sides=20)
+    with k.atlas("props", "gold_pad"):
+        k.cyl((x, y - 0.03, z + 0.2), (x, y + 0.03, z + 0.2), 0.32, "props", (0.5, 0.5, 0.5), sides=20)
     k.quad((x - 0.12, y - 0.035, z + 0.08), (x + 0.12, y - 0.035, z + 0.08), (x + 0.12, y - 0.035, z + 0.32), (x - 0.12, y - 0.035, z + 0.32), "signs_b", rect="v_pawn")
     k.cyl((x, y, z + 0.52), (x, y, z + 0.9), 0.01, "galv", sides=3)
 
@@ -769,9 +772,9 @@ def restaurant(x0, x1, yf, depth):
         b.lbox(xa, xb, 0.1, 0.35, 0, 0.55, "mosaic", (0.55, 0.12, 0.08))
         b.lquad(xa, xb, 0.12, 0.55, op_top, "glass")
         for xx in np.linspace(xa, xb, 3):
-            b.lbox(xx - 0.03, xx + 0.03, 0.08, 0.16, 0.55, op_top, "props", (0.5, 0.5, 0.5))
+            b.lbox(xx - 0.03, xx + 0.03, 0.08, 0.16, 0.55, op_top, "galv", (0.5, 0.5, 0.5))
         k.collider(b.w(((xa + xb) / 2, 0.15, op_top / 2)), (xb - xa, 0.2, op_top), 0, "glass")
-    b.lbox(-0.9, 0.9, 0.0, B.WALL_T, op_top, op_top + 0.02, "props")
+    b.lbox(-0.9, 0.9, 0.0, B.WALL_T, op_top, op_top + 0.02, "galv")
     k.sign(b.w((0.0, -0.06, op_top - 0.18)), 1.4, 0.3, 0, "signs_b", "open", emit=3.0)
     # red lanterns at the entrance
     for xx in (-1.6, 1.6):
@@ -812,7 +815,7 @@ def restaurant(x0, x1, yf, depth):
     # tables, lanterns, the roast meat window, the fish tanks, the counter
     for (tx, ty) in ((-21.3, 14.8), (-17.4, 15.0), (-21.0, 17.6), (-14.8, 17.3)):
         P.round_table(k, (tx, ty, 0.0), seats=6, cloth=pick([(0.55, 0.06, 0.05), (0.6, 0.55, 0.45)]))
-        P.lantern(k, (tx, ty, ceil), 0.3, energy=40.0, tassel=True)
+        P.lantern(k, (tx, ty, ceil), 0.3, energy=26.0, tassel=True)
     P.roast_rack(k, xi0 + 0.3, -19.5, yi0 + 0.45, 2.6, n=7)
     P.light(k, (-21.0, yi0 + 0.8, 3.0), (1.0, 0.7, 0.4), 30.0, radius=0.3)
     P.fish_tank_wall(k, -16.4, xi1 - 0.2, yi0 + 0.45, 0.0, facing=1)
@@ -827,8 +830,8 @@ def restaurant(x0, x1, yf, depth):
     P.counter(k, -23.4 + 0.2, -21.2, yk + 1.2, depth=0.7, height=0.9, front=(0.5, 0.5, 0.5))
     P.shelf_unit(k, (-13.0, yk + 1.5, 0.0), 90, w_=1.6, h=2.0, d=0.45, mat="galv")
     P.gas_cylinder(k, (-22.8, yi1 - 0.4, 0.0))
-    P.fluoro(k, (-18.0, yk + 1.6, ceil), 0, length=1.5, energy=40.0)
-    P.fluoro(k, (-14.5, yk + 1.6, ceil), 0, length=1.5, energy=40.0)
+    P.fluoro(k, (-18.0, yk + 1.6, ceil), 0, length=1.5, energy=16.0)
+    P.fluoro(k, (-14.5, yk + 1.6, ceil), 0, length=1.5, energy=16.0)
     P.styro_stack(k, (-15.0, yi1 - 0.5, 0.0), 0, n=3)
     k.marker("steam", (-19.5, yi1 + 0.6, 4.4), rate=1.5)
     k.marker("spawn", (-17.5, yk + 1.6, 0.0), name="restaurant_kitchen")
@@ -972,7 +975,8 @@ def gate_and_ends():
     # beams, lintels and the central plaque
     for (ya, yb, z) in ((2.4, 5.0, 5.9), (9.0, 11.6, 5.9), (5.0, 9.0, 7.0), (5.0, 9.0, 5.6)):
         k.box((gx, (ya + yb) / 2, z), (0.5, yb - ya + 0.6, 0.5), "lacquer", red, chamfer=0.03)
-        k.box((gx, (ya + yb) / 2, z + 0.3), (0.55, yb - ya + 0.6, 0.12), "props", (0.5, 0.5, 0.5))  # gold trim (gold_pad)
+        with k.atlas("props", "gold_pad"):
+            k.box((gx, (ya + yb) / 2, z + 0.3), (0.55, yb - ya + 0.6, 0.12), "props", (0.5, 0.5, 0.5))  # gold trim
     k.sign((gx - 0.27, 7.0, 6.3), 2.8, 0.95, 270, "signs_a", "gate", depth=0.1, back_tint=(0.4, 0.3, 0.1))
     k.sign((gx + 0.27, 7.0, 6.3), 2.8, 0.95, 90, "signs_a", "gate", depth=0.0)
     # bracket sets and green glazed roofs (three: centre higher)
@@ -989,12 +993,12 @@ def gate_and_ends():
             # upturned corners: lift the eave ends
             a = (a[0], a[1], a[2] + 0.35)
             bb = (bb[0], bb[1], bb[2] + 0.35)
-            if s < 0:
-                k.quad(a, bb, c, d, "rooftile", green)
-                k.quad(bb, a, d, c, "lacquer", (0.2, 0.45, 0.4))
-            else:
+            if s < 0:  # tiles face up and out, the painted soffit faces down
                 k.quad(bb, a, d, c, "rooftile", green)
                 k.quad(a, bb, c, d, "lacquer", (0.2, 0.45, 0.4))
+            else:
+                k.quad(a, bb, c, d, "rooftile", green)
+                k.quad(bb, a, d, c, "lacquer", (0.2, 0.45, 0.4))
         k.box((gx, (ya + yb) / 2, roof_top + 0.08), (0.3, yb - ya + 0.4, 0.22), "rooftile", green)
         for yy in (ya - 0.3, yb + 0.3):
             k.lathe(np.array((gx, yy, roof_top + 0.15)), [(0.0, 0), (0.12, 0.05), (0.08, 0.35), (0.14, 0.5), (0.0, 0.6)], "rooftile", green, sides=8)
@@ -1017,7 +1021,7 @@ def gate_and_ends():
     hx = 45.5
     k.box((hx, 7.0, 1.5), (0.1, 10.5, 3.0), "planks", (0.55, 0.5, 0.42), col="wood")
     for y in (3.0, 6.0, 9.0, 11.5):
-        k.quad((hx - 0.06, y - 0.6, 0.6), (hx - 0.06, y + 0.6, 0.6), (hx - 0.06, y + 0.6, 2.2), (hx - 0.06, y - 0.6, 2.2), "props", rect="posters")
+        k.quad((hx - 0.06, y + 0.6, 0.6), (hx - 0.06, y - 0.6, 0.6), (hx - 0.06, y - 0.6, 2.2), (hx - 0.06, y + 0.6, 2.2), "props", rect="posters")
     for y in np.arange(2.0, 12.5, 2.0):
         k.cyl((hx - 0.4, y, 0.0), (hx - 0.4, y, 6.0), 0.03, "galv", sides=5)
     for z in (2.0, 4.0, 6.0):
@@ -1111,7 +1115,8 @@ def neon_text(text, pos, size, yaw, color, vertical=False, board=True, latin=Fal
 # ====================================================================== cameras and player start
 
 def gameplay_markers():
-    k.marker("player_start", (-14.0, -19.0, 0.0), yaw=35.0)
+    # On the quay, facing the fish market with the lantern street behind it (Godot yaw 0 = north).
+    k.marker("player_start", (-5.0, -21.5, 0.0), yaw=-12.0)
     cams = {
         "CapQuay": ((-30.0, -21.0, 1.7), (-5.0, -8.0, 2.5)),
         "CapMarket": ((-11.0, -11.5, 1.7), (8.0, -2.0, 1.5)),

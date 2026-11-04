@@ -302,7 +302,7 @@ func _build_navigation() -> void:
 	var nm: NavigationMesh = NavigationMesh.new()
 	nm.geometry_parsed_geometry_type = NavigationMesh.PARSED_GEOMETRY_STATIC_COLLIDERS
 	nm.geometry_collision_mask = Ballistics.LAYER_WORLD | LAYER_CLIP
-	nm.agent_radius = 0.45
+	nm.agent_radius = 0.5
 	nm.agent_height = 1.75
 	nm.agent_max_climb = 0.25
 	nm.agent_max_slope = 40.0
@@ -311,6 +311,8 @@ func _build_navigation() -> void:
 	# Only the ground floor and the first-floor gallery: no roofs.
 	nm.filter_baking_aabb = AABB(Vector3(-47, -1.0, -35), Vector3(94, 6.0, 81))
 	add_child(nav_region)
+	NavigationServer3D.map_set_cell_height(get_world_3d().navigation_map, nm.cell_height)
+	NavigationServer3D.map_set_cell_size(get_world_3d().navigation_map, nm.cell_size)
 	nav_region.navigation_mesh = nm
 	var source: NavigationMeshSourceGeometryData3D = NavigationMeshSourceGeometryData3D.new()
 	NavigationServer3D.parse_source_geometry_data(nm, source, self)

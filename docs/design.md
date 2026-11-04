@@ -200,3 +200,26 @@ Decided: see "Visuals" in §2. No anime or cel shading.
 - Baked lighting with a few dynamic lights. Height fog, dust, smoke, sparks, emissive lights, color grading.
 - Effects built from meshes with scrolling textures, not huge particle counts.
 - Heavy, worn, industrial hardware. Explore palettes with test renders in M4.
+
+## 7. Maps
+
+### 7.1 Chinatown docks (owner, 2026-11-04)
+
+A self-contained city block on the harbour at night, roughly the size of a Black Ops 1 map (about 92 × 66 m of play space). The owner asked for atmosphere, charm and a sense of place, with environment detail on par with the weapons.
+
+**Layout** (south to north; Blender plan in `raw_assets/levels/chinatown/build.py`):
+
+- **Water and pier.** A timber pier with pilings and a steel fishing boat moored alongside (wheelhouse, mast lights, net drum, tyres over the side); a gangplank lets you board. Across the bay: a lit skyline and dark hills.
+- **Quay.** Bollards, fenders, crate and styrofoam stacks, drums, a forklift, shipping containers (climbable stack) and a gantry crane over the water.
+- **South row.** The Pier 3 cold store (enterable through roll-up doors on both sides and a side door), the open-sided fish market hall (stall rows with fish on ice under red lamps, live-seafood tanks, a cold room with strip curtains), a loading road with a box truck, and a tiled tenement with a first-floor gallery reached by steel stairs from the quay.
+- **Harbour Street.** Sunken road, sidewalks, lantern strings across the street, street lamps, parked vans, signboards and vertical lightboxes in Traditional Chinese with English, 3D neon (龍鳳, 冰室, 麻雀, 宵夜, OPEN), a paifang gate (天下為公) at the west end with the road closed beyond it, plywood hoarding at the east end.
+- **North row.** Hotel and pawnshop, herbal shop, the Sea View restaurant (enterable: dining room with round tables, roast-meat window, fish tanks, kitchen with woks, back door), bakery, noodle shop, a narrow alley to the back, grocery with mahjong club above, gold shop, pharmacy, barber.
+- **Back alley.** Dumpsters, bags, gas cylinders, AC units, kitchen extractors with steam, fire escapes, laundry strung between buildings.
+
+Three loops connect it all: quay ↔ west alley or market ↔ street; street ↔ restaurant ↔ back alley ↔ alley ↔ street; cold store doors between quay and street. Low cover everywhere (stalls, crates, vans, barriers); height at the gallery and the container stack.
+
+**Enemies** arrive on a rolling clock (`RollingSpawner`, `data/levels/chinatown_spawns.tres`): 8 at the start, and whenever fewer than 4 are still fighting (dead, surrendered and crawling men don't count) 3 more come in. Each one appears at one of 20 spawn points (doorways, alley ends, the boat, the cold room, behind the containers...) that the player's camera can't see at chest or head height, at least 14 m away, preferably behind the player. They know roughly where the player is and close in. Dying restarts the round.
+
+**Look.** Rainy night. Lighting is baked in Cycles into one 4096² lightmap (lamps, lanterns, neon, lit windows, a low moon, a light-polluted sky); real-time lights only touch characters and guns. Wet surfaces get darker and glossier, puddles ripple, rain stops under roofs, steam rises from drains and vents, reflection probes give the wet street its sheen (Mobile renderer), the harbour water shows streaks of the quay lights. Ambient sound: rain, water against the quay, a distant ship's horn, neon hum, an extractor fan, a radio in the restaurant.
+
+**Pipeline.** Materials are a tileable texture array (`raw_assets/env/materials`, `raw_assets/env/atlases`); the map is one generator (`build.py`, with `props.py` and `buildings.py`) and one bake/export step (`bake.py`). Everything rebuilds from scratch.

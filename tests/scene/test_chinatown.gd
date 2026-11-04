@@ -95,3 +95,28 @@ func test_three_more_when_fewer_than_four_fight() -> void:
 	await wait_seconds(cfg.spawn_gap * cfg.batch + 1.5)
 	assert_eq(map.wave_mode.spawned_total, 11, "one batch of three")
 	assert_eq(map.wave_mode.fighting(), 6)
+
+
+func test_enemies_find_their_way_to_the_player() -> void:
+	map.player.invulnerable = true
+	map.wave_mode.start()
+	await wait_seconds(cfg.spawn_gap * cfg.start_count + 1.0)
+	assert_gt(map.nav_region.navigation_mesh.get_polygon_count(), 100, "navmesh baked")
+	var start: Dictionary[Enemy, float] = {}
+	for e: Enemy in map.wave_mode.enemies:
+		start[e] = e.global_position.distance_to(map.player.global_position)
+	await wait_seconds(14.0)
+	var closer: int = 0
+	var engaged: int = 0
+	var report: String = ""
+	for e: Enemy in start:
+		if not is_instance_valid(e):
+			continue
+		var d: float = e.global_position.distance_to(map.player.global_position)
+		report += " %s %.0f→%.0f m;" % [e.state_name(), start[e], d]
+		if d < start[e] - 3.0:
+			closer += 1
+		if e.state_name() in ["COMBAT", "combat"]:
+			engaged += 1
+	gut.p("enemies:" + report)
+	assert_gt(closer + engaged, start.size() / 2, "most close in or engage")

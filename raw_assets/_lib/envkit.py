@@ -21,6 +21,7 @@ points (spawns, lights for characters, probes, sounds) for the Godot level.
 """
 import json
 import math
+from contextlib import contextmanager
 
 import numpy as np
 from scipy.spatial import ConvexHull
@@ -72,6 +73,7 @@ class Kit:
         self.detail = False
         self.lightmap = True
         self.chunk_override = None
+        self._rect = None
 
     # ------------------------------------------------------------------ materials
     def L(self, name):
@@ -83,6 +85,15 @@ class Kit:
     def rect(self, layer, name):
         return self.layers[layer]["rects"][name]
 
+    @contextmanager
+    def atlas(self, layer, name):
+        """Inside this block, every face shows the atlas rect `name` (stretched over the face)."""
+        self._rect = self.rect(layer, name)
+        try:
+            yield
+        finally:
+            self._rect = None
+
     # ------------------------------------------------------------------ core
     def _add(self, verts, faces, uvs, layer, tint, emit, smooth=False):
         verts = np.asarray(verts, np.float64)
@@ -90,6 +101,15 @@ class Kit:
         self.V.append(verts)
         self.nv += len(verts)
         t = tuple(tint) if tint is not None else (0.5, 0.5, 0.5)
+        if self._rect is not None:
+            u0, v0, u1, v1 = self._rect
+            fixed = []
+            for uv in uvs:
+                uv = np.asarray(uv, np.float64)
+                mn, mx = uv.min(0), uv.max(0)
+                tt = (uv - mn) / np.maximum(mx - mn, 1e-6)
+                fixed.append(np.stack([u0 + tt[:, 0] * (u1 - u0), 1.0 - (v1 - tt[:, 1] * (v1 - v0))], 1))
+            uvs = fixed
         attrs = (layer, t, float(emit), self.wet, self.detail, self.lightmap, smooth, self.chunk_override)
         for f, uv in zip(faces, uvs):
             self.F.append(([base + i for i in f], uv, attrs))
@@ -104,8 +124,7 @@ class Kit:
             uv = local_pts[:, [0, 2]] * [-(np.sign(normal_local[1]) or 1), 1]
         else:
             uv = local_pts[:, [0, 1]]
-        uv = uv / tile
-        return np.stack([uv[:, 0], -uv[:, 1]], 1)
+        return uv / tile  # Blender convention: v up (the glTF export flips it)
 
     def mesh(self, local_verts, faces, R, T, mat, tint=None, emit=0.0, smooth=False, uv_origin=None, uvs=None, uv_scale=1.0):
         """Add faces given in local space; UVs box-projected in local space unless given."""
@@ -163,14 +182,15 @@ class Kit:
         layer = self.L(mat)
         if rect is not None or uv is not None:
             u0, v0, u1, v1 = self.rect(mat, rect) if rect is not None else uv
-            uvs = np.array([(u0, v1), (u1, v1), (u1, v0), (u0, v0)])
+            # rects are in image space (v down); Blender UVs have v up
+            uvs = np.array([(u0, 1 - v1), (u1, 1 - v1), (u1, 1 - v0), (u0, 1 - v0)])
         else:
             nrm = np.cross(pts[1] - pts[0], pts[2] - pts[0])
             # local frame of the quad so tiles follow its edges
             e1 = (pts[1] - pts[0]) / np.linalg.norm(pts[1] - pts[0])
             e2 = np.cross(nrm / np.linalg.norm(nrm), e1)
             rel = pts - pts[0]
-            uvs = np.stack([rel @ e1 + pts[0] @ e1, -(rel @ e2 + pts[0][2])], 1) / self.tile(mat)
+            uvs = np.stack([rel @ e1 + pts[0] @ e1, rel @ e2 + pts[0][2]], 1) / self.tile(mat)
         self._add(pts, [[0, 1, 2, 3]], [uvs], layer, tint, emit)
         if double:
             self._add(pts, [[3, 2, 1, 0]], [uvs[[3, 2, 1, 0]]], layer, tint, emit)
@@ -208,7 +228,7 @@ class Kit:
         for i in range(sides):
             faces.append([i, i + 1, n + i + 1, n + i])
             u0, u1 = i / sides * circ / tile, (i + 1) / sides * circ / tile
-            uvs.append(np.array([(u0, 0), (u1, 0), (u1, -L / tile), (u0, -L / tile)]))
+            uvs.append(np.array([(u0, 0), (u1, 0), (u1, L / tile), (u0, L / tile)]))
         self._add(v @ R.T + p0, faces, uvs, self.L(mat), tint, emit, smooth)
         if caps:
             for ring, rev in ((ring0[:-1], True), (ring1[:-1], False)):
@@ -234,7 +254,7 @@ class Kit:
             for i in range(sides):
                 faces.append([k * n + i, k * n + i + 1, (k + 1) * n + i + 1, (k + 1) * n + i])
                 u0, u1 = i / sides * circ / tile, (i + 1) / sides * circ / tile
-                uvs.append(np.array([(u0, -acc[k] / tile), (u1, -acc[k] / tile), (u1, -acc[k + 1] / tile), (u0, -acc[k + 1] / tile)]))
+                uvs.append(np.array([(u0, acc[k] / tile), (u1, acc[k] / tile), (u1, acc[k + 1] / tile), (u0, acc[k + 1] / tile)]))
         self._add(v @ R.T + base, faces, uvs, self.L(mat), tint, emit, smooth)
         for k, cap in ((0, cap_bottom), (len(profile) - 1, cap_top)):
             if cap and profile[k][0] > 1e-4:
@@ -321,8 +341,8 @@ class Kit:
         v = np.concatenate([a, b])
         faces = [[i, n + i, n + (i + 1) % n, (i + 1) % n] for i in range(n)]
         if caps:
-            faces.append(list(range(n))[::-1])
-            faces.append(list(range(n, 2 * n)))
+            faces.append(list(range(n)))
+            faces.append(list(range(n, 2 * n))[::-1])
         self.mesh(v, faces, R, p0, mat, tint, emit, smooth=smooth, uv_origin=np.zeros(3))
 
     def add_object(self, obj, mat, tint=None, emit=0.0, smooth=False):
@@ -390,7 +410,7 @@ class Kit:
             for fi, (vv, uv, attrs) in enumerate(faces):
                 layer, tint, emit, wet = attrs[0], attrs[1], attrs[2], attrs[3]
                 col[k:k + len(vv)] = (tint[0], tint[1], tint[2], layer / 255.0)
-                dat[k:k + len(vv)] = (emit, wet)
+                dat[k:k + len(vv)] = (emit, 1.0 - wet)  # glTF export flips v: the shader reads `wet`
                 smooth[fi] = attrs[6]
                 k += len(vv)
             lm = me.uv_layers.new(name="UV2")  # lightmap, filled by the bake step

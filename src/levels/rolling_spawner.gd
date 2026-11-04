@@ -190,14 +190,38 @@ func _spawn(role: String, at: Vector3) -> Enemy:
 	e.awareness = config.arrival_awareness
 	e.last_known = player.global_position + Vector3(_rng.randf_range(-4, 4), 0, _rng.randf_range(-4, 4))
 	e._enter(Enemy.State.ALERT)
+	var blob: MeshInstance3D = _blob_shadow()
+	e.add_child(blob)
 	e.died.connect(func(_x: Enemy) -> void:
 		kills += 1
+		if is_instance_valid(blob):
+			blob.queue_free()
 		_emit())
 	enemies.append(e)
 	spawned_total += 1
 	_cleanup()
 	spawned.emit(e)
 	return e
+
+
+static var _blob_mesh: QuadMesh
+
+
+## A soft dark disc at the feet (baked maps get no live shadows).
+static func _blob_shadow() -> MeshInstance3D:
+	if _blob_mesh == null:
+		_blob_mesh = QuadMesh.new()
+		_blob_mesh.size = Vector2(1.1, 1.1)
+		_blob_mesh.orientation = PlaneMesh.FACE_Y
+		var mat: ShaderMaterial = ShaderMaterial.new()
+		mat.shader = preload("res://src/levels/blob_shadow.gdshader")
+		_blob_mesh.material = mat
+	var mi: MeshInstance3D = MeshInstance3D.new()
+	mi.name = "BlobShadow"
+	mi.mesh = _blob_mesh
+	mi.position = Vector3(0, 0.03, 0)
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	return mi
 
 
 ## Oldest bodies go once there are too many.

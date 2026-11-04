@@ -56,7 +56,7 @@ vec2 ripples(vec2 p, float t) {
 		float ring = sin((r - ph * 0.45) * 60.0) * smoothstep(0.08, 0.0, abs(r - ph * 0.45)) * (1.0 - ph);
 		acc += normalize(d + 1e-4) * ring;
 	}
-	return acc * 0.35;
+	return acc * 0.18;
 }
 
 void vertex() {

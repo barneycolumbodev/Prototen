@@ -195,7 +195,7 @@ def make_lights(layout):
     # moon: cool, low, from the south-east over the harbour
     sd = bpy.data.lights.new("moon", "SUN")
     sd.color = (0.55, 0.65, 1.0)
-    sd.energy = 0.6
+    sd.energy = 1.2
     sd.angle = 0.02
     so = bpy.data.objects.new("moon", sd)
     so.rotation_euler = (0.95, 0.0, 2.6)
@@ -216,7 +216,7 @@ def make_lights(layout):
     ramp.color_ramp.elements[1].position = 0.75
     ramp.color_ramp.elements[1].color = (0.012, 0.018, 0.035, 1)
     nt.links.new(ramp.outputs["Color"], bg.inputs["Color"])
-    bg.inputs["Strength"].default_value = 6.0
+    bg.inputs["Strength"].default_value = 14.0
     bpy.context.scene.world = w
     return n
 

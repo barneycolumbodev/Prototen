@@ -38,6 +38,15 @@ Checked 2026-11-01 in the first cloud session (CLAUDE.md §1 step 5, §10.4). Up
 - `extensions.blender.org`, `static.makehumancommunity.org`, `quaternius.com`, Poly Haven and ambientCG are still blocked, so the triad enemy is fully procedural (no MPFB, no Quaternius animations).
 - The Godot Agent Loop MCP server still fails to connect. Gameplay was checked with GUT scene tests, headless debug runs and `tools/screenshot.sh` with `--demo=gore` / `--waves --god`.
 
+## Session 6 notes (2026-11-04, Chinatown docks map)
+
+- Fonts: GitHub raw downloads are blocked for repos outside this session, but npm works: Noto Serif/Sans TC came from `@fontsource/*` packages (OFL).
+- Blender's compositor (OIDN denoise) needs a GPU/EGL context in background mode and hangs; the lightmap is smoothed with a coverage-aware blur instead (`bake.py`).
+- Pillow's WebP encoder drops colour under alpha = 0 unless `exact=True` (the albedo array keeps its emission mask in alpha).
+- The glTF exporter flips V on every UV set, including the custom data channel: `envkit` writes `1 - wet` so the shader reads `wet`.
+- Final lightmap bake: 4096², 128 samples, 412 lights, about 11 minutes on 4 CPU cores. Re-exporting with `--nobake` reuses the lightmap (the unwrap is deterministic; checked).
+- Screenshots are still Compatibility/llvmpipe only (no Vulkan in the container), so the Mobile renderer's reflection probes (wet-street reflections) are unverified until the phone.
+
 ## What the owner can fix in the environment settings (claude.ai/code)
 
 1. **Network access → Custom**, keep the defaults, add the hosts in CLAUDE.md §10.1 (at least `download.blender.org`, `extensions.blender.org`, `api.polyhaven.com`, `dl.polyhaven.org`, `ambientcg.com`).
