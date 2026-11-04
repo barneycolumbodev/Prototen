@@ -153,7 +153,7 @@ Please try:
 
 ## M1b + M1c — 2026-11-04 — Triad enemies, gore, ragdolls, AI, waves, movement (waiting for the owner)
 
-Build: `dev-latest` from branch `claude/m1-gore-enemies-fkq87x` (manual CI run). Same five guns as M1a.4.
+Build: `dev-latest` from branch `claude/m1-gore-enemies-fkq87x` @ 339cd0c, CI run #11 (manual run, GUT 168/168). `graft-debug.apk`, 300 MB. Same five guns as M1a.4.
 
 What's new in the APK:
 - **Triad members on the range:** the four target spots hold triad members — Gunmen (black jackets, Type 56), an Enforcer (olive jacket, plate carrier, pump shotgun) and a Red Pole (burgundy jacket, SMG). They turn to face you and react to every hit, but on the range they never fire. A new one walks up 9 s after a kill; bodies stay.
