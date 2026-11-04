@@ -23,7 +23,16 @@ const LAYER_PLAYER: int = 2
 const LAYER_HITBOX: int = 4
 const LAYER_PROPS: int = 8
 const LAYER_DEBRIS: int = 16
+## Ragdoll bodies (not hit by rounds: the hitboxes on the bones are).
+const LAYER_RAGDOLL: int = 32
+## Enemies' movement capsules.
+const LAYER_ENEMY: int = 64
 const BULLET_MASK: int = LAYER_WORLD | LAYER_HITBOX | LAYER_PROPS | LAYER_DEBRIS
+## Rounds fired by enemies also hit the player.
+const ENEMY_BULLET_MASK: int = BULLET_MASK | LAYER_PLAYER
+## A round passing this close to someone who can be suppressed (group
+## "suppressible", method on_near_miss(shooter, weapon, distance, point)) counts as a near miss.
+const NEAR_MISS_RADIUS: float = 1.6
 
 const MAX_LIFETIME: float = 3.0
 const MIN_SPEED: float = 40.0
@@ -119,6 +128,11 @@ class Projectile:
 	var trail_index: int = 1
 	## Ember streak tail (starts at the muzzle).
 	var ember_tail: Vector3
+	var mask: int = BULLET_MASK
+	## The shooter's own body.
+	var exclude: Array[RID] = []
+	## Instance ids already told about a near miss by this round.
+	var near_missed: Array[int] = []
 
 	func energy() -> float:
 		return 0.5 * mass_kg * velocity.length_squared()
@@ -225,6 +239,10 @@ func fire(weapon: WeaponData, origin: Vector3, direction: Vector3, shooter: Node
 	p.velocity = direction.normalized() * speed
 	p.mass_kg = weapon.bullet_mass_g * 0.001
 	p.muzzle_speed = speed
+	if shooter and not shooter.is_in_group(&"player"):
+		p.mask = ENEMY_BULLET_MASK
+	if shooter and shooter.has_method(&"ballistic_exclude"):
+		p.exclude = shooter.call(&"ballistic_exclude")
 	p.record(origin)
 	if weapon.embers:
 		p.ember_tail = tracer_from if tracer_from.is_finite() else origin
@@ -459,10 +477,11 @@ func _step(p: Projectile, delta: float) -> void:
 	var remaining: float = p.velocity.length() * delta
 	var space: PhysicsDirectSpaceState3D = get_world_3d().direct_space_state
 	var contacts: int = 0
+	var seg_start: Vector3 = p.position
 	while remaining > 0.0005 and p.alive and contacts < MAX_CONTACTS_PER_STEP:
 		var dir: Vector3 = p.velocity.normalized()
 		var to: Vector3 = p.position + dir * remaining
-		var q: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(p.position, to, BULLET_MASK)
+		var q: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(p.position, to, p.mask, p.exclude)
 		q.hit_back_faces = false
 		q.collide_with_areas = false
 		var res: Dictionary = space.intersect_ray(q)
@@ -483,10 +502,32 @@ func _step(p: Projectile, delta: float) -> void:
 		p.position = after
 		remaining = maxf(0.0, remaining - used) * (p.velocity.length() / maxf(speed, 1.0))
 	p.age += delta
+	_near_misses(p, seg_start, p.position)
 	if p.alive:
 		p.record(p.position)
 	if p.age > MAX_LIFETIME or p.travelled > w.max_range or p.velocity.length() < MIN_SPEED:
 		p.alive = false
+
+
+## Tells anyone in group "suppressible" this round passed close by.
+func _near_misses(p: Projectile, a: Vector3, b: Vector3) -> void:
+	var seg: Vector3 = b - a
+	var len2: float = seg.length_squared()
+	if len2 < 1e-6:
+		return
+	for n: Node in get_tree().get_nodes_in_group(&"suppressible"):
+		if n == p.shooter or not n.has_method(&"suppress_point"):
+			continue
+		var id: int = n.get_instance_id()
+		if id in p.near_missed:
+			continue
+		var c: Vector3 = n.call(&"suppress_point")
+		var t: float = clampf((c - a).dot(seg) / len2, 0.0, 1.0)
+		var closest: Vector3 = a + seg * t
+		var d: float = closest.distance_to(c)
+		if d < NEAR_MISS_RADIUS:
+			p.near_missed.append(id)
+			n.call(&"on_near_miss", p.shooter, p.weapon, d, closest)
 
 
 ## Handles one contact. Returns where the round continues from.
@@ -532,10 +573,15 @@ func _contact(p: Projectile, res: Dictionary, space: PhysicsDirectSpaceState3D) 
 		p.ricochets += 1
 	else:
 		var exit: Dictionary = {}
-		if p.penetrations < w.max_penetrations and surface.resistance_j_per_cm > 0.0:
+		var stops: bool = collider is Node and (collider as Node).has_meta(&"stops_rounds")
+		if stops:
+			pass
+		elif p.penetrations < w.max_penetrations and surface.resistance_j_per_cm > 0.0:
 			exit = _find_exit(space, collider, point, dir, hit.energy_in, w, surface, hit.speed_in)
 		elif surface.resistance_j_per_cm <= 0.0:
 			exit = {"position": point + dir * 0.001, "normal": -normal}
+		if stops:
+			exit = {}
 		if exit.is_empty():
 			hit.result = BallisticHit.Result.STOPPED
 			hit.energy_out = 0.0

@@ -61,7 +61,7 @@ func test_rt_fires_one_round_and_recoil_recovers() -> void:
 
 
 func test_rounds_land_where_the_sights_point() -> void:
-	var dummy: TargetDummy = room.shooting_range.dummies[0]
+	var dummy: Enemy = room.shooting_range.targets[0]
 	var head: Vector3 = dummy.parts[&"head"].global_position
 	var kinds: Array[StringName] = []
 	EventBus.target_hit.connect(func(kind: StringName, _h: BallisticHit) -> void: kinds.append(kind))

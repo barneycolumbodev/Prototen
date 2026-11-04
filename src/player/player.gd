@@ -5,12 +5,26 @@ extends CharacterBody3D
 ## and air dash come in M1. Tuning lives in data/ resources.
 
 @export var movement: MovementConfig = preload("res://data/player/movement_default.tres")
+@export var body_config: PlayerBodyConfig = preload("res://data/player/body_default.tres")
 ## Turned off while a benchmark or cutscene drives the camera.
 @export var input_enabled: bool = true
 ## The weapon wheel is open: the right stick picks a gun instead of looking.
 var look_blocked: bool = false
 
 signal landed(fall_speed: float)
+signal damaged(amount: float, from_dir: Vector3)
+signal died
+signal respawned
+
+var health: float = 200.0
+var dead: bool = false
+## Off in tests and benchmarks.
+var invulnerable: bool = false
+## 0..1, rises with near misses (HUD and camera react).
+var suppression: float = 0.0
+var spawn_point: Vector3 = Vector3.ZERO
+var _since_hit: float = 99.0
+var _dead_time: float = 0.0
 
 ## Set by the weapon each frame: aiming scales FOV, look speed and move speed.
 var fov_scale: float = 1.0
@@ -48,8 +62,13 @@ var _last_pitch: float = 0.0
 
 func _ready() -> void:
 	add_to_group(&"player")
+	add_to_group(&"suppressible")
+	set_meta(&"surface", &"flesh")
+	set_meta(&"stops_rounds", true)
+	health = body_config.max_health
 	collision_layer = Ballistics.LAYER_PLAYER
-	collision_mask = Ballistics.LAYER_WORLD | Ballistics.LAYER_HITBOX | Ballistics.LAYER_PROPS
+	# Corpses and moving hitboxes don't block; living enemies do (their capsules).
+	collision_mask = Ballistics.LAYER_WORLD | Ballistics.LAYER_PROPS | Ballistics.LAYER_ENEMY
 	_capsule = (_collision.shape as CapsuleShape3D).duplicate() as CapsuleShape3D
 	_collision.shape = _capsule
 	yaw = rotation.y
@@ -73,6 +92,55 @@ func camera() -> Camera3D:
 
 func weapon() -> PlayerWeapon:
 	return get_node_or_null(^"Weapon") as PlayerWeapon
+
+
+## Enemy rounds land here (Ballistics hits the player's capsule).
+func on_ballistic_hit(hit: BallisticHit) -> void:
+	if dead or invulnerable or hit.shooter == self:
+		return
+	var amount: float = hit.energy_in * 0.001 * body_config.damage_per_kj
+	take_damage(amount, -hit.direction)
+
+
+func take_damage(amount: float, from_dir: Vector3) -> void:
+	if dead or invulnerable:
+		return
+	health -= amount
+	_since_hit = 0.0
+	damaged.emit(amount, from_dir)
+	EventBus.player_damaged.emit(amount, from_dir)
+	if health <= 0.0:
+		health = 0.0
+		dead = true
+		_dead_time = 0.0
+		input_enabled = false
+		died.emit()
+		EventBus.player_died.emit()
+
+
+func suppress_point() -> Vector3:
+	return _camera.global_position
+
+
+func on_near_miss(shooter: Node, _weapon: WeaponData, distance: float, point: Vector3) -> void:
+	if shooter == self or dead:
+		return
+	suppression = minf(suppression + 0.25 * (1.0 - distance / Ballistics.NEAR_MISS_RADIUS), 1.0)
+	Sfx.play_at(&"whizz", point, -2.0, 0.12)
+
+
+func respawn() -> void:
+	dead = false
+	health = body_config.max_health
+	input_enabled = true
+	suppression = 0.0
+	global_position = spawn_point
+	velocity = Vector3.ZERO
+	respawned.emit()
+
+
+func health_fraction() -> float:
+	return health / body_config.max_health
 
 
 func stop_sprint() -> void:
@@ -122,6 +190,15 @@ func _process(delta: float) -> void:
 
 
 func _physics_process(delta: float) -> void:
+	_since_hit += delta
+	suppression = maxf(0.0, suppression - delta * 0.5)
+	if dead:
+		_dead_time += delta
+		velocity = Vector3(0, velocity.y - movement.gravity * delta, 0) if not is_on_floor() else Vector3.ZERO
+		move_and_slide()
+		return
+	if _since_hit > body_config.regen_delay and health < body_config.max_health:
+		health = minf(health + body_config.regen_rate * delta, body_config.max_health)
 	var cfg: MovementConfig = movement
 	var stick: Vector2 = Vector2.ZERO
 	if input_enabled:

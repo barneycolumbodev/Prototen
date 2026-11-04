@@ -64,6 +64,8 @@ const CAPTURE_CAMERAS: Dictionary = {
 	"CapRange": [Vector3(-1.5, 2.6, 6.0), Vector3(-2.0, 0.9, -5.0)],
 	"CapWalls": [Vector3(0.5, 1.9, 2.0), Vector3(5.0, 1.0, -6.0)],
 	"CapDummy": [Vector3(1.2, 1.55, 0.7), Vector3(1.5, 1.2, -1.0)],
+	"CapGore": [Vector3(-1.6, 1.4, 1.2), Vector3(1.2, 0.4, -1.6)],
+	"CapBodies": [Vector3(-5.2, 1.5, 2.2), Vector3(-7.6, 0.5, -1.2)],
 }
 
 const PLAYER_SCENE: PackedScene = preload("res://src/player/player.tscn")
@@ -72,6 +74,8 @@ const BENCH_POINT: Vector3 = Vector3(0, 0, 3)
 
 var player: Player
 var shooting_range: ShootingRange
+var wave_mode: WaveMode
+var combat_hud: CombatHud
 var _bench: FrameBench
 var _hud: Node
 var _bench_yaw0: float = 0.0
@@ -89,6 +93,7 @@ func _ready() -> void:
 	player = PLAYER_SCENE.instantiate() as Player
 	add_child(player)
 	player.global_position = SPAWN
+	player.spawn_point = SPAWN
 	player.set_view(0.0, 0.0)
 	player.aim_assist = AimAssist.new(load("res://data/input/aim_assist.tres") as AimAssistConfig)
 	# Tuning the owner saved on the phone (pause menu → Gun tuning).
@@ -102,10 +107,24 @@ func _ready() -> void:
 	_hud.set("bench", _bench)
 	_hud.set("weapon", player.weapon())
 	add_child(_hud)
+	combat_hud = CombatHud.new()
+	combat_hud.player = player
+	add_child(combat_hud)
+	wave_mode = WaveMode.new()
+	wave_mode.name = "WaveMode"
+	wave_mode.room = self
+	add_child(wave_mode)
+	EventBus.wave_mode_requested.connect(wave_mode.toggle)
 	EventBus.benchmark_requested.connect(start_benchmark)
 	# `-- --bench=<seconds>`: run the benchmark at startup and quit (cloud/CI use).
 	for arg: String in OS.get_cmdline_user_args():
-		if arg.begins_with("--demo="):
+		if arg == "--waves":
+			wave_mode.start.call_deferred()
+		if arg == "--demo=gore":
+			var gd: GoreDemo = GoreDemo.new()
+			gd.room = self
+			add_child(gd)
+		elif arg.begins_with("--demo="):
 			var demo: GunplayDemo = GunplayDemo.new()
 			demo.room = self
 			demo.mode = arg.trim_prefix("--demo=")
@@ -124,6 +143,7 @@ func _process(_delta: float) -> void:
 
 func start_benchmark(duration_sec: float) -> void:
 	player.input_enabled = false
+	player.invulnerable = true
 	player.global_position = BENCH_POINT
 	player.velocity = Vector3.ZERO
 	_bench_yaw0 = 0.0
@@ -132,6 +152,7 @@ func start_benchmark(duration_sec: float) -> void:
 
 func _on_bench_finished(result: Dictionary) -> void:
 	player.input_enabled = true
+	player.invulnerable = false
 	Settings.store_bench_result(result)
 	EventBus.benchmark_finished.emit(result)
 	_hud.call("show_bench_done", result)

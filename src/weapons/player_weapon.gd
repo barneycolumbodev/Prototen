@@ -362,7 +362,7 @@ func _check_enemy() -> void:
 		return
 	var hit_obj: Object = res["collider"]
 	var n: Node = hit_obj as Node
-	for i: int in 6:
+	for i: int in 9:
 		if n == null:
 			return
 		if n.is_in_group(&"enemies"):

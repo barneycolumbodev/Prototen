@@ -20,6 +20,8 @@ const LOOK_SPEEDS: Array[float] = [0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.15, 1.3, 1.5]
 var render_scale: float = 1.0
 var max_fps: int = 60
 var overlay_visible: bool = true
+## Gore.Level: 0 off, 1 standard, 2 maximum (dismemberment). Maximum by default in the prototype.
+var gore_level: int = 2
 var look_preset: String = "standard"
 ## Multiplies stick look speed (pause menu → Look speed).
 var look_sensitivity: float = 1.0
@@ -45,6 +47,8 @@ func load_settings() -> void:
 	max_fps = cfg.get_value("video", "max_fps", max_fps)
 	vertical_fov = cfg.get_value("video", "vertical_fov", vertical_fov)
 	overlay_visible = cfg.get_value("debug", "overlay_visible", overlay_visible)
+	var gore: int = cfg.get_value("video", "gore_level", gore_level)
+	gore_level = clampi(gore, 0, 2)
 	look_preset = cfg.get_value("input", "look_preset", look_preset)
 	var sens: float = cfg.get_value("input", "look_sensitivity", look_sensitivity)
 	look_sensitivity = clampf(sens, 0.2, 3.0)
@@ -61,6 +65,7 @@ func save_settings() -> void:
 	cfg.set_value("video", "max_fps", max_fps)
 	cfg.set_value("video", "vertical_fov", vertical_fov)
 	cfg.set_value("debug", "overlay_visible", overlay_visible)
+	cfg.set_value("video", "gore_level", gore_level)
 	cfg.set_value("debug", "bench_results", bench_results)
 	cfg.set_value("input", "look_preset", look_preset)
 	cfg.set_value("input", "look_sensitivity", look_sensitivity)
@@ -119,6 +124,15 @@ func cycle_look_sensitivity() -> void:
 		_commit()
 	else:
 		step_look_sensitivity(1)
+
+
+func cycle_gore_level() -> void:
+	gore_level = (gore_level + 1) % 3
+	_commit()
+
+
+func gore_name() -> String:
+	return ["Off", "Standard", "Maximum"][clampi(gore_level, 0, 2)]
 
 
 func set_overlay_visible(value: bool) -> void:

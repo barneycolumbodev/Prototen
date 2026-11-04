@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="WeaponData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/weapons/weapon_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+display_name = "Type 85 SMG"
+caliber = "7.62×25mm"
+muzzle_velocity = 480.0
+bullet_mass_g = 5.5
+drag_per_m = 0.0016
+pellets = 1
+pattern_deg = 0.0
+penetration_scale = 0.8
+max_penetrations = 4
+max_ricochets = 1
+min_damage = 12.0
+damage_per_joule = 0.14
+impulse_scale = 20.0
+sound_prefix = "smg_"
+flash_scale = 0.8
+shot_volume_db = -4.0
+max_range = 400.0

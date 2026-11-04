@@ -78,7 +78,7 @@ func test_tactical_reload_keeps_the_chambered_round() -> void:
 
 
 func test_a_chest_hit_goes_through_a_dummy() -> void:
-	var d: TargetDummy = room.shooting_range.dummies[0]
+	var d: Enemy = room.shooting_range.targets[0]
 	var hits: Array[BallisticHit] = []
 	var cb: Callable = func(h: BallisticHit) -> void: hits.append(h)
 	EventBus.ballistic_hit.connect(cb)

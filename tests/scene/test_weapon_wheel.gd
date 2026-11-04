@@ -131,7 +131,7 @@ func test_reticle_is_seaglass_and_turns_crimson_over_an_enemy() -> void:
 	assert_false(weapon.over_enemy)
 	var calm: Color = _reticle_color()
 	assert_almost_eq(calm.g, ReticleStyle.SEAGLASS.g, 0.02, "seaglass by default")
-	var d: TargetDummy = room.shooting_range.dummies[0]
+	var d: Enemy = room.shooting_range.targets[0]
 	GunplayDemo.aim_at(player, d.parts[&"chest"].global_position)
 	await wait_physics_frames(4)
 	await wait_seconds(0.15)
@@ -158,7 +158,7 @@ func test_rail_reflex_reticle_follows_the_enemy_colour() -> void:
 	weapon.select_now(weapon.index_of("RC-6 Lance"))
 	var rig: ViewmodelRig = weapon.rig()
 	assert_true(rig.has_part(&"reticle"), "rail carbine reticle is its own part")
-	GunplayDemo.aim_at(player, room.shooting_range.dummies[0].parts[&"chest"].global_position)
+	GunplayDemo.aim_at(player, room.shooting_range.targets[0].parts[&"chest"].global_position)
 	await wait_physics_frames(4)
 	await wait_seconds(0.15)
 	assert_almost_eq(rig.reticle_color().r, ReticleStyle.CRIMSON.r, 0.02)

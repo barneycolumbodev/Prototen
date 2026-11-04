@@ -72,6 +72,8 @@ func _build() -> void:
 	_list.add_child(title)
 	_add("resume", close)
 	_add("tuning", _on_tuning)
+	_add("waves", _on_waves)
+	_add("gore", Settings.cycle_gore_level)
 	_add("renderer", _on_renderer)
 	_add("scale", Settings.cycle_render_scale)
 	_add("fps", Settings.cycle_max_fps)
@@ -107,6 +109,11 @@ func _label(id: String, text: String) -> void:
 
 func _refresh() -> void:
 	_label("resume", "Resume")
+	var wm: Node = get_tree().current_scene.get_node_or_null(^"WaveMode") if get_tree().current_scene else null
+	var running: Variant = wm.get(&"running") if wm else false
+	var on: bool = running == true
+	_label("waves", "Wave mode: %s" % ("stop" if on else "start"))
+	_label("gore", "Gore: %s" % Settings.gore_name())
 	_label("tuning", "Gun tuning")
 	var now: String = Settings.current_renderer()
 	var next: String = Settings.next_start_renderer()
@@ -123,6 +130,11 @@ func _refresh() -> void:
 func _on_renderer() -> void:
 	var method: String = Settings.cycle_next_start_renderer()
 	_notice.text = "Close the app and open it again to start with the %s renderer." % _pretty(method)
+
+
+func _on_waves() -> void:
+	close()
+	EventBus.wave_mode_requested.emit()
 
 
 func _on_tuning() -> void:
