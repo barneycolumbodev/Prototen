@@ -39,7 +39,7 @@ Commit after each step.
 
 ## 2. The game
 
-- **Player and enemies.** You are augmented. For now, enemies are ordinary unaugmented soldiers who come in waves. The difference between you and them should show everywhere: speed, strength, durability, perception, what you can carry, and how they react to you. It's a power fantasy, but fights should still take skill.
+- **Player and enemies.** You are augmented. For now, enemies are ordinary unaugmented humans who come in waves: triad members (owner, 2026-11-03). The difference between you and them should show everywhere: speed, strength, durability, perception, what you can carry, and how they react to you. It's a power fantasy, but fights should still take skill.
 - **Simulation.** Simulate as much as an immersive sim would (bodies, damage, ballistics, enemy behavior), but keep combat fast. Every system has to work at full speed, without menus or pauses.
 - **Gunplay.** The goal is the best gunplay in any mobile shooter. References: Call of Duty for gun handling, Doom for speed and aggression, Halo for readable weapons and enemies, F.E.A.R. and Trepang2 for slow motion and hit reactions, S.T.A.L.K.E.R. for weapon weight, Soldier of Fortune for locational damage and gore.
 - **Tone.** Warhammer 40,000's hardware and industrial scale without its supernatural side. Deus Ex's augmentation. Halo's military hardware. Soldier of Fortune's grounded, violent military action.
@@ -262,7 +262,7 @@ Each milestone ends with an APK on the owner's phone and an entry in `docs/playt
 1. **M0 – Foundation.** Repo, tools and CI producing an APK. A test room, controller movement and camera, the debug overlay, and the renderer comparison.
    Done when the APK installs from Releases, the test room runs at 60 fps on the Moto G, and cloud screenshots work.
 2. **M1 – Pistol.** Built in slices, core gunplay first (owner decision 2026-11-01; see `docs/m1-gunplay-plan.md`). Suppressed Five-seveN with the full feedback list (§5.3). Saiga-12K with buck, slugs and Dragon's Breath (owner, 2026-11-02; design §4.3). Sprint, slide, wall-run, mantle. Locational damage, penetration, gore and ragdolls. Three enemy roles with awareness, suppression and morale. Wave mode. First finished assets: the Five-seveN, first-person arms, one enemy.
-   Done when the owner wants to keep playing the wave mode.
+   Done when the owner wants to keep playing the wave mode. Status 2026-11-04: all slices built (M1a gunplay, M1b movement, M1c triad enemies, gore, ragdolls, AI, waves); waiting for the owner's playtest.
 3. **M2 – Parts system.** Loadout screen. Power, heat, mass and capacity. At least 8 passives with visible changes. The drone, whip and time slowdown.
    Done when three different loadouts play noticeably differently.
 4. **M3 – Heavy weapons.** MG42-style machine gun with heat and barrel changes (the gun itself, its handling and a flat carry penalty were pulled into M1 by the owner on 2026-11-01; heat and barrel changes stay here). Heavy armor parts, two more actives, dismemberment, machine-gunner and anti-augment enemies.

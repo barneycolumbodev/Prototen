@@ -69,21 +69,25 @@ func test_bottle_shatters() -> void:
 	assert_false(bottle.visible, "shattered")
 
 
-func test_dummy_takes_zone_damage_and_goes_down() -> void:
-	var d: TargetDummy = room.shooting_range.dummies[0]
+func test_target_takes_zone_damage_and_goes_down() -> void:
+	var d: Enemy = room.shooting_range.targets[0]
 	var chest: Vector3 = d.parts[&"chest"].global_position
 	await _shoot(chest)
 	assert_lt(d.health, d.config.health)
 	assert_false(d.dead)
 	await _shoot(d.parts[&"head"].global_position)
 	assert_true(d.dead, "headshot finishes it")
-	await wait_seconds(d.config.reset_time + 0.3)
-	assert_false(d.dead, "stands back up")
+	assert_null(room.shooting_range.targets[0], "the spot is empty")
+	await wait_seconds(ShootingRange.TARGET_RESPAWN + 0.3)
+	var fresh: Enemy = room.shooting_range.targets[0]
+	assert_not_null(fresh, "a new one takes the spot")
+	assert_false(fresh.dead)
+	assert_true(is_instance_valid(d) and d.body.ragdolling, "the body stays down")
 
 
 func test_aim_assist_slows_the_stick_on_a_target() -> void:
 	var player: Player = room.player
-	var d: TargetDummy = room.shooting_range.dummies[0]
+	var d: Enemy = room.shooting_range.targets[0]
 	GunplayDemo.aim_at(player, d.parts[&"chest"].global_position)
 	await wait_physics_frames(2)
 	var rate: Vector2 = player.aim_assist.apply(player, Vector2(100, 0), 1.0 / 60.0)

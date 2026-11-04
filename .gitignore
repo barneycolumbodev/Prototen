@@ -20,3 +20,4 @@ export_credentials.cfg
 # OS / editor
 .DS_Store
 *.swp
+tools/_*

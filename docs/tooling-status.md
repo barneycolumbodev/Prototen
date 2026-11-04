@@ -31,6 +31,13 @@ Checked 2026-11-01 in the first cloud session (CLAUDE.md §1 step 5, §10.4). Up
 - `scipy` wasn't installed for the system Python; `pip install scipy` worked (needed by `raw_assets/audio/*.py`).
 - The Godot Agent Loop MCP server failed to connect again (package still missing); screenshots use `tools/screenshot.sh` with the new `--demo=hip|ads|burst` and `--weapon=<index>` capture args.
 
+## Session 5 notes (2026-11-04, M1b/M1c)
+
+- No setup script again: Godot from the SessionStart fallback. No Vulkan driver in the container (`VK_KHR_surface` missing), so screenshots use the Compatibility renderer.
+- `bpy` 5.2.3 worked; Pillow had to be installed into `/opt/bpy-venv` for preview sheets, and scipy into the system Python for the sound scripts (`pip install pillow` / `pip install scipy`).
+- `extensions.blender.org`, `static.makehumancommunity.org`, `quaternius.com`, Poly Haven and ambientCG are still blocked, so the triad enemy is fully procedural (no MPFB, no Quaternius animations).
+- The Godot Agent Loop MCP server still fails to connect. Gameplay was checked with GUT scene tests, headless debug runs and `tools/screenshot.sh` with `--demo=gore` / `--waves --god`.
+
 ## What the owner can fix in the environment settings (claude.ai/code)
 
 1. **Network access → Custom**, keep the defaults, add the hosts in CLAUDE.md §10.1 (at least `download.blender.org`, `extensions.blender.org`, `api.polyhaven.com`, `dl.polyhaven.org`, `ambientcg.com`).

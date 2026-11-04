@@ -43,3 +43,12 @@ Blood, ragdolls and debris must look right at 25% time scale: no frame-rate-depe
 ## Verify
 
 GUT tests for zone lookup, armor/penetration maths and pool caps. Screenshots of hit reactions. Debug overlay shows ragdoll and decal counts on the phone.
+
+## As built (M1c, 2026-11-04)
+
+- Code: `src/ai/enemy_body.gd` (zones on BoneAttachment3D, ragdoll, sever, wounds), `src/ai/enemy.gd` (reactions), `src/gore/gore.gd` (sprays, splats, pools, gibs), `src/gore/ragdoll_budget.gd` (cap 3), `src/ai/triad.gdshader` (wounds).
+- `Skeleton3D.get_bone_global_pose()` does NOT include SkeletonModifier3D results (ragdoll, aim layer) outside the modifier pass. Read shown poses from BoneAttachment3D nodes (`EnemyBody.bone_global()`), and build the frozen pose from them.
+- Keep the AnimationTree active while ragdolling: with it off, nothing marks the skeleton dirty and the simulator's pose never reaches the mesh.
+- PhysicalBone3D `bone_name` and `joint_constraints/*` are dynamic properties: use `set()`.
+- Wounds: rest-pose position in CUSTOM0 (EnemyBody.rest_mesh), wound points converted to rest space via the zone's bone; 8 per body, merged when full.
+- Severed parts are pre-cut meshes in the glTF (`part_*`); the intact mesh is swapped for them on the first cut. Gibs reuse the part mesh unskinned, posed by the bone.

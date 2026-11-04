@@ -44,7 +44,7 @@ func test_shot_leaves_a_trail_and_no_casing() -> void:
 	await _to_rail()
 	assert_true(weapon.rig().visible)
 	assert_eq(weapon.mechanism.loaded(), 40)
-	GunplayDemo.aim_at(player, room.shooting_range.dummies[0].parts[&"chest"].global_position)
+	GunplayDemo.aim_at(player, room.shooting_range.targets[0].parts[&"chest"].global_position)
 	await wait_physics_frames(2)
 	var shells: int = Fx.live_shells()
 	await _press(&"fire")
@@ -70,7 +70,7 @@ func test_slug_goes_through_ar500_that_stops_the_pistol() -> void:
 
 
 func test_one_torso_hit_kills_and_the_slug_keeps_going() -> void:
-	var d: TargetDummy = room.shooting_range.dummies[0]
+	var d: Enemy = room.shooting_range.targets[0]
 	var hits: Array[BallisticHit] = []
 	var cb: Callable = func(h: BallisticHit) -> void: hits.append(h)
 	EventBus.ballistic_hit.connect(cb)

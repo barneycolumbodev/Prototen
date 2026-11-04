@@ -136,6 +136,8 @@ Soldier of Fortune's GHOUL engine split bodies into 26 damage zones that each re
 - Wounded states: crawling, clutching a wound, calling for help.
 - Armor: helmets and plates with protection levels. Penetration against protection decides whether a round gets through.
 - Dismemberment from heavy rounds, explosions, the whip and the ram.
+- Built (M1c, 2026-11-04): 17 zones on the triad enemy's bones (head, neck, chest, stomach, pelvis, upper arms, forearms, hands, thighs, shins, feet), multipliers in `data/enemies/*.tres`. Legs: stumble, then limp (one crippled), crawl (both, or one when badly hurt). Arms/hands: aim gets worse, weapon dropped (hand 80 %, forearm 50 %), and with low morale they surrender. Stomach/pelvis: doubled over for a few seconds. Head/neck: kill. Pass-through wounds bleed (damage over time, drips on the floor). Armour is physical: the Enforcer's carrier holds AR500 plates (`armor_plate` surface), so Ballistics decides what gets through (pistol and buck stop, the rail carbine doesn't); stopped rounds still bruise and stagger.
+- Built: dismemberment at the Maximum gore setting — heads, forearms and shins come off when one shot puts enough energy into the zone (deposited + 15 % of what arrived: about 700 J for a limb, 900 J neck/head, 1,600 J destroys the head) or when a limb has taken 85 damage in total (sustained MG42 fire). The rail carbine does it in one shot; buck does it to limbs up close; the MG42 chews limbs off.
 
 ### 5.2 Ballistics
 
@@ -169,6 +171,7 @@ Weapon and arm motion is procedural: springs for sway, bob, recoil, landing, tur
 - Gore setting: off, standard, maximum.
 - Everything pooled and capped (§8).
 - Slow motion has to hold up: blood, ragdolls and debris still look right at 25% speed.
+- Built (M1c): `src/gore/gore.gd` (autoload). Entry back-spatter, exit spray along the round, mist on head shots and heavy exits, a directional splat on the wall behind (placed after the blood's flight time), drips on the floor, pools that grow under bodies once they settle, gibs that bleed and splat where they land. Wounds are painted by the enemy's shader in the mesh's rest pose (no decals): small dark entry holes, torn exit wounds, blood soaking into the cloth and running down. Ragdolls: `PhysicalBoneSimulator3D` with 12 bodies, impulse at the hit bone, frozen when settled (≤ 3 simulate). Hit reactions are procedural springs on the torso and head (not partial ragdoll) plus a stumble clip. Gore setting in the pause menu: Off, Standard (blood, wounds, pools), Maximum (adds dismemberment; default for now).
 
 ### 5.6 Enemy behavior
 
@@ -178,6 +181,12 @@ Weapon and arm motion is procedural: springs for sway, bob, recoil, landing, tur
 - Callouts that react to what you do ("Augment!", "Fall back!").
 - Squads flank and suppress together. Only a few enemies shoot at the player at a time.
 - Roles *(proposal)*: rifleman, shotgunner, shield carrier, machine gunner, marksman, launcher, anti-augment specialist (EMP grenades, armor-piercing rounds, drone jammer), officer.
+- Owner (2026-11-03): the first enemies are **triad members**. Built (M1c) as three roles *(Claude's reading)*, one body tinted per role:
+  - **Gunman** (black bomber jacket, Type 56 rifle): holds cover, peeks and fires bursts.
+  - **Enforcer** (olive jacket, plate carrier, pump shotgun): pushes in close and holds there.
+  - **Red Pole** (burgundy jacket, SMG; the triad rank for an enforcer-lieutenant): steadies the men near him; when he dies everyone's morale drops.
+- Built: awareness from sight (field of view, distance, the player's speed), gunfire (suppressed guns heard at a quarter of the range) and seeing friends die; contact reports spread through the squad. Cover points are found automatically next to low cover; they hide, peek over it and fire, change spots. Only three shoot at the player at once (tokens). Near misses (rounds within 1.6 m) suppress: worse aim, longer in cover. Morale drops with wounds, casualties, gore and the augment within 5 m; it breaks into fleeing, cowering, blind fire over cover or surrendering (hands up, kneeling). First rounds of an engagement go wide on purpose. Callouts appear as subtitles. Enemies' rounds are real Ballistics rounds (tracers on every other one) that hit the player.
+
 
 ---
 

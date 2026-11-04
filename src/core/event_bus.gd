@@ -19,3 +19,17 @@ signal ballistic_hit(hit: BallisticHit)
 ## kind: &"hit", &"headshot", &"kill", &"armor"
 @warning_ignore("unused_signal")
 signal target_hit(kind: StringName, hit: BallisticHit)
+## An enemy shouts (subtitles): speaker callsign, line, where.
+@warning_ignore("unused_signal")
+signal callout(speaker: String, text: String, at: Vector3)
+## The player was hit: damage after armour, direction it came from (world).
+@warning_ignore("unused_signal")
+signal player_damaged(amount: float, from_dir: Vector3)
+@warning_ignore("unused_signal")
+signal player_died
+## Wave mode: wave number, enemies left (-1 = between waves).
+@warning_ignore("unused_signal")
+signal wave_changed(wave: int, left: int)
+## Pause menu: start or stop wave mode.
+@warning_ignore("unused_signal")
+signal wave_mode_requested

@@ -61,12 +61,12 @@ func _ready() -> void:
 		return
 	if mode == "fire":
 		for i: int in 4:
-			_queue.append(r.dummies[0].parts[&"chest"].global_position)
+			_queue.append(r.target_point(0))
 		return
-	for d: TargetDummy in r.dummies:
-		_queue.append(d.parts[&"head"].global_position)
-		_queue.append(d.parts[&"chest"].global_position + Vector3(0.05, 0.02, 0))
-		_queue.append(d.parts[&"l_thigh"].global_position)
+	for i: int in r.targets.size():
+		_queue.append(r.target_point(i, &"head"))
+		_queue.append(r.target_point(i, &"chest") + Vector3(0.05, 0.02, 0))
+		_queue.append(r.target_point(i, &"l_thigh"))
 	for p: PenPanel in r.panels:
 		for k: int in 3:
 			_queue.append(p.global_position + Vector3(-0.25 + k * 0.25, 0.9 + 0.1 * k, 0.05))
@@ -84,7 +84,7 @@ func _physics_process(_delta: float) -> void:
 	_frame += 1
 	var aimed: bool = mode == "range" or mode == "ads"
 	if mode == "burst" and not done and _wait <= 0:
-		aim_at(player, room.shooting_range.dummies[0].parts[&"chest"].global_position + Vector3(0.0, 0.1 * sin(_burst * 0.4), 0.0))
+		aim_at(player, room.shooting_range.target_point(0) + Vector3(0.0, 0.1 * sin(_burst * 0.4), 0.0))
 		weapon.script_input(true, false)
 		_burst += 1
 		shots_fired = _burst
@@ -102,7 +102,7 @@ func _physics_process(_delta: float) -> void:
 		done = true
 		# Hold the sights on the poppers for the capture (`--aim=dummy`: on a dummy's chest).
 		if OS.get_cmdline_user_args().has("--aim=dummy"):
-			aim_at(player, room.shooting_range.dummies[0].parts[&"chest"].global_position)
+			aim_at(player, room.shooting_range.target_point(0))
 		else:
 			aim_at(player, Vector3(-4.0, 1.4, -6.5) if aimed else Vector3(-2.0, 1.5, -6.5))
 		weapon.cam_recoil.reset()

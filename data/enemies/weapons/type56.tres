@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="WeaponData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/weapons/weapon_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+display_name = "Type 56"
+caliber = "7.62×39mm"
+muzzle_velocity = 715.0
+bullet_mass_g = 7.9
+drag_per_m = 0.0011
+pellets = 1
+pattern_deg = 0.0
+penetration_scale = 1.0
+max_penetrations = 6
+max_ricochets = 1
+min_damage = 18.0
+damage_per_joule = 0.14
+impulse_scale = 14.0
+sound_prefix = "t56_"
+flash_scale = 1.0
+shot_volume_db = -2.0
+max_range = 400.0

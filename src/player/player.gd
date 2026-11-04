@@ -1,16 +1,33 @@
 class_name Player
 extends CharacterBody3D
-## M0 first-person controller: controller look with shaped sticks and
-## full-tilt acceleration, walk/sprint/crouch/jump. Slide, wall-run, mantle
-## and air dash come in M1. Tuning lives in data/ resources.
+## First-person controller: controller look with shaped sticks and
+## full-tilt acceleration; walk, sprint (L3), crouch (hold B), jump (A).
+## Movement tech (M1b): B while sprinting slides (keeps momentum, A out of it
+## hops); airborne against a wall at your side while pushing forward
+## wall-runs (A jumps off); A at a ledge up to 2.2 m mantles onto it.
+## Tuning lives in data/player/movement_default.tres.
 
 @export var movement: MovementConfig = preload("res://data/player/movement_default.tres")
+@export var body_config: PlayerBodyConfig = preload("res://data/player/body_default.tres")
 ## Turned off while a benchmark or cutscene drives the camera.
 @export var input_enabled: bool = true
 ## The weapon wheel is open: the right stick picks a gun instead of looking.
 var look_blocked: bool = false
 
 signal landed(fall_speed: float)
+signal damaged(amount: float, from_dir: Vector3)
+signal died
+signal respawned
+
+var health: float = 200.0
+var dead: bool = false
+## Off in tests and benchmarks.
+var invulnerable: bool = false
+## 0..1, rises with near misses (HUD and camera react).
+var suppression: float = 0.0
+var spawn_point: Vector3 = Vector3.ZERO
+var _since_hit: float = 99.0
+var _dead_time: float = 0.0
 
 ## Set by the weapon each frame: aiming scales FOV, look speed and move speed.
 var fov_scale: float = 1.0
@@ -31,6 +48,20 @@ const PITCH_LIMIT: float = deg_to_rad(88.0)
 var yaw: float = 0.0
 var pitch: float = 0.0
 
+enum MoveState { NORMAL, SLIDE, WALLRUN, MANTLE }
+var move_state: MoveState = MoveState.NORMAL
+## +1 = the wall is on the right, -1 = left (while wall-running).
+var wall_side: float = 0.0
+var _wall_normal: Vector3 = Vector3.ZERO
+var _last_wall_normal: Vector3 = Vector3.ZERO
+var _wall_time: float = 0.0
+var _wall_cd: float = 0.0
+var _slide_cd: float = 0.0
+var _mantle_from: Vector3
+var _mantle_to: Vector3
+var _mantle_t: float = 0.0
+var _roll: float = 0.0
+
 var _tilt_time: float = 0.0
 var _sprinting: bool = false
 var _crouching: bool = false
@@ -48,8 +79,13 @@ var _last_pitch: float = 0.0
 
 func _ready() -> void:
 	add_to_group(&"player")
+	add_to_group(&"suppressible")
+	set_meta(&"surface", &"flesh")
+	set_meta(&"stops_rounds", true)
+	health = body_config.max_health
 	collision_layer = Ballistics.LAYER_PLAYER
-	collision_mask = Ballistics.LAYER_WORLD | Ballistics.LAYER_HITBOX | Ballistics.LAYER_PROPS
+	# Corpses and moving hitboxes don't block; living enemies do (their capsules).
+	collision_mask = Ballistics.LAYER_WORLD | Ballistics.LAYER_PROPS | Ballistics.LAYER_ENEMY
 	_capsule = (_collision.shape as CapsuleShape3D).duplicate() as CapsuleShape3D
 	_collision.shape = _capsule
 	yaw = rotation.y
@@ -67,12 +103,73 @@ func is_crouching() -> bool:
 	return _crouching
 
 
+func is_sliding() -> bool:
+	return move_state == MoveState.SLIDE
+
+
+func is_wallrunning() -> bool:
+	return move_state == MoveState.WALLRUN
+
+
+func is_mantling() -> bool:
+	return move_state == MoveState.MANTLE
+
+
 func camera() -> Camera3D:
 	return _camera
 
 
 func weapon() -> PlayerWeapon:
 	return get_node_or_null(^"Weapon") as PlayerWeapon
+
+
+## Enemy rounds land here (Ballistics hits the player's capsule).
+func on_ballistic_hit(hit: BallisticHit) -> void:
+	if dead or invulnerable or hit.shooter == self:
+		return
+	var amount: float = hit.energy_in * 0.001 * body_config.damage_per_kj
+	take_damage(amount, -hit.direction)
+
+
+func take_damage(amount: float, from_dir: Vector3) -> void:
+	if dead or invulnerable:
+		return
+	health -= amount
+	_since_hit = 0.0
+	damaged.emit(amount, from_dir)
+	EventBus.player_damaged.emit(amount, from_dir)
+	if health <= 0.0:
+		health = 0.0
+		dead = true
+		_dead_time = 0.0
+		input_enabled = false
+		died.emit()
+		EventBus.player_died.emit()
+
+
+func suppress_point() -> Vector3:
+	return _camera.global_position
+
+
+func on_near_miss(shooter: Node, _weapon: WeaponData, distance: float, point: Vector3) -> void:
+	if shooter == self or dead:
+		return
+	suppression = minf(suppression + 0.25 * (1.0 - distance / Ballistics.NEAR_MISS_RADIUS), 1.0)
+	Sfx.play_at(&"whizz", point, -2.0, 0.12)
+
+
+func respawn() -> void:
+	dead = false
+	health = body_config.max_health
+	input_enabled = true
+	suppression = 0.0
+	global_position = spawn_point
+	velocity = Vector3.ZERO
+	respawned.emit()
+
+
+func health_fraction() -> float:
+	return health / body_config.max_health
 
 
 func stop_sprint() -> void:
@@ -122,22 +219,52 @@ func _process(delta: float) -> void:
 
 
 func _physics_process(delta: float) -> void:
+	_since_hit += delta
+	suppression = maxf(0.0, suppression - delta * 0.5)
+	if dead:
+		_dead_time += delta
+		velocity = Vector3(0, velocity.y - movement.gravity * delta, 0) if not is_on_floor() else Vector3.ZERO
+		move_and_slide()
+		return
+	if _since_hit > body_config.regen_delay and health < body_config.max_health:
+		health = minf(health + body_config.regen_rate * delta, body_config.max_health)
 	var cfg: MovementConfig = movement
 	var stick: Vector2 = Vector2.ZERO
 	if input_enabled:
 		var raw: Vector2 = Input.get_vector(&"move_left", &"move_right", &"move_forward", &"move_back", 0.0)
 		stick = Stick.shape(raw, cfg.move_inner_deadzone, cfg.move_outer_deadzone, 1.0)
+	var b_pressed: bool = input_enabled and Input.is_action_just_pressed(&"slide")
+	var b_held: bool = input_enabled and Input.is_action_pressed(&"slide")
+	_jump_buffer = cfg.jump_buffer if input_enabled and Input.is_action_just_pressed(&"jump") else _jump_buffer - delta
+	_slide_cd -= delta
+	_wall_cd -= delta
+	var wish: Vector3 = global_basis * Vector3(stick.x, 0.0, stick.y)
+	wish.y = 0.0
+	var forward_push: float = -stick.y
+
+	match move_state:
+		MoveState.MANTLE:
+			_mantle(delta)
+			return
+		MoveState.SLIDE:
+			_slide(delta, wish, b_held)
+			return
+		MoveState.WALLRUN:
+			_wallrun(delta, forward_push)
+			return
 
 	# Sprint: press L3 to start; ends when the stick stops pushing forward.
 	if input_enabled and Input.is_action_just_pressed(&"sprint") and not sprint_blocked:
 		_sprinting = true
-	if -stick.y < cfg.sprint_min_forward:
+	if forward_push < cfg.sprint_min_forward:
 		_sprinting = false
-	_crouching = input_enabled and Input.is_action_pressed(&"slide")
-	if _crouching:
-		_sprinting = false
-
-	if sprint_blocked:
+	var horizontal: Vector3 = Vector3(velocity.x, 0.0, velocity.z)
+	# Slide: B at speed on the ground.
+	if b_pressed and is_on_floor() and horizontal.length() >= cfg.slide_min_speed * 0.9 and _slide_cd <= 0.0:
+		_start_slide(horizontal)
+		return
+	_crouching = b_held
+	if _crouching or sprint_blocked:
 		_sprinting = false
 	var speed: float = cfg.walk_speed
 	if _sprinting:
@@ -145,29 +272,211 @@ func _physics_process(delta: float) -> void:
 	elif _crouching:
 		speed = cfg.crouch_speed
 	speed *= move_scale
-	var wish: Vector3 = global_basis * Vector3(stick.x, 0.0, stick.y)
-	wish.y = 0.0
-	var horizontal: Vector3 = Vector3(velocity.x, 0.0, velocity.z)
 	if is_on_floor():
 		horizontal = MovementConfig.approach(horizontal, wish * speed, cfg.ground_accel, cfg.ground_decel, delta)
 	else:
 		horizontal = MovementConfig.approach(horizontal, wish * speed, cfg.air_accel, cfg.air_accel * 0.25, delta)
 
 	_coyote = cfg.coyote_time if is_on_floor() else _coyote - delta
-	_jump_buffer = cfg.jump_buffer if input_enabled and Input.is_action_just_pressed(&"jump") else _jump_buffer - delta
 	var vy: float = velocity.y
 	if not is_on_floor():
 		vy -= cfg.gravity * delta
+	# A at a ledge climbs it (from the ground or in the air).
+	if _jump_buffer > 0.0 and forward_push > 0.2 and _try_mantle():
+		_jump_buffer = 0.0
+		return
 	if _jump_buffer > 0.0 and _coyote > 0.0:
 		vy = cfg.jump_velocity * jump_scale
 		_jump_buffer = 0.0
 		_coyote = 0.0
-
 	velocity = Vector3(horizontal.x, vy, horizontal.z)
 	var was_on_floor: bool = is_on_floor()
 	move_and_slide()
+	if is_on_floor():
+		_last_wall_normal = Vector3.ZERO
 	if is_on_floor() and not was_on_floor and vy < -1.0:
 		landed.emit(-vy)
+	# Airborne next to a wall, pushing forward at speed: run along it.
+	if not is_on_floor() and forward_push > 0.5 and _wall_cd <= 0.0 and horizontal.length() >= cfg.wallrun_min_speed:
+		_try_wallrun(horizontal)
+
+
+func _start_slide(horizontal: Vector3) -> void:
+	var cfg: MovementConfig = movement
+	move_state = MoveState.SLIDE
+	_sprinting = false
+	_crouching = true
+	var speed: float = minf(horizontal.length() + cfg.slide_boost, cfg.slide_max_speed)
+	var h: Vector3 = horizontal.normalized() * speed
+	velocity = Vector3(h.x, velocity.y, h.z)
+	Sfx.play_ui(&"slide", -6.0, 0.05)
+
+
+func _slide(delta: float, wish: Vector3, b_held: bool) -> void:
+	var cfg: MovementConfig = movement
+	_crouching = true
+	var h: Vector3 = Vector3(velocity.x, 0.0, velocity.z)
+	var speed: float = maxf(0.0, h.length() - cfg.slide_friction * delta)
+	var dir: Vector3 = h.normalized() if h.length() > 0.01 else -global_basis.z
+	# A little steering with the stick.
+	if wish.length() > 0.2:
+		var ang: float = dir.signed_angle_to(wish.normalized(), Vector3.UP)
+		dir = dir.rotated(Vector3.UP, clampf(ang, -cfg.slide_steer * delta, cfg.slide_steer * delta))
+	h = dir * speed
+	var vy: float = velocity.y - cfg.gravity * delta if not is_on_floor() else -1.0
+	if _jump_buffer > 0.0:
+		# Slide-hop: keep the speed, jump out of it.
+		_jump_buffer = 0.0
+		move_state = MoveState.NORMAL
+		_crouching = false
+		_slide_cd = cfg.slide_cooldown
+		velocity = Vector3(h.x, cfg.jump_velocity * jump_scale, h.z)
+		move_and_slide()
+		return
+	velocity = Vector3(h.x, vy, h.z)
+	move_and_slide()
+	if speed <= cfg.slide_end_speed or not b_held or not is_on_floor():
+		move_state = MoveState.NORMAL
+		_slide_cd = cfg.slide_cooldown
+		_crouching = b_held and is_on_floor()
+
+
+func _side_wall() -> Dictionary:
+	var cfg: MovementConfig = movement
+	var space: PhysicsDirectSpaceState3D = get_world_3d().direct_space_state
+	var from: Vector3 = global_position + Vector3.UP * 1.0
+	var right: Vector3 = global_basis.x
+	for side: float in [1.0, -1.0]:
+		var q: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(from, from + right * side * (_capsule.radius + cfg.wallrun_detect), Ballistics.LAYER_WORLD)
+		var res: Dictionary = space.intersect_ray(q)
+		if not res.is_empty():
+			var n: Vector3 = res["normal"]
+			if absf(n.y) < 0.3:
+				res["side"] = side
+				return res
+	return {}
+
+
+func _try_wallrun(horizontal: Vector3) -> void:
+	var res: Dictionary = _side_wall()
+	if res.is_empty():
+		return
+	var n: Vector3 = res["normal"]
+	if _last_wall_normal != Vector3.ZERO and n.dot(_last_wall_normal) > 0.9:
+		return  # same wall again: touch the floor or another wall first
+	move_state = MoveState.WALLRUN
+	_wall_normal = Vector3(n.x, 0.0, n.z).normalized()
+	wall_side = res["side"]
+	_wall_time = 0.0
+	_sprinting = false
+	var t: Vector3 = _wall_normal.cross(Vector3.UP)
+	if t.dot(horizontal) < 0.0:
+		t = -t
+	var speed: float = maxf(horizontal.length(), movement.wallrun_speed)
+	velocity = t * speed + Vector3.UP * maxf(velocity.y, 1.5)
+
+
+func _wallrun(delta: float, forward_push: float) -> void:
+	var cfg: MovementConfig = movement
+	_wall_time += delta
+	var res: Dictionary = _side_wall()
+	var off: bool = res.is_empty() or forward_push < 0.3 or _wall_time > cfg.wallrun_time or is_on_floor()
+	if _jump_buffer > 0.0:
+		# Jump off the wall: away from it, up, and on along it.
+		_jump_buffer = 0.0
+		var h: Vector3 = Vector3(velocity.x, 0.0, velocity.z)
+		velocity = h * 0.9 + _wall_normal * cfg.wallrun_jump_out + Vector3.UP * cfg.wallrun_jump_up * jump_scale
+		_end_wallrun()
+		move_and_slide()
+		return
+	if off:
+		_end_wallrun()
+		move_and_slide()
+		return
+	var wn: Vector3 = res["normal"]
+	_wall_normal = Vector3(wn.x, 0.0, wn.z).normalized()
+	var t: Vector3 = _wall_normal.cross(Vector3.UP)
+	var h2: Vector3 = Vector3(velocity.x, 0.0, velocity.z)
+	if t.dot(h2) < 0.0:
+		t = -t
+	var k: float = clampf(_wall_time / cfg.wallrun_time, 0.0, 1.0)
+	var g: float = cfg.gravity * lerpf(cfg.wallrun_gravity_scale, 1.0, k * k)
+	var vy: float = velocity.y - g * delta
+	var speed: float = maxf(h2.length(), cfg.wallrun_speed * move_scale)
+	# Hug the wall a little so small gaps don't drop you.
+	velocity = t * speed - _wall_normal * 0.8 + Vector3.UP * vy
+	move_and_slide()
+
+
+func _end_wallrun() -> void:
+	move_state = MoveState.NORMAL
+	_last_wall_normal = _wall_normal
+	_wall_cd = movement.wallrun_cooldown
+	wall_side = 0.0
+
+
+func _try_mantle() -> bool:
+	var cfg: MovementConfig = movement
+	var space: PhysicsDirectSpaceState3D = get_world_3d().direct_space_state
+	var fwd: Vector3 = -global_basis.z
+	fwd.y = 0.0
+	fwd = fwd.normalized()
+	var feet: Vector3 = global_position
+	var wall: Dictionary = {}
+	for h: float in [0.5, 1.1, 1.7]:
+		var q: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(feet + Vector3.UP * h, feet + Vector3.UP * h + fwd * (_capsule.radius + cfg.mantle_reach), Ballistics.LAYER_WORLD)
+		wall = space.intersect_ray(q)
+		if not wall.is_empty():
+			break
+	if wall.is_empty():
+		return false
+	var wall_at: Vector3 = wall["position"]
+	var probe: Vector3 = Vector3(wall_at.x, feet.y + cfg.mantle_max_height + 0.3, wall_at.z) + fwd * 0.4
+	var down: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(probe, Vector3(probe.x, feet.y + cfg.mantle_min_height - 0.05, probe.z), Ballistics.LAYER_WORLD)
+	var top: Dictionary = space.intersect_ray(down)
+	if top.is_empty():
+		return false
+	var top_at: Vector3 = top["position"]
+	var top_n: Vector3 = top["normal"]
+	var height: float = top_at.y - feet.y
+	if top_n.y < 0.7 or height < cfg.mantle_min_height or height > cfg.mantle_max_height:
+		return false
+	# Room to stand up there?
+	var shape: PhysicsShapeQueryParameters3D = PhysicsShapeQueryParameters3D.new()
+	var cap: CapsuleShape3D = CapsuleShape3D.new()
+	cap.radius = _capsule.radius * 0.9
+	cap.height = cfg.stand_height * 0.95
+	shape.shape = cap
+	shape.transform = Transform3D(Basis(), top_at + Vector3.UP * (cfg.stand_height * 0.5 + 0.06))
+	shape.collision_mask = Ballistics.LAYER_WORLD | Ballistics.LAYER_PROPS
+	if not space.intersect_shape(shape, 1).is_empty():
+		return false
+	move_state = MoveState.MANTLE
+	_mantle_from = global_position
+	_mantle_to = top_at + Vector3.UP * 0.02
+	_mantle_t = 0.0
+	_sprinting = false
+	velocity = Vector3.ZERO
+	Sfx.play_ui(&"mantle", -6.0, 0.05)
+	return true
+
+
+func _mantle(delta: float) -> void:
+	var cfg: MovementConfig = movement
+	var height: float = maxf(_mantle_to.y - _mantle_from.y, 0.1)
+	_mantle_t = minf(_mantle_t + delta / (cfg.mantle_time * (0.7 + 0.3 * height / cfg.mantle_max_height)), 1.0)
+	# Up first, then over the edge.
+	var up: float = clampf(_mantle_t / 0.65, 0.0, 1.0)
+	var over: float = clampf((_mantle_t - 0.45) / 0.55, 0.0, 1.0)
+	up = 1.0 - (1.0 - up) * (1.0 - up)
+	over = over * over * (3.0 - 2.0 * over)
+	var p: Vector3 = _mantle_from.lerp(Vector3(_mantle_to.x, _mantle_from.y, _mantle_to.z), over)
+	p.y = lerpf(_mantle_from.y, _mantle_to.y, up)
+	global_position = p
+	if _mantle_t >= 1.0:
+		move_state = MoveState.NORMAL
+		var fwd: Vector3 = -global_basis.z
+		velocity = Vector3(fwd.x, 0.0, fwd.z) * 3.0
 
 
 func _apply_view() -> void:
@@ -178,6 +487,14 @@ func _apply_view() -> void:
 func _update_crouch_pose(delta: float) -> void:
 	var cfg: MovementConfig = movement
 	var target: float = 1.0 if _crouching else 0.0
+	# Camera roll: into the slide a little, away from the wall on a wall-run.
+	var roll: float = 0.0
+	if move_state == MoveState.SLIDE:
+		roll = deg_to_rad(cfg.slide_tilt_deg)
+	elif move_state == MoveState.WALLRUN:
+		roll = deg_to_rad(cfg.wallrun_tilt_deg) * wall_side
+	_roll = lerpf(_roll, roll, clampf(delta * 8.0, 0.0, 1.0))
+	_head.rotation.z = _roll
 	_crouch_blend = move_toward(_crouch_blend, target, cfg.crouch_transition_speed * delta)
 	var height: float = lerpf(cfg.stand_height, cfg.crouch_height, _crouch_blend)
 	_capsule.height = height

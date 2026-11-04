@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="PlayerBodyConfig" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/player/player_body_config.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+max_health = 200.0
+damage_per_kj = 7.0
+regen_delay = 3.0
+regen_rate = 50.0
+respawn_time = 3.0
