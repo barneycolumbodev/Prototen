@@ -180,7 +180,7 @@ Please try:
 
 ## M1d — 2026-11-04 — Chinatown docks map (waiting for the owner)
 
-Build: `dev-latest` from branch `claude/chinatown-docks-map-d2ojwh` (manual CI run). The game now starts on the new map; the old test range is still there under Pause → Map.
+Build: `dev-latest` from branch `claude/chinatown-docks-map-d2ojwh` @ 2d6ebea, CI run #13 (manual run, GUT 176/176). `graft-debug.apk`, 356 MB. The game now starts on the new map; the old test range is still there under Pause → Map.
 
 What's new in the APK:
 - **Chinatown docks at night, in the rain.** A city block on the harbour: the quay with a moored fishing boat (you can board it over the gangplank), a pier, containers and a crane; the Pier 3 cold store; the fish market hall with stalls of fish on ice under red lamps; Harbour Street with lanterns strung overhead, neon and bilingual shop signs, a paifang gate at one end; the Sea View restaurant (walk in the front, through the kitchen and out the back); a narrow alley and the back alley behind the shops; a tenement gallery you can reach by the stairs on the quay side.
