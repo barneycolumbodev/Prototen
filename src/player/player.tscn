@@ -1,4 +1,4 @@
-[gd_scene load_steps=10 format=3]
+[gd_scene load_steps=13 format=3]
 
 [ext_resource type="Script" path="res://src/player/player.gd" id="1_player"]
 [ext_resource type="Script" path="res://src/player/viewmodel_rig.gd" id="2_rig"]
@@ -9,6 +9,9 @@
 [ext_resource type="Resource" path="res://data/player/viewmodel_mg42.tres" id="7_vmmg"]
 [ext_resource type="PackedScene" path="res://assets/weapons/mg42/mg42.gltf" id="8_mg42"]
 [ext_resource type="PackedScene" path="res://assets/characters/fp_arms_mg42/fp_arms_mg42.gltf" id="9_armsmg"]
+[ext_resource type="Resource" path="res://data/player/viewmodel_saiga.tres" id="10_vmsaiga"]
+[ext_resource type="PackedScene" path="res://assets/weapons/saiga12k/saiga12k.gltf" id="11_saiga"]
+[ext_resource type="PackedScene" path="res://assets/characters/fp_arms_saiga/fp_arms_saiga.gltf" id="12_armssaiga"]
 
 [sub_resource type="CapsuleShape3D" id="capsule"]
 radius = 0.4
@@ -39,6 +42,12 @@ visible = false
 script = ExtResource("2_rig")
 config = ExtResource("7_vmmg")
 models = Array[PackedScene]([ExtResource("8_mg42"), ExtResource("9_armsmg")])
+
+[node name="ViewmodelSaiga" type="Node3D" parent="Head/Camera3D"]
+visible = false
+script = ExtResource("2_rig")
+config = ExtResource("10_vmsaiga")
+models = Array[PackedScene]([ExtResource("11_saiga"), ExtResource("12_armssaiga")])
 
 [node name="Weapon" type="Node" parent="."]
 script = ExtResource("6_weapon")

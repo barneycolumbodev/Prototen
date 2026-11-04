@@ -97,9 +97,11 @@ The owner described two combinations. They are benchmarks for the systems, built
 - **What it should do:** move slowly, absorb a lot of fire, and tear through cover and enemies with sustained fire.
 - **Test** *(proposal)*: two squads behind mixed cover in a warehouse.
 
-### 4.3 Later
+### 4.3 Shotgun
 
-SPAS-12 shotgun with time slowdown: clearing rooms in slow motion, with ragdolls.
+- **Saiga-12K** (owner, 2026-11-02, added to M1): semi-auto 12-gauge on the AK pattern, curved ("banana") 10-round magazine, milled black steel. You choose the shell type: **00 buck**, **slugs** or **Dragon's Breath**. The slug load carries a PSO-style optic (as on the SVD) at 1x.
+  - Built (2026-11-02): each load is an `AmmoData` resource (`data/weapons/ammo/`) that sets pellets, pattern, velocity, drag, penetration, damage, recoil, flash and burn. The chamber and the magazine each track their load. Picking another load (D-pad left/right) swaps in a magazine of it and racks the old shell out. Slugs mount the optic, and the reticle's holdover marks are calculated from the slug's drop. Dragon's Breath fires 14 burning embers that set targets and flammable surfaces alight.
+- **Later:** SPAS-12 with time slowdown: clearing rooms in slow motion, with ragdolls.
 
 ---
 

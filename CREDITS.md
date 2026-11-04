@@ -16,4 +16,7 @@ Every third-party file in the repository, with its source and license (CLAUDE.md
 | MG42/A machine gun (model, 4K baked textures, moving parts) | `assets/weapons/mg42/` | `raw_assets/weapons/mg42/build.py` (Blender/bpy, procedural materials, high→low bake). |
 | First-person arms holding the MG42 | `assets/characters/fp_arms_mg42/` | `raw_assets/characters/fp_arms_mg42/build.py`. |
 | MG42 sounds (13: shots, tail, belt reload beats, draw/holster) | `assets/audio/sfx/mg42_*`, `draw_1`, `holster_1` | Synthesized by `raw_assets/audio/build_mg42_sfx.py` (numpy/scipy). |
-| Bullet hole, flash and particle textures | generated at runtime | `src/vfx/fx.gd` |
+| Saiga-12K shotgun with PSO-pattern 1x optic (model, 4K baked textures, moving parts, tinted shell markers) | `assets/weapons/saiga12k/` | `raw_assets/weapons/saiga12k/build.py` (Blender/bpy, procedural materials, high→low bake). |
+| First-person arms holding the Saiga-12K | `assets/characters/fp_arms_saiga/` | `raw_assets/characters/fp_arms_saiga/build.py`. |
+| Saiga-12K sounds (17: shots, Dragon's Breath roar, tails, AK magazine and charging-handle beats, 12-gauge hulls, ember fire, shell-type click) | `assets/audio/sfx/saiga_*`, `shotshell_*`, `burn_1`, `ammo_select_1` | Synthesized by `raw_assets/audio/build_saiga_sfx.py` (numpy/scipy). |
+| Bullet hole, flash, particle, ember and fire textures | generated at runtime | `src/vfx/fx.gd`, `src/weapons/ballistics.gd` |

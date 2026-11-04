@@ -2,7 +2,8 @@ class_name RangeStats
 extends Node
 ## Shooting stats for the range (docs/m1-gunplay-plan.md item 6), shown in
 ## the debug overlay: shots, hit %, headshot %, kills, time between shots.
-## A shot counts as a hit once, on the first target it touches.
+## A shot counts as a hit once, on the first target it touches (a shotgun
+## shell once, however many pellets land: hits are keyed by volley).
 
 const SPLITS_KEPT: int = 10
 
@@ -80,9 +81,10 @@ func _on_target_hit(kind: StringName, hit: BallisticHit) -> void:
 		return
 	if kind == &"kill":
 		kills += 1
-	if _hit_shots.has(hit.shot_id):
+	var key: int = hit.volley_id if hit.volley_id != 0 else hit.shot_id
+	if _hit_shots.has(key):
 		return
-	_hit_shots[hit.shot_id] = true
+	_hit_shots[key] = true
 	hits += 1
 	longest_hit = maxf(longest_hit, hit.distance)
 	if hit.damage and hit.damage.has_flag(DamageInfo.Flags.HEADSHOT):

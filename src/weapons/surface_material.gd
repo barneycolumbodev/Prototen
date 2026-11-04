@@ -39,3 +39,5 @@ extends Resource
 ## Sound bank name in Sfx (impact_<name>).
 @export var impact_sound: StringName = &"concrete"
 @export var is_flesh: bool = false
+## Embers (Dragon's Breath) start small fires on it.
+@export var flammable: bool = false

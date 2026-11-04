@@ -32,7 +32,7 @@ func _switch_to_mg() -> void:
 	await wait_seconds(weapon.loadout[0].holster_time + mg.draw_time + 0.2)
 
 
-func test_y_switches_to_the_mg42_and_back() -> void:
+func test_y_switches_to_the_mg42_and_round_to_the_pistol() -> void:
 	assert_eq(weapon.data.display_name, "Five-seveN SR")
 	await _switch_to_mg()
 	assert_eq(weapon.data.display_name, "MG42/A")
@@ -40,10 +40,12 @@ func test_y_switches_to_the_mg42_and_back() -> void:
 	assert_true(weapon.rig().visible)
 	assert_false(weapon.slots[0].rig.visible, "pistol put away")
 	assert_eq(weapon.mechanism.loaded(), 150)
-	Input.action_press(&"switch_weapon")
-	await wait_physics_frames(2)
-	Input.action_release(&"switch_weapon")
-	await wait_seconds(weapon.loadout[1].holster_time + weapon.loadout[0].draw_time + 0.2)
+	# Y cycles the loadout: MG42 -> Saiga-12K -> pistol.
+	for i: int in 2:
+		Input.action_press(&"switch_weapon")
+		await wait_physics_frames(2)
+		Input.action_release(&"switch_weapon")
+		await wait_seconds(weapon.data.holster_time + weapon.loadout[(weapon.current + 1) % 3].draw_time + 0.2)
 	assert_eq(weapon.data.display_name, "Five-seveN SR")
 
 

@@ -3,7 +3,9 @@ extends Node3D
 ## Range mannequin with 13 damage zones (docs/design.md §5.1). Shows where
 ## each round landed (holes stay on the body part, a readout names the zone
 ## and damage), wobbles on its stand from the round's momentum, and falls
-## over the way it was shot when killed, then stands back up.
+## over the way it was shot when killed, then stands back up. Embers set it
+## alight: it burns (damage over time, flames riding on the hit zone) until
+## the fire goes out or it goes down.
 ## Faces +Z; its left side is +X.
 
 const PARTS: Array = [
@@ -44,6 +46,11 @@ var _readout_time: float = 0.0
 var _wobble: Spring
 var _fall: Spring
 var _dead_time: float = 0.0
+## Seconds of fire left, damage per second, and the hit that started it.
+var burn_left: float = 0.0
+var burn_dps: float = 0.0
+var _burn_hit: BallisticHit
+var _burn_shown: float = 0.0
 
 
 func _ready() -> void:
@@ -85,8 +92,25 @@ func on_part_hit(part: HitboxPart, hit: BallisticHit) -> void:
 	EventBus.target_hit.emit(kind, hit)
 
 
+## An ember landed on `part`: (re)ignite. Fresh embers top the fire up.
+func on_part_burn(part: HitboxPart, hit: BallisticHit) -> void:
+	if dead:
+		return
+	if burn_left <= 0.0:
+		Fx.burn_at(part, hit.point, hit.normal, hit.weapon.burn_time, true)
+	burn_left = maxf(burn_left, hit.weapon.burn_time)
+	burn_dps = maxf(burn_dps, hit.weapon.burn_dps)
+	_burn_hit = hit
+
+
+func is_burning() -> bool:
+	return burn_left > 0.0
+
+
 func reset_target() -> void:
 	dead = false
+	burn_left = 0.0
+	burn_dps = 0.0
 	health = config.health
 	_fall.target = Vector3.ZERO
 	zone_hits.clear()
@@ -101,6 +125,8 @@ func _die(axis: Vector3) -> void:
 
 
 func _process(delta: float) -> void:
+	if burn_left > 0.0:
+		_burn(delta)
 	_wobble.step(delta)
 	_fall.step(delta)
 	_body.basis = Basis.from_euler(_wobble.value * (PI / 180.0) + _fall.value)
@@ -112,6 +138,30 @@ func _process(delta: float) -> void:
 		_readout_time -= delta
 		_readout.modulate.a = clampf(_readout_time / 0.5, 0.0, 1.0)
 		_readout.outline_modulate.a = _readout.modulate.a
+
+
+func _burn(delta: float) -> void:
+	burn_left -= delta
+	if dead or _burn_hit == null:
+		burn_left = 0.0
+		return
+	health -= burn_dps * delta
+	_burn_shown -= delta
+	if health <= 0.0:
+		burn_left = 0.0
+		var horizontal: Vector3 = Vector3(_burn_hit.direction.x, 0.0, _burn_hit.direction.z).normalized()
+		_die(global_basis.inverse() * Vector3.UP.cross(horizontal))
+		_readout.text = "BURNING\nDOWN"
+		_readout.modulate = Color(1.0, 0.45, 0.15)
+		_readout_time = 2.0
+		EventBus.target_hit.emit(&"kill", _burn_hit)
+	elif _burn_shown <= 0.0:
+		_burn_shown = 0.25
+		_readout.text = "BURNING\n%d HP" % maxi(0, ceili(health))
+		_readout.modulate = Color(1.0, 0.6, 0.25)
+		_readout_time = 0.6
+	if burn_left <= 0.0:
+		burn_dps = 0.0
 
 
 func _show(zone: StringName, dmg: float, kind: StringName, hit: BallisticHit) -> void:
