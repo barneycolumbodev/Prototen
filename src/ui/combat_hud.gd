@@ -98,6 +98,7 @@ func _ready() -> void:
 	EventBus.player_damaged.connect(_on_damaged)
 	EventBus.player_died.connect(func() -> void: _down.visible = true)
 	EventBus.wave_changed.connect(_on_wave)
+	EventBus.score_changed.connect(_on_score)
 
 
 func _label(size: int) -> Label:
@@ -188,6 +189,13 @@ func _on_callout(speaker: String, text: String, _at: Vector3) -> void:
 
 func callout_count() -> int:
 	return _callouts.get_child_count()
+
+
+## Rolling spawns: a quiet counter instead of the wave banner.
+func _on_score(kills: int, hostiles: int) -> void:
+	_banner_time = -1000.0
+	_wave.text = ""
+	_wave_sub.text = "KILLS %d    HOSTILES %d" % [kills, hostiles]
 
 
 func _on_wave(wave: int, left: int) -> void:

@@ -177,3 +177,26 @@ Please try:
 - Measured:
 - Notes from the owner:
 - Follow-ups:
+
+## M1d — 2026-11-04 — Chinatown docks map (waiting for the owner)
+
+Build: `dev-latest` from branch `claude/chinatown-docks-map-d2ojwh` @ 2d6ebea, CI run #13 (manual run, GUT 176/176). `graft-debug.apk`, 356 MB. The game now starts on the new map; the old test range is still there under Pause → Map.
+
+Rebuilt 2026-11-05: the 356 MB APK wouldn't install on the owner's phone ("problem parsing the package"). The file on GitHub verified fine, so the phone's copy was most likely incomplete. `dev-latest` is now branch `ccr-0ed172e0-34bgbk` @ b245573, CI run #15 (GUT 176/176), **222 MB**: the four 4K guns are capped to 2K on import (looks the same at 720p). Two flaky tests fixed on the way, one of them a real bug: an arriving enemy could be nudged into view at a doorway.
+
+What's new in the APK:
+- **Chinatown docks at night, in the rain.** A city block on the harbour: the quay with a moored fishing boat (you can board it over the gangplank), a pier, containers and a crane; the Pier 3 cold store; the fish market hall with stalls of fish on ice under red lamps; Harbour Street with lanterns strung overhead, neon and bilingual shop signs, a paifang gate at one end; the Sea View restaurant (walk in the front, through the kitchen and out the back); a narrow alley and the back alley behind the shops; a tenement gallery you can reach by the stairs on the quay side.
+- **Enemies on a rolling clock:** 8 triad members at the start; whenever fewer than 4 are still fighting, 3 more arrive. They always come in somewhere you can't see (doorways, alley ends, the boat, the cold room, behind the containers), at least 14 m away, and they know roughly where you are. The HUD shows kills and how many are still hostile. Pause → Enemies turns them off and on.
+- **Look and sound:** baked night lighting (every lamp, lantern, neon sign and lit window lights its surroundings), wet streets with puddles and ripples, rain that stops under roofs, steam from drains and kitchen vents, a lit skyline across the bay, light streaks on the water. Rain, harbour water, a ship's horn, neon hum, an extractor fan and a little radio in the restaurant.
+
+Please try:
+1. Walk the whole map once with enemies off (Pause → Enemies: off). Anything that looks wrong, broken, floating, too dark or too bright? Which spot do you like most?
+2. Turn enemies on and play for ten minutes. Do they ever appear in front of you? Is 8 → "3 more under 4" the right pace?
+3. Fight through the market (low cover), the restaurant (close range) and the street (long sight lines). Which works best, which worst?
+4. Watch the overlay: FPS on the street looking down its length, in the market, and on the quay looking at the boat. Does it hold 60?
+5. Does the rain feel right (too much, too little)? Are the streets wet enough?
+
+- Device / renderer / settings:
+- Measured:
+- Notes from the owner:
+- Follow-ups:

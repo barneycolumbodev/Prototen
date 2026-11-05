@@ -33,3 +33,6 @@ signal wave_changed(wave: int, left: int)
 ## Pause menu: start or stop wave mode.
 @warning_ignore("unused_signal")
 signal wave_mode_requested
+## Rolling spawns (open maps): kills so far, enemies in the fight or on their way.
+@warning_ignore("unused_signal")
+signal score_changed(kills: int, hostiles: int)

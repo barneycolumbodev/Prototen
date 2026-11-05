@@ -6,7 +6,7 @@ config_version=5
 [application]
 
 config/name="GRAFT"
-run/main_scene="res://src/levels/test_room.tscn"
+run/main_scene="res://src/levels/chinatown/chinatown.tscn"
 config/description="Prototype: augmented-soldier FPS for Android with a controller."
 config/version="0.0.1"
 config/features=PackedStringArray("4.7", "Mobile")
@@ -61,6 +61,7 @@ pointing/emulate_touch_from_mouse=false
 3d_physics/layer_5="debris"
 3d_physics/layer_6="ragdoll"
 3d_physics/layer_7="enemy"
+3d_physics/layer_8="clip"
 
 [physics]
 

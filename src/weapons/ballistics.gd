@@ -27,6 +27,8 @@ const LAYER_DEBRIS: int = 16
 const LAYER_RAGDOLL: int = 32
 ## Enemies' movement capsules.
 const LAYER_ENEMY: int = 64
+## Invisible walls on open maps: they stop people, not bullets.
+const LAYER_CLIP: int = 128
 const BULLET_MASK: int = LAYER_WORLD | LAYER_HITBOX | LAYER_PROPS | LAYER_DEBRIS
 ## Rounds fired by enemies also hit the player.
 const ENEMY_BULLET_MASK: int = BULLET_MASK | LAYER_PLAYER

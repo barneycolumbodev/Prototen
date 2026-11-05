@@ -5,6 +5,7 @@ Every third-party file in the repository, with its source and license (CLAUDE.md
 | What | Where in repo | Source | Version | License |
 |---|---|---|---|---|
 | GUT (Godot Unit Test) | `addons/gut/` | https://github.com/bitwes/Gut | 9.7.1 | MIT (`addons/gut/LICENSE.md`) |
+| Noto Serif TC (Black) and Noto Sans TC (Bold), only the unicode-range chunks the signs use | `raw_assets/env/fonts/serif/`, `raw_assets/env/fonts/sans/` | npm `@fontsource/noto-serif-tc`, `@fontsource/noto-sans-tc` (Adobe/Google Noto CJK) | 5.1.0 | SIL OFL 1.1 (`OFL.txt` in each folder). Used to draw the sign textures and neon tubes; no font file ships in the game. |
 | GodotPrompter skills (12 of them) | `.claude/skills/` (all except the six project skills) | https://github.com/jame581/GodotPrompter @ d7b26cd | 2026-10-24 | MIT (`.claude/skills/GODOTPROMPTER-LICENSE.txt`) |
 
 ## Original assets (no third-party content)
@@ -35,3 +36,7 @@ Every third-party file in the repository, with its source and license (CLAUDE.md
 | Blood textures (splat atlas, pool, droplet, mist) | `assets/gore/` | `raw_assets/gore/build_blood_textures.py` (numpy). |
 | Enemy body shader (role tints, painted wounds, char), blood decal shader | `src/ai/triad.gdshader`, `src/gore/blood_decal.gdshader` | Written for this project. |
 | Enemy and gore sounds (enemy shots ×3 guns, whizz/crack, pain, body fall, sever, reload; slide, mantle) | `assets/audio/sfx/enemy_*`, `whizz_*`, `body_fall_1`, `gore_sever_1`, `slide_1`, `mantle_1` | Synthesized by `raw_assets/audio/build_enemy_sfx.py` (numpy/scipy). |
+| Environment material library (31 layers: brick, plaster, concrete, wet asphalt, pavers, granite, terrazzo, pier planks, dark wood, lacquer, cardboard, corrugated sheet, painted metal, roller shutter, rust, galvanised steel, grating, mosaic tile, glazed roof tile, roofing felt, epoxy floor, canvas, plastic, glass, damask wallpaper, emissive, lantern paper, and the sign/window/prop atlases) | `assets/env/world/` | `raw_assets/env/materials/build.py` and `raw_assets/env/atlases/build.py` (numpy/scipy/Pillow, procedural, tileable). |
+| Chinatown docks map (geometry, colliders, spawn points, baked lightmap) | `assets/levels/chinatown/` | `raw_assets/levels/chinatown/build.py` + `bake.py` (Blender/bpy, Cycles CPU bake). |
+| Night sky, harbour water, far-shore skyline, rain and steam shaders | `src/levels/chinatown/*.gdshader` | Written for this project. |
+| Chinatown ambience (rain, harbour with ship horn, neon hum, kitchen extractor, radio tune) | `assets/audio/sfx/amb_*` | Synthesized by `raw_assets/audio/build_ambience.py` (numpy). |

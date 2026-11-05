@@ -76,7 +76,7 @@ func test_target_takes_zone_damage_and_goes_down() -> void:
 	assert_lt(d.health, d.config.health)
 	assert_false(d.dead)
 	await _shoot(d.parts[&"head"].global_position)
-	assert_true(d.dead, "headshot finishes it")
+	assert_true(d.dead, "headshot finishes it (zones hit: %s, health %.1f)" % [d.zone_hits, d.health])
 	assert_null(room.shooting_range.targets[0], "the spot is empty")
 	await wait_seconds(ShootingRange.TARGET_RESPAWN + 0.3)
 	var fresh: Enemy = room.shooting_range.targets[0]
