@@ -11,6 +11,26 @@ func test_operative_model_has_the_shared_skeleton() -> void:
 		assert_gt(a.skeleton.find_bone(bone), -1, "bone %s (same rig as the triad)" % bone)
 
 
+func test_operative_is_one_baked_skinned_mesh_in_budget() -> void:
+	var model: Node = (load("res://assets/characters/operative/operative.gltf") as PackedScene).instantiate()
+	var meshes: Array[Node] = model.find_children("*", "MeshInstance3D", true, false)
+	assert_eq(meshes.size(), 1, "suit, plates and helmet share one mesh (one draw)")
+	var mi: MeshInstance3D = meshes[0] as MeshInstance3D
+	assert_not_null(mi.skin, "skinned to the shared skeleton")
+	var tris: int = 0
+	for s: int in mi.mesh.get_surface_count():
+		var indices: PackedInt32Array = mi.mesh.surface_get_arrays(s)[Mesh.ARRAY_INDEX]
+		tris += indices.size() / 3
+	assert_between(tris, 12000, 36000, "player body triangles")
+	var mat: StandardMaterial3D = mi.mesh.surface_get_material(0) as StandardMaterial3D
+	assert_not_null(mat)
+	assert_not_null(mat.albedo_texture, "baked base colour")
+	assert_not_null(mat.normal_texture, "baked normal map")
+	assert_not_null(mat.roughness_texture, "ORM")
+	assert_not_null(mat.emission_texture, "seam lights")
+	model.free()
+
+
 func test_parts_mount_their_hardware() -> void:
 	var a: BodyAppearance = BodyAppearance.new()
 	var lo: BodyLoadout = BodyLoadout.new()

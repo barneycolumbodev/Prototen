@@ -6,6 +6,8 @@ extends CanvasLayer
 ## loadout capacity, every stat, and each installed part. Pauses the game.
 ## The loadout screen (M2) grows out of this.
 
+const STUDIO_SKY: Shader = preload("res://src/ui/studio_sky.gdshader")
+
 var player: Player
 var appearance: BodyAppearance
 
@@ -60,6 +62,14 @@ func _build_stage() -> void:
 	env.ambient_light_energy = 0.6
 	env.tonemap_mode = Environment.TONE_MAPPER_AGX
 	env.glow_enabled = true
+	# A studio sky that is only reflected (the background stays transparent):
+	# softbox strips give the gloss carapace its highlights.
+	var sky_mat: ShaderMaterial = ShaderMaterial.new()
+	sky_mat.shader = STUDIO_SKY
+	env.sky = Sky.new()
+	env.sky.sky_material = sky_mat
+	env.sky.radiance_size = Sky.RADIANCE_SIZE_128
+	env.reflected_light_source = Environment.REFLECTION_SOURCE_SKY
 	var we: WorldEnvironment = WorldEnvironment.new()
 	we.environment = env
 	_viewport.add_child(we)
@@ -68,13 +78,13 @@ func _build_stage() -> void:
 	cam.position = Vector3(0, 1.05, 5.2)
 	cam.look_at_from_position(cam.position, Vector3(0, 0.98, 0))
 	_viewport.add_child(cam)
-	for spec: Array in [[Vector3(2.5, 3.0, 3.0), Color(1.0, 0.95, 0.9), 2.2], [Vector3(-3.0, 2.5, -2.5), Color(0.55, 0.85, 1.0), 3.0],
-			[Vector3(-2.5, 1.0, 2.5), Color(0.9, 0.85, 1.0), 0.7]]:
-		var l: OmniLight3D = OmniLight3D.new()
-		l.position = spec[0]
+	# Key (warm, front right), two cool rims from behind, a faint fill.
+	for spec: Array in [[Vector3(-35, 35, 0), Color(1.0, 0.94, 0.87), 0.5], [Vector3(-20, 145, 0), Color(0.55, 0.85, 1.0), 0.75],
+			[Vector3(-15, -140, 0), Color(0.8, 0.9, 1.0), 0.55], [Vector3(-5, -50, 0), Color(0.85, 0.85, 1.0), 0.1]]:
+		var l: DirectionalLight3D = DirectionalLight3D.new()
+		l.rotation_degrees = spec[0]
 		l.light_color = spec[1]
 		l.light_energy = spec[2]
-		l.omni_range = 12.0
 		_viewport.add_child(l)
 	_pivot = Node3D.new()
 	_viewport.add_child(_pivot)
@@ -119,7 +129,8 @@ func close() -> void:
 
 
 func _process(delta: float) -> void:
-	if visible and _pivot:
+	# Cloud screenshots hold the front three-quarter view.
+	if visible and _pivot and not CaptureDirector.is_capturing():
 		_pivot.rotation.y += delta * 0.6
 
 
