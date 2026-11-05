@@ -17,6 +17,7 @@ Run after build.py:
    sqrt(light / LM_MAX) in an 8-bit PNG (the shader squares it back).
 5. Exports assets/levels/chinatown/chinatown.gltf (+ .bin), no materials:
    the Godot level assigns its shaders by mesh name.
+6. split_cells.py re-cuts the chunks into 12 m cells (culling, LODs).
 """
 import json
 import os
@@ -320,6 +321,11 @@ def main():
         log("lightmap written, mean light %.3f, p99 %.3f" % (float(rgb.mean()), float(np.percentile(rgb, 99))))
     export(os.path.join(OUT_DIR, "chinatown.gltf"))
     log("exported")
+    # Re-cut the 12 chunks into small cells so the phone can cull them.
+    sys.path.insert(0, HERE)
+    import split_cells
+    split_cells.split(os.path.join(OUT_DIR, "chinatown.gltf"))
+    log("split into cells")
 
 
 if __name__ == "__main__":

@@ -18,6 +18,10 @@ const LOOK_PRESETS: Array[String] = ["standard", "linear", "precise"]
 const LOOK_SPEEDS: Array[float] = [0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.15, 1.3, 1.5]
 
 var render_scale: float = 1.0
+## Lower the 3D resolution (down to 60 %) when the GPU can't hold the frame
+## cap; render_scale is then the most it uses (playtest 2026-11-05).
+var adaptive_resolution: bool = true
+var adaptive: AdaptiveResolution
 var max_fps: int = 60
 var overlay_visible: bool = true
 ## Gore.Level: 0 off, 1 standard, 2 maximum (dismemberment). Maximum by default in the prototype.
@@ -35,6 +39,9 @@ var _look: LookConfig
 
 func _ready() -> void:
 	InputBindings.register_defaults()
+	adaptive = AdaptiveResolution.new()
+	adaptive.name = "AdaptiveResolution"
+	add_child(adaptive)
 	load_settings()
 	apply()
 
@@ -44,6 +51,7 @@ func load_settings() -> void:
 	if cfg.load(SETTINGS_PATH) != OK:
 		return
 	render_scale = cfg.get_value("video", "render_scale", render_scale)
+	adaptive_resolution = cfg.get_value("video", "adaptive_resolution", adaptive_resolution)
 	max_fps = cfg.get_value("video", "max_fps", max_fps)
 	vertical_fov = cfg.get_value("video", "vertical_fov", vertical_fov)
 	overlay_visible = cfg.get_value("debug", "overlay_visible", overlay_visible)
@@ -62,6 +70,7 @@ func load_settings() -> void:
 func save_settings() -> void:
 	var cfg: ConfigFile = ConfigFile.new()
 	cfg.set_value("video", "render_scale", render_scale)
+	cfg.set_value("video", "adaptive_resolution", adaptive_resolution)
 	cfg.set_value("video", "max_fps", max_fps)
 	cfg.set_value("video", "vertical_fov", vertical_fov)
 	cfg.set_value("debug", "overlay_visible", overlay_visible)
@@ -77,6 +86,7 @@ func save_settings() -> void:
 func apply() -> void:
 	get_tree().root.scaling_3d_scale = render_scale
 	Engine.max_fps = max_fps
+	adaptive.configure(adaptive_resolution, render_scale)
 	_look = load("res://data/input/look_%s.tres" % look_preset) as LookConfig
 	changed.emit()
 
@@ -87,6 +97,11 @@ func look_config() -> LookConfig:
 
 func cycle_render_scale() -> void:
 	render_scale = next_in(RENDER_SCALES, render_scale)
+	_commit()
+
+
+func toggle_adaptive_resolution() -> void:
+	adaptive_resolution = not adaptive_resolution
 	_commit()
 
 

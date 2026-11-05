@@ -15,7 +15,14 @@ var roof_tex: ImageTexture
 var roof_origin: Vector2 = Vector2(-60, -50)
 var roof_size: Vector2i = Vector2i(120, 110)
 var water: MeshInstance3D
+var water_material: ShaderMaterial
+var probe_nodes: Array[ReflectionProbe] = []
+var steam: Array[GPUParticles3D] = []
 var _follow: Node3D
+
+const SKY_TEXTURE: String = "res://assets/env/sky/harbour_night.png"
+## Switches for the per-feature cost benchmark (FeatureSweep) and quality settings.
+const FEATURES: Array[StringName] = [&"probes", &"glow", &"water_streaks", &"ripples", &"rain", &"steam", &"fog"]
 
 
 func _ready() -> void:
@@ -61,13 +68,17 @@ func _process(_delta: float) -> void:
 
 func _build_environment() -> void:
 	env = Environment.new()
-	var sky_mat: ShaderMaterial = ShaderMaterial.new()
-	sky_mat.shader = preload("res://src/levels/chinatown/night_sky.gdshader")
-	var md: Vector3 = _moon_dir()
-	sky_mat.set_shader_parameter(&"moon_dir", -md)
+	# A pre-rendered panorama (raw_assets/env/sky/build_night_sky.py): the
+	# old procedural sky used TIME, so the phone rebuilt its radiance every
+	# frame (playtest 2026-11-05). Now radiance is computed once.
+	var sky_mat: PanoramaSkyMaterial = PanoramaSkyMaterial.new()
+	sky_mat.panorama = load(SKY_TEXTURE) as Texture2D
+	sky_mat.energy_multiplier = config.sky_energy
+	sky_mat.filter = true
 	var sky: Sky = Sky.new()
 	sky.sky_material = sky_mat
 	sky.radiance_size = Sky.RADIANCE_SIZE_64
+	sky.process_mode = Sky.PROCESS_MODE_QUALITY
 	env.background_mode = Environment.BG_SKY
 	env.sky = sky
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
@@ -81,8 +92,10 @@ func _build_environment() -> void:
 	env.glow_bloom = config.glow_bloom
 	env.glow_hdr_threshold = config.glow_threshold
 	env.glow_blend_mode = Environment.GLOW_BLEND_MODE_SOFTLIGHT
+	# Level 1 is the half-resolution pass, the costly one on Mali; the wider
+	# levels carry the neon bloom (playtest 2026-11-05).
 	env.set_glow_level(0, 0.0)
-	env.set_glow_level(1, 1.0)
+	env.set_glow_level(1, 0.0)
 	env.set_glow_level(2, 1.0)
 	env.set_glow_level(3, 0.8)
 	env.set_glow_level(4, 0.5)
@@ -151,7 +164,7 @@ func _build_water() -> void:
 		lights.append(Vector4(p.x, p.y, p.z, 0.0))
 		cols.append(Vector4(c.r, c.g, c.b, clampf(watts / 120.0, 0.25, 1.6)))
 	lights.sort_custom(func(a: Vector4, b: Vector4) -> bool: return a.z > b.z)
-	var n: int = mini(lights.size(), 24)
+	var n: int = mini(lights.size(), 12)
 	var lp: PackedVector4Array = PackedVector4Array()
 	var lc: PackedVector4Array = PackedVector4Array()
 	# Keep the ones nearest the water (largest z), but spread along the quay.
@@ -161,8 +174,52 @@ func _build_water() -> void:
 	mat.set_shader_parameter(&"light_pos", lp)
 	mat.set_shader_parameter(&"light_col", lc)
 	mat.set_shader_parameter(&"light_count", n)
+	mat.set_shader_parameter(&"wave_normal", _noise_texture(0.035, true, 11))
+	mat.set_shader_parameter(&"shimmer_tex", _noise_texture(0.05, false, 12))
 	water.material_override = mat
+	water_material = mat
 	add_child(water)
+
+
+static func _noise_texture(freq: float, normal_map: bool, seed_: int) -> NoiseTexture2D:
+	var fn: FastNoiseLite = FastNoiseLite.new()
+	fn.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
+	fn.frequency = freq
+	fn.seed = seed_
+	fn.fractal_octaves = 3
+	var t: NoiseTexture2D = NoiseTexture2D.new()
+	t.width = 256
+	t.height = 256
+	t.seamless = true
+	t.noise = fn
+	t.as_normal_map = normal_map
+	t.bump_strength = 6.0
+	t.generate_mipmaps = true
+	return t
+
+
+## Turns one atmosphere feature on or off (see FEATURES).
+func set_feature(feature: StringName, on: bool) -> void:
+	match feature:
+		&"probes":
+			for rp: ReflectionProbe in probe_nodes:
+				rp.visible = on
+		&"glow":
+			env.glow_enabled = on
+		&"water_streaks":
+			water_material.set_shader_parameter(&"streaks", 1.0 if on else 0.0)
+		&"ripples":
+			map.world_material.set_shader_parameter(&"ripple_amount", 1.0 if on else 0.0)
+		&"rain":
+			if rain:
+				rain.visible = on
+				rain.emitting = on
+		&"steam":
+			for s: GPUParticles3D in steam:
+				s.visible = on
+				s.emitting = on
+		&"fog":
+			env.fog_enabled = on
 
 
 func _build_skyline() -> void:
@@ -228,6 +285,7 @@ func _build_probes() -> void:
 		rp.ambient_mode = ReflectionProbe.AMBIENT_DISABLED
 		rp.cull_mask = ChinatownMap.MAP_LAYER
 		add_child(rp)
+		probe_nodes.append(rp)
 		rp.global_position = p[0]
 
 
@@ -331,6 +389,7 @@ func _build_steam() -> void:
 		p.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		add_child(p)
 		p.global_position = ChinatownMap.fpos(m)
+		steam.append(p)
 
 
 func _build_sounds() -> void:

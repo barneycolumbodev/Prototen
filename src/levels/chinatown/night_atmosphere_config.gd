@@ -17,6 +17,10 @@ extends Resource
 @export var viewmodel_fill_color: Color = Color(0.85, 0.82, 0.9)
 @export var viewmodel_fill_energy: float = 0.5
 
+@export_group("Sky")
+## Brightness of the pre-rendered sky panorama (assets/env/sky).
+@export var sky_energy: float = 1.0
+
 @export_group("Glow")
 @export var glow_intensity: float = 0.9
 @export var glow_bloom: float = 0.04
