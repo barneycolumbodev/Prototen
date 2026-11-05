@@ -79,8 +79,8 @@ func _build_stage() -> void:
 	cam.look_at_from_position(cam.position, Vector3(0, 0.98, 0))
 	_viewport.add_child(cam)
 	# Key (warm, front right), two cool rims from behind, a faint fill.
-	for spec: Array in [[Vector3(-35, 35, 0), Color(1.0, 0.94, 0.87), 0.9], [Vector3(-20, 145, 0), Color(0.55, 0.85, 1.0), 1.2],
-			[Vector3(-15, -140, 0), Color(0.8, 0.9, 1.0), 0.9], [Vector3(-5, -50, 0), Color(0.85, 0.85, 1.0), 0.2]]:
+	for spec: Array in [[Vector3(-35, 35, 0), Color(1.0, 0.94, 0.87), 0.5], [Vector3(-20, 145, 0), Color(0.55, 0.85, 1.0), 0.75],
+			[Vector3(-15, -140, 0), Color(0.8, 0.9, 1.0), 0.55], [Vector3(-5, -50, 0), Color(0.85, 0.85, 1.0), 0.1]]:
 		var l: DirectionalLight3D = DirectionalLight3D.new()
 		l.rotation_degrees = spec[0]
 		l.light_color = spec[1]

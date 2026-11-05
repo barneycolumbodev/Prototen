@@ -609,15 +609,17 @@ plate("chest", "chest", AND(MX(H((0, 0, 1.472), (-0.12, 0, 1))), MX(H((0, 0, 1.2
                             H((0, -0.018, 0), Y1), MX(H((0.172, 0, 1.3), (1, 0, -0.35))), OFF_ARM),
       T=0.012, side=None, facets=(((0.0, -0.6, 0.8), 0.009), ((0.0, -0.8, -0.6), 0.009), ((0.72, -0.69, 0.0), 0.007, True),
                                   ((0.28, -0.96, 0.0), 0.008, True)))
-plate("sternum", "chest", AND(MX(H((0.0085, 0, 0), X1)), H((0, 0, 1.462), Z1), H((0, 0, 1.296), -Z1), H((0, -0.03, 0), Y1)),
+plate("sternum", "chest", AND(MX(H((0.0085, 0, 0), X1)), H((0, 0, 1.462), Z1), H((0, 0, 1.296), -Z1), H((0, -0.03, 0), Y1),
+                              OFF_ARM),
       T=0.018, mat="trim", side=None, facets=(((0.6, -0.8, 0.0), 0.003, True),),
       glow=AND(MX(H((0.0016, 0, 0), X1)), H((0, 0, 1.44), Z1), H((0, 0, 1.32), -Z1)))
 for i, (zc, bone) in enumerate(((1.248, "spine"), (1.181, "spine"), (1.114, "hips"))):
     plate(f"lame{i}", bone, AND(MX(H((0, 0, zc + 0.029), (-0.2, 0, 1))), MX(H((0, 0, zc - 0.029), (0.2, 0, -1))),
-                                MX(H((0.112 - 0.012 * i, 0, 0), X1)), H((0, -0.03, 0), Y1)),
+                                MX(H((0.112 - 0.012 * i, 0, 0), X1)), H((0, -0.03, 0), Y1), OFF_ARM),
           T=0.009, side=None, facets=(((0.0, -1.0, 0.0), 0.004), ((0.62, -0.78, 0.0), 0.003, True),
                                       ((0.0, -0.6, -0.8), 0.0025)))
-plate("hipband", "hips", AND(MX(H((0, 0, 1.052), (-0.12, 0, 1))), MX(H((0, 0, 1.0), (0.12, 0, -1))), H((0, 0.045, 0), Y1)),
+plate("hipband", "hips", AND(MX(H((0, 0, 1.052), (-0.12, 0, 1))), MX(H((0, 0, 1.0), (0.12, 0, -1))), H((0, 0.045, 0), Y1),
+                             OFF_ARM),
       T=0.0095, side=None, facets=(((0.0, -1.0, 0.0), 0.004), ((0.7, -0.7, 0.0), 0.004, True)),
       glow=AND(MX(H((0.0055, 0, 0), X1)), H((0, 0, 1.033), Z1), H((0, 0, 1.019), -Z1)))
 SERR = nrm((0.0, -0.55, 0.835))
@@ -636,14 +638,14 @@ plate("lat", "spine", AND(H((0.034, 0, 0), -X1), H((0, 0.03, 0), -Y1), H((0.016,
 for i, zc in enumerate((1.44, 1.376, 1.312, 1.248, 1.184, 1.12)):
     bone = "chest" if zc > 1.3 else ("spine" if zc > 1.15 else "hips")
     plate(f"spine{i}", bone, AND(MX(H((0.03, 0, 0), X1)), H((0, 0, zc + 0.024), Z1), MX(H((0, 0, zc - 0.03), (1.0, 0, -1))),
-                                 H((0, 0.06, 0), -Y1)),
+                                 H((0, 0.06, 0), -Y1), OFF_ARM),
           T=0.014, side=None, facets=(((0.7, 0.7, 0.0), 0.004, True),),
           glow=AND(MX(H((0.0022, 0, 0), X1)), H((0, 0, zc + 0.008), Z1), H((0, 0, zc - 0.008), -Z1)))
 plate("lumbar", "hips", AND(H((0.034, 0, 0), -X1), H((0.11, 0, 0), X1), H((0, 0, 1.17), (-0.2, 0, 1)),
-                             H((0, 0, 1.07), -Z1), H((0, 0.045, 0), -Y1)),
+                             H((0, 0, 1.07), -Z1), H((0, 0.045, 0), -Y1), OFF_ARM),
       T=0.009, facets=(((0.5, 0.86, 0), 0.0025),))
 plate("gorget", "chest", AND(band((0, 0, 1.528), (0, -0.4, 1), -0.05, 0.072),
-                             lambda x, y, z: np.sqrt(x * x + (y - 0.012) ** 2) - 0.112),
+                             lambda x, y, z: np.sqrt(x * x + (y - 0.012) ** 2) - 0.112, OFF_ARM),
       T=0.009, side=None, ch=0.0025, facets=(((0, 0, 1), 0.004),))
 # ---------------------------------------------------------------- arms
 for s, sx in (("L", 1.0),):
@@ -830,6 +832,7 @@ def stage():
     sc.render.resolution_y = 840 if QUICK else 1350
     sc.view_settings.view_transform = "AgX"
     sc.view_settings.look = "AgX - Medium High Contrast"
+    sc.view_settings.exposure = 0.6   # black on black: readable on a phone screen
     world = bpy.data.worlds.new("w")
     sc.world = world
     bg = world.node_tree.nodes["Background"]
@@ -971,6 +974,19 @@ for ob in [HELMET_LOW] + [r[0] for r in RIGID_LOW]:
     ob.select_set(True)
     bpy.context.view_layer.objects.active = ob
     bpy.ops.object.shade_smooth_by_angle(angle=math.radians(34))
+# Guard: every rigid piece must sit on its bone. (A plate outline that also caught an A-pose arm
+# left pieces hanging in the air once the arms came down.)
+_SEG = {name: (np.array(head[:]), np.array(tail[:])) for name, head, tail, _p, _r in BONES}
+for ob, bone in RIGID_LOW:
+    Pv = np.empty(len(ob.data.vertices) * 3)
+    ob.data.vertices.foreach_get("co", Pv)
+    Pv = Pv.reshape(-1, 3)
+    a_, b_ = _SEG[bone]
+    dv = b_ - a_
+    tt = np.clip(((Pv - a_) @ dv) / (dv @ dv), 0, 1)
+    far = np.linalg.norm(Pv - (a_ + tt[:, None] * dv), axis=1).max()
+    if far > 0.25:
+        raise RuntimeError(f"{ob.name} strays {far:.2f} m from bone {bone}")
 log("LOW tris: suit", tris(SUIT_LOW), "helmet", tris(HELMET_LOW), "plates", sum(tris(o) for o, _b in RIGID_LOW))
 
 

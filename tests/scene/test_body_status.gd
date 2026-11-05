@@ -19,7 +19,8 @@ func test_operative_is_one_baked_skinned_mesh_in_budget() -> void:
 	assert_not_null(mi.skin, "skinned to the shared skeleton")
 	var tris: int = 0
 	for s: int in mi.mesh.get_surface_count():
-		tris += (mi.mesh.surface_get_arrays(s)[Mesh.ARRAY_INDEX] as PackedInt32Array).size() / 3
+		var indices: PackedInt32Array = mi.mesh.surface_get_arrays(s)[Mesh.ARRAY_INDEX]
+		tris += indices.size() / 3
 	assert_between(tris, 15000, 36000, "player body triangles")
 	var mat: StandardMaterial3D = mi.mesh.surface_get_material(0) as StandardMaterial3D
 	assert_not_null(mat)

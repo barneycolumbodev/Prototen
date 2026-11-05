@@ -238,3 +238,20 @@ Please try:
 - Measured:
 - Notes from the owner:
 - Follow-ups:
+
+## M2 — 2026-11-05 — The operative, second pass (waiting for the owner)
+
+Owner on the first pass: "technically viable, but it has zero artistic inspiration... meant to be this sleek, baseline, polymer, badass look for the soldier that we can build on top of, but instead it looks like a crash test dummy."
+
+What changed (design §3.4a; previews `docs/previews/operative.png`, `operative_helmet.png`, `body_status.png`):
+- **Silhouette:** heroic proportions instead of the blobby egg-headed dummy: broad shoulders and traps, V-taper, narrow ribbed waist, thick neck in a high collar.
+- **Helmet:** faceted faceplate with a V jaw and keel, recessed chevron visor with a lit lower lip, ear pods, nape guard, respirator, crown panel lines.
+- **Two blacks:** matte graphite polymer suit (seams, ribbed flex zones, striated flanks) under gloss-black faceted plates (breastplate and sternum keel, chevron abdominal lames, hip band, layered pauldrons, keeled forearms and shins, diamond knees, armoured boots, six-node spine). Light only in small accents; the rings round the wrists, waist and neck are gone.
+- **Status screen:** relaxed stance (elbows bent, fingers curled), a studio sky that the gloss plates reflect, softer lights so the suit reads black. RX-9's hardware moved to the back of the collar and the nape guard (it was buried inside the new collar and helmet).
+- Asset: one skinned mesh, one material, 34.4k triangles, 2K baked textures (ETC2/ASTC). Cloud: GUT passes; screenshots are from the compatibility renderer (no Vulkan in the cloud container).
+
+Please try: press View and turn the operative with your eyes on the phone, not just the previews. Is this the right starting point for the baseline soldier? What would you push further: more armour or more bare suit, glossier or more matte, more or less light?
+
+- Device / renderer / settings:
+- Notes from the owner:
+- Follow-ups: first-person arms in the same suit (the gloves are still the older olive-sleeve set).
