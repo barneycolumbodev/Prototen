@@ -104,6 +104,19 @@ def mantle():
     return w.at(0.5, (0.0, grab), (0.05, push), (0.32, step * 0.8))
 
 
+def ricochet(variant):
+    """A round glancing off concrete or steel: a sharp tick, then a falling whine."""
+    sec = 0.55
+    x = w.t(sec)
+    f_start = [3400, 2700, 4100][variant - 1]
+    f = f_start * np.exp(-x * [2.2, 3.0, 1.7][variant - 1])
+    whine = np.sin(2 * np.pi * np.cumsum(f) / SR) * np.clip(x / 0.01, 0, 1) * np.exp(-x / 0.16)
+    whine *= 1.0 + 0.3 * np.sin(2 * np.pi * 31 * x)  # tumbling
+    tick = w.band(w.noise(0.03), 2500, 12000) * w.env(0.03, 0.0002, 0.004)
+    chip = w.band(w.noise(0.08), 600, 4000) * w.env(0.08, 0.0005, 0.015)
+    return w.at(sec, (0.0, tick * 1.3), (0.0, chip * 0.6), (0.004, whine * 0.5))
+
+
 def write_all():
     out = sys.argv[1] if len(sys.argv) > 1 else "assets/audio/sfx"
     w.OUT = out
@@ -123,6 +136,8 @@ def write_all():
     w.save("enemy_reload_1", reload(), -6)
     w.save("slide_1", slide(), -6)
     w.save("mantle_1", mantle(), -6)
+    for v in (1, 2, 3):
+        w.save(f"ricochet_{v}", ricochet(v), -6)
     print(f"wrote enemy sounds to {out}")
 
 

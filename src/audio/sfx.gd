@@ -31,6 +31,12 @@ var _reverb: AudioEffectReverb
 ## Confirm already played for this volley, and how strong (hit 1, headshot 2, kill 3).
 var _confirm_volley: int = 0
 var _confirm_rank: int = 0
+var _last_ricochet: float = -10.0
+var _death_voices: Array[float] = []
+const DEATH_VOICE_WINDOW: float = 0.6
+const DEATH_VOICE_MAX: int = 2
+## Seconds between ricochet whines (an MG42 burst along the street would chain them).
+const RICOCHET_GAP: float = 0.12
 
 
 func _ready() -> void:
@@ -147,6 +153,17 @@ func play_at(name: StringName, at: Vector3, volume_db: float = 0.0, pitch_rand: 
 	p.play()
 
 
+## Rate limit for dying voices: a shotgun blast into a crowd shouldn't stack
+## five screams. Returns true (and takes the slot) if one may play now.
+func claim_death_voice() -> bool:
+	var now: float = Time.get_ticks_msec() * 0.001
+	_death_voices = _death_voices.filter(func(t: float) -> bool: return now - t < DEATH_VOICE_WINDOW)
+	if _death_voices.size() >= DEATH_VOICE_MAX:
+		return false
+	_death_voices.append(now)
+	return true
+
+
 func _pitch(rand: float) -> float:
 	return clampf(Engine.time_scale, 0.25, 1.0) * (1.0 + _rng.randf_range(-rand, rand))
 
@@ -158,9 +175,14 @@ func _on_hit(hit: BallisticHit) -> void:
 	if hit.weapon.pellets > 1:
 		vol -= 5.0
 	var sound: StringName = &"impact_" + String(hit.surface.impact_sound)
-	if hit.result == BallisticHit.Result.RICOCHET:
-		sound = &"impact_metal"
 	play_at(sound, hit.point, vol)
+	# A glancing round: the surface's own impact plus a short whine (not the
+	# range's steel ping, which every grazing street hit used to play).
+	if hit.result == BallisticHit.Result.RICOCHET:
+		var now: float = Time.get_ticks_msec() * 0.001
+		if now - _last_ricochet > RICOCHET_GAP:
+			_last_ricochet = now
+			play_at(&"ricochet", hit.point, vol - 4.0, 0.1)
 
 
 func _on_target_hit(kind: StringName, hit: BallisticHit) -> void:

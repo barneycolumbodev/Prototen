@@ -90,6 +90,8 @@ var _flash: MeshInstance3D
 var _flash_time: float = 0.0
 var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
 var _pain_cooldown: float = 0.0
+## State when the killing blow landed (picks the death voice).
+var state_before_death: State = State.IDLE
 
 
 ## A stump spurting blood after a limb or the head came off.
@@ -238,6 +240,8 @@ func on_part_burn(part: HitboxPart, hit: BallisticHit) -> void:
 		return
 	if burn_left <= 0.0:
 		Fx.burn_at(part, hit.point, hit.normal, hit.weapon.burn_time, true)
+		if Sfx.claim_death_voice():
+			Sfx.play_at(&"death_scream", body.head_position(), -2.0, 0.1)
 	burn_left = maxf(burn_left, hit.weapon.burn_time)
 	burn_dps = maxf(burn_dps, hit.weapon.burn_dps)
 	last_hit = hit
@@ -349,10 +353,12 @@ func _try_sever(zone: StringName, hit: BallisticHit) -> bool:
 	return true
 
 
-func die(hit: BallisticHit, zone: StringName) -> void:
+## `cause`: &"shot", &"bleed" (bled out) or &"burn" (burned to death).
+func die(hit: BallisticHit, zone: StringName, cause: StringName = &"shot") -> void:
 	if not alive:
 		return
 	alive = false
+	state_before_death = state
 	_enter(State.DEAD)
 	remove_from_group(&"enemies")
 	remove_from_group(&"aim_assist_targets")
@@ -370,10 +376,34 @@ func die(hit: BallisticHit, zone: StringName) -> void:
 	body.ragdoll(impulse + velocity * 40.0, point, zone)
 	body.ragdoll_frozen.connect(_on_frozen, CONNECT_ONE_SHOT)
 	Sfx.play_at(&"body_fall", global_position + Vector3.UP * 0.5, -2.0, 0.1)
+	var cry: StringName = death_cry(zone, cause == &"shot" and hit != null, state_before_death, cause == &"burn" or is_burning(), _rng.randf())
+	if cry != &"" and Sfx.claim_death_voice():
+		Sfx.play_at(cry, point + Vector3.UP * 0.2, -1.0, 0.08)
 	if squad:
 		squad.on_death(self, hit)
 	EventBus.killed.emit(self, hit.damage if hit else null)
 	died.emit(self)
+
+
+## Which dying sound fits (owner, 2026-11-05: "add audio for enemies dying").
+## Head shots: the air leaving, or nothing when the head is gone. Neck: choking.
+## Chest: choking or a scream. Burning: a scream. Bleeding out or crawling: a
+## long groan. Everything else: a scream. `roll` is 0..1.
+static func death_cry(zone: StringName, shot: bool, before: State, burning: bool, roll: float) -> StringName:
+	if burning:
+		return &"death_scream"
+	if not shot or before == State.CRAWL:
+		return &"death_groan"
+	match zone:
+		&"head":
+			return &"death_breath" if roll < 0.6 else &""
+		&"neck":
+			return &"death_choke"
+		&"chest":
+			return &"death_choke" if roll < 0.45 else &"death_scream"
+		&"stomach", &"pelvis":
+			return &"death_groan" if roll < 0.35 else &"death_scream"
+	return &"death_scream"
 
 
 func _on_frozen() -> void:
@@ -418,6 +448,10 @@ func _physics_process(delta: float) -> void:
 		return
 	_state_time += delta
 	_pain_cooldown -= delta
+	if state == State.CRAWL and _pain_cooldown <= 0.0:
+		# Crawling wounded moan as they drag themselves away.
+		_pain_cooldown = _rng.randf_range(3.5, 6.5)
+		Sfx.play_at(&"death_groan", body.head_position(), -9.0, 0.12)
 	_update_flash(delta)
 	_update_burn(delta)
 	_update_bleeders(delta)
@@ -428,7 +462,7 @@ func _physics_process(delta: float) -> void:
 			_drip_dist = 0.0
 			Gore.splat(global_position + Vector3.UP * 0.01, Vector3.UP, 0.08 + 0.02 * bleed_dps)
 		if health <= 0.0:
-			die(last_hit, &"stomach")
+			die(last_hit, &"stomach", &"bleed")
 			if last_hit:
 				EventBus.target_hit.emit(&"kill", last_hit)
 			return
@@ -874,7 +908,7 @@ func _update_burn(delta: float) -> void:
 	morale -= delta * 0.15
 	if health <= 0.0:
 		burn_left = 0.0
-		die(last_hit, &"chest")
+		die(last_hit, &"chest", &"burn")
 		if last_hit:
 			EventBus.target_hit.emit(&"kill", last_hit)
 	elif state == State.COMBAT and morale < 0.4:

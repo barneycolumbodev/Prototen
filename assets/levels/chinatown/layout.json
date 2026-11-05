@@ -255,7 +255,7 @@
 0.6
 ],
 "yaw": 0.0,
-"surface": "steel_target"
+"surface": "steel_post"
 },
 {
 "c": [
@@ -269,7 +269,7 @@
 0.6
 ],
 "yaw": 0.0,
-"surface": "steel_target"
+"surface": "steel_post"
 },
 {
 "c": [
@@ -283,7 +283,7 @@
 0.6
 ],
 "yaw": 0.0,
-"surface": "steel_target"
+"surface": "steel_post"
 },
 {
 "c": [
@@ -297,7 +297,7 @@
 3.0
 ],
 "yaw": 90.0,
-"surface": "steel_target"
+"surface": "steel_post"
 },
 {
 "c": [
@@ -568,7 +568,7 @@
 0.6
 ],
 "yaw": 0.0,
-"surface": "steel_target"
+"surface": "steel_post"
 },
 {
 "c": [
@@ -582,7 +582,7 @@
 0.6
 ],
 "yaw": 0.0,
-"surface": "steel_target"
+"surface": "steel_post"
 },
 {
 "c": [
@@ -596,7 +596,7 @@
 0.6
 ],
 "yaw": 0.0,
-"surface": "steel_target"
+"surface": "steel_post"
 },
 {
 "c": [
@@ -610,7 +610,7 @@
 0.6
 ],
 "yaw": 0.0,
-"surface": "steel_target"
+"surface": "steel_post"
 },
 {
 "c": [
@@ -624,7 +624,7 @@
 0.6
 ],
 "yaw": 0.0,
-"surface": "steel_target"
+"surface": "steel_post"
 },
 {
 "c": [
@@ -638,7 +638,7 @@
 0.6
 ],
 "yaw": 0.0,
-"surface": "steel_target"
+"surface": "steel_post"
 },
 {
 "c": [
@@ -652,7 +652,7 @@
 0.6
 ],
 "yaw": 0.0,
-"surface": "steel_target"
+"surface": "steel_post"
 },
 {
 "c": [
@@ -666,7 +666,7 @@
 0.6
 ],
 "yaw": 0.0,
-"surface": "steel_target"
+"surface": "steel_post"
 },
 {
 "c": [
@@ -680,7 +680,7 @@
 0.6
 ],
 "yaw": 0.0,
-"surface": "steel_target"
+"surface": "steel_post"
 },
 {
 "c": [
@@ -694,7 +694,7 @@
 0.6
 ],
 "yaw": 0.0,
-"surface": "steel_target"
+"surface": "steel_post"
 },
 {
 "c": [
@@ -708,7 +708,7 @@
 0.6
 ],
 "yaw": 0.0,
-"surface": "steel_target"
+"surface": "steel_post"
 },
 {
 "c": [
@@ -722,7 +722,7 @@
 3.0
 ],
 "yaw": 0.0,
-"surface": "steel_target"
+"surface": "steel_post"
 },
 {
 "c": [
@@ -736,7 +736,7 @@
 3.0
 ],
 "yaw": 0.0,
-"surface": "steel_target"
+"surface": "steel_post"
 },
 {
 "c": [
@@ -750,7 +750,7 @@
 3.0
 ],
 "yaw": 0.0,
-"surface": "steel_target"
+"surface": "steel_post"
 },
 {
 "c": [
@@ -764,7 +764,7 @@
 3.0
 ],
 "yaw": 0.0,
-"surface": "steel_target"
+"surface": "steel_post"
 },
 {
 "c": [
@@ -1198,7 +1198,7 @@
 5.0
 ],
 "yaw": 0.0,
-"surface": "steel_target"
+"surface": "steel_post"
 },
 {
 "c": [
@@ -1212,7 +1212,7 @@
 5.0
 ],
 "yaw": 0.0,
-"surface": "steel_target"
+"surface": "steel_post"
 },
 {
 "c": [
@@ -1226,7 +1226,7 @@
 5.0
 ],
 "yaw": 0.0,
-"surface": "steel_target"
+"surface": "steel_post"
 },
 {
 "c": [
@@ -1240,7 +1240,7 @@
 5.0
 ],
 "yaw": 0.0,
-"surface": "steel_target"
+"surface": "steel_post"
 },
 {
 "c": [
@@ -1254,7 +1254,7 @@
 5.0
 ],
 "yaw": 0.0,
-"surface": "steel_target"
+"surface": "steel_post"
 },
 {
 "c": [
@@ -1268,7 +1268,7 @@
 5.0
 ],
 "yaw": 0.0,
-"surface": "steel_target"
+"surface": "steel_post"
 },
 {
 "c": [
@@ -1282,7 +1282,7 @@
 5.0
 ],
 "yaw": 0.0,
-"surface": "steel_target"
+"surface": "steel_post"
 },
 {
 "c": [
@@ -1296,7 +1296,7 @@
 5.0
 ],
 "yaw": 0.0,
-"surface": "steel_target"
+"surface": "steel_post"
 },
 {
 "c": [
@@ -1310,7 +1310,7 @@
 5.0
 ],
 "yaw": 0.0,
-"surface": "steel_target"
+"surface": "steel_post"
 },
 {
 "c": [
@@ -1324,7 +1324,7 @@
 5.0
 ],
 "yaw": 0.0,
-"surface": "steel_target"
+"surface": "steel_post"
 },
 {
 "c": [
@@ -1338,7 +1338,7 @@
 5.0
 ],
 "yaw": 0.0,
-"surface": "steel_target"
+"surface": "steel_post"
 },
 {
 "c": [
@@ -1352,7 +1352,7 @@
 5.0
 ],
 "yaw": 0.0,
-"surface": "steel_target"
+"surface": "steel_post"
 },
 {
 "c": [
@@ -1940,7 +1940,7 @@
 8.0
 ],
 "yaw": 0.0,
-"surface": "steel_target"
+"surface": "steel_post"
 },
 {
 "c": [
@@ -1954,7 +1954,7 @@
 8.0
 ],
 "yaw": 0.0,
-"surface": "steel_target"
+"surface": "steel_post"
 },
 {
 "c": [
@@ -1968,7 +1968,7 @@
 8.0
 ],
 "yaw": 0.0,
-"surface": "steel_target"
+"surface": "steel_post"
 },
 {
 "c": [
@@ -1982,7 +1982,7 @@
 8.0
 ],
 "yaw": 0.0,
-"surface": "steel_target"
+"surface": "steel_post"
 },
 {
 "c": [
@@ -1996,7 +1996,7 @@
 8.0
 ],
 "yaw": 0.0,
-"surface": "steel_target"
+"surface": "steel_post"
 },
 {
 "c": [
@@ -2010,7 +2010,7 @@
 8.0
 ],
 "yaw": 0.0,
-"surface": "steel_target"
+"surface": "steel_post"
 },
 {
 "c": [
@@ -4195,7 +4195,7 @@
 3.0
 ],
 "yaw": 0.0,
-"surface": "steel_target"
+"surface": "steel_post"
 },
 {
 "c": [
@@ -4209,7 +4209,7 @@
 3.0
 ],
 "yaw": 0.0,
-"surface": "steel_target"
+"surface": "steel_post"
 },
 {
 "c": [
@@ -4223,7 +4223,7 @@
 3.0
 ],
 "yaw": 0.0,
-"surface": "steel_target"
+"surface": "steel_post"
 },
 {
 "c": [
@@ -4237,7 +4237,7 @@
 3.0
 ],
 "yaw": 0.0,
-"surface": "steel_target"
+"surface": "steel_post"
 },
 {
 "c": [
@@ -4251,7 +4251,7 @@
 3.0
 ],
 "yaw": 180.0,
-"surface": "steel_target"
+"surface": "steel_post"
 },
 {
 "c": [
@@ -4265,7 +4265,7 @@
 3.0
 ],
 "yaw": 180.0,
-"surface": "steel_target"
+"surface": "steel_post"
 },
 {
 "c": [
@@ -4307,7 +4307,7 @@
 0.76
 ],
 "yaw": 0.0,
-"surface": "steel_target"
+"surface": "steel_post"
 },
 {
 "c": [
@@ -4321,7 +4321,7 @@
 0.76
 ],
 "yaw": 0.0,
-"surface": "steel_target"
+"surface": "steel_post"
 },
 {
 "c": [
