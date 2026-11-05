@@ -214,7 +214,7 @@ Owner (paraphrased from voice notes): tried the MG42, pistol and railgun earlier
 
 ## M1e / M2 start — 2026-11-05 — Playtest fixes, RX-9 time slowdown, the operative (waiting for the owner)
 
-Build: `dev-latest` from branch `claude/chinatown-playtest-feedback-l1tyox` (manual CI run; details below once it's built). GUT 197/197 in the cloud.
+Build: `dev-latest` from branch `claude/chinatown-playtest-feedback-l1tyox` @ 5c79483, CI run #16 (manual run, GUT passed). `graft-debug.apk`, 225 MB. GUT 197/197 in the cloud.
 
 What's new in the APK:
 - **Faster Chinatown.** The sky no longer rebuilds its lighting every frame (and isn't black any more: a rain-cloud deck lit amber and violet by the city); the map is cut into small cells so the phone skips what's off-screen or behind buildings; the water, puddle and steam effects are much cheaper; bloom drops its most expensive pass. **Resolution: auto** (pause menu) lowers the 3D resolution only when the phone can't hold 60, and climbs back when it can.
