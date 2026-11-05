@@ -255,3 +255,12 @@ Please try: press View and turn the operative with your eyes on the phone, not j
 - Device / renderer / settings:
 - Notes from the owner:
 - Follow-ups: first-person arms in the same suit (the gloves are still the older olive-sleeve set).
+
+## M2 — 2026-11-05 — The operative, third pass: undersuit (waiting for the owner)
+
+Owner on the second pass: much better, but it reads as 80s Star Wars (Death Troopers). Wanted: sleek and modern, substantially less armour, an undersuit that augments and armour load on top of (like Halo's techsuit under the Mjolnir); the helmet a little smaller with the same design; a polarized visor.
+
+What changed: all the carapace plates are gone except a slim collar, low spine nodes and the boots. The suit carries the look with satin compression panels over the muscle groups on a matte black base. Flat gunmetal hardpoint pads (shoulders, forearms, thighs, sternum) mark where parts dock. Helmet at 93 %, same design; the visor is now a dark violet-tinted mirror. 22.9k triangles. Previews: `docs/previews/operative.png`, `operative_hero.png`, `operative_helmet.png`, `body_status.png`.
+
+- Notes from the owner:
+- Follow-ups: first-person arms in the same suit.

@@ -5,7 +5,10 @@ black carapace over his body. That's what our baseline augmented soldiers
 should look like. The different passives and actives can change the look."
 (Reference given: the suit Lex Luthor wears under the mech in Injustice.)
 Second pass, same day, after "it looks like a crash test dummy": sleek,
-baseline, polymer, badass.
+baseline, polymer, badass. Third pass: "substantially less armor", an undersuit
+that armour and augments load on top of, not Star Wars; helmet 93 %, polarized
+visor. Only interface hardware stays hard (collar, spine nodes, boots, hardpoint
+pads); the plate definitions below remain for parts to reuse but are filtered out.
 
 Design (docs/design.md §3.4a):
 - Silhouette first: heroic proportions (about 8 heads), broad shoulders and
@@ -284,14 +287,15 @@ def material(name, base, rough, metal=0.0, emission=None, bump=0.0, bump_scale=9
 
 
 MAT = {
-    "suit": material("op_suit", (0.017, 0.018, 0.02), 0.52, bump=0.06, bump_scale=700),
+    "suit": material("op_suit", (0.014, 0.015, 0.017), 0.62, bump=0.08, bump_scale=700),
+    "panel": material("op_panel", (0.011, 0.0115, 0.013), 0.3),
     "plate": material("op_plate", (0.0075, 0.008, 0.009), 0.17),
     "trim": material("op_trim", (0.12, 0.125, 0.13), 0.34, metal=0.95),
-    "visor": material("op_visor", (0.003, 0.004, 0.005), 0.04, emission=((0.004, 0.011, 0.01), 1.0)),
+    "visor": material("op_visor", (0.055, 0.035, 0.09), 0.05, metal=1.0),   # polarized: dark violet-tinted mirror
     "glow": material("op_glow", SEAGLASS, 0.3, emission=(SEAGLASS, 4.0)),
     "sole": material("op_sole", (0.016, 0.016, 0.017), 0.88, bump=0.3, bump_scale=300),
 }
-MAT_ORDER = ["suit", "plate", "trim", "visor", "glow", "sole"]
+MAT_ORDER = ["suit", "plate", "trim", "visor", "glow", "sole", "panel"]
 MI = {k: i for i, k in enumerate(MAT_ORDER)}
 
 # ====================================================================== anatomy (BASE field)
@@ -313,7 +317,7 @@ add(E((0, -0.056, 1.17), (0.096, 0.045, 0.13)), k=0.03)              # abdominal
 add(RC((0, 0.016, 1.47), (0, 0.008, 1.7), 0.08, 0.071), k=0.03)     # neck
 for s, sx in SIDES:
     add(E((0.115 * sx, 0.035, 1.3), (0.074, 0.072, 0.145), ry(15 * sx)), k=0.03)     # lats (V-taper)
-    add(E((0.08 * sx, -0.064, 1.372), (0.096, 0.042, 0.058), ry(-14 * sx)), k=0.02)   # pectorals
+    add(E((0.082 * sx, -0.058, 1.374), (0.1, 0.036, 0.054), ry(-16 * sx)), k=0.025)  # pectorals (broad, flat)
     add(RC((0, 0.05, 1.565), (0.155 * sx, 0.03, 1.475), 0.05, 0.036), k=0.04)        # trapezius
     add(RC((0.045 * sx, 0.02, 1.64), (0.016 * sx, -0.044, 1.49), 0.024, 0.019), k=0.015)  # neck tendons
     add(E((0.11 * sx, -0.022, 1.11), (0.045, 0.065, 0.09)), k=0.03)                   # obliques
@@ -457,6 +461,44 @@ DETAIL.fn((-0.2, -0.2, 0.86), (0.2, 0.05, 1.1),
                                     0.0016 * sdf.ss((0.0 - y) / 0.02) * sdf.ss((1.06 - z) / 0.02) * sdf.ss((np.abs(x) - 0.035) / 0.01)))
 DETAIL.fn((-0.3, -0.3, -0.01), (0.3, 0.2, 0.06), lambda f, x, y, z: groove(f, z - 0.043, 0.0025, 0.0015))
 
+# Compression panels over the muscle groups: raised a hair, satin instead of matte. They carry the
+# look now that the suit is an undersuit (armour is a loadout part that goes on top).
+def _panels():
+    regs = []
+    ex, ey = np.array((1.0, 0, 0)), np.array((0, 1.0, 0))
+    regs.append(MX(AND(H((0.018, 0, 0), -ex), H((0, 0, 1.455), (-0.18, 0, 1)), H((0, 0, 1.33), (0.12, 0, -1)),
+                       H((0.018, 0, 1.33), (0.55, 0, -1)), H((0, -0.03, 0), ey), H((0.15, 0, 1.3), (1, 0, -0.3)))))  # chest
+    regs.append(MX(AND(H((0.006, 0, 0), -ex), H((0.082, 0, 1.28), (1, 0, -0.1)), band((0, 0, 0), (0, 0, 1), 1.105, 1.282),
+                       H((0, -0.03, 0), ey))))                                                              # abdomen
+    regs.append(MX(AND(H((0.018, 0, 0), -ex), H((0, 0.045, 0), -ey), H((0, 0, 1.48), (0.2, 0, 1)),
+                       H((0.018, 0, 1.3), (-0.45, 0, -1)), H((0.158, 0, 0), ex))))                         # upper back
+    for s, _sx in SIDES:
+        Lp = LIMB[s]
+        regs.append(AND(ball(Lp["sh"] + Lp["ua"] * 0.035 + Lp["ua_out"] * 0.03, 0.068),
+                        seg(Lp["sh"], Lp["el"], 0.09)))                                                     # deltoid
+        regs.append(AND(band(Lp["el"], Lp["fa"], 0.035, 0.2), H(Lp["el"] - Lp["fa_out"] * 0.012, -Lp["fa_out"]),
+                        seg(Lp["el"], Lp["wr"], 0.07)))                                                     # forearm
+        regs.append(AND(band(Lp["hp"], Lp["th"], 0.1, 0.39), H(Lp["hp"] - Lp["th_fr"] * 0.004, -Lp["th_fr"]),
+                        lambda x, y, z, Lp=Lp: np.abs(comp(x, y, z, Lp["hp"], Lp["th_out"]) - 0.006)
+                        - (0.058 - 0.1 * np.clip(comp(x, y, z, Lp["hp"], Lp["th"]) - 0.12, 0, 0.27)),
+                        seg(Lp["hp"], Lp["knee"], 0.12)))                                                   # quads
+        regs.append(AND(band(Lp["knee"], Lp["sv"], 0.07, 0.29), H(Lp["knee"] - Lp["sv_fr"] * 0.008, Lp["sv_fr"]),
+                        seg(Lp["knee"], Lp["an"], 0.09)))                                                   # calf
+
+    def f(x, y, z):
+        d = regs[0](x, y, z)
+        for r in regs[1:]:
+            d = np.minimum(d, r(x, y, z))
+        return d
+    return f
+
+
+PANEL = _panels()
+for zc in (1.168, 1.226):   # segmented abdomen panel
+    DETAIL.fn((-0.1, -0.2, zc - 0.01), (0.1, 0.0, zc + 0.01),
+              lambda f, x, y, z, zc=zc: groove(f, z - zc - 0.08 * np.abs(x), 0.0022, 0.0014 * sdf.ss((0.09 - np.abs(x)) / 0.01)))
+DETAIL.fn((-0.7, -0.25, 0.1), (0.7, 0.25, 1.55), lambda f, x, y, z: f - F32(0.0009) * sdf.ss(-PANEL(x, y, z) / 0.0015))
+
 # ====================================================================== suit HIGH
 _coarse_grid = sdf.Grid((-0.7, -0.24, -0.02), (0.7, 0.24, 1.92), 0.006)
 _coarse = None
@@ -509,6 +551,7 @@ SUIT = link(bpy.data.objects.new("suit_high", sdf.to_mesh("suit_high", F, g)))
 del F
 c = face_centers(SUIT.data)
 mi = np.full(len(c), MI["suit"])
+mi[PANEL(c[:, 0], c[:, 1], c[:, 2]) < -0.0007] = MI["panel"]
 mi[c[:, 2] < 0.036] = MI["sole"]
 set_materials(SUIT, mi)
 log("suit HIGH:", len(SUIT.data.polygons), "quads")
@@ -707,6 +750,40 @@ for s, sx in (("L", 1.0),):
           T=0.009, facets=((X1, 0.0025), (X1 + 0.7 * UP, 0.002), (X1 - 0.7 * Y1, 0.002)),
           near=(an - UP * 0.05, an + UP * 0.08, 0.08))
 
+# Undersuit revision (owner, 2026-11-05: "substantially less armour... a sleek interface for the rest
+# of the augmentations"): keep only the collar, low spine nodes, the boots and flat hardpoint pads.
+KEEP = {"gorget", "boot", "ankle"} | {f"spine{i}" for i in range(6)}
+PLATES[:] = [p for p in PLATES if p["name"] in KEEP]
+for p in PLATES:
+    if p["name"] == "gorget":
+        p["T"] = 0.006
+        p["region"] = AND(band((0, 0, 1.528), (0, -0.4, 1), -0.04, 0.05), lambda x, y, z: np.sqrt(x * x + (y - 0.012) ** 2) - 0.112)
+    elif p["name"].startswith("spine"):
+        p["T"], p["facets"] = 0.006, (((0.7, 0.7, 0.0), 0.002, True),)
+    elif p["name"] in ("boot", "ankle"):
+        p["T"] = 0.0055
+
+
+def hardpoint(name, bone, c, r, near):
+    """A flat gunmetal mounting pad with a light dot: where part hardware docks."""
+    c = np.asarray(c, float)
+    plate(name, bone, ball(c, r), T=0.0045, ch=0.0012, mat="trim", facets=((_out(c, near), 0.002),),
+          glow=ball(c + _out(c, near) * 0.006, 0.0032), near=near)
+
+
+def _out(c, near):
+    a, b = np.asarray(near[0], float), np.asarray(near[1], float)
+    u = b - a
+    t = np.clip((c - a) @ u / (u @ u), 0, 1)
+    return nrm(c - (a + t * u))
+
+
+_L = LIMB["L"]
+hardpoint("hp_shoulder", "upper_arm.L", _L["sh"] + _L["ua"] * 0.05 + _L["ua_out"] * 0.06, 0.022, (_L["sh"], _L["el"], 0.1))
+hardpoint("hp_forearm", "forearm.L", _L["el"] + _L["fa"] * 0.13 + _L["fa_out"] * 0.04, 0.018, (_L["el"], _L["wr"], 0.07))
+hardpoint("hp_thigh", "thigh.L", _L["hp"] + _L["th"] * 0.2 + _L["th_out"] * 0.08, 0.024, (_L["hp"], _L["knee"], 0.12))
+hardpoint("hp_chest", "chest", np.array((0.0, -0.11, 1.4)), 0.02, (np.array((0, 0, 1.33)), np.array((0, 0, 1.45)), 0.16))
+PLATES[-1]["side"] = None
 log("plates:", len(PLATES), "definitions")
 for sp in PLATES:
     build_plate(sp)
@@ -728,8 +805,18 @@ def respirator(x, y, z):
     return np.maximum(np.maximum(np.abs(ax - 0.027) - 0.0145, np.abs(z - 1.672) - 0.021), y + 0.05)
 
 
+HS, HP = 0.93, np.array((0.0, 0.01, 1.64))   # helmet scale about a pivot near the chin line
+
+
+def _hunscale(x, y, z):
+    return x / HS, (y - HP[1]) / HS + HP[1], (z - HP[2]) / HS + HP[2]
+
+
 def helmet_field(g):
-    X, Y, Z = g.coords()
+    return helmet_sdf(*_hunscale(*g.coords())) * F32(HS)
+
+
+def helmet_sdf(X, Y, Z):
     AX = np.abs(X)
     d = sdf.Ellipsoid(HC, (0.092, 0.118, 0.103))(X, Y, Z)
     jaw = sdf.Ellipsoid((0, -0.03, 1.684), (0.074, 0.086, 0.084))(X, Y, Z)
@@ -762,7 +849,7 @@ def helmet_field(g):
 
 
 def helmet_materials(c):
-    x, y, z = c[:, 0], c[:, 1], c[:, 2]
+    x, y, z = _hunscale(c[:, 0], c[:, 1], c[:, 2])
     ax = np.abs(x)
     mi = np.full(len(c), MI["plate"])
     # Material edges sit on geometric creases (faces never straddle a crease), so they stay crisp.

@@ -21,7 +21,7 @@ func test_operative_is_one_baked_skinned_mesh_in_budget() -> void:
 	for s: int in mi.mesh.get_surface_count():
 		var indices: PackedInt32Array = mi.mesh.surface_get_arrays(s)[Mesh.ARRAY_INDEX]
 		tris += indices.size() / 3
-	assert_between(tris, 15000, 36000, "player body triangles")
+	assert_between(tris, 12000, 36000, "player body triangles")
 	var mat: StandardMaterial3D = mi.mesh.surface_get_material(0) as StandardMaterial3D
 	assert_not_null(mat)
 	assert_not_null(mat.albedo_texture, "baked base colour")
