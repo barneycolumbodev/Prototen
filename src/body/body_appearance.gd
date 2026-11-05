@@ -105,15 +105,35 @@ func _make_visual(v: PartVisual) -> Node3D:
 	return mi
 
 
-## From the modelling A-pose to arms hanging relaxed at the sides.
+## From the modelling A-pose to a relaxed stance: arms down at the sides,
+## elbows slightly bent, fingers half curled.
 func _relax_arms() -> void:
 	for side: String in ["L", "R"]:
 		var i: int = skeleton.find_bone("upper_arm." + side)
 		if i < 0:
 			continue
 		var sx: float = 1.0 if side == "L" else -1.0
-		# Rotate about the body's forward axis, in the bone's parent space.
-		var parent_g: Transform3D = skeleton.get_bone_global_rest(skeleton.get_bone_parent(i))
-		var fwd_local: Vector3 = (parent_g.basis.inverse() * Vector3(0, 0, 1)).normalized()
-		var rest: Quaternion = skeleton.get_bone_rest(i).basis.get_rotation_quaternion()
-		skeleton.set_bone_pose_rotation(i, Quaternion(fwd_local, -deg_to_rad(28.0) * sx) * rest)
+		# Rotate about the body's forward axis (+Z in model space).
+		_rotate_bone(i, Vector3(0, 0, 1), -deg_to_rad(28.0) * sx)
+		var fore: int = skeleton.find_bone("forearm." + side)
+		var hand: int = skeleton.find_bone("hand." + side)
+		var fingers: int = skeleton.find_bone("fingers." + side)
+		if fore < 0 or hand < 0 or fingers < 0:
+			continue
+		var elbow: Vector3 = skeleton.get_bone_global_rest(fore).origin
+		var wrist: Vector3 = skeleton.get_bone_global_rest(hand).origin
+		var knuckle: Vector3 = skeleton.get_bone_global_rest(fingers).origin
+		var fa: Vector3 = (wrist - elbow).normalized()
+		_rotate_bone(fore, fa.cross(Vector3(0, 0, 1)), deg_to_rad(12.0))
+		var hd: Vector3 = (knuckle - wrist).normalized()
+		var inward: Vector3 = Vector3(-sx, 0, 0)
+		var palm: Vector3 = (inward - hd * inward.dot(hd)).normalized()
+		_rotate_bone(fingers, hd.cross(palm), deg_to_rad(38.0))
+
+
+## Rotates bone `i` from its rest pose about a model-space (rest) axis.
+func _rotate_bone(i: int, axis_model: Vector3, angle: float) -> void:
+	var parent_g: Transform3D = skeleton.get_bone_global_rest(skeleton.get_bone_parent(i))
+	var axis_local: Vector3 = (parent_g.basis.inverse() * axis_model).normalized()
+	var rest: Quaternion = skeleton.get_bone_rest(i).basis.get_rotation_quaternion()
+	skeleton.set_bone_pose_rotation(i, Quaternion(axis_local, angle) * rest)
