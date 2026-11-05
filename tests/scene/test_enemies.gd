@@ -50,7 +50,7 @@ func test_hitboxes_follow_the_bones() -> void:
 	var e: Enemy = _target()
 	var head: Vector3 = e.body.hitboxes[&"head"].global_position
 	var foot: Vector3 = e.body.hitboxes[&"l_foot"].global_position
-	assert_almost_eq(head.y, 1.65, 0.12, "head at head height")
+	assert_almost_eq(head.y, 1.65 * e.config.body_scale, 0.12, "head at head height")
 	assert_lt(foot.y, 0.2, "feet on the floor")
 
 
@@ -189,3 +189,27 @@ func test_near_misses_suppress() -> void:
 	Ballistics.fire(m14, from, (head + Vector3(0.6, 0.0, -2.0) - from).normalized(), player)
 	await wait_physics_frames(4)
 	assert_gt(e.suppression, 0.1, "a round past his head")
+
+
+func test_enemies_are_bigger_and_ragdoll_keeps_proportions() -> void:
+	# Owner, 2026-11-05: enemies read too small on the phone.
+	var e: Enemy = _target()
+	assert_gt(e.config.body_scale, 1.0)
+	var standing_head: float = e.body.head_position().y - e.global_position.y
+	assert_gt(standing_head, 1.62 * e.config.body_scale - 0.12, "head height %.2f m" % standing_head)
+	var span0: float = e.body.bone_position(&"head").distance_to(e.body.bone_position(&"hips"))
+	var leg0: float = e.body.bone_position(&"thigh.L").distance_to(e.body.bone_position(&"shin.L"))
+	await _shoot(pistol, e.body.hitboxes[&"head"].global_position)
+	await wait_seconds(1.5)
+	var span1: float = e.body.bone_position(&"head").distance_to(e.body.bone_position(&"hips"))
+	var leg1: float = e.body.bone_position(&"thigh.L").distance_to(e.body.bone_position(&"shin.L"))
+	assert_almost_eq(leg1, leg0, leg0 * 0.06, "thigh length kept in ragdoll (%.3f -> %.3f)" % [leg0, leg1])
+	assert_almost_eq(span1, span0, span0 * 0.25, "torso didn't stretch or squash (%.3f -> %.3f)" % [span0, span1])
+
+
+func test_rim_light_fades_on_death() -> void:
+	var e: Enemy = _target()
+	await _shoot(pistol, e.body.hitboxes[&"head"].global_position)
+	await wait_seconds(1.0)
+	var rim: float = e.body.material.get_shader_parameter(&"rim_alive")
+	assert_almost_eq(rim, 0.0, 0.01, "dead men don't glow")

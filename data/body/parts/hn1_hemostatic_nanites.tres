@@ -1,0 +1,30 @@
+[gd_resource type="Resource" script_class="PartData" load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://src/body/part_data.gd" id="1"]
+[ext_resource type="Script" path="res://src/body/stat_modifier.gd" id="2"]
+[ext_resource type="Script" path="res://src/body/part_visual.gd" id="3"]
+
+[sub_resource type="Resource" id="mod_0"]
+script = ExtResource("2")
+stat = &"regen_rate"
+add = 0.0
+mul = 1.5
+
+[sub_resource type="Resource" id="mod_1"]
+script = ExtResource("2")
+stat = &"regen_delay"
+add = -1.0
+mul = 1.0
+
+[resource]
+script = ExtResource("1")
+id = &"hn1_hemostatic_nanites"
+display_name = "HN-1 Hemostatic Nanites"
+description = "Seal wounds and heal you faster once out of fire."
+location = 11
+mass_kg = 0.1
+power_draw_w = 25.0
+heat_w = 15.0
+capacity = 3
+modifiers = Array[ExtResource("2")]([SubResource("mod_0"), SubResource("mod_1")])
+visuals = Array[ExtResource("3")]([])

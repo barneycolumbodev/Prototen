@@ -33,6 +33,7 @@ var _confirm_volley: int = 0
 var _confirm_rank: int = 0
 var _last_ricochet: float = -10.0
 var _death_voices: Array[float] = []
+var _muffle: AudioEffectLowPassFilter
 const DEATH_VOICE_WINDOW: float = 0.6
 const DEATH_VOICE_MAX: int = 2
 ## Seconds between ricochet whines (an MG42 burst along the street would chain them).
@@ -119,7 +120,7 @@ func _play_pool(pool: Array[AudioStreamPlayer], index: int, name: StringName, vo
 	var stream: AudioStream = streams[_rng.randi() % streams.size()]
 	p.stream = stream
 	p.volume_db = volume_db
-	p.pitch_scale = _pitch(pitch_rand)
+	p.pitch_scale = TimeControl.player_pitch() * (1.0 + _rng.randf_range(-pitch_rand, pitch_rand))
 	p.play()
 
 
@@ -134,7 +135,8 @@ func play_ui(name: StringName, volume_db: float = 0.0, pitch_rand: float = 0.03)
 	var stream: AudioStream = streams[_rng.randi() % streams.size()]
 	p.stream = stream
 	p.volume_db = volume_db
-	p.pitch_scale = _pitch(pitch_rand)
+	# Your own gun and gear: your time, not the world's.
+	p.pitch_scale = TimeControl.player_pitch() * (1.0 + _rng.randf_range(-pitch_rand, pitch_rand))
 	p.play()
 	return p
 
@@ -151,6 +153,23 @@ func play_at(name: StringName, at: Vector3, volume_db: float = 0.0, pitch_rand: 
 	p.volume_db = volume_db
 	p.pitch_scale = _pitch(pitch_rand)
 	p.play()
+
+
+## Muffles everything (time dilation): 0 = clear, 1 = cut off at `cutoff_hz`.
+func set_muffle(amount: float, cutoff_hz: float = 2400.0) -> void:
+	var bus: int = AudioServer.get_bus_index(&"Master")
+	if _muffle == null:
+		_muffle = AudioEffectLowPassFilter.new()
+		_muffle.resonance = 0.6
+		AudioServer.add_bus_effect(bus, _muffle)
+	var idx: int = -1
+	for i: int in AudioServer.get_bus_effect_count(bus):
+		if AudioServer.get_bus_effect(bus, i) == _muffle:
+			idx = i
+	var a: float = clampf(amount, 0.0, 1.0)
+	_muffle.cutoff_hz = lerpf(20000.0, cutoff_hz, sqrt(a))
+	if idx >= 0:
+		AudioServer.set_bus_effect_enabled(bus, idx, a > 0.001)
 
 
 ## Rate limit for dying voices: a shotgun blast into a crowd shouldn't stack

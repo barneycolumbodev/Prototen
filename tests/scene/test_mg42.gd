@@ -49,6 +49,9 @@ func test_y_switches_to_the_mg42_and_back() -> void:
 
 
 func test_mg42_slows_you_down() -> void:
+	# Walking speeds (full tilt would auto-sprint).
+	player.movement = player.movement.duplicate() as MovementConfig
+	player.movement.auto_sprint = false
 	Input.action_press(&"move_forward")
 	await wait_seconds(0.8)
 	var pistol_speed: float = Vector2(player.velocity.x, player.velocity.z).length()

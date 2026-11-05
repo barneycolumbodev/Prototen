@@ -9,6 +9,12 @@ extends CharacterBody3D
 
 @export var movement: MovementConfig = preload("res://data/player/movement_default.tres")
 @export var body_config: PlayerBodyConfig = preload("res://data/player/body_default.tres")
+## Installed parts (docs/design.md §3). The loadout screen replaces this in M2.
+@export var loadout: BodyLoadout = preload("res://data/body/loadout_default.tres")
+## The body as numbers: frame + parts (stats, mass, power, heat).
+var body: BodyModel
+## Active parts on LB/RB/D-pad up.
+var augments: Augments
 ## Turned off while a benchmark or cutscene drives the camera.
 @export var input_enabled: bool = true
 ## The weapon wheel is open: the right stick picks a gun instead of looking.
@@ -33,11 +39,15 @@ var _dead_time: float = 0.0
 var fov_scale: float = 1.0
 var look_scale: float = 1.0
 var move_scale: float = 1.0
+## Degrees added to the field of view (time dilation widens it a touch).
+var fov_add_deg: float = 0.0
 ## Set by the weapon: carrying a heavy gun cuts sprint speed and jump height.
 var sprint_scale: float = 1.0
 var jump_scale: float = 1.0
 ## While true (aiming) a sprint can't start.
 var sprint_blocked: bool = false
+## While true (trigger held) full tilt doesn't start a sprint by itself.
+var auto_sprint_blocked: bool = false
 ## Look speed in degrees per second: x = turning right, y = looking up.
 var look_velocity: Vector2 = Vector2.ZERO
 ## Aim assist (set up by the level; null = off).
@@ -70,6 +80,9 @@ var _coyote: float = 0.0
 var _jump_buffer: float = 0.0
 var _capsule: CapsuleShape3D
 var _last_yaw: float = 0.0
+## Camera offset that eases out after stepping up or down a curb (m).
+var _step_offset: float = 0.0
+var _full_tilt_time: float = 0.0
 var _last_pitch: float = 0.0
 
 @onready var _head: Node3D = $Head
@@ -82,7 +95,8 @@ func _ready() -> void:
 	add_to_group(&"suppressible")
 	set_meta(&"surface", &"flesh")
 	set_meta(&"stops_rounds", true)
-	health = body_config.max_health
+	body = BodyModel.new(body_config, loadout)
+	health = max_health()
 	collision_layer = Ballistics.LAYER_PLAYER
 	# Corpses and moving hitboxes don't block; living enemies do (their capsules).
 	collision_mask = Ballistics.LAYER_WORLD | Ballistics.LAYER_PROPS | Ballistics.LAYER_ENEMY | Ballistics.LAYER_CLIP
@@ -91,6 +105,13 @@ func _ready() -> void:
 	yaw = rotation.y
 	pitch = _head.rotation.x
 	_camera.make_current()
+	augments = Augments.new()
+	augments.name = "Augments"
+	add_child(augments)
+	# Snap down curbs and stairs instead of flying off them; constant speed on slopes.
+	floor_snap_length = movement.step_height + 0.05
+	floor_constant_speed = true
+	floor_max_angle = deg_to_rad(46.0)
 	Settings.changed.connect(_on_settings_changed)
 	_on_settings_changed()
 
@@ -127,7 +148,7 @@ func weapon() -> PlayerWeapon:
 func on_ballistic_hit(hit: BallisticHit) -> void:
 	if dead or invulnerable or hit.shooter == self:
 		return
-	var amount: float = hit.energy_in * 0.001 * body_config.damage_per_kj
+	var amount: float = hit.energy_in * 0.001 * body.stat(&"damage_per_kj")
 	take_damage(amount, -hit.direction)
 
 
@@ -160,7 +181,7 @@ func on_near_miss(shooter: Node, _weapon: WeaponData, distance: float, point: Ve
 
 func respawn() -> void:
 	dead = false
-	health = body_config.max_health
+	health = max_health()
 	input_enabled = true
 	suppression = 0.0
 	global_position = spawn_point
@@ -169,11 +190,17 @@ func respawn() -> void:
 
 
 func health_fraction() -> float:
-	return health / body_config.max_health
+	return health / max_health()
+
+
+func max_health() -> float:
+	return body.stat(&"max_health") if body else body_config.max_health
 
 
 func stop_sprint() -> void:
 	_sprinting = false
+	# Auto-sprint waits a moment after a shot before it kicks back in.
+	_full_tilt_time = -0.25
 
 
 ## Camera recoil offset on top of the view, degrees: x = up, y = right, z = roll.
@@ -201,16 +228,18 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _process(delta: float) -> void:
+	# Looking is a reflex: real time, whatever the world's time scale.
+	var look_dt: float = TimeControl.real_delta(delta)
 	if input_enabled and not look_blocked:
 		var look: LookConfig = Settings.look_config()
 		var raw: Vector2 = Input.get_vector(&"look_left", &"look_right", &"look_up", &"look_down", 0.0)
-		_tilt_time = _tilt_time + delta if look.is_full_tilt(raw) else 0.0
+		_tilt_time = _tilt_time + look_dt if look.is_full_tilt(raw) else 0.0
 		var rate: Vector2 = look.look_rate(raw, _tilt_time) * look_scale * Settings.look_sensitivity
 		if aim_assist:
-			rate = aim_assist.apply(self, rate, delta)
-		set_view(yaw - deg_to_rad(rate.x) * delta, pitch - deg_to_rad(rate.y) * delta)
+			rate = aim_assist.apply(self, rate, look_dt)
+		set_view(yaw - deg_to_rad(rate.x) * look_dt, pitch - deg_to_rad(rate.y) * look_dt)
 	_update_crouch_pose(delta)
-	_camera.fov = Settings.vertical_fov * fov_scale
+	_camera.fov = Settings.vertical_fov * fov_scale + fov_add_deg
 	if delta > 0.0:
 		var measured: Vector2 = Vector2(-angle_difference(_last_yaw, yaw), angle_difference(_last_pitch, pitch)) / delta
 		look_velocity = look_velocity.lerp(Vector2(rad_to_deg(measured.x), rad_to_deg(measured.y)), clampf(delta * 20.0, 0.0, 1.0))
@@ -219,15 +248,18 @@ func _process(delta: float) -> void:
 
 
 func _physics_process(delta: float) -> void:
+	# Time dilation: the player runs faster than the world (TimeControl).
+	delta *= TimeControl.player_boost()
 	_since_hit += delta
 	suppression = maxf(0.0, suppression - delta * 0.5)
 	if dead:
 		_dead_time += delta
 		velocity = Vector3(0, velocity.y - movement.gravity * delta, 0) if not is_on_floor() else Vector3.ZERO
-		move_and_slide()
+		_slide_move()
 		return
-	if _since_hit > body_config.regen_delay and health < body_config.max_health:
-		health = minf(health + body_config.regen_rate * delta, body_config.max_health)
+	body.tick(delta)
+	if _since_hit > body.stat(&"regen_delay") and health < max_health():
+		health = minf(health + body.stat(&"regen_rate") * delta, max_health())
 	var cfg: MovementConfig = movement
 	var stick: Vector2 = Vector2.ZERO
 	if input_enabled:
@@ -256,6 +288,12 @@ func _physics_process(delta: float) -> void:
 	# Sprint: press L3 to start; ends when the stick stops pushing forward.
 	if input_enabled and Input.is_action_just_pressed(&"sprint") and not sprint_blocked:
 		_sprinting = true
+	if forward_push < cfg.auto_sprint_tilt or auto_sprint_blocked:
+		_full_tilt_time = minf(_full_tilt_time, 0.0)
+	else:
+		_full_tilt_time += delta
+	if cfg.auto_sprint and _full_tilt_time >= cfg.auto_sprint_delay and not sprint_blocked and is_on_floor():
+		_sprinting = true
 	if forward_push < cfg.sprint_min_forward:
 		_sprinting = false
 	var horizontal: Vector3 = Vector3(velocity.x, 0.0, velocity.z)
@@ -271,7 +309,7 @@ func _physics_process(delta: float) -> void:
 		speed = cfg.sprint_speed * sprint_scale
 	elif _crouching:
 		speed = cfg.crouch_speed
-	speed *= move_scale
+	speed *= move_scale * body.stat(&"move_speed")
 	if is_on_floor():
 		horizontal = MovementConfig.approach(horizontal, wish * speed, cfg.ground_accel, cfg.ground_decel, delta)
 	else:
@@ -286,12 +324,12 @@ func _physics_process(delta: float) -> void:
 		_jump_buffer = 0.0
 		return
 	if _jump_buffer > 0.0 and _coyote > 0.0:
-		vy = cfg.jump_velocity * jump_scale
+		vy = cfg.jump_velocity * jump_scale * sqrt(body.stat(&"jump"))
 		_jump_buffer = 0.0
 		_coyote = 0.0
 	velocity = Vector3(horizontal.x, vy, horizontal.z)
 	var was_on_floor: bool = is_on_floor()
-	move_and_slide()
+	_move_with_steps(delta, was_on_floor)
 	if is_on_floor():
 		_last_wall_normal = Vector3.ZERO
 	if is_on_floor() and not was_on_floor and vy < -1.0:
@@ -299,6 +337,68 @@ func _physics_process(delta: float) -> void:
 	# Airborne next to a wall, pushing forward at speed: run along it.
 	if not is_on_floor() and forward_push > 0.5 and _wall_cd <= 0.0 and horizontal.length() >= cfg.wallrun_min_speed:
 		_try_wallrun(horizontal)
+
+
+## move_and_slide, plus walking up steps up to step_height (curbs, sills,
+## stair treads) and easing the camera over steps up and down.
+func _move_with_steps(delta: float, was_on_floor: bool) -> void:
+	var before: Transform3D = global_transform
+	var keep: Vector3 = velocity
+	var want: Vector3 = Vector3(velocity.x, 0.0, velocity.z) * delta
+	_slide_move()
+	var after: Vector3 = global_position
+	var moved: Vector3 = Vector3(after.x - before.origin.x, 0.0, after.z - before.origin.z)
+	if was_on_floor and velocity.y <= 0.5 and want.length() > 0.001 and is_on_wall() and moved.length() < want.length() * 0.7:
+		var stepped: Vector3 = _step_up(before, want)
+		if stepped != Vector3.INF:
+			_step_offset -= stepped.y - before.origin.y
+			global_position = stepped
+			# The curb didn't stop you: keep the speed you had.
+			velocity = Vector3(keep.x, 0.0, keep.z)
+			apply_floor_snap()
+			return
+	# Stepping down a curb on foot: ease the camera down too.
+	if was_on_floor and is_on_floor():
+		var drop: float = before.origin.y - global_position.y
+		if drop > 0.04 and drop <= movement.step_height + 0.06:
+			_step_offset += drop
+
+
+## Where the body ends up if it lifts by step_height, moves `want`, and drops
+## back onto walkable ground; Vector3.INF if it can't (wall too tall, ceiling,
+## no floor there).
+func _step_up(from: Transform3D, want: Vector3) -> Vector3:
+	var up: Vector3 = Vector3.UP * movement.step_height
+	if test_move(from, up):
+		return Vector3.INF
+	var fwd: Vector3 = want
+	if fwd.length() < 0.06:
+		fwd = fwd.normalized() * 0.06  # enough to get the capsule over a sill
+	var raised: Transform3D = from.translated(up)
+	if test_move(raised, fwd):
+		return Vector3.INF
+	var over: Transform3D = raised.translated(fwd)
+	var hit: KinematicCollision3D = KinematicCollision3D.new()
+	if not test_move(over, -up - Vector3.UP * 0.05, hit):
+		return Vector3.INF
+	if hit.get_normal().angle_to(Vector3.UP) > floor_max_angle:
+		return Vector3.INF
+	var land: Vector3 = over.origin + hit.get_travel()
+	if land.y - from.origin.y < 0.02:
+		return Vector3.INF
+	return land
+
+
+## move_and_slide in the player's own time: while the world is dilated the
+## player covers player_boost() times more ground per world second.
+func _slide_move() -> void:
+	var boost: float = TimeControl.player_boost()
+	if is_equal_approx(boost, 1.0):
+		move_and_slide()
+		return
+	velocity *= boost
+	move_and_slide()
+	velocity /= boost
 
 
 func _start_slide(horizontal: Vector3) -> void:
@@ -331,10 +431,10 @@ func _slide(delta: float, wish: Vector3, b_held: bool) -> void:
 		_crouching = false
 		_slide_cd = cfg.slide_cooldown
 		velocity = Vector3(h.x, cfg.jump_velocity * jump_scale, h.z)
-		move_and_slide()
+		_slide_move()
 		return
 	velocity = Vector3(h.x, vy, h.z)
-	move_and_slide()
+	_move_with_steps(delta, is_on_floor())
 	if speed <= cfg.slide_end_speed or not b_held or not is_on_floor():
 		move_state = MoveState.NORMAL
 		_slide_cd = cfg.slide_cooldown
@@ -387,11 +487,11 @@ func _wallrun(delta: float, forward_push: float) -> void:
 		var h: Vector3 = Vector3(velocity.x, 0.0, velocity.z)
 		velocity = h * 0.9 + _wall_normal * cfg.wallrun_jump_out + Vector3.UP * cfg.wallrun_jump_up * jump_scale
 		_end_wallrun()
-		move_and_slide()
+		_slide_move()
 		return
 	if off:
 		_end_wallrun()
-		move_and_slide()
+		_slide_move()
 		return
 	var wn: Vector3 = res["normal"]
 	_wall_normal = Vector3(wn.x, 0.0, wn.z).normalized()
@@ -405,7 +505,7 @@ func _wallrun(delta: float, forward_push: float) -> void:
 	var speed: float = maxf(h2.length(), cfg.wallrun_speed * move_scale)
 	# Hug the wall a little so small gaps don't drop you.
 	velocity = t * speed - _wall_normal * 0.8 + Vector3.UP * vy
-	move_and_slide()
+	_slide_move()
 
 
 func _end_wallrun() -> void:
@@ -499,7 +599,8 @@ func _update_crouch_pose(delta: float) -> void:
 	var height: float = lerpf(cfg.stand_height, cfg.crouch_height, _crouch_blend)
 	_capsule.height = height
 	_collision.position.y = height * 0.5
-	_head.position.y = lerpf(cfg.stand_eye_height, cfg.crouch_eye_height, _crouch_blend)
+	_step_offset = lerpf(_step_offset, 0.0, 1.0 - exp(-cfg.step_smooth * delta))
+	_head.position.y = lerpf(cfg.stand_eye_height, cfg.crouch_eye_height, _crouch_blend) + _step_offset
 
 
 func _on_settings_changed() -> void:

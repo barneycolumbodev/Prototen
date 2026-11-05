@@ -423,6 +423,8 @@ func _activate(index: int) -> void:
 
 
 func _physics_process(delta: float) -> void:
+	# The gun runs in the player's time (faster than the world while dilated).
+	delta *= TimeControl.player_boost()
 	var active: bool = input_enabled and _player.input_enabled
 	var pull: bool = false
 	var held: bool = false
@@ -481,6 +483,8 @@ func _physics_process(delta: float) -> void:
 
 	# Aiming or shooting beats sprinting.
 	_player.sprint_blocked = aim_held
+	# Holding the trigger keeps auto-sprint from starting again mid-burst.
+	_player.auto_sprint_blocked = held or pull
 	if (pull or aim_held) and _player.is_sprinting():
 		_player.stop_sprint()
 	if _player.is_sprinting():
@@ -519,8 +523,9 @@ func _physics_process(delta: float) -> void:
 
 
 func _process(delta: float) -> void:
+	delta *= TimeControl.player_boost()
 	_update_wheel()
-	enemy_amount = move_toward(enemy_amount, 1.0 if over_enemy else 0.0, delta / maxf(Engine.time_scale, 0.01) / 0.06)
+	enemy_amount = move_toward(enemy_amount, 1.0 if over_enemy else 0.0, TimeControl.real_delta(delta / TimeControl.player_boost()) / 0.06)
 	var a: float = ads_visual()
 	# Camera: recoil springs back; FOV and look speed follow the sights.
 	cam_recoil.step(delta)

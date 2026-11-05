@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="PartData" load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://src/body/part_data.gd" id="1"]
+[ext_resource type="Script" path="res://src/body/stat_modifier.gd" id="2"]
+[ext_resource type="Script" path="res://src/body/part_visual.gd" id="3"]
+
+[resource]
+script = ExtResource("1")
+id = &"cs1_carapace"
+display_name = "CS-1 Carapace Synthskin"
+description = "The base suit: a sealed synthetic undersuit with segmented black carapace plates over chest, back, shoulders, forearms, thighs and shins. Spreads impacts across the plates."
+location = 10
+mass_kg = 6.0
+power_draw_w = 15.0
+heat_w = 20.0
+capacity = 0
+modifiers = Array[ExtResource("2")]([])
+visuals = Array[ExtResource("3")]([])

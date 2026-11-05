@@ -122,9 +122,9 @@ func _ready() -> void:
 	cs.name = "Capsule"
 	var cap: CapsuleShape3D = CapsuleShape3D.new()
 	cap.radius = 0.3
-	cap.height = 1.75
+	cap.height = 1.75 * config.body_scale
 	cs.shape = cap
-	cs.position = Vector3(0, 0.875, 0)
+	cs.position = Vector3(0, cap.height * 0.5, 0)
 	add_child(cs)
 	body = EnemyBody.new()
 	body.name = "Body"
@@ -187,7 +187,7 @@ func on_part_hit(part: HitboxPart, hit: BallisticHit) -> void:
 		body.add_wound(zone, hit.exit_point, clampf(0.012 + hit.energy_out * 0.000004, 0.012, 0.045), true)
 	var violence: float = sqrt(maxf(dep, 30.0) / 300.0)
 	Gore.flesh_hit(hit, violence, head)
-	var impulse: Vector3 = hit.direction * hit.damage.impulse
+	var impulse: Vector3 = hit.direction * hit.damage.impulse * TimeControl.impact_multiplier()
 	if not alive:
 		body.push_bone(zone, impulse * 1.2, hit.point)
 		_try_sever(zone, hit)
@@ -198,7 +198,7 @@ func on_part_hit(part: HitboxPart, hit: BallisticHit) -> void:
 	health -= dmg
 	if hit.result == BallisticHit.Result.PENETRATED:
 		bleed_dps = minf(bleed_dps + 1.5, 6.0)
-	body.flinch(hit.direction, clampf(hit.damage.impulse / 3.0, 0.3, 2.5), head)
+	body.flinch(hit.direction, clampf(hit.damage.impulse / 3.0 * TimeControl.impact_multiplier(), 0.3, 3.5), head)
 	_alerted_by(hit.shooter)
 	suppression = minf(suppression + 0.45, 1.0)
 	morale -= 0.08 + clampf(dmg / 300.0, 0.0, 0.2)
@@ -371,10 +371,11 @@ func die(hit: BallisticHit, zone: StringName, cause: StringName = &"shot") -> vo
 	var point: Vector3 = body.chest_position()
 	if hit:
 		var heavy: float = clampf(hit.damage.impulse, 4.0, 40.0)
-		impulse = hit.direction * heavy * 1.4 + Vector3.UP * heavy * 0.15
+		impulse = (hit.direction * heavy * 1.4 + Vector3.UP * heavy * 0.15) * TimeControl.impact_multiplier()
 		point = hit.point
 	body.ragdoll(impulse + velocity * 40.0, point, zone)
 	body.ragdoll_frozen.connect(_on_frozen, CONNECT_ONE_SHOT)
+	create_tween().tween_method(body.set_rim, 1.0, 0.0, 0.8)
 	Sfx.play_at(&"body_fall", global_position + Vector3.UP * 0.5, -2.0, 0.1)
 	var cry: StringName = death_cry(zone, cause == &"shot" and hit != null, state_before_death, cause == &"burn" or is_burning(), _rng.randf())
 	if cry != &"" and Sfx.claim_death_voice():

@@ -1,0 +1,56 @@
+[gd_resource type="Resource" script_class="PartData" load_steps=9 format=3]
+
+[ext_resource type="Script" path="res://src/body/part_data.gd" id="1"]
+[ext_resource type="Script" path="res://src/body/stat_modifier.gd" id="2"]
+[ext_resource type="Script" path="res://src/body/part_visual.gd" id="3"]
+
+[sub_resource type="Resource" id="mod_0"]
+script = ExtResource("2")
+stat = &"carry_kg"
+add = 30.0
+mul = 1.0
+
+[sub_resource type="Resource" id="mod_1"]
+script = ExtResource("2")
+stat = &"damage_per_kj"
+add = 0.0
+mul = 0.92
+
+[sub_resource type="Resource" id="mod_2"]
+script = ExtResource("2")
+stat = &"recoil"
+add = 0.0
+mul = 0.85
+
+[sub_resource type="Resource" id="vis_0"]
+script = ExtResource("3")
+socket = &"hand.L"
+shape = 3
+size = Vector3(0.014, 0.01, 0.014)
+offset = Vector3(0, 0.02, 0.03)
+rotation_deg = Vector3(0, 0, 0)
+finish = "hardware"
+first_person = true
+
+[sub_resource type="Resource" id="vis_1"]
+script = ExtResource("3")
+socket = &"hand.R"
+shape = 3
+size = Vector3(0.014, 0.01, 0.014)
+offset = Vector3(0, 0.02, 0.03)
+rotation_deg = Vector3(0, 0, 0)
+finish = "hardware"
+first_person = true
+
+[resource]
+script = ExtResource("1")
+id = &"tl3_titanium_skeleton"
+display_name = "TL-3 Titanium-Lattice Skeleton"
+description = "Lattice-reinforced bones. Carries more, shrugs off more; heavy."
+location = 3
+mass_kg = 9.0
+power_draw_w = 0.0
+heat_w = 0.0
+capacity = 2
+modifiers = Array[ExtResource("2")]([SubResource("mod_0"), SubResource("mod_1"), SubResource("mod_2")])
+visuals = Array[ExtResource("3")]([SubResource("vis_0"), SubResource("vis_1")])

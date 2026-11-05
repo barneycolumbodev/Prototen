@@ -118,6 +118,9 @@ func setup(p_owner: Node, p_config: EnemyConfig) -> void:
 
 func _ready() -> void:
 	_model = MODEL.instantiate() as Node3D
+	# Uniform scale: the skinned mesh, hitboxes, gun and ragdoll joints follow
+	# it (test_enemies_are_bigger_and_ragdoll_keeps_proportions).
+	_model.scale = Vector3.ONE * config.body_scale
 	add_child(_model)
 	skeleton = _model.find_child("Skeleton3D", true, false) as Skeleton3D
 	_setup_meshes()
@@ -215,6 +218,11 @@ func ballistic_exclude() -> Array[RID]:
 
 func set_char(amount: float) -> void:
 	material.set_shader_parameter(&"char_amount", clampf(amount, 0.0, 1.0))
+
+
+## 1 = rim light on (alive), 0 = off. Tweened by the enemy when he dies.
+func set_rim(amount: float) -> void:
+	material.set_shader_parameter(&"rim_alive", clampf(amount, 0.0, 1.0))
 
 
 func set_bloodied(amount: float) -> void:
@@ -482,6 +490,8 @@ func _setup_meshes() -> void:
 	material.set_shader_parameter(&"trousers_tint", config.trousers_tint)
 	material.set_shader_parameter(&"skin_tint", config.skin_tint)
 	material.set_shader_parameter(&"wound_count", 0)
+	material.set_shader_parameter(&"rim_color", config.rim_color)
+	material.set_shader_parameter(&"rim_strength", config.rim_strength)
 	var empty_w: PackedVector4Array = PackedVector4Array()
 	empty_w.resize(MAX_WOUNDS)
 	material.set_shader_parameter(&"wounds", empty_w)
