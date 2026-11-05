@@ -34,5 +34,6 @@ Target: Moto G 5G (2025) — Dimensity 6300, Mali-G57 MC2, 4 GB RAM, 720×1604 a
 - One `CSGCombiner3D`/mesh per material per room chunk; share materials.
 - Baked lighting + ≤ 4 dynamic lights; one shadow caster. On baked maps (Chinatown) the map's own lights are in the lightmap; the ~20 "character lights" (no shadows) skip the map's visual layer and only touch enemies, the player's gun and effects, so they don't count against the 4. Check them on the phone.
 - Baked maps: one draw call per chunk (texture-array shader), ~315k triangles in total, small props in `_detail` meshes that stop drawing past 42 m.
+- Textures ship at 2K at most: bake at 4K if you like, but set `process/size_limit=2048` in the `.import` file. On a 720p screen 4K looks the same and costs 4× the download and VRAM (four 4K guns pushed the APK to 356 MB and the owner's phone couldn't install it, 2026-11-05). Exception: the Chinatown lightmap (4096², one texture for the whole map).
 - No per-frame allocations in hot paths (reuse arrays, avoid string building in `_process`).
 - Mobile renderer first; Compatibility only if the M0 comparison says so.
