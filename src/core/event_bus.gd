@@ -12,6 +12,9 @@ signal killed(victim: Node, info: DamageInfo)
 signal benchmark_requested(duration_sec: float)
 @warning_ignore("unused_signal")
 signal benchmark_finished(result: Dictionary)
+## Pause menu → Map cost test: times the map with each effect switched off.
+@warning_ignore("unused_signal")
+signal feature_sweep_requested
 ## Every bullet contact (ballistics.gd): effects, sound, stats and targets listen.
 @warning_ignore("unused_signal")
 signal ballistic_hit(hit: BallisticHit)

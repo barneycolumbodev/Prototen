@@ -8,7 +8,7 @@
 script = ExtResource("1")
 display_name = "Red Pole"
 callsign = "RED POLE"
-jacket_tint = Color(0.3, 0.035, 0.04, 1)
+jacket_tint = Color(0.44, 0.05, 0.05, 1)
 trousers_tint = Color(0.06, 0.06, 0.065, 1)
 plate_carrier = false
 gun_scene = ExtResource("2")

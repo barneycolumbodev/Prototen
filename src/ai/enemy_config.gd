@@ -13,6 +13,14 @@ extends Resource
 @export var trousers_tint: Color = Color(0.16, 0.16, 0.15)
 @export var skin_tint: Color = Color(1, 1, 1)
 @export var plate_carrier: bool = false
+## Whole-body scale (model, hitboxes, capsule). Owner, 2026-11-05: enemies read
+## too small on the phone screen; 1.08 makes a 1.75 m man about 1.89 m.
+@export_range(0.8, 1.3) var body_scale: float = 1.08
+## Rim light that outlines the body against a dark background, stronger with
+## distance (owner: "they need to stand out against the environment, think
+## Halo CE"). 0 = off. Fades out when he dies.
+@export var rim_color: Color = Color(0.62, 0.72, 0.85)
+@export_range(0.0, 2.0) var rim_strength: float = 0.8
 ## Third-person gun model (assets/weapons/enemy/*.gltf) and its ballistics.
 @export var gun_scene: PackedScene
 @export var weapon: WeaponData

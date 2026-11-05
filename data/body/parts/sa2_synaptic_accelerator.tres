@@ -1,0 +1,30 @@
+[gd_resource type="Resource" script_class="PartData" load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://src/body/part_data.gd" id="1"]
+[ext_resource type="Script" path="res://src/body/stat_modifier.gd" id="2"]
+[ext_resource type="Script" path="res://src/body/part_visual.gd" id="3"]
+
+[sub_resource type="Resource" id="mod_0"]
+script = ExtResource("2")
+stat = &"aim_speed"
+add = 0.0
+mul = 1.25
+
+[sub_resource type="Resource" id="mod_1"]
+script = ExtResource("2")
+stat = &"reload_speed"
+add = 0.0
+mul = 1.15
+
+[resource]
+script = ExtResource("1")
+id = &"sa2_synaptic_accelerator"
+display_name = "SA-2 Synaptic Accelerator"
+description = "Faster aiming, reloads and recoil recovery."
+location = 2
+mass_kg = 0.3
+power_draw_w = 35.0
+heat_w = 30.0
+capacity = 2
+modifiers = Array[ExtResource("2")]([SubResource("mod_0"), SubResource("mod_1")])
+visuals = Array[ExtResource("3")]([])

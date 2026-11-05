@@ -40,3 +40,7 @@ Every third-party file in the repository, with its source and license (CLAUDE.md
 | Chinatown docks map (geometry, colliders, spawn points, baked lightmap) | `assets/levels/chinatown/` | `raw_assets/levels/chinatown/build.py` + `bake.py` (Blender/bpy, Cycles CPU bake). |
 | Night sky, harbour water, far-shore skyline, rain and steam shaders | `src/levels/chinatown/*.gdshader` | Written for this project. |
 | Chinatown ambience (rain, harbour with ship horn, neon hum, kitchen extractor, radio tune) | `assets/audio/sfx/amb_*` | Synthesized by `raw_assets/audio/build_ambience.py` (numpy). |
+| Enemy death voices (screams, choking, groans, last breath) and ricochet whines | `assets/audio/sfx/death_*`, `ricochet_*` | Synthesized by `raw_assets/audio/build_voice_sfx.py` (source-filter voice model) and `build_enemy_sfx.py` (numpy/scipy). No recordings. |
+| Harbour night sky panorama | `assets/env/sky/harbour_night.png` | `raw_assets/env/sky/build_night_sky.py` (numpy, procedural). |
+| RX-9 time-slowdown sounds (engage, release, heartbeat loop, denied) | `assets/audio/sfx/td_*` | Synthesized by `raw_assets/audio/build_augment_sfx.py` (numpy/scipy). |
+| The operative: player base body in the CS-1 carapace (rigged, same skeleton as the triad) | `assets/characters/operative/` | `raw_assets/characters/operative/build.py` (Blender/bpy metaballs, voxel remesh, plates cut by plane bisection, bone-heat weights). |

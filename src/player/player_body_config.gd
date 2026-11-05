@@ -12,3 +12,17 @@ extends Resource
 @export_range(0.0, 500.0) var regen_rate: float = 45.0
 ## Seconds dead before respawning.
 @export_range(0.5, 10.0) var respawn_time: float = 3.0
+
+@export_group("Frame (docs/design.md §3.2)")
+## The operative before any parts: a heavily built man in the base carapace.
+@export var base_mass_kg: float = 96.0
+## Loadout capacity budget (parts cost 1-4 each).
+@export var capacity: int = 12
+## What the body can carry before heavy weapons slow it (M3).
+@export var carry_kg: float = 40.0
+## The spinal power cell: reserve (J) and what it supplies (W).
+@export var power_capacity_j: float = 60000.0
+@export var power_supply_w: float = 450.0
+## Heat the body can hold (J) and shed (W).
+@export var heat_capacity_j: float = 90000.0
+@export var heat_dissipation_w: float = 380.0

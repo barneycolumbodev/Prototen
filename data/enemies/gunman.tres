@@ -8,8 +8,8 @@
 script = ExtResource("1")
 display_name = "Gunman"
 callsign = "GUNMAN"
-jacket_tint = Color(0.06, 0.062, 0.068, 1)
-trousers_tint = Color(0.15, 0.15, 0.14, 1)
+jacket_tint = Color(0.14, 0.14, 0.15, 1)
+trousers_tint = Color(0.2, 0.23, 0.29, 1)
 plate_carrier = false
 gun_scene = ExtResource("2")
 weapon = ExtResource("3")

@@ -90,3 +90,50 @@ func test_a_at_a_ledge_mantles_onto_it() -> void:
 	assert_false(player.is_mantling())
 	assert_almost_eq(player.global_position.y, 1.5, 0.1, "standing on the ledge")
 	assert_lt(player.global_position.x, -14.0, "on top, past the edge")
+
+
+func _box_ahead(distance: float, height: float) -> StaticBody3D:
+	var b: StaticBody3D = StaticBody3D.new()
+	b.collision_layer = Ballistics.LAYER_WORLD
+	var cs: CollisionShape3D = CollisionShape3D.new()
+	var box: BoxShape3D = BoxShape3D.new()
+	box.size = Vector3(6.0, height, 30.0)
+	cs.shape = box
+	b.add_child(cs)
+	room.add_child(b)
+	var fwd: Vector3 = -player.global_basis.z
+	b.global_position = player.global_position + fwd * (distance + 15.0) + Vector3.UP * height * 0.5
+	b.global_basis = player.global_basis
+	return b
+
+
+func test_running_over_a_curb_keeps_speed() -> void:
+	# Playtest 2026-11-05: movement felt clumsy; a 20 cm curb stopped you dead.
+	_box_ahead(1.5, 0.2)
+	await wait_physics_frames(2)
+	var y0: float = player.global_position.y
+	Input.action_press(&"move_forward", 1.0)
+	var slowest: float = 99.0
+	for i: int in 40:
+		await wait_physics_frames(1)
+		if i > 12:
+			slowest = minf(slowest, _speed())
+	assert_gt(slowest, player.movement.walk_speed - 0.5, "the curb doesn't stop you (slowest %.1f m/s)" % slowest)
+	assert_gt(player.global_position.y, y0 + 0.17, "up on the curb (%.2f m)" % (player.global_position.y - y0))
+	assert_gt(_speed(), player.movement.walk_speed, "still running (%.1f m/s)" % _speed())
+
+
+func test_a_crate_still_blocks() -> void:
+	_box_ahead(1.0, 0.7)
+	await wait_physics_frames(2)
+	var y0: float = player.global_position.y
+	Input.action_press(&"move_forward", 1.0)
+	await wait_physics_frames(50)
+	assert_lt(player.global_position.y, y0 + 0.1, "a 70 cm crate is a mantle, not a step")
+
+
+func test_full_tilt_sprints_without_l3() -> void:
+	Input.action_press(&"move_forward", 1.0)
+	await wait_physics_frames(30)
+	assert_true(player.is_sprinting(), "auto-sprint")
+	assert_gt(_speed(), player.movement.walk_speed + 1.0)

@@ -24,6 +24,9 @@ func test_player_lands_on_floor() -> void:
 
 func test_stick_forward_moves_north_at_walk_speed() -> void:
 	var start: Vector3 = player.global_position
+	# Just under full tilt (full tilt auto-sprints).
+	player.movement = player.movement.duplicate() as MovementConfig
+	player.movement.auto_sprint = false
 	Input.action_press(&"move_forward", 1.0)
 	await wait_physics_frames(30)
 	var speed: float = Vector2(player.velocity.x, player.velocity.z).length()

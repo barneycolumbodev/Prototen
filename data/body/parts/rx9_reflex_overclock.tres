@@ -1,0 +1,78 @@
+[gd_resource type="Resource" script_class="TimeDilationData" load_steps=9 format=3]
+
+[ext_resource type="Script" path="res://src/augments/active/time_dilation/time_dilation_data.gd" id="1"]
+[ext_resource type="Script" path="res://src/body/stat_modifier.gd" id="2"]
+[ext_resource type="Script" path="res://src/body/part_visual.gd" id="3"]
+[ext_resource type="Script" path="res://src/augments/active/time_dilation/time_dilation.gd" id="4"]
+
+[sub_resource type="Resource" id="vis_0"]
+script = ExtResource("3")
+socket = &"neck"
+shape = 1
+size = Vector3(0.07, 0.05, 0.035)
+offset = Vector3(0, 0.03, 0.055)
+rotation_deg = Vector3(0, 0, 0)
+finish = "hardware"
+first_person = false
+
+[sub_resource type="Resource" id="vis_1"]
+script = ExtResource("3")
+socket = &"neck"
+shape = 1
+size = Vector3(0.05, 0.006, 0.004)
+offset = Vector3(0, 0.035, 0.074)
+rotation_deg = Vector3(0, 0, 0)
+finish = "glow"
+first_person = false
+
+[sub_resource type="Resource" id="vis_2"]
+script = ExtResource("3")
+socket = &"head"
+shape = 3
+size = Vector3(0.012, 0.006, 0.012)
+offset = Vector3(0.072, 0.06, 0.0)
+rotation_deg = Vector3(0, 0, 90)
+finish = "glow"
+first_person = false
+
+[sub_resource type="Resource" id="vis_3"]
+script = ExtResource("3")
+socket = &"head"
+shape = 3
+size = Vector3(0.012, 0.006, 0.012)
+offset = Vector3(-0.072, 0.06, 0.0)
+rotation_deg = Vector3(0, 0, 90)
+finish = "glow"
+first_person = false
+
+[resource]
+script = ExtResource("1")
+id = &"rx9_reflex_overclock"
+display_name = "RX-9 Reflex Overclock"
+description = "Neural co-processor at the base of the skull. Overclocks perception and motor control: the world seems to crawl while you keep moving. Press LB to engage, again to release. Runs on its own charge, which refills over time."
+location = 2
+mass_kg = 0.4
+power_draw_w = 20.0
+heat_w = 10.0
+capacity = 3
+modifiers = Array[ExtResource("2")]([])
+visuals = Array[ExtResource("3")]([SubResource("vis_0"), SubResource("vis_1"), SubResource("vis_2"), SubResource("vis_3")])
+behaviour = ExtResource("4")
+slot = 1
+deploy_time = 0.18
+recover_time = 0.3
+cooldown_time = 0.5
+charge_max = 8.0
+drain_per_s = 1.0
+regen_per_s = 0.45
+regen_delay = 2.0
+min_to_start = 1.5
+active_power_w = 240.0
+active_heat_w = 300.0
+world_scale = 0.3
+player_scale = 0.65
+impact_boost = 1.8
+saturation = 0.55
+lowpass_hz = 2400.0
+fov_kick_deg = 3.0
+tint = Color(0.45, 0.85, 0.95, 0.16)

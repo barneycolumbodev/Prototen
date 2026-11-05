@@ -23,6 +23,11 @@ extends Resource
 @export_range(0.0, 0.3) var move_outer_deadzone: float = 0.05
 ## Sprint ends when the stick drops below this or points sideways/back.
 @export_range(0.1, 1.0) var sprint_min_forward: float = 0.5
+## Full tilt forward sprints on its own after `auto_sprint_delay` (L3 still
+## works). Playtest 2026-11-05: movement felt clumsy.
+@export var auto_sprint: bool = true
+@export_range(0.5, 1.0) var auto_sprint_tilt: float = 0.92
+@export var auto_sprint_delay: float = 0.15
 @export_group("Slide")
 ## B while moving this fast (sprinting) starts a slide.
 @export var slide_min_speed: float = 8.0
@@ -49,6 +54,12 @@ extends Resource
 @export var wallrun_jump_up: float = 8.0
 @export var wallrun_tilt_deg: float = 12.0
 @export var wallrun_cooldown: float = 0.4
+@export_group("Steps")
+## Curbs, sills, stair treads and low lips up to this height are walked
+## over without a jump; the camera eases over the step instead of popping.
+@export var step_height: float = 0.45
+## How fast the camera catches up after a step (1/s, exponential).
+@export var step_smooth: float = 14.0
 @export_group("Mantle")
 ## Ledges between these heights (above the feet) can be climbed with A.
 @export var mantle_min_height: float = 0.45

@@ -529,7 +529,9 @@ func _near_misses(p: Projectile, a: Vector3, b: Vector3) -> void:
 		var d: float = closest.distance_to(c)
 		if d < NEAR_MISS_RADIUS:
 			p.near_missed.append(id)
-			n.call(&"on_near_miss", p.shooter, p.weapon, d, closest)
+			# The shooter may have been freed while the round was in flight.
+			var shooter: Node = p.shooter if is_instance_valid(p.shooter) else null
+			n.call(&"on_near_miss", shooter, p.weapon, d, closest)
 
 
 ## Handles one contact. Returns where the round continues from.

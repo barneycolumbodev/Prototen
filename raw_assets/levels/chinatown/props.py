@@ -146,7 +146,7 @@ def bollard(k, pos):
     prof = [(0.22, 0.0), (0.2, 0.05), (0.15, 0.1), (0.13, 0.35), (0.16, 0.42), (0.19, 0.5), (0.2, 0.56), (0.17, 0.6), (0.0, 0.62)]
     k.lathe(np.asarray(pos), prof, "paint_metal", (0.1, 0.1, 0.1), sides=14)
     k.box((pos[0], pos[1], pos[2] + 0.015), (0.5, 0.5, 0.03), "rust")
-    k.collider((pos[0], pos[1], pos[2] + 0.3), (0.4, 0.4, 0.6), 0, "steel_target")
+    k.collider((pos[0], pos[1], pos[2] + 0.3), (0.4, 0.4, 0.6), 0, "steel_post")
 
 
 def tyre(k, centre, R, r=0.38, tube=0.11, sides=14):
@@ -236,7 +236,7 @@ def street_lamp(k, pos, yaw=0.0, height=6.5, reach=1.6):
     k.box(head + (0, 0, 0.06), (0.32, 0.6, 0.14), "paint_metal", (0.16, 0.2, 0.18), yaw=yaw, chamfer=0.03)
     k.box(head - (0, 0, 0.02), (0.26, 0.5, 0.03), "emissive", (1.0, 0.55, 0.2), yaw=yaw, emit=7.0)
     light(k, head - (0, 0, 0.25), (1.0, 0.62, 0.3), 260.0, radius=0.15, kind="SPOT", spot=120, direction=(0, 0, -1), dyn=True, rng=14.0)
-    k.collider(w((0, 0, 1.5)), (0.25, 0.25, 3.0), yaw, "steel_target")
+    k.collider(w((0, 0, 1.5)), (0.25, 0.25, 3.0), yaw, "steel_post")
 
 
 def bulb(k, pos, color=(1.0, 0.75, 0.45), energy=25.0, cord=0.4, shade=None, dyn=False):
@@ -351,7 +351,7 @@ def hydrant(k, pos):
         a = np.asarray(pos) + R @ np.array([0.08, 0, 0.45])
         b = np.asarray(pos) + R @ np.array([0.18, 0, 0.45])
         k.cyl(a, b, 0.04, "paint_metal", (0.6, 0.6, 0.1), sides=8)
-    k.collider((pos[0], pos[1], pos[2] + 0.38), (0.3, 0.3, 0.76), 0, "steel_target")
+    k.collider((pos[0], pos[1], pos[2] + 0.38), (0.3, 0.3, 0.76), 0, "steel_post")
 
 
 def trash_bin(k, pos, tint=(0.15, 0.3, 0.18)):

@@ -43,6 +43,7 @@ var map_root: Node3D
 ## Start the rolling spawns on load (tests turn this off and start them by hand).
 var autostart_spawns: bool = true
 
+var sweep: FeatureSweep
 var _bench: FrameBench
 var _hud: Node
 var _bench_yaw0: float = 0.0
@@ -89,6 +90,7 @@ func _ready() -> void:
 	layout = load_layout()
 	_build_map_meshes()
 	_build_colliders()
+	_build_occluders()
 	_build_markers()
 	atmos = NightAtmosphere.new()
 	atmos.name = "Atmosphere"
@@ -109,6 +111,12 @@ func _ready() -> void:
 	_bench = FrameBench.new()
 	add_child(_bench)
 	_bench.finished.connect(_on_bench_finished)
+	sweep = FeatureSweep.new()
+	sweep.name = "FeatureSweep"
+	sweep.atmos = atmos
+	sweep.bench = _bench
+	add_child(sweep)
+	sweep.finished.connect(_on_sweep_finished)
 	_hud = preload("res://src/ui/hud.gd").new()
 	_hud.set("bench", _bench)
 	_hud.set("weapon", player.weapon())
@@ -127,6 +135,7 @@ func _ready() -> void:
 	add_child(wave_mode)
 	EventBus.wave_mode_requested.connect(wave_mode.toggle)
 	EventBus.benchmark_requested.connect(start_benchmark)
+	EventBus.feature_sweep_requested.connect(start_feature_sweep)
 	_build_navigation()
 	var spawns_on: bool = autostart_spawns and not CaptureDirector.is_capturing()
 	for arg: String in OS.get_cmdline_user_args():
@@ -138,12 +147,36 @@ func _ready() -> void:
 			world_material.set_shader_parameter(&"debug_view", arg.trim_prefix("--debug-view=").to_int())
 		if arg == "--god":
 			player.invulnerable = true
+		if arg == "--line-up":
+			_line_up.call_deferred()
+		if arg == "--sweep":
+			_quit_after_bench = true
+			spawns_on = false
+			start_feature_sweep.call_deferred()
 		if arg.begins_with("--bench="):
 			_quit_after_bench = true
 			spawns_on = false
 			start_benchmark.call_deferred(arg.trim_prefix("--bench=").to_float())
 	if spawns_on:
 		_start_spawns.call_deferred()
+
+
+## Capture aid (--line-up): three passive triad men down the street ahead of
+## the player start, at 9, 17 and 28 m, to judge size and readability.
+func _line_up() -> void:
+	await get_tree().physics_frame
+	var fwd: Vector3 = -player.global_basis.z
+	var right: Vector3 = player.global_basis.x
+	var roles: Array[String] = ["gunman", "red_pole", "enforcer"]
+	var dists: Array[float] = [9.0, 17.0, 28.0]
+	for i: int in 3:
+		var e: Enemy = Enemy.new()
+		e.config = load("res://data/enemies/%s.tres" % roles[i]) as EnemyConfig
+		e.passive = true
+		add_child(e)
+		e.global_position = player.global_position + fwd * dists[i] + right * (1.6 * (i - 1))
+		var to: Vector3 = player.global_position - e.global_position
+		e.face(atan2(to.x, to.z))
 
 
 func _start_spawns() -> void:
@@ -169,6 +202,8 @@ func _build_map_meshes() -> void:
 	world_material.set_shader_parameter(&"orm_arr", load("res://assets/env/world/world_orm.webp"))
 	if ResourceLoader.exists(LIGHTMAP):
 		world_material.set_shader_parameter(&"lightmap", load(LIGHTMAP))
+	world_material.set_shader_parameter(&"noise_tex", NightAtmosphere._noise_texture(0.06, false, 7))
+	world_material.set_shader_parameter(&"hash_tex", hash_texture())
 	glass_material = ShaderMaterial.new()
 	glass_material.shader = preload("res://src/levels/chinatown/glass.gdshader")
 	glass_material.set_shader_parameter(&"albedo_arr", load("res://assets/env/world/world_albedo.webp"))
@@ -191,6 +226,55 @@ func _build_map_meshes() -> void:
 			mi.visibility_range_end = DETAIL_RANGE
 			mi.visibility_range_end_margin = 4.0
 			mi.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_DISABLED
+
+
+## 64×64 white noise, one random per channel per texel (the world shader's
+## per-cell randoms for rain ripples).
+static func hash_texture() -> ImageTexture:
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = 4417
+	var bytes: PackedByteArray = PackedByteArray()
+	bytes.resize(64 * 64 * 4)
+	for i: int in bytes.size():
+		bytes[i] = rng.randi() % 256
+	return ImageTexture.create_from_image(Image.create_from_data(64, 64, false, Image.FORMAT_RGBA8, bytes))
+
+
+# ------------------------------------------------------------------ occlusion
+
+## Big walls from layout.json become occluders, so the cells behind a
+## building aren't drawn (the map is split into 12 m cells for this). Only
+## upright, opaque boxes at least OCCLUDER_MIN tall and wide; glass and
+## invisible clip walls never occlude.
+const OCCLUDER_MIN: Vector2 = Vector2(2.6, 2.5)
+
+
+static func is_occluder(c: Dictionary) -> bool:
+	if fbool(c, "clip") or fstr(c, "surface") in ["glass", "thin_metal", "cardboard"]:
+		return false
+	if absf(fnum(c, "rx")) > 1.0 or absf(fnum(c, "ry")) > 1.0:
+		return false
+	var s: Vector3 = collider_size(c)  # Godot axes: y is height
+	return s.y >= OCCLUDER_MIN.x and maxf(s.x, s.z) >= OCCLUDER_MIN.y
+
+
+func _build_occluders() -> int:
+	var root: Node3D = Node3D.new()
+	root.name = "Occluders"
+	add_child(root)
+	var n: int = 0
+	for c: Dictionary in layout["colliders"]:
+		if not is_occluder(c):
+			continue
+		var box: BoxOccluder3D = BoxOccluder3D.new()
+		# A hair smaller than the wall, so it never hides what's in front of it.
+		box.size = collider_size(c) - Vector3(0.05, 0.05, 0.05)
+		var oi: OccluderInstance3D = OccluderInstance3D.new()
+		oi.occluder = box
+		oi.transform = collider_transform(c)
+		root.add_child(oi)
+		n += 1
+	return n
 
 
 # ------------------------------------------------------------------ colliders
@@ -324,8 +408,8 @@ func _build_navigation() -> void:
 # ------------------------------------------------------------------ benchmark (same as the test room)
 
 func _process(_delta: float) -> void:
-	if _bench.is_running():
-		var t: float = _bench.progress()
+	if _bench.is_running() or sweep.is_running():
+		var t: float = _bench.progress() if _bench.is_running() else 0.0
 		player.set_view(_bench_yaw0 + TAU * t, -0.08 + 0.1 * sin(t * TAU * 2.0))
 
 
@@ -338,7 +422,28 @@ func start_benchmark(duration_sec: float) -> void:
 	_bench.start(duration_sec)
 
 
+## Pause menu → Map cost test (FeatureSweep).
+func start_feature_sweep() -> void:
+	player.input_enabled = false
+	player.invulnerable = true
+	player.global_position = b2g([-8.0, 7.0, -0.15])
+	player.velocity = Vector3.ZERO
+	_bench_yaw0 = 0.0
+	if wave_mode.running:
+		wave_mode.stop()
+	sweep.start()
+
+
+func _on_sweep_finished(_rows: Array[Dictionary]) -> void:
+	player.input_enabled = true
+	player.invulnerable = false
+	if _quit_after_bench:
+		get_tree().quit()
+
+
 func _on_bench_finished(result: Dictionary) -> void:
+	if sweep.is_running():
+		return
 	player.input_enabled = true
 	player.invulnerable = false
 	Settings.store_bench_result(result)

@@ -1,0 +1,50 @@
+[gd_resource type="Resource" script_class="PartData" load_steps=8 format=3]
+
+[ext_resource type="Script" path="res://src/body/part_data.gd" id="1"]
+[ext_resource type="Script" path="res://src/body/stat_modifier.gd" id="2"]
+[ext_resource type="Script" path="res://src/body/part_visual.gd" id="3"]
+
+[sub_resource type="Resource" id="mod_0"]
+script = ExtResource("2")
+stat = &"move_speed"
+add = 0.0
+mul = 1.12
+
+[sub_resource type="Resource" id="mod_1"]
+script = ExtResource("2")
+stat = &"jump"
+add = 0.0
+mul = 1.15
+
+[sub_resource type="Resource" id="vis_0"]
+script = ExtResource("3")
+socket = &"forearm.L"
+shape = 1
+size = Vector3(0.03, 0.16, 0.012)
+offset = Vector3(0, 0.12, -0.04)
+rotation_deg = Vector3(0, 0, 0)
+finish = "glow"
+first_person = true
+
+[sub_resource type="Resource" id="vis_1"]
+script = ExtResource("3")
+socket = &"forearm.R"
+shape = 1
+size = Vector3(0.03, 0.16, 0.012)
+offset = Vector3(0, 0.12, -0.04)
+rotation_deg = Vector3(0, 0, 0)
+finish = "glow"
+first_person = true
+
+[resource]
+script = ExtResource("1")
+id = &"em2_myofibrils"
+display_name = "EM-2 Electroactive Myofibrils"
+description = "Synthetic muscle bands through the limbs. Faster sprint, higher jump; draws power and runs hot."
+location = 4
+mass_kg = 3.0
+power_draw_w = 60.0
+heat_w = 80.0
+capacity = 2
+modifiers = Array[ExtResource("2")]([SubResource("mod_0"), SubResource("mod_1")])
+visuals = Array[ExtResource("3")]([SubResource("vis_0"), SubResource("vis_1")])

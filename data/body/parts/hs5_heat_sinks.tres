@@ -1,0 +1,38 @@
+[gd_resource type="Resource" script_class="PartData" load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://src/body/part_data.gd" id="1"]
+[ext_resource type="Script" path="res://src/body/stat_modifier.gd" id="2"]
+[ext_resource type="Script" path="res://src/body/part_visual.gd" id="3"]
+
+[sub_resource type="Resource" id="vis_0"]
+script = ExtResource("3")
+socket = &"forearm.L"
+shape = 1
+size = Vector3(0.006, 0.14, 0.03)
+offset = Vector3(0.045, 0.12, 0)
+rotation_deg = Vector3(0, 0, 0)
+finish = "hardware"
+first_person = true
+
+[sub_resource type="Resource" id="vis_1"]
+script = ExtResource("3")
+socket = &"forearm.R"
+shape = 1
+size = Vector3(0.006, 0.14, 0.03)
+offset = Vector3(-0.045, 0.12, 0)
+rotation_deg = Vector3(0, 0, 0)
+finish = "hardware"
+first_person = true
+
+[resource]
+script = ExtResource("1")
+id = &"hs5_heat_sinks"
+display_name = "HS-5 Subdermal Heat Sinks"
+description = "Fins along the forearms shed heat faster; a hot signature."
+location = 10
+mass_kg = 2.0
+power_draw_w = 0.0
+heat_w = -160.0
+capacity = 1
+modifiers = Array[ExtResource("2")]([])
+visuals = Array[ExtResource("3")]([SubResource("vis_0"), SubResource("vis_1")])

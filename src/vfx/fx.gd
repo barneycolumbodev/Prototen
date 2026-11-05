@@ -215,8 +215,8 @@ func _physics_process(delta: float) -> void:
 		s.velocity = vt * 0.6 - vn * SHELL_RESTITUTION
 		s.spin *= 0.5
 		s.node.global_position = p + n * 0.004
-		if s.bounces < 3 and s.velocity.length() > 0.3:
-			Sfx.play_at(s.bank, p, -10.0 - s.bounces * 6.0)
+		if s.bounces < 2 and s.velocity.length() > 0.5:
+			Sfx.play_at(s.bank, p, -16.0 - s.bounces * 7.0)
 		s.bounces += 1
 		if s.velocity.length() < 0.35 or s.bounces > 6:
 			s.resting = true

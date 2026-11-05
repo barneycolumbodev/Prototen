@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="SurfaceLibrary" load_steps=15 format=3]
+[gd_resource type="Resource" script_class="SurfaceLibrary" load_steps=16 format=3]
 
 [ext_resource type="Script" path="res://src/weapons/surface_library.gd" id="1"]
 [ext_resource type="Script" path="res://src/weapons/surface_material.gd" id="0"]
@@ -14,8 +14,9 @@
 [ext_resource type="Resource" path="res://data/surfaces/glass.tres" id="11"]
 [ext_resource type="Resource" path="res://data/surfaces/crate.tres" id="12"]
 [ext_resource type="Resource" path="res://data/surfaces/cardboard.tres" id="13"]
+[ext_resource type="Resource" path="res://data/surfaces/steel_post.tres" id="14"]
 
 [resource]
 script = ExtResource("1")
-materials = Array[ExtResource("0")]([ExtResource("2"), ExtResource("3"), ExtResource("4"), ExtResource("5"), ExtResource("6"), ExtResource("7"), ExtResource("8"), ExtResource("9"), ExtResource("10"), ExtResource("11"), ExtResource("12"), ExtResource("13")])
+materials = Array[ExtResource("0")]([ExtResource("2"), ExtResource("3"), ExtResource("4"), ExtResource("5"), ExtResource("6"), ExtResource("7"), ExtResource("8"), ExtResource("9"), ExtResource("10"), ExtResource("11"), ExtResource("12"), ExtResource("13"), ExtResource("14")])
 fallback = &"concrete"

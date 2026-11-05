@@ -8,7 +8,7 @@
 script = ExtResource("1")
 display_name = "Enforcer"
 callsign = "ENFORCER"
-jacket_tint = Color(0.17, 0.18, 0.12, 1)
+jacket_tint = Color(0.25, 0.27, 0.15, 1)
 trousers_tint = Color(0.09, 0.09, 0.09, 1)
 plate_carrier = true
 gun_scene = ExtResource("2")

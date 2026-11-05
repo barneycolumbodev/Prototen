@@ -373,7 +373,7 @@ def market():
         for y in (MK_Y0, MK_Y1):
             k.extrude(ibeam, (x, y, 0.0), (x, y, eave), "paint_metal", steel, up=(1, 0, 0))
             k.box((x, y, 0.1), (0.4, 0.4, 0.2), "concrete", (0.4, 0.4, 0.4))
-            k.collider((x, y, eave / 2), (0.22, 0.22, eave), 0, "steel_target")
+            k.collider((x, y, eave / 2), (0.22, 0.22, eave), 0, "steel_post")
         # rafters to the ridge and a tie
         for (y0, y1) in ((MK_Y0 - 0.6, yr), (MK_Y1 + 0.6, yr)):
             z0 = eave - 0.25 * 0.6 / 1.0
@@ -532,7 +532,7 @@ def warehouse():
     k.box(((WH_X0 + WH_X1) / 2, (WH_Y0 + WH_Y1) / 2, 0.006), (WH_X1 - WH_X0 - 0.4, WH_Y1 - WH_Y0 - 0.4, 0.01), "concrete", (0.5, 0.5, 0.52), faces=["+z"])
     for x in (-39.5, -33.0, -26.5):
         for y in (-8.7, -3.3):
-            k.box((x, y, H / 2), (0.3, 0.3, H), "paint_metal", (0.5, 0.42, 0.1), col="steel_target")
+            k.box((x, y, H / 2), (0.3, 0.3, H), "paint_metal", (0.5, 0.42, 0.1), col="steel_post")
             k.box((x, y, 0.6), (0.36, 0.36, 1.2), "paint_metal", (0.55, 0.5, 0.1))
         k.box((x, -6.0, H - 0.4), (0.25, WH_Y1 - WH_Y0, 0.5), "paint_metal", (0.3, 0.3, 0.3))
     for x in np.arange(-43.0, -21.0, 4.0):
