@@ -182,6 +182,8 @@ Please try:
 
 Build: `dev-latest` from branch `claude/chinatown-docks-map-d2ojwh` @ 2d6ebea, CI run #13 (manual run, GUT 176/176). `graft-debug.apk`, 356 MB. The game now starts on the new map; the old test range is still there under Pause → Map.
 
+Rebuilt 2026-11-05: the 356 MB APK wouldn't install on the owner's phone ("problem parsing the package"). The file on GitHub verified fine, so the phone's copy was most likely incomplete. `dev-latest` is now branch `ccr-0ed172e0-34bgbk` @ b245573, CI run #15 (GUT 176/176), **222 MB**: the four 4K guns are capped to 2K on import (looks the same at 720p). Two flaky tests fixed on the way, one of them a real bug: an arriving enemy could be nudged into view at a doorway.
+
 What's new in the APK:
 - **Chinatown docks at night, in the rain.** A city block on the harbour: the quay with a moored fishing boat (you can board it over the gangplank), a pier, containers and a crane; the Pier 3 cold store; the fish market hall with stalls of fish on ice under red lamps; Harbour Street with lanterns strung overhead, neon and bilingual shop signs, a paifang gate at one end; the Sea View restaurant (walk in the front, through the kitchen and out the back); a narrow alley and the back alley behind the shops; a tenement gallery you can reach by the stairs on the quay side.
 - **Enemies on a rolling clock:** 8 triad members at the start; whenever fewer than 4 are still fighting, 3 more arrive. They always come in somewhere you can't see (doorways, alley ends, the boat, the cold room, behind the containers), at least 14 m away, and they know roughly where you are. The HUD shows kills and how many are still hostile. Pause → Enemies turns them off and on.
