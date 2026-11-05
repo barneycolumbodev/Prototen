@@ -51,6 +51,14 @@ The owner's examples:
 - **Shoulder-launched suicide drone.** A pod on your shoulder opens and launches the drone. You fly it from its camera and detonate it.
 - **Monofilament whip.** Hold LT to stop looking around; the right stick then moves the whip through the air. A melee weapon.
 - **Time slowdown.** Heavy, F.E.A.R. and S.T.A.L.K.E.R.-style impacts, especially with a SPAS-12. Hits sometimes knock enemies into ragdoll.
+  - Owner (2026-11-05): on **LB**. Press to enter, press again to leave, or it runs until the points are gone; the allotment refills over time, like health. No holding, so you can aim and act while it's on.
+  - Built (2026-11-05) as **RX-9 Reflex Overclock** (nervous system; a neural co-processor at the base of the skull overclocks perception and motor control). World at 30 %, the operative at 65 % (moving, shooting, reloading); looking stays real time. 8 s of charge, refills at 0.45/s after 2 s, needs 1.5 s to start. Colour drains, a cool vignette, everything muffled and pitched down (your own gun less), FOV +3°, ragdoll/limb/flinch impulses ×1.8. Charge bar above the health bar. Values in `data/body/parts/rx9_reflex_overclock.tres`. Not yet: knocking living enemies into a ragdoll.
+
+### 3.4a Parts system and the operative (built 2026-11-05)
+
+- **The operative** (owner, 2026-11-05): "a dude in a black synth suit... a really sleek-looking black carapace over his body. That's what our baseline augmented soldiers should look like. The different passives and actives can change the look." First pass in `raw_assets/characters/operative/build.py`: same skeleton as the triad, about 1.86 m, matte charcoal undersuit, segmented gloss-black plates (chest, abdominal bands, back and spine ridge, shoulders, arms, hands, thighs, knees, shins, boots), a closed helmet with a dark visor, and thin seaglass seam lights. Seen on the **body-status screen** (View button): a turntable with the parts' totals and stats. Next: sharper panel detail and normal maps, first-person arms in the same suit, the full body in shadows and reflections.
+- **Code** (§9.2 proposal, now built): `PartData` (location, mass, power, heat, capacity, `StatModifier`s, `PartVisual`s), `ActivePartData` (button slot, timings, charge), `BodyLoadout`, `BodyModel` (totals; stat = (base + Σadd) × Πmul; a power reserve and stored heat), `ActivePart` (idle → deploying → active → recovering → cooldown, interrupt), `Augments` (LB/RB/D-pad up), `BodyAppearance` (mounts part hardware on bone sockets). Frame values (mass, capacity, power, heat) in `data/player/body_default.tres`; parts in `data/body/parts/`; the default loadout (CS-1 carapace + RX-9) in `data/body/loadout_default.tres`.
+- Wired so far: health, damage taken, regen, move speed and jump read body stats. Power and heat are summed and shown but don't limit anything yet (M2). The §3.5 parts exist as data with first-guess numbers, not installed.
 
 ### 3.5 Starter parts *(proposal)*
 
@@ -84,6 +92,7 @@ The owner described two combinations. They are benchmarks for the systems, built
 - **Weapon:** suppressed FN Five-seveN, 5.7×28mm, 20-round magazine, long suppressor. Quiet, precise, fast follow-up shots.
 - **Parts:** myofibrils, synaptic accelerator, vestibular stabilizer, kinetic dampers, fire-control link. Actives: whip and time slowdown.
 - **Movement:** sprint, slide, wall-run, mantle, air dash.
+  - Owner (2026-11-05): "the goal is for your character to feel like a supremely dexterous super soldier"; on the Chinatown map movement "doesn't feel smooth, it feels weird interacting with the world." Built: step-up over curbs, sills and treads up to 45 cm at full speed (the camera eases over), snapping down steps instead of falling, and auto-sprint at full tilt (L3 still works). Values in `data/player/movement_default.tres` (Steps, `auto_sprint*`).
 - **What it should do:** move very fast, land headshots quickly and work through a crowd. Rounds can pass through one enemy into the next.
 - **Test** *(proposal)*: 12 enemies in a two-level room. A skilled player clears it in under about 25 seconds without stopping.
 
@@ -194,6 +203,9 @@ Weapon and arm motion is procedural: springs for sway, bob, recoil, landing, tur
 
 Decided: see "Visuals" in §2. No anime or cel shading.
 
+- **Enemy readability** (owner, 2026-11-05: "they come across as pretty small on the screen... they need to be more clearly standing out against the environment. Think of Halo CE"). Built: enemies at 1.08 scale (~1.89 m); a cool rim light on the body that grows with distance (far men outline against dark streets, near ones look natural) and fades when they die; lighter role colours (charcoal/blue-grey Gunman, olive Enforcer, crimson Red Pole). Values in `data/enemies/*.tres` (`body_scale`, `rim_color`, `rim_strength`).
+- **Owner on the look** (2026-11-05): the weapons are detailed and look good; the environment has "an eerie PS2 / early-2000s PC" vibe with the black sky. That vibe is acceptable if the game runs well and the gameplay carries, but more polish and a more cohesive style are welcome, never at the cost of frame rate. First step: a lit night sky instead of black (§7.1).
+
 *(proposal)*
 
 - Detail goes first to the first-person arms, weapons and augment hardware, since they're always on screen. Then hit effects and gore, then lighting, then enemies, then environments.
@@ -221,5 +233,7 @@ Three loops connect it all: quay ↔ west alley or market ↔ street; street ↔
 **Enemies** arrive on a rolling clock (`RollingSpawner`, `data/levels/chinatown_spawns.tres`): 8 at the start, and whenever fewer than 4 are still fighting (dead, surrendered and crawling men don't count) 3 more come in. Each one appears at one of 20 spawn points (doorways, alley ends, the boat, the cold room, behind the containers...) that the player's camera can't see at chest or head height, at least 14 m away, preferably behind the player. They know roughly where the player is and close in. Dying restarts the round.
 
 **Look.** Rainy night. Lighting is baked in Cycles into one 4096² lightmap (lamps, lanterns, neon, lit windows, a low moon, a light-polluted sky); real-time lights only touch characters and guns. Wet surfaces get darker and glossier, puddles ripple, rain stops under roofs, steam rises from drains and vents, reflection probes give the wet street its sheen (Mobile renderer), the harbour water shows streaks of the quay lights. Ambient sound: rain, water against the quay, a distant ship's horn, neon hum, an extractor fan, a radio in the restaurant.
+
+**Performance (2026-11-05).** The owner measured 28–29 fps here on the Moto G (the range was smooth). Changes: a pre-rendered sky panorama instead of a TIME-driven sky shader (which rebuilt radiance every frame); the map re-cut into 12 m cells (`split_cells.py`) with wall occluders, so culling and LODs work; cheaper water, world, steam shaders; bloom without its half-resolution level; adaptive resolution. Pause → Map cost test measures what each effect costs on the phone.
 
 **Pipeline.** Materials are a tileable texture array (`raw_assets/env/materials`, `raw_assets/env/atlases`); the map is one generator (`build.py`, with `props.py` and `buildings.py`) and one bake/export step (`bake.py`). Everything rebuilds from scratch.

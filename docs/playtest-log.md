@@ -200,3 +200,41 @@ Please try:
 - Measured:
 - Notes from the owner:
 - Follow-ups:
+
+## M1d playtest — 2026-11-05 — owner's notes on the Chinatown build
+
+Owner (paraphrased from voice notes): tried the MG42, pistol and railgun earlier; this time the shotgun and the M14 too: "they're both great." Loves the PSO reticle on the slug Saiga: "a scoped slug thrower like that, wielded by an augmented operative... looks fucking awesome." Problems:
+- **29 fps on the Chinatown map** (28–29 consistently); the range was buttery smooth, so the map is the cost. Don't reduce fidelity; optimise how the world is loaded and drawn for this phone. The environment has a PS2 / early-2000s PC vibe (black sky) next to detailed weapons; acceptable if it runs well, but polish and a cohesive style are welcome.
+- Shooting kept playing **the range's metal clinking sound**.
+- **No audio for enemies dying.**
+- **Enemies look small** on the phone screen and **don't stand out** from the environment ("think Halo CE").
+- **Movement doesn't feel smooth**; "it feels weird interacting with the world." The character should feel like a supremely dexterous super soldier.
+- Start the **augmentation foundation**: the base player model (a black synth suit / carapace, like the suit Lex Luthor wears under the mech in Injustice); passives and actives change the look.
+- First active: **time slowdown on LB**, press on / press off or until the points run out; the points refill over time like health. No holding.
+
+## M1e / M2 start — 2026-11-05 — Playtest fixes, RX-9 time slowdown, the operative (waiting for the owner)
+
+Build: `dev-latest` from branch `claude/chinatown-playtest-feedback-l1tyox` (manual CI run; details below once it's built). GUT 197/197 in the cloud.
+
+What's new in the APK:
+- **Faster Chinatown.** The sky no longer rebuilds its lighting every frame (and isn't black any more: a rain-cloud deck lit amber and violet by the city); the map is cut into small cells so the phone skips what's off-screen or behind buildings; the water, puddle and steam effects are much cheaper; bloom drops its most expensive pass. **Resolution: auto** (pause menu) lowers the 3D resolution only when the phone can't hold 60, and climbs back when it can.
+- **Map cost test** (pause menu): stand still for ~40 s; it times the map with everything on and then with each effect off, and shows a table. **Please screenshot it** — those numbers tell me exactly what to cut or keep next.
+- **Sounds:** the metal clink was ricochets playing the range's steel ping (concrete ricochets at shallow angles, so most misses on the street did it) and bollards/lamp posts using the range-target metal. Now: the surface's own impact plus a short ricochet whine; posts sound like heavy steel; brass casings are quieter. **Enemies die out loud:** screams, choking on neck/chest hits, a last breath on some head shots, groans when they bleed out or crawl.
+- **Enemies:** 8 % bigger, lighter role colours, and a cool rim light that grows with distance so they outline against the dark.
+- **Movement:** curbs, door sills and stair treads no longer stop you; the camera eases over them. **Full tilt forward sprints by itself** (L3 still works).
+- **LB: RX-9 Reflex Overclock (time slowdown).** Tap LB: the world drops to 30 % while you move, shoot and reload at 65 % (2.2× faster than everyone else); looking stays at full speed. Colour drains, sound muffles and drops, hits throw bodies harder. Tap LB again to drop out, or it ends when the bar (above your health) is empty. The bar refills after 2 s.
+- **View button: body status.** The operative, your base body in the black carapace (first pass), on a turntable, with the installed parts, mass, power, heat, capacity and stats.
+
+Please try:
+1. Chinatown with the overlay on: FPS in the street, the market and the quay, with enemies. Then **Pause → Map cost test** and screenshot the result.
+2. Shoot along the street and at a bollard: any metal clink left?
+3. Kill a few enemies with head, neck and body shots; set one on fire; leg one and let him crawl. Do the voices work, or do they sound synthetic in a bad way?
+4. Are enemies easier to see now? Big enough?
+5. Run along the street onto the sidewalks, up the gallery stairs, through doorways. Does movement feel better? Is auto-sprint welcome or annoying?
+6. RX-9: is 30 %/65 % the right feel? 8 s too long or short? Does the refill rate feel like health?
+7. Press View: what do you think of the suit as a starting point?
+
+- Device / renderer / settings:
+- Measured:
+- Notes from the owner:
+- Follow-ups:

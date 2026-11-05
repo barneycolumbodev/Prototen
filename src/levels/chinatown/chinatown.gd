@@ -147,6 +147,8 @@ func _ready() -> void:
 			world_material.set_shader_parameter(&"debug_view", arg.trim_prefix("--debug-view=").to_int())
 		if arg == "--god":
 			player.invulnerable = true
+		if arg == "--line-up":
+			_line_up.call_deferred()
 		if arg == "--sweep":
 			_quit_after_bench = true
 			spawns_on = false
@@ -157,6 +159,24 @@ func _ready() -> void:
 			start_benchmark.call_deferred(arg.trim_prefix("--bench=").to_float())
 	if spawns_on:
 		_start_spawns.call_deferred()
+
+
+## Capture aid (--line-up): three passive triad men down the street ahead of
+## the player start, at 9, 17 and 28 m, to judge size and readability.
+func _line_up() -> void:
+	await get_tree().physics_frame
+	var fwd: Vector3 = -player.global_basis.z
+	var right: Vector3 = player.global_basis.x
+	var roles: Array[String] = ["gunman", "red_pole", "enforcer"]
+	var dists: Array[float] = [9.0, 17.0, 28.0]
+	for i: int in 3:
+		var e: Enemy = Enemy.new()
+		e.config = load("res://data/enemies/%s.tres" % roles[i]) as EnemyConfig
+		e.passive = true
+		add_child(e)
+		e.global_position = player.global_position + fwd * dists[i] + right * (1.6 * (i - 1))
+		var to: Vector3 = player.global_position - e.global_position
+		e.face(atan2(to.x, to.z))
 
 
 func _start_spawns() -> void:

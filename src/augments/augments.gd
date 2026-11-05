@@ -12,6 +12,8 @@ const BUTTONS: Array[String] = ["LB", "RB", "D-UP"]
 var player: Player
 var parts: Dictionary[int, ActivePart] = {}
 var hud: AugmentHud
+## The body-status screen (View button).
+var status: BodyStatus
 
 
 func _ready() -> void:
@@ -31,6 +33,11 @@ func _ready() -> void:
 		add_child(node)
 		parts[a.slot] = node
 	player.died.connect(_on_died)
+	status = BodyStatus.new()
+	status.player = player
+	add_child(status)
+	if "--capture-body" in OS.get_cmdline_user_args():
+		status.open.call_deferred()
 	if not parts.is_empty() and not CaptureDirector.is_capturing():
 		hud = AugmentHud.new()
 		hud.augments = self

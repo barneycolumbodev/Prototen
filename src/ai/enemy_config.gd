@@ -20,7 +20,7 @@ extends Resource
 ## distance (owner: "they need to stand out against the environment, think
 ## Halo CE"). 0 = off. Fades out when he dies.
 @export var rim_color: Color = Color(0.62, 0.72, 0.85)
-@export_range(0.0, 2.0) var rim_strength: float = 0.55
+@export_range(0.0, 2.0) var rim_strength: float = 0.8
 ## Third-person gun model (assets/weapons/enemy/*.gltf) and its ballistics.
 @export var gun_scene: PackedScene
 @export var weapon: WeaponData

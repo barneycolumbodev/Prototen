@@ -29,7 +29,7 @@ uniform float bloodied : hint_range(0.0, 1.0) = 0.0;
 // against dark streets, growing with distance so far men still read on a
 // phone screen and near ones look natural. Faded out on death.
 uniform vec3 rim_color : source_color = vec3(0.62, 0.72, 0.85);
-uniform float rim_strength = 0.55;
+uniform float rim_strength = 0.8;
 uniform float rim_alive : hint_range(0.0, 1.0) = 1.0;
 
 varying vec3 rest_pos;
@@ -105,7 +105,7 @@ void fragment() {
 	ALBEDO = col;
 	float fres = 1.0 - clamp(dot(NORMAL, VIEW), 0.0, 1.0);
 	float dist = length(VERTEX);
-	float rim = fres * fres * fres * rim_strength * rim_alive * (0.25 + 0.75 * smoothstep(6.0, 28.0, dist)) * (1.0 - c);
+	float rim = fres * fres * fres * rim_strength * rim_alive * (0.25 + 0.75 * smoothstep(4.0, 24.0, dist)) * (1.0 - c);
 	EMISSION = rim_color * rim;
 	ROUGHNESS = mix(mix(rough, 0.18, wet), 0.95, c);
 	METALLIC = metal * (1.0 - wet);
