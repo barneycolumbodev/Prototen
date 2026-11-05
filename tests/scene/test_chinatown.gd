@@ -67,16 +67,19 @@ func test_walls_stop_bullets_but_clip_walls_do_not() -> void:
 
 func test_spawns_start_with_eight_out_of_sight() -> void:
 	var seen: Array[bool] = []
+	var dist: Array[float] = []
 	var space: PhysicsDirectSpaceState3D = map.get_world_3d().direct_space_state
 	map.wave_mode.spawned.connect(func(e: Enemy) -> void:
-		seen.append(RollingSpawner.sees(space, map.player.camera().global_position, e.global_position)))
+		seen.append(RollingSpawner.sees(space, map.player.camera().global_position, e.global_position))
+		dist.append(e.global_position.distance_to(map.player.global_position)))
 	map.wave_mode.start()
 	await wait_seconds(cfg.spawn_gap * cfg.start_count + 2.0)
 	assert_eq(map.wave_mode.spawned_total, cfg.start_count)
 	assert_eq(seen.size(), cfg.start_count)
 	assert_false(true in seen, "no one appeared in plain sight")
-	for e: Enemy in map.wave_mode.enemies:
-		assert_gt(e.global_position.distance_to(map.player.global_position), cfg.min_distance - 0.5)
+	# Measured as each one arrives: afterwards they advance on the player.
+	for d: float in dist:
+		assert_gt(d, cfg.min_distance - 0.5, "arrived far enough away")
 
 
 func test_three_more_when_fewer_than_four_fight() -> void:

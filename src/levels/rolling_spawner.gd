@@ -184,7 +184,12 @@ func _spawn(role: String, at: Vector3) -> Enemy:
 	e.config = load("res://data/enemies/%s.tres" % role) as EnemyConfig
 	squad.add(e)
 	level.add_child(e)
-	e.global_position = at + Vector3(_rng.randf_range(-0.3, 0.3), 0.05, _rng.randf_range(-0.3, 0.3))
+	# A little jitter so repeat spawns don't stack, but never into view: at a
+	# doorway or corner 0.3 m can be enough to step out from cover.
+	var jit: Vector3 = at + Vector3(_rng.randf_range(-0.3, 0.3), 0.0, _rng.randf_range(-0.3, 0.3))
+	if sees(level.get_world_3d().direct_space_state, player.camera().global_position, jit):
+		jit = at
+	e.global_position = jit + Vector3(0, 0.05, 0)
 	var to: Vector3 = player.global_position - e.global_position
 	e.face(atan2(to.x, to.z))
 	e.awareness = config.arrival_awareness
