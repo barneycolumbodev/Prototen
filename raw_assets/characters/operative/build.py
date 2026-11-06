@@ -736,7 +736,7 @@ def hardpoint(name, bone, c, r, near):
 
 
 _L = LIMB["L"]
-hardpoint("hp_shoulder", "upper_arm.L", _L["sh"] + _L["ua"] * 0.04 + _L["ua_out"] * 0.07, 0.017, (_L["sh"], _L["el"], 0.1))
+hardpoint("hp_shoulder", "upper_arm.L", _L["sh"] + _L["ua"] * 0.04 + _L["ua_out"] * 0.092, 0.017, (_L["sh"], _L["el"], 0.1))
 hardpoint("hp_forearm", "forearm.L", _L["el"] + _L["fa"] * 0.14 + _L["fa_out"] * 0.04, 0.014, (_L["el"], _L["wr"], 0.07))
 hardpoint("hp_thigh", "thigh.L", _L["hp"] + _L["th"] * 0.29 + _L["th_out"] * 0.075, 0.018, (_L["hp"], _L["knee"], 0.12))
 if "suit" in ONLY:
@@ -1460,6 +1460,7 @@ decimate_to(HELMET_LOW, 6000, symmetric=True)
 HEAD_LOW = low_copy(HEAD, "head_low")
 decimate_to(HEAD_LOW, 5200)
 HAIR_LOW = low_copy(HAIR, "hair_low")
+apply_mod(HAIR_LOW, "REMESH", mode="VOXEL", voxel_size=0.0028)   # curl loops would block the decimator
 decimate_to(HAIR_LOW, 4200)
 RIGID_LOW = []
 for ob, bone, sp in RIGID:
@@ -1467,6 +1468,10 @@ for ob, bone, sp in RIGID:
         continue
     lo_ob = low_copy(ob, ob.name + "_low")
     drop_hidden(lo_ob)
+    if len(lo_ob.data.polygons) == 0:
+        log("  plate hidden under the suit, dropped:", ob.name)
+        bpy.data.objects.remove(lo_ob)
+        continue
     target = int(np.clip(plate_area(lo_ob) * 15000, 50, 600))
     decimate_to(lo_ob, target, symmetric=sp["side"] is None)
     RIGID_LOW.append((lo_ob, bone))
