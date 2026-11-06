@@ -624,7 +624,7 @@ FLAT = ((0.0, -1.0, 0.0), 0.006)
 # channel of bare weave down the sternum. Faceted into planes, never a rounded cup.
 plate("pec", "chest", AND(H((0.011, 0, 0), -X1), H((0, 0, 1.452), (-0.15, 0, 1)), H((0, 0, 1.322), (0.32, 0, -1)),
                           H((0.152, 0, 1.4), (1, 0, -0.3)), H((0, -0.02, 0), Y1), OFF_ARM, off_neck(0.09)),
-      T=0.0048, facets=(((0.0, -1.0, 0.0), 0.007), ((0.55, -0.83, 0.0), 0.004), ((0.0, -0.72, 0.7), 0.005),
+      T=0.0048, facets=(((0.0, -1.0, 0.0), 0.0035), ((0.55, -0.83, 0.0), 0.004), ((0.0, -0.72, 0.7), 0.005),
                         ((0.0, -0.8, -0.6), 0.004)))
 plate("clav", "chest", AND(H((0.03, 0, 0), -X1), H((0, 0, 1.462), (0.15, 0, -1)), H((0, 0, 1.51), (-0.1, 0, 1)),
                            H((0.135, 0, 0), X1), H((0, -0.012, 0), Y1), off_neck(0.092), OFF_ARM),
@@ -1040,7 +1040,6 @@ def skull_model():
         Rear = sdf.rot((0, 0, 1), 22 * sx) @ sdf.rot((0, 1, 0), 8 * sx)
         ear_c = np.array((0.079 * sx, 0.016, 1.748))
         m.add(E(ear_c, (0.0065, 0.021, 0.031), Rear), k=0.004)                                # ear
-        m.sub(E(ear_c + np.array((0.0075 * sx, -0.003, -0.004)), (0.003, 0.011, 0.015), Rear), k=0.002)  # concha
         m.add(E((0.073 * sx, 0.006, 1.742), (0.007, 0.012, 0.016)), k=0.006)   # ear root
     return m
 
@@ -1352,9 +1351,9 @@ VIEWS = {
     "back": (75, (158, 4.6, 1.0), 0.97, True),
     "side": (75, (90, 4.6, 1.0), 0.97, True),
     "hero": (50, (-38, 3.4, 0.45), 1.05, True),
-    "bare": (50, (-38, 3.4, 0.45), 1.05, False),
+    "bare": (50, (34, 3.4, 0.45), 1.05, False),
     "helmet": (100, (-32, 1.2, 1.78), 1.755, True),
-    "head": (100, (-24, 1.15, 1.79), 1.765, False),
+    "head": (100, (26, 1.15, 1.79), 1.765, False),
     "helmet_front": (100, (-4, 1.2, 1.77), 1.755, True),
     "helmet_side": (100, (78, 1.2, 1.77), 1.755, True),
     "head_side": (100, (70, 1.15, 1.79), 1.765, False),
@@ -1456,7 +1455,7 @@ log("LOW")
 SUIT_LOW = low_copy(SUIT, "suit_low")
 decimate_to(SUIT_LOW, 15000, symmetric=True)
 HELMET_LOW = low_copy(HELMET, "helmet_low")
-decimate_to(HELMET_LOW, 6000, symmetric=True)
+decimate_to(HELMET_LOW, 9000, symmetric=True)
 HEAD_LOW = low_copy(HEAD, "head_low")
 decimate_to(HEAD_LOW, 5200)
 HAIR_LOW = low_copy(HAIR, "hair_low")
