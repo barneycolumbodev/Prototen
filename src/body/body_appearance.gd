@@ -1,9 +1,11 @@
 class_name BodyAppearance
 extends Node3D
 ## The operative's body as it looks with the installed parts (docs/design.md
-## §3.3, §9.2 "Appearance"): the base model in the CS-1 carapace
+## §3.3, §9.2 "Appearance"): the base model in the GS-2 graft suit
 ## (assets/characters/operative, raw_assets/characters/operative/build.py)
 ## plus every PartVisual of every part, mounted on its socket (a bone).
+## The model has three meshes: the suit, the helmet and the bare head; set
+## `helmet_on` to swap the helmet for the head.
 ## `rebuild()` after the loadout changes. Used by the body-status screen
 ## now; later by the player's full body (shadows, reflections) and the
 ## loadout screen.
@@ -12,6 +14,11 @@ const MODEL: PackedScene = preload("res://assets/characters/operative/operative.
 
 var loadout: BodyLoadout
 var skeleton: Skeleton3D
+## Helmet on (default) or off (the operative's own head and hair).
+var helmet_on: bool = true:
+	set(v):
+		helmet_on = v
+		_apply_helmet()
 ## Mounted part pieces (for tests and the loadout screen).
 var mounted: Array[Node3D] = []
 
@@ -30,7 +37,24 @@ func _ready() -> void:
 		"glow": _mat(Color(0.36, 0.86, 0.78), 0.4, 0.0, Color(0.36, 0.86, 0.78) * 3.0),
 	}
 	_relax_arms()
+	_apply_helmet()
 	rebuild()
+
+
+## The helmet and the bare head (mesh nodes in the model), or null.
+func part_mesh(part_name: String) -> MeshInstance3D:
+	if _model == null:
+		return null
+	return _model.find_child(part_name, true, false) as MeshInstance3D
+
+
+func _apply_helmet() -> void:
+	var helm: MeshInstance3D = part_mesh("operative_helmet")
+	var head: MeshInstance3D = part_mesh("operative_head")
+	if helm:
+		helm.visible = helmet_on
+	if head:
+		head.visible = not helmet_on
 
 
 static func _mat(albedo: Color, rough: float, metal: float, emission: Color) -> StandardMaterial3D:
