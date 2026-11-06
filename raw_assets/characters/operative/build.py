@@ -1732,20 +1732,29 @@ HIGH.hide_render = True
 HIGH.hide_set(True)
 
 # Split the helmet back out (same material and atlas; its own mesh so the game can take it off).
-bpy.ops.object.select_all(action="DESELECT")
-ATLAS.select_set(True)
-bpy.context.view_layer.objects.active = ATLAS
-part = np.empty(len(ATLAS.data.polygons), np.int32)
-ATLAS.data.attributes["part"].data.foreach_get("value", part)
-ATLAS.data.polygons.foreach_set("select", part == 1)
-bpy.ops.object.mode_set(mode="EDIT")
-bpy.ops.mesh.separate(type="SELECTED")
-bpy.ops.object.mode_set(mode="OBJECT")
+def keep_part(ob, value):
+    me = ob.data
+    part = np.empty(len(me.polygons), np.int32)
+    me.attributes["part"].data.foreach_get("value", part)
+    bm = bmesh.new()
+    bm.from_mesh(me)
+    bm.faces.ensure_lookup_table()
+    dead = [f for f in bm.faces if part[f.index] != value]
+    bmesh.ops.delete(bm, geom=dead, context="FACES")
+    loose = [v for v in bm.verts if not v.link_faces]
+    bmesh.ops.delete(bm, geom=loose, context="VERTS")
+    bm.to_mesh(me)
+    bm.free()
+    me.attributes.remove(me.attributes["part"])
+
+
+HELM = link(bpy.data.objects.new("operative_helmet", ATLAS.data.copy()))
+HELM.data.name = "operative_helmet"
+for vg in ATLAS.vertex_groups:
+    HELM.vertex_groups.new(name=vg.name)
 BODY = ATLAS
-HELM = [o for o in bpy.context.selected_objects if o is not BODY][0]
-HELM.name = HELM.data.name = "operative_helmet"
-for o in (BODY, HELM):
-    o.data.attributes.remove(o.data.attributes["part"])
+keep_part(HELM, 1)
+keep_part(BODY, 0)
 log("split: body", tris(BODY), "helmet", tris(HELM))
 
 # ---------------------------------------------------------------- head: bake normal/AO, colour per texel
