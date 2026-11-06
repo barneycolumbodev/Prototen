@@ -1204,13 +1204,13 @@ def in_poly(uv, poly):
 def head_colour(P, hair):
     """sRGB colour (N, 3) and roughness (N,) for head points P; `hair` marks hair points."""
     tex = FACE_TEX
-    trusted = tex[..., 3] > 0.9
-    skin0 = tex[..., :3][trusted].mean(0)
+    edge = (tex[..., 3] > 0.25) & (tex[..., 3] < 0.85)          # the face's own rim: match the skin to it
+    skin0 = np.median(tex[..., :3][edge], 0)
     n = len(P)
     col = np.tile(skin0, (n, 1))
     rough = np.full(n, 0.5)
     x, y, z = P[:, 0], P[:, 1], P[:, 2]
-    col *= (1 + 0.07 * (noise3(P, 70, 1) - 0.5))[:, None] * np.array((0.95, 0.86, 0.84))
+    col *= (1 + 0.07 * (noise3(P, 70, 1) - 0.5))[:, None] * np.array((0.97, 0.95, 0.95))
     fr = np.clip((noise3(P, 1100, 2) - 0.66) / 0.12, 0, 1) * (0.35 + 0.4 * noise3(P, 40, 3))
     col = col * (1 - 0.32 * fr[:, None]) + np.array((0.08, 0.02, -0.01)) * fr[:, None]
     ear = sdf.ss((np.abs(x) - 0.066) / 0.01) * sdf.ss((1.79 - z) / 0.01) * sdf.ss((z - 1.7) / 0.01)
@@ -1774,48 +1774,67 @@ HEAD_HIGH.hide_render = True
 HEAD_HIGH.hide_set(True)
 
 
-def bake_attr(ob, mats, img, mode):
-    """Emission bake of the LOW's own geometry: 'position' (world, float) or 'hair' (1 on hair)."""
-    sc = bpy.context.scene
-    for m in mats:
-        nt = m.node_tree
-        em = nt.nodes.new("ShaderNodeEmission")
-        em.name = "attr_emit"
-        if mode == "position":
-            geo = nt.nodes.new("ShaderNodeNewGeometry")
-            geo.name = "attr_geo"
-            nt.links.new(geo.outputs["Position"], em.inputs["Color"])
-        else:
-            v = 1.0 if m.name == "op_hair" else 0.0
-            em.inputs["Color"].default_value = (v, v, v, 1)
-        nt.links.new(em.outputs["Emission"], nt.nodes["Material Output"].inputs["Surface"])
-        node = nt.nodes.get("bake_target") or nt.nodes.new("ShaderNodeTexImage")
-        node.name = "bake_target"
-        node.image = img
-        nt.nodes.active = node
-    bpy.ops.object.select_all(action="DESELECT")
-    ob.select_set(True)
-    bpy.context.view_layer.objects.active = ob
-    sc.cycles.samples = 1
-    bpy.ops.object.bake(type="EMIT", use_selected_to_active=False, margin=12, use_clear=True)
-    for m in mats:
-        nt = m.node_tree
-        nt.links.new(nt.nodes["Principled BSDF"].outputs["BSDF"], nt.nodes["Material Output"].inputs["Surface"])
-        for nm in ("attr_emit", "attr_geo"):
-            if nt.nodes.get(nm):
-                nt.nodes.remove(nt.nodes[nm])
-    a = np.empty(HSIZE * HSIZE * 4, np.float32)
-    img.pixels.foreach_get(a)
-    return a.reshape(-1, 4)
+def raster_uv(ob, size):
+    """Per texel of `ob`'s UV map: world position, material index and coverage (numpy rasterizer),
+    with positions grown 8 px past island edges so filtering never reads an empty texel."""
+    me = ob.data
+    me.calc_loop_triangles()
+    nt = len(me.loop_triangles)
+    LT = np.empty(nt * 3, np.int64)
+    me.loop_triangles.foreach_get("loops", LT)
+    LT = LT.reshape(-1, 3)
+    TM = np.empty(nt, np.int64)
+    me.loop_triangles.foreach_get("material_index", TM)
+    LV = np.empty(len(me.loops), np.int64)
+    me.loops.foreach_get("vertex_index", LV)
+    UVL = np.empty(len(me.loops) * 2)
+    me.uv_layers.active.data.foreach_get("uv", UVL)
+    UVL = UVL.reshape(-1, 2) * size - 0.5
+    Pv = verts(ob)
+    pos = np.zeros((size, size, 3))
+    mat = np.full((size, size), -1, np.int64)
+    for t in range(nt):
+        uv = UVL[LT[t]]
+        pv = Pv[LV[LT[t]]]
+        x0, y0 = np.floor(uv.min(0)).astype(int)
+        x1, y1 = np.ceil(uv.max(0)).astype(int)
+        x0, y0, x1, y1 = max(x0, 0), max(y0, 0), min(x1, size - 1), min(y1, size - 1)
+        if x1 < x0 or y1 < y0:
+            continue
+        gx, gy = np.meshgrid(np.arange(x0, x1 + 1), np.arange(y0, y1 + 1))
+        (ax, ay), (bx, by), (cx, cy) = uv
+        den = (by - cy) * (ax - cx) + (cx - bx) * (ay - cy)
+        if abs(den) < 1e-12:
+            continue
+        w0 = ((by - cy) * (gx - cx) + (cx - bx) * (gy - cy)) / den
+        w1 = ((cy - ay) * (gx - cx) + (ax - cx) * (gy - cy)) / den
+        w2 = 1 - w0 - w1
+        m = (w0 >= -0.02) & (w1 >= -0.02) & (w2 >= -0.02)
+        if not m.any():
+            continue
+        p = w0[..., None] * pv[0] + w1[..., None] * pv[1] + w2[..., None] * pv[2]
+        pos[gy[m], gx[m]] = p[m]
+        mat[gy[m], gx[m]] = TM[t]
+    cov = mat >= 0
+    grown = cov.copy()
+    for _ in range(8):
+        acc = np.zeros_like(pos)
+        cnt = np.zeros((size, size))
+        macc = np.full((size, size), -1, np.int64)
+        for dy, dx in ((0, 1), (0, -1), (1, 0), (-1, 0)):
+            sh = np.roll(np.roll(grown, dy, 0), dx, 1)
+            acc += np.roll(np.roll(pos, dy, 0), dx, 1) * sh[..., None]
+            cnt += sh
+            macc = np.where(sh & (macc < 0), np.roll(np.roll(mat, dy, 0), dx, 1), macc)
+        new = ~grown & (cnt > 0)
+        pos[new] = acc[new] / cnt[new][:, None]
+        mat[new] = macc[new]
+        grown |= new
+    return pos.reshape(-1, 3), mat.ravel(), grown.ravel()
 
 
-pos_img = bpy.data.images.new("head_pos", HSIZE, HSIZE, alpha=False, float_buffer=True)
-pos_img.colorspace_settings.name = "Non-Color"
-POS = bake_attr(HEADM, [HMAT[k] for k in HMAT_ORDER], pos_img, "position")[:, :3]
-msk_img = bpy.data.images.new("head_mask", HSIZE, HSIZE, alpha=False, float_buffer=True)
-msk_img.colorspace_settings.name = "Non-Color"
-HAIRMASK = bake_attr(HEADM, [HMAT[k] for k in HMAT_ORDER], msk_img, "hair")[:, 0] > 0.5
-valid = np.linalg.norm(POS, axis=1) > 0.5
+POS, MATI, valid = raster_uv(HEADM, HSIZE)
+HAIRMASK = MATI == HMAT_ORDER.index("hair")
 log("head texels:", int(valid.sum()), "hair:", int((HAIRMASK & valid).sum()))
 colour = np.zeros((HSIZE * HSIZE, 3))
 rough = np.full(HSIZE * HSIZE, 0.5)
