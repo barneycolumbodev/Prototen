@@ -833,14 +833,11 @@ def helmet_sdf(X, Y, Z):
     d = sdf.cmin(d, ridge, 0.001)
     jawr = np.maximum(seg((0.05, -0.1, 1.648), (0.088, -0.02, 1.64), 0.005)(AX, Y, Z), shell - 0.003)
     d = sdf.cmin(d, jawr, 0.001)
-    # Recesses: visor (deep, under the brow), mouth with vanes, side sensor panels, the mask seam, nape
-    # lame steps.
+    # Recesses: visor (deep, under the brow), mouth with vanes, side sensor panels, nape lame steps.
     d = carve(d, visor_v(X, Y, Z), 0.0078, k=0.0)
     d = carve(d, np.maximum(mouth_region(X, Y, Z), -fang_fins(X)), 0.0065, k=0.0006)
     d = carve(d, mouth_region(X, Y, Z), 0.0018, k=0.0)
     d = carve(d, np.abs(side_panel(X, Y, Z)) - 0.0011, 0.0013, k=0.0)
-    seam = mx([np.abs(0.8 * (Y + 0.0) + 0.6 * (Z - 1.744)) - 0.0011, 0.06 - AX, 1.66 - Z])
-    d = carve(d, seam, 0.0014, k=0.0)
     for zc in (1.668, 1.642):
         d = carve(d, mx([np.abs(Z - zc - 0.15 * (Y - 0.09)) - 0.0012, 0.05 - Y]), 0.0016, k=0.0)
     return d
@@ -883,7 +880,7 @@ FACE_O = np.array((0.0, -0.082, 1.762))     # where the landmark frame's origin 
 HAIR_LO = (0.16, 0.105, 0.065)                # sRGB, from the owner's photos: brown roots, golden tips
 HAIR_HI = (0.52, 0.4, 0.27)
 HMAT = {
-    "skin": material("op_skin", (0.25, 0.15, 0.13), 0.5, bump=0.06, bump_scale=2200),
+    "skin": material("op_skin", (0.25, 0.15, 0.13), 0.6, bump=0.06, bump_scale=2200),
     "hair": material("op_hair", (0.08, 0.05, 0.03), 0.62),
 }
 HMAT_ORDER = ["skin", "hair"]
@@ -1035,6 +1032,9 @@ def skull_model():
         q = np.array((p[0] * 0.8, 0.03, max(p[2], 1.66) + 0.01))
         m.add(RC(p_in, q, 0.011, 0.03), k=0.012)
     m.add(E((0, -0.03, 1.72), (0.064, 0.056, 0.08)), k=0.03)              # face mass (sits behind the face)
+    for sx in (1.0, -1.0):
+        m.add(E((0.06 * sx, -0.036, 1.738), (0.02, 0.034, 0.026)), k=0.018)   # cheekbones
+        m.add(E((0.066 * sx, -0.02, 1.79), (0.016, 0.04, 0.034)), k=0.02)     # temples
     m.add(RC((0, 0.024, 1.53), (0, 0.03, 1.7), 0.064, 0.054), k=0.03)     # neck (ends inside the seal)
     for sx in (1.0, -1.0):
         Rear = sdf.rot((0, 0, 1), 22 * sx) @ sdf.rot((0, 1, 0), 8 * sx)
@@ -1207,9 +1207,9 @@ def head_colour(P, hair):
     skin0 = np.median(tex[..., :3][edge], 0)
     n = len(P)
     col = np.tile(skin0, (n, 1))
-    rough = np.full(n, 0.5)
+    rough = np.full(n, 0.62)
     x, y, z = P[:, 0], P[:, 1], P[:, 2]
-    col *= (1 + 0.07 * (noise3(P, 70, 1) - 0.5))[:, None] * np.array((0.86, 0.82, 0.82))
+    col *= (1 + 0.07 * (noise3(P, 70, 1) - 0.5))[:, None] * np.array((0.92, 0.87, 0.86))
     fr = np.clip((noise3(P, 1100, 2) - 0.66) / 0.12, 0, 1) * (0.35 + 0.4 * noise3(P, 40, 3))
     col = col * (1 - 0.32 * fr[:, None]) + np.array((0.08, 0.02, -0.01)) * fr[:, None]
     ear = sdf.ss((np.abs(x) - 0.066) / 0.01) * sdf.ss((1.79 - z) / 0.01) * sdf.ss((z - 1.7) / 0.01)
@@ -1415,6 +1415,12 @@ def decimate_to(ob, target, symmetric=False):
         bpy.ops.object.modifier_apply(modifier=m.name)
 
 
+def planar(ob, deg=1.0):
+    """Merge coplanar faces first: flat facets become single polygons and keep their hard edges."""
+    apply_mod(ob, "DECIMATE", decimate_type="DISSOLVE", angle_limit=math.radians(deg))
+    apply_mod(ob, "TRIANGULATE")
+
+
 def low_copy(ob, name):
     me = ob.data.copy()
     me.name = name
@@ -1455,6 +1461,7 @@ log("LOW")
 SUIT_LOW = low_copy(SUIT, "suit_low")
 decimate_to(SUIT_LOW, 15000, symmetric=True)
 HELMET_LOW = low_copy(HELMET, "helmet_low")
+planar(HELMET_LOW)
 decimate_to(HELMET_LOW, 9000, symmetric=True)
 HEAD_LOW = low_copy(HEAD, "head_low")
 decimate_to(HEAD_LOW, 5200)
@@ -1884,10 +1891,7 @@ def apply_head_material(ob, tex):
     nmap = N.new("ShaderNodeNormalMap")
     L_.new(img(tex["normal"]).outputs["Color"], nmap.inputs["Color"])
     L_.new(nmap.outputs["Normal"], bsdf.inputs["Normal"])
-    try:
-        bsdf.inputs["Subsurface Weight"].default_value = 0.0
-    except KeyError:
-        pass
+    bsdf.inputs["Specular IOR Level"].default_value = 0.3      # skin and hair: little sheen
     mat.use_backface_culling = True
     ob.data.materials.clear()
     ob.data.materials.append(mat)
