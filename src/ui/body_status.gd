@@ -3,7 +3,8 @@ extends CanvasLayer
 ## Body status (View button, CLAUDE.md §9.4; also Pause → Body status): the
 ## operative on a turntable as the installed parts make him look, and the
 ## numbers the parts system adds up: mass, constant power draw and heat,
-## loadout capacity, every stat, and each installed part. Pauses the game.
+## loadout capacity, every stat, and each installed part. Y takes the
+## helmet off and puts it back on. Pauses the game.
 ## The loadout screen (M2) grows out of this.
 
 const STUDIO_SKY: Shader = preload("res://src/ui/studio_sky.gdshader")
@@ -117,10 +118,16 @@ func open() -> void:
 		_build_stage()
 	appearance.loadout = player.loadout
 	appearance.rebuild()
-	_text.text = describe(player.body)
+	_text.text = describe(player.body) + "\n\n[color=#8a9a9a][Y] helmet on / off[/color]"
 	_pivot.rotation.y = 0.35
 	visible = true
 	get_tree().paused = true
+
+
+## Helmet off (the operative's face) or back on.
+func toggle_helmet() -> void:
+	if appearance:
+		appearance.helmet_on = not appearance.helmet_on
 
 
 func close() -> void:
@@ -140,6 +147,9 @@ func _input(event: InputEvent) -> void:
 			close()
 		elif not get_tree().paused:
 			open()
+		get_viewport().set_input_as_handled()
+	elif visible and event.is_action_pressed(&"switch_weapon"):
+		toggle_helmet()
 		get_viewport().set_input_as_handled()
 	elif visible and (event.is_action_pressed(&"ui_cancel") or event.is_action_pressed(&"pause")):
 		close()

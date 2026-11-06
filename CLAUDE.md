@@ -265,7 +265,7 @@ Each milestone ends with an APK on the owner's phone and an entry in `docs/playt
    Done when the owner wants to keep playing the wave mode. Status 2026-11-04: all slices built (M1a gunplay, M1b movement, M1c triad enemies, gore, ragdolls, AI, waves); waiting for the owner's playtest. Owner, 2026-11-04: M1 is more or less complete; next, polish and atmosphere, starting with the Chinatown docks map with rolling spawns (design §7, now the main scene; the test range is under Pause → Map).
 3. **M2 – Parts system.** Loadout screen. Power, heat, mass and capacity. At least 8 passives with visible changes. The drone, whip and time slowdown.
    Done when three different loadouts play noticeably differently.
-   Started 2026-11-05 (owner): the parts system foundation, the operative's base body (black carapace) on a body-status screen, and the time slowdown (RX-9 on LB). See design §3.4, §3.4a.
+   Started 2026-11-05 (owner): the parts system foundation, the operative's base body (the GS-2 graft suit; helmet on or off, with the owner's face; Y on the body-status screen) on a body-status screen, and the time slowdown (RX-9 on LB). See design §3.4, §3.4a.
 4. **M3 – Heavy weapons.** MG42-style machine gun with heat and barrel changes (the gun itself, its handling and a flat carry penalty were pulled into M1 by the owner on 2026-11-01; heat and barrel changes stay here). Heavy armor parts, two more actives, dismemberment, machine-gunner and anti-augment enemies.
    Done when sustained fire tears up a room and the phone holds its frame rate.
 5. **M4 – Look and sound.** Art direction applied to two or three test areas, lighting, an audio pass.

@@ -1,50 +1,47 @@
-"""The operative: the player's base body in the CS-1 carapace.
+"""The operative: the player's base body in the GS-2 graft suit, with and without the helmet.
 
-Owner, 2026-11-05: "a dude in a black synth suit... a really sleek-looking
-black carapace over his body. That's what our baseline augmented soldiers
-should look like. The different passives and actives can change the look."
-(Reference given: the suit Lex Luthor wears under the mech in Injustice.)
-Second pass, same day, after "it looks like a crash test dummy": sleek,
-baseline, polymer, badass. Third pass: "substantially less armor", an undersuit
-that armour and augments load on top of, not Star Wars; helmet 93 %, polarized
-visor. Only interface hardware stays hard (collar, spine nodes, boots, hardpoint
-pads); the plate definitions below remain for parts to reuse but are filtered out.
+History (docs/design.md §3.4a): first pass "a crash test dummy"; second pass a gloss carapace; third
+pass an undersuit with interface hardware. Fourth pass (owner, 2026-11-05): "the whole design needs to be
+more synthetic, nano-weave, smooth, flat plates grafted together on a nylon base and an undersuit, rather
+than bulky, mechanical, pre-configured metal shell... a lethal undersuit". No rounded chest plating ("the
+massive titties"), no ribbed neck tube. The helmet: "more angular and predatory, maybe like the bottom of
+an Oni mask". Plus a version without the helmet, with the owner's own face (owner, 2026-11-05: "I want
+the operative to have my face"; physique from the owner's reference photo: heavy traps, capped delts,
+wide lats, narrow waist).
 
-Design (docs/design.md §3.4a):
-- Silhouette first: heroic proportions (about 8 heads), broad shoulders and
-  traps, V-taper to a narrow waist, heavy thighs, a thick neck in a high
-  collar. The head is a helmet, not an egg: flat side panels, faceted
-  faceplate with a V jaw and a raised keel, recessed chevron visor with a lit
-  lower lip, crown panel lines, gunmetal ear pods, a nape guard, a respirator.
-- Two blacks: a matte graphite polymer undersuit (panel seams, ribbed flex
-  zones at the neck, waist, elbows and backs of the knees, striated flanks)
-  under gloss-black ceramic-polymer plates with chamfered edges, flat facets,
-  keel ridges and recessed panels. Gunmetal only on the sternum keel and the
-  ear pods. Seaglass light (the HUD colour) used sparingly: visor lip,
-  sternum, buckle, spine nodes, forearm keels, tassets, ear pods. No rings.
-- Plates: one breastplate under a sternum keel, chevron abdominal lames, a hip
-  band, serratus slats, scapula and lat plates, a six-node spine, lumbar
-  plates, collar, layered pauldrons, upper-arm and elbow guards, forearm
-  keels, hand and knuckle guards, hip tassets, thigh plates, diamond knee
-  guards, keeled shins, armoured boots.
+Design:
+- Undersuit: matte black nanoweave (a fine diagonal weave in the normal map) over the whole body, with
+  panel seams. No ribbed flex zones.
+- Grafted plates: thin (3-5 mm), flat-faceted, angular outlines, satin black, each one a separate piece
+  with a gap of bare weave around it: split pectoral plates with straight lower edges, paired abdominal
+  plates, serratus slats, trap yoke plates, scapula and lat plates, segmented spine, deltoid caps,
+  triceps and forearm strips, back-of-hand and knuckle plates, split quad plates, outer thigh strips,
+  diamond knees, shin strips, faceted boots. Gunmetal hardpoint pads with a light dot (shoulders,
+  forearms, thighs) where part hardware docks.
+- Neck: bare weave up to a clean seal under the jaw, low angular collar plates. No rings.
+- Helmet: low faceted cranium with a central ridge, a hard brow over a narrow V visor (inner corners
+  low), and an oni-style lower mask: two cheek planes meeting at a keel, flared cheek ridges, a snarl-shaped
+  mouth recess with vertical vent slots, a pointed chin; flat nape lames at the back.
+- Head (helmet off): the owner's face from raw_assets/characters/operative/likeness (MediaPipe landmarks
+  averaged over his photos; the front photo unwrapped and re-toned, see likeness/capture.py), on a
+  sculpted skull with ears and a neck that disappears into the seal; curly hair as clustered curl volumes.
 
 Construction (all procedural, rebuildable):
-- Same skeleton as the triad (bone names and A-pose), scaled to 1.86 m, so
-  animations, ragdolls and part sockets carry over.
-- Everything is a signed distance field (raw_assets/_lib/sdf.py) meshed with
-  surface nets (dual-contouring vertex placement keeps hard edges crisp). The anatomy field is smooth unions of ellipsoids, round cones
-  and boxes. Each plate is a shell of that field (from 4 mm inside the suit to
-  its thickness above), cut by its outline planes with chamfered edges, shaved
-  by flat facets, with an optional recessed panel and light groove.
-- HIGH (dense, all detail) is baked onto LOW (decimated game mesh): base
-  colour with AO grime, ORM, tangent normal, emission; one material, one draw.
-- The undersuit is skinned with analytic weights (as the triad); plates and the
-  helmet are rigid on one bone each.
+- Same skeleton as the triad (bone names and A-pose), scaled to 1.86 m, so animations, ragdolls and part
+  sockets carry over.
+- Signed distance fields (raw_assets/_lib/sdf.py) meshed with surface nets. Plates are shells of the
+  anatomy field cut by outline planes, chamfered, with flat facets.
+- The head's front is the base skull shrink-projected onto the landmark face mesh, weighted by how far the
+  photo can be trusted; its colour is computed per texel (photo inside the face, procedural skin and hair
+  elsewhere).
+- Three meshes, two materials: suit + helmet share one baked atlas (the helmet is its own mesh so it can be
+  hidden), the head has its own (base colour, ORM, normal). Suit skinned with analytic weights; plates
+  rigid on one bone each; helmet rigid on the head; head blends head/neck.
 
 Run:
-  tools/blender.sh raw_assets/characters/operative/build.py --out assets/characters/operative/operative.gltf \\
+  tools/blender.sh raw_assets/characters/operative/build.py --out assets/characters/operative/operative.gltf \
       --preview docs/previews/operative
-  Design check without the bake (coarse, fast): --quick --preview /tmp/op
+  Design check without the bake (coarse, fast): --quick --preview /tmp/op [--only helmet,head]
 """
 import argparse
 import math
@@ -59,6 +56,7 @@ import numpy as np
 from mathutils import Matrix, Quaternion, Vector
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "_lib"))
+from mathutils.bvhtree import BVHTree  # noqa: E402
 import bakeutil  # noqa: E402
 import sdf  # noqa: E402
 from sdf import F32  # noqa: E402
@@ -72,9 +70,12 @@ ap.add_argument("--quick", action="store_true", help="coarse fields, no bake: re
 ap.add_argument("--nobake", action="store_true", help="full-resolution HIGH, no bake: renders the unbaked HIGH")
 ap.add_argument("--tex", type=int, default=2048)
 ap.add_argument("--samples", type=int, default=64)
-ap.add_argument("--views", default="front,back,side,hero,helmet")
+ap.add_argument("--views", default="front,back,side,hero,bare,helmet,head")
+ap.add_argument("--only", default="suit,helmet,head", help="parts to build (design iteration)")
 args = ap.parse_args(argv)
 QUICK = args.quick
+ONLY = set(args.only.split(","))
+HERE = os.path.dirname(os.path.abspath(__file__))
 T0 = time.time()
 
 H_BODY = 0.005 if QUICK else 0.0025
@@ -264,22 +265,46 @@ for s, sx in SIDES:
 SEAGLASS = (0.36, 0.86, 0.78)
 
 
-def material(name, base, rough, metal=0.0, emission=None, bump=0.0, bump_scale=900.0):
+def material(name, base, rough, metal=0.0, emission=None, bump=0.0, bump_scale=900.0, weave=0.0):
     mat = bpy.data.materials.new(name)
     nt = mat.node_tree
-    bsdf = nt.nodes["Principled BSDF"]
+    N, Lk = nt.nodes, nt.links
+    bsdf = N["Principled BSDF"]
     bsdf.inputs["Base Color"].default_value = (*base, 1)
     bsdf.inputs["Roughness"].default_value = rough
     bsdf.inputs["Metallic"].default_value = metal
+    height = None
     if bump > 0:
-        tex = nt.nodes.new("ShaderNodeTexNoise")
+        tex = N.new("ShaderNodeTexNoise")
         tex.inputs["Scale"].default_value = bump_scale
         tex.inputs["Detail"].default_value = 4.0
-        b = nt.nodes.new("ShaderNodeBump")
+        height = tex.outputs["Fac"]
+    if weave > 0:
+        # Nanoweave: two diagonal band sets (x+y+z and -x+y+z) multiplied into a fine diamond weave.
+        tc = N.new("ShaderNodeTexCoord")
+        mp = N.new("ShaderNodeMapping")
+        mp.inputs["Scale"].default_value = (-1.0, 1.0, 1.0)
+        Lk.new(tc.outputs["Object"], mp.inputs["Vector"])
+        w1, w2 = N.new("ShaderNodeTexWave"), N.new("ShaderNodeTexWave")
+        for w in (w1, w2):
+            w.bands_direction = "DIAGONAL"
+            w.inputs["Scale"].default_value = weave
+            w.inputs["Distortion"].default_value = 0.0
+            w.inputs["Detail"].default_value = 0.0
+        Lk.new(tc.outputs["Object"], w1.inputs["Vector"])
+        Lk.new(mp.outputs["Vector"], w2.inputs["Vector"])
+        mul = N.new("ShaderNodeMath")
+        mul.operation = "MULTIPLY"
+        Lk.new(w1.outputs["Fac"], mul.inputs[0])
+        Lk.new(w2.outputs["Fac"], mul.inputs[1])
+        height = mul.outputs["Value"]
+        bump = bump or 0.25
+    if height is not None:
+        b = N.new("ShaderNodeBump")
         b.inputs["Strength"].default_value = bump
-        b.inputs["Distance"].default_value = 0.0002
-        nt.links.new(tex.outputs["Fac"], b.inputs["Height"])
-        nt.links.new(b.outputs["Normal"], bsdf.inputs["Normal"])
+        b.inputs["Distance"].default_value = 0.0004 if weave else 0.0002
+        Lk.new(height, b.inputs["Height"])
+        Lk.new(b.outputs["Normal"], bsdf.inputs["Normal"])
     if emission:
         bsdf.inputs["Emission Color"].default_value = (*emission[0], 1)
         bsdf.inputs["Emission Strength"].default_value = emission[1]
@@ -287,15 +312,15 @@ def material(name, base, rough, metal=0.0, emission=None, bump=0.0, bump_scale=9
 
 
 MAT = {
-    "suit": material("op_suit", (0.014, 0.015, 0.017), 0.62, bump=0.08, bump_scale=700),
-    "panel": material("op_panel", (0.011, 0.0115, 0.013), 0.3),
-    "plate": material("op_plate", (0.0075, 0.008, 0.009), 0.17),
+    "suit": material("op_weave", (0.016, 0.017, 0.019), 0.6, weave=70.0, bump=0.35),
+    "plate": material("op_plate", (0.0085, 0.009, 0.0102), 0.34),
     "trim": material("op_trim", (0.12, 0.125, 0.13), 0.34, metal=0.95),
-    "visor": material("op_visor", (0.055, 0.035, 0.09), 0.05, metal=1.0),   # polarized: dark violet-tinted mirror
+    "visor": material("op_visor", (0.03, 0.03, 0.036), 0.04, metal=1.0),
     "glow": material("op_glow", SEAGLASS, 0.3, emission=(SEAGLASS, 4.0)),
     "sole": material("op_sole", (0.016, 0.016, 0.017), 0.88, bump=0.3, bump_scale=300),
+    "seal": material("op_seal", (0.02, 0.021, 0.024), 0.45),
 }
-MAT_ORDER = ["suit", "plate", "trim", "visor", "glow", "sole", "panel"]
+MAT_ORDER = ["suit", "plate", "trim", "visor", "glow", "sole", "seal"]
 MI = {k: i for i, k in enumerate(MAT_ORDER)}
 
 # ====================================================================== anatomy (BASE field)
@@ -308,19 +333,19 @@ def ry(deg):
     return sdf.rot((0, 1, 0), deg)
 
 
-# Torso: a broad ribcage and shoulder girdle over a narrow waist.
-add(E((0, 0.012, 1.31), (0.152, 0.116, 0.17)))                       # ribcage
-add(E((0, 0.018, 1.44), (0.178, 0.1, 0.082)), k=0.04)                # shoulder girdle
-add(E((0, 0.004, 1.13), (0.128, 0.094, 0.12)), k=0.05)               # waist
-add(E((0, 0.014, 0.99), (0.15, 0.106, 0.1)), k=0.05)                 # pelvis
-add(E((0, -0.056, 1.17), (0.096, 0.045, 0.13)), k=0.03)              # abdominal wall
-add(RC((0, 0.016, 1.47), (0, 0.008, 1.7), 0.08, 0.071), k=0.03)     # neck
+# Torso (owner's reference: heavy traps, capped delts, wide lats, a narrow waist). The pectorals are broad
+# and flat-fronted (a box, not an ellipsoid) so nothing reads as a bust under the plates.
+add(E((0, 0.012, 1.31), (0.152, 0.114, 0.17)))                       # ribcage
+add(E((0, 0.02, 1.44), (0.182, 0.1, 0.082)), k=0.04)                 # shoulder girdle
+add(E((0, 0.006, 1.13), (0.122, 0.09, 0.12)), k=0.05)                # waist
+add(E((0, 0.014, 0.99), (0.148, 0.104, 0.1)), k=0.05)                # pelvis
+add(E((0, -0.052, 1.17), (0.092, 0.042, 0.13)), k=0.03)              # abdominal wall
+add(RC((0, 0.018, 1.47), (0, 0.012, 1.66), 0.084, 0.07), k=0.03)    # neck (thick)
 for s, sx in SIDES:
-    add(E((0.115 * sx, 0.035, 1.3), (0.074, 0.072, 0.145), ry(15 * sx)), k=0.03)     # lats (V-taper)
-    add(E((0.082 * sx, -0.058, 1.374), (0.1, 0.036, 0.054), ry(-16 * sx)), k=0.025)  # pectorals (broad, flat)
-    add(RC((0, 0.05, 1.565), (0.155 * sx, 0.03, 1.475), 0.05, 0.036), k=0.04)        # trapezius
-    add(RC((0.045 * sx, 0.02, 1.64), (0.016 * sx, -0.044, 1.49), 0.024, 0.019), k=0.015)  # neck tendons
-    add(E((0.11 * sx, -0.022, 1.11), (0.045, 0.065, 0.09)), k=0.03)                   # obliques
+    add(E((0.118 * sx, 0.035, 1.3), (0.08, 0.075, 0.15), ry(16 * sx)), k=0.03)      # lats (V-taper)
+    add(RB((0.078 * sx, -0.064, 1.385), (0.072, 0.022, 0.05), ry(-12 * sx), 0.022), k=0.03)  # pectorals: flat slabs
+    add(RC((0, 0.052, 1.585), (0.165 * sx, 0.032, 1.48), 0.058, 0.04), k=0.045)     # trapezius (heavy)
+    add(E((0.11 * sx, -0.022, 1.11), (0.045, 0.062, 0.09)), k=0.03)                   # obliques
     add(E((0.07 * sx, 0.062, 0.955), (0.074, 0.064, 0.08)), k=0.03)                   # glutes
     add(E((0.085 * sx, 0.098, 1.37), (0.07, 0.03, 0.085)), k=0.03)                    # shoulder blades
     add(E((0.035 * sx, 0.082, 1.13), (0.034, 0.035, 0.16)), k=0.03)                   # spinal erectors
@@ -332,13 +357,13 @@ for s, sx in SIDES:
     sh, el, wr, kn = L["sh"], L["el"], L["wr"], L["kn"]
     ua, uo, uf = L["ua"], L["ua_out"], L["ua_fr"]
     fa, fo = L["fa"], L["fa_out"]
-    add(E(sh + ua * 0.035 + uo * 0.012, (0.094, 0.066, 0.066), sdf.frame(ua, uo)), k=0.025)   # deltoid
-    add(RC(sh, el, 0.05, 0.04), k=0.02)
-    add(E(sh + ua * 0.165 + uf * 0.016, (0.1, 0.046, 0.046), sdf.frame(ua, uo)), k=0.015)   # biceps
-    add(E(sh + ua * 0.125 - uf * 0.019, (0.11, 0.047, 0.045), sdf.frame(ua, uo)), k=0.015)  # triceps
+    add(E(sh + ua * 0.035 + uo * 0.016, (0.1, 0.072, 0.072), sdf.frame(ua, uo)), k=0.025)   # deltoid (capped)
+    add(RC(sh, el, 0.052, 0.041), k=0.02)
+    add(E(sh + ua * 0.165 + uf * 0.017, (0.1, 0.049, 0.048), sdf.frame(ua, uo)), k=0.015)   # biceps
+    add(E(sh + ua * 0.125 - uf * 0.02, (0.11, 0.05, 0.047), sdf.frame(ua, uo)), k=0.015)    # triceps
     add(sdf.Sphere(el + uf * 0.004, 0.041), k=0.02)
-    add(RC(el, wr, 0.044, 0.029), k=0.015)
-    add(E(el + fa * 0.075 + fo * 0.006, (0.095, 0.05, 0.043), sdf.frame(fa, fo)), k=0.02)   # forearm mass
+    add(RC(el, wr, 0.045, 0.029), k=0.015)
+    add(E(el + fa * 0.075 + fo * 0.006, (0.095, 0.052, 0.044), sdf.frame(fa, fo)), k=0.02)  # forearm mass
     hd, pn, hw = L["hd"], L["pn"], L["hw"]
     add(RC(wr - hd * 0.012, wr + hd * 0.015, 0.03, 0.028), k=0.01)                         # wrist
     add(RB(wr + hd * 0.05, (0.052, 0.046, 0.017), np.stack([hd, hw, pn], 1), 0.014), k=0.012)  # palm
@@ -378,12 +403,18 @@ for s, sx in SIDES:
     add(RB((an[0] + 0.002 * sx, -0.055, 0.021), (0.055, 0.143, 0.021), None, 0.012), k=0.01)  # sole
 BASE.fn((-0.4, -0.4, -0.06), (0.4, 0.4, 0.01), lambda f, x, y, z: np.maximum(f, -z))      # flat soles
 
+
+# The neck seal: the suit ends in a clean, slightly flared lip under the jaw (front low, back high).
+def seal_z(y):
+    return 1.618 + 0.3 * y
+
+
+SUITF = BASE.copy()
+SUITF.fn((-0.2, -0.2, 1.5), (0.2, 0.2, 1.75),
+         lambda f, x, y, z: sdf.cmax(f, z - F32(1.0) * seal_z(y), 0.003))
+
 # ====================================================================== undersuit detail (HIGH only)
-DETAIL = BASE.copy()
-
-
-def ribs(f, t, period, amp, window):
-    return f + F32(amp) * (0.5 - 0.5 * np.cos(F32(2 * math.pi / period) * t)) * window
+DETAIL = SUITF.copy()
 
 
 def groove(f, g, width, depth):
@@ -391,44 +422,16 @@ def groove(f, g, width, depth):
     return f + F32(depth) * np.maximum(0.0, 1.0 - (g / F32(width)) ** 2)
 
 
-# Ribbed flex zones: neck, waist, elbows, backs of the knees.
-DETAIL.fn((-0.12, -0.12, 1.5), (0.12, 0.12, 1.7),
-          lambda f, x, y, z: ribs(f, z - 1.5, 0.0105, 0.001, sdf.ss((z - 1.52) / 0.01) * sdf.ss((1.68 - z) / 0.01)))
-DETAIL.fn((-0.25, -0.2, 1.02), (0.25, 0.2, 1.14),
-          lambda f, x, y, z: ribs(f, z - 1.03, 0.011, 0.0012,
-                                  sdf.ss((z - 1.035) / 0.012) * sdf.ss((1.125 - z) / 0.012) * sdf.ss((np.abs(x) - 0.06) / 0.03)))
+# Panel seams: outer leg, inner arm, back of leg, glutes, torso sides, inguinal V, sole welt, and a
+# seam ring a little below the neck seal.
 for s, sx in SIDES:
     L = LIMB[s]
-    ax = nrm(L["ua"] + L["fa"])
-    el = L["el"]
-
-    def elbow(f, x, y, z, el=el, ax=ax):
-        t = comp(x, y, z, el, ax)
-        return ribs(f, t, 0.0095, 0.0011, sdf.ss((0.034 - np.abs(t)) / 0.01))
-    DETAIL.fn(el - 0.07, el + 0.07, elbow)
-    kne = L["knee"]
-    kax = nrm(L["th"] + L["sv"])
-
-    def knee(f, x, y, z, kne=kne, kax=kax):
-        t = comp(x, y, z, kne, kax)
-        back = sdf.ss((y - F32(kne[1]) + 0.005) / 0.02)
-        return ribs(f, t, 0.0105, 0.0013, sdf.ss((0.05 - np.abs(t)) / 0.012) * back)
-    DETAIL.fn(kne - 0.09, kne + 0.09, knee)
-    # Striated flanks (serratus/obliques), diagonal.
-    sd = nrm((0.0, -0.55, 0.835))
-
-    def flank(f, x, y, z, sx=sx, sd=sd):
-        u = comp(x, y, z, (0, 0, 0), sd)
-        w = sdf.ss((np.abs(x) - 0.1) / 0.02) * sdf.ss((z - 1.04) / 0.03) * sdf.ss((1.2 - z) / 0.03) * sdf.ss((0.05 - y) / 0.02)
-        return ribs(f, u, 0.0105, 0.0009, w)
-    DETAIL.fn((0.05 * sx - 0.2, -0.15, 1.0), (0.05 * sx + 0.2, 0.1, 1.25), flank)
-    # Panel seams: outer leg, inner arm.
     hp, an = L["hp"], L["an"]
 
     def leg_seam(f, x, y, z, hp=hp, an=an, sx=sx):
         yc = F32(hp[1]) + (z - F32(hp[2])) * F32((an[1] - hp[1]) / (an[2] - hp[2]))
         w = sdf.ss((x * F32(sx) - 0.12) / 0.015) * sdf.ss((z - 0.14) / 0.03) * sdf.ss((0.93 - z) / 0.03)
-        return groove(f, y - yc, 0.0028, 0.0016 * w)
+        return groove(f, y - yc, 0.0022, 0.0013 * w)
     DETAIL.fn((0.0 if sx > 0 else -0.35, -0.2, 0.1), (0.35 if sx > 0 else 0.0, 0.2, 1.0), leg_seam)
     sh = L["sh"]
 
@@ -436,68 +439,27 @@ for s, sx in SIDES:
         t = comp(x, y, z, sh, ua)
         g = comp(x, y, z, sh, uf)
         w = sdf.ss((t - 0.09) / 0.02) * sdf.ss((0.27 - t) / 0.02) * sdf.ss(-comp(x, y, z, sh, uo) / 0.01)
-        return groove(f, g, 0.0026, 0.0015 * w)
+        return groove(f, g, 0.0022, 0.0013 * w)
     DETAIL.fn(np.minimum(sh, L["el"]) - 0.08, np.maximum(sh, L["el"]) + 0.08, arm_seam)
-# Back-of-leg seams (hamstrings, calves) and the glute panel line.
-for s, sx in SIDES:
-    L = LIMB[s]
 
     def back_leg(f, x, y, z, L=L):
         hp, an = L["hp"], L["an"]
         xc = F32(hp[0]) + (z - F32(hp[2])) * F32((an[0] - hp[0]) / (an[2] - hp[2]))
         w = sdf.ss((y - 0.02) / 0.015) * sdf.ss((z - 0.16) / 0.03) * sdf.ss((0.86 - z) / 0.03)
-        return groove(f, x - xc, 0.0028, 0.0016 * w)
+        return groove(f, x - xc, 0.0022, 0.0013 * w)
     DETAIL.fn((L["hp"][0] - 0.15, -0.1, 0.1), (L["hp"][0] + 0.15, 0.2, 0.9), back_leg)
 DETAIL.fn((-0.25, 0.0, 0.84), (0.25, 0.2, 1.08),
-          lambda f, x, y, z: groove(f, z - (0.905 + 0.25 * np.abs(np.abs(x) - 0.07)), 0.0028,
-                                    0.0016 * sdf.ss((y - 0.04) / 0.02) * sdf.ss((np.abs(x) - 0.012) / 0.01)))
-# Torso side seams.
+          lambda f, x, y, z: groove(f, z - (0.905 + 0.25 * np.abs(np.abs(x) - 0.07)), 0.0022,
+                                    0.0013 * sdf.ss((y - 0.04) / 0.02) * sdf.ss((np.abs(x) - 0.012) / 0.01)))
 DETAIL.fn((-0.3, -0.1, 0.92), (0.3, 0.12, 1.5),
-          lambda f, x, y, z: groove(f, y - 0.014, 0.0028,
-                                    0.0016 * sdf.ss((np.abs(x) - 0.1) / 0.02) * sdf.ss((1.46 - z) / 0.03) * sdf.ss((z - 0.95) / 0.03)))
-# Inguinal V seams (hip bone to groin) and the sole welt.
+          lambda f, x, y, z: groove(f, y - 0.014, 0.0022,
+                                    0.0013 * sdf.ss((np.abs(x) - 0.1) / 0.02) * sdf.ss((1.46 - z) / 0.03) * sdf.ss((z - 0.95) / 0.03)))
 DETAIL.fn((-0.2, -0.2, 0.86), (0.2, 0.05, 1.1),
-          lambda f, x, y, z: groove(f, 0.86 * (np.abs(x) - 0.03) - 0.5 * (z - 0.92), 0.0028,
-                                    0.0016 * sdf.ss((0.0 - y) / 0.02) * sdf.ss((1.06 - z) / 0.02) * sdf.ss((np.abs(x) - 0.035) / 0.01)))
+          lambda f, x, y, z: groove(f, 0.86 * (np.abs(x) - 0.03) - 0.5 * (z - 0.92), 0.0022,
+                                    0.0013 * sdf.ss((0.0 - y) / 0.02) * sdf.ss((1.06 - z) / 0.02) * sdf.ss((np.abs(x) - 0.035) / 0.01)))
 DETAIL.fn((-0.3, -0.3, -0.01), (0.3, 0.2, 0.06), lambda f, x, y, z: groove(f, z - 0.043, 0.0025, 0.0015))
-
-# Compression panels over the muscle groups: raised a hair, satin instead of matte. They carry the
-# look now that the suit is an undersuit (armour is a loadout part that goes on top).
-def _panels():
-    regs = []
-    ex, ey = np.array((1.0, 0, 0)), np.array((0, 1.0, 0))
-    regs.append(MX(AND(H((0.018, 0, 0), -ex), H((0, 0, 1.455), (-0.18, 0, 1)), H((0, 0, 1.33), (0.12, 0, -1)),
-                       H((0.018, 0, 1.33), (0.55, 0, -1)), H((0, -0.03, 0), ey), H((0.15, 0, 1.3), (1, 0, -0.3)))))  # chest
-    regs.append(MX(AND(H((0.006, 0, 0), -ex), H((0.082, 0, 1.28), (1, 0, -0.1)), band((0, 0, 0), (0, 0, 1), 1.105, 1.282),
-                       H((0, -0.03, 0), ey))))                                                              # abdomen
-    regs.append(MX(AND(H((0.018, 0, 0), -ex), H((0, 0.045, 0), -ey), H((0, 0, 1.48), (0.2, 0, 1)),
-                       H((0.018, 0, 1.3), (-0.45, 0, -1)), H((0.158, 0, 0), ex))))                         # upper back
-    for s, _sx in SIDES:
-        Lp = LIMB[s]
-        regs.append(AND(ball(Lp["sh"] + Lp["ua"] * 0.035 + Lp["ua_out"] * 0.03, 0.068),
-                        seg(Lp["sh"], Lp["el"], 0.09)))                                                     # deltoid
-        regs.append(AND(band(Lp["el"], Lp["fa"], 0.035, 0.2), H(Lp["el"] - Lp["fa_out"] * 0.012, -Lp["fa_out"]),
-                        seg(Lp["el"], Lp["wr"], 0.07)))                                                     # forearm
-        regs.append(AND(band(Lp["hp"], Lp["th"], 0.1, 0.39), H(Lp["hp"] - Lp["th_fr"] * 0.004, -Lp["th_fr"]),
-                        lambda x, y, z, Lp=Lp: np.abs(comp(x, y, z, Lp["hp"], Lp["th_out"]) - 0.006)
-                        - (0.058 - 0.1 * np.clip(comp(x, y, z, Lp["hp"], Lp["th"]) - 0.12, 0, 0.27)),
-                        seg(Lp["hp"], Lp["knee"], 0.12)))                                                   # quads
-        regs.append(AND(band(Lp["knee"], Lp["sv"], 0.07, 0.29), H(Lp["knee"] - Lp["sv_fr"] * 0.008, Lp["sv_fr"]),
-                        seg(Lp["knee"], Lp["an"], 0.09)))                                                   # calf
-
-    def f(x, y, z):
-        d = regs[0](x, y, z)
-        for r in regs[1:]:
-            d = np.minimum(d, r(x, y, z))
-        return d
-    return f
-
-
-PANEL = _panels()
-for zc in (1.168, 1.226):   # segmented abdomen panel
-    DETAIL.fn((-0.1, -0.2, zc - 0.01), (0.1, 0.0, zc + 0.01),
-              lambda f, x, y, z, zc=zc: groove(f, z - zc - 0.08 * np.abs(x), 0.0022, 0.0014 * sdf.ss((0.09 - np.abs(x)) / 0.01)))
-DETAIL.fn((-0.7, -0.25, 0.1), (0.7, 0.25, 1.55), lambda f, x, y, z: f - F32(0.0009) * sdf.ss(-PANEL(x, y, z) / 0.0015))
+DETAIL.fn((-0.15, -0.15, 1.5), (0.15, 0.15, 1.72),
+          lambda f, x, y, z: groove(f, z - (seal_z(y) - 0.016), 0.0016, 0.0011))
 
 # ====================================================================== suit HIGH
 _coarse_grid = sdf.Grid((-0.7, -0.24, -0.02), (0.7, 0.24, 1.92), 0.006)
@@ -537,30 +499,33 @@ def face_centers(me):
     return c.reshape(-1, 3)
 
 
-def set_materials(ob, mat_idx):
+def set_materials(ob, mat_idx, mats=None, order=None):
+    mats, order = mats or MAT, order or MAT_ORDER
     ob.data.materials.clear()
-    for k in MAT_ORDER:
-        ob.data.materials.append(MAT[k])
+    for k in order:
+        ob.data.materials.append(mats[k])
     ob.data.polygons.foreach_set("material_index", np.asarray(mat_idx, dtype=np.int32))
 
 
-log("suit field")
-g = sdf.Grid((-0.68, -0.23, -0.012), (0.68, 0.23, 1.74), H_BODY)
-F = DETAIL.evaluate(g)
-SUIT = link(bpy.data.objects.new("suit_high", sdf.to_mesh("suit_high", F, g)))
-del F
-c = face_centers(SUIT.data)
-mi = np.full(len(c), MI["suit"])
-mi[PANEL(c[:, 0], c[:, 1], c[:, 2]) < -0.0007] = MI["panel"]
-mi[c[:, 2] < 0.036] = MI["sole"]
-set_materials(SUIT, mi)
-log("suit HIGH:", len(SUIT.data.polygons), "quads")
+SUIT = None
+if "suit" in ONLY:
+    log("suit field")
+    g = sdf.Grid((-0.68, -0.23, -0.012), (0.68, 0.23, 1.72), H_BODY)
+    F = DETAIL.evaluate(g)
+    SUIT = link(bpy.data.objects.new("suit_high", sdf.to_mesh("suit_high", F, g)))
+    del F
+    c = face_centers(SUIT.data)
+    mi = np.full(len(c), MI["suit"])
+    mi[c[:, 2] < 0.036] = MI["sole"]
+    mi[c[:, 2] > seal_z(c[:, 1]) - 0.0035] = MI["seal"]
+    set_materials(SUIT, mi)
+    log("suit HIGH:", len(SUIT.data.polygons), "quads")
 
-# ====================================================================== carapace plates
+# ====================================================================== grafted plates
 PLATES = []
 
 
-def plate(name, bone, region, T=0.009, B=-0.004, ch=0.0022, facets=(), inset=None, glow=None, mat="plate",
+def plate(name, bone, region, T=0.0045, B=-0.004, ch=0.0016, facets=(), inset=None, glow=None, mat="plate",
           side="L", near=None):
     """`region` <= 0 inside (outline). `facets`: (normal, depth[, mirrored]) flat cuts `depth` below the
     plate's extreme along normal. `inset`: (margin, depth) recessed panel. `glow`: region of a light groove.
@@ -584,6 +549,19 @@ def plate_box(sp):
     return lo, hi
 
 
+def mx(arrs):
+    out = arrs[0]
+    for a in arrs[1:]:
+        out = np.maximum(out, a)
+    return out
+
+
+def carve(d, region, depth, k=0.0012):
+    """Remove a `depth` skin of d inside `region` (a recess that follows the surface). Edges are
+    rounded by k: perfectly sharp concave creases stair-step in surface nets."""
+    return sdf.smax(d, -np.maximum(region, -(d + F32(depth))), k)
+
+
 def plate_field(sp, h):
     box = plate_box(sp)
     if box is None:
@@ -598,8 +576,8 @@ def plate_field(sp, h):
     d = np.maximum(d, sdf.RoundBox((lo + hi) / 2, (hi - lo) / 2)(X, Y, Z))
     for fc in sp["facets"]:
         n, depth = nrm(fc[0]), fc[1]
-        mx = len(fc) > 2 and fc[2]
-        pl = (np.abs(X) if mx else X) * F32(n[0]) + Y * F32(n[1]) + Z * F32(n[2])
+        mxd = len(fc) > 2 and fc[2]
+        pl = (np.abs(X) if mxd else X) * F32(n[0]) + Y * F32(n[1]) + Z * F32(n[2])
         inside = d < 0
         if not inside.any():
             break
@@ -607,9 +585,9 @@ def plate_field(sp, h):
         d = sdf.cmax(d, pl - F32(top - depth), sp["ch"] * 0.8)
     if sp["inset"]:
         margin, depth = sp["inset"]
-        d = carve(d, R + F32(margin), depth, k=0.0011)
+        d = carve(d, R + F32(margin), depth, k=0.0009)
     if sp["glow"]:
-        d = carve(d, sp["glow"](X, Y, Z), 0.0014, k=0.0)
+        d = carve(d, sp["glow"](X, Y, Z), 0.0012, k=0.0)
     return d, g, db
 
 
@@ -630,66 +608,57 @@ def build_plate(sp):
     return ob
 
 
-def mx(arrs):
-    out = arrs[0]
-    for a in arrs[1:]:
-        out = np.maximum(out, a)
-    return out
-
-
-def carve(d, region, depth, k=0.0012):
-    """Remove a `depth` skin of d inside `region` (a recess that follows the surface). Edges are
-    rounded by k: perfectly sharp concave creases stair-step in surface nets."""
-    return sdf.smax(d, -np.maximum(region, -(d + F32(depth))), k)
-
-
-# ---------------------------------------------------------------- torso front
 X1, Y1, Z1 = np.eye(3)
 _LA = LIMB["L"]
 _off_arm = MX(lambda x, y, z: -seg(_LA["sh"] + _LA["ua"] * 0.03, _LA["el"] + _LA["fa"] * 0.1, 0.085)(x, y, z))
 OFF_ARM = AND(_off_arm, MX(H((0.2, 0, 0), X1)))   # torso plates stay on the torso, off the arms
-plate("chest", "chest", AND(MX(H((0, 0, 1.472), (-0.12, 0, 1))), MX(H((0, 0, 1.288), (0.25, 0, -1))),
-                            H((0, -0.018, 0), Y1), MX(H((0.172, 0, 1.3), (1, 0, -0.35))), OFF_ARM),
-      T=0.012, side=None, facets=(((0.0, -0.6, 0.8), 0.009), ((0.0, -0.8, -0.6), 0.009), ((0.72, -0.69, 0.0), 0.007, True),
-                                  ((0.28, -0.96, 0.0), 0.008, True)))
-plate("sternum", "chest", AND(MX(H((0.0085, 0, 0), X1)), H((0, 0, 1.462), Z1), H((0, 0, 1.296), -Z1), H((0, -0.03, 0), Y1),
-                              OFF_ARM),
-      T=0.018, mat="trim", side=None, facets=(((0.6, -0.8, 0.0), 0.003, True),),
-      glow=AND(MX(H((0.0016, 0, 0), X1)), H((0, 0, 1.44), Z1), H((0, 0, 1.32), -Z1)))
-for i, (zc, bone) in enumerate(((1.248, "spine"), (1.181, "spine"), (1.114, "hips"))):
-    plate(f"lame{i}", bone, AND(MX(H((0, 0, zc + 0.029), (-0.2, 0, 1))), MX(H((0, 0, zc - 0.029), (0.2, 0, -1))),
-                                MX(H((0.112 - 0.012 * i, 0, 0), X1)), H((0, -0.03, 0), Y1), OFF_ARM),
-          T=0.009, side=None, facets=(((0.0, -1.0, 0.0), 0.004), ((0.62, -0.78, 0.0), 0.003, True),
-                                      ((0.0, -0.6, -0.8), 0.0025)))
-plate("hipband", "hips", AND(MX(H((0, 0, 1.052), (-0.12, 0, 1))), MX(H((0, 0, 1.0), (0.12, 0, -1))), H((0, 0.045, 0), Y1),
-                             OFF_ARM),
-      T=0.0095, side=None, facets=(((0.0, -1.0, 0.0), 0.004), ((0.7, -0.7, 0.0), 0.004, True)),
-      glow=AND(MX(H((0.0055, 0, 0), X1)), H((0, 0, 1.033), Z1), H((0, 0, 1.019), -Z1)))
+
+
+def off_neck(r):
+    return lambda x, y, z: F32(r) - np.sqrt(x * x + (y - 0.015) ** 2)
+
+
+FLAT = ((0.0, -1.0, 0.0), 0.006)
+# ---------------------------------------------------------------- torso front
+# Pectoral plates: one flat sheet per side with a straight lower edge rising to the armpit, a
+# channel of bare weave down the sternum. Faceted into planes, never a rounded cup.
+plate("pec", "chest", AND(H((0.011, 0, 0), -X1), H((0, 0, 1.452), (-0.15, 0, 1)), H((0, 0, 1.322), (0.32, 0, -1)),
+                          H((0.152, 0, 1.4), (1, 0, -0.3)), H((0, -0.02, 0), Y1), OFF_ARM, off_neck(0.09)),
+      T=0.0048, facets=(((0.0, -1.0, 0.0), 0.0035), ((0.55, -0.83, 0.0), 0.004), ((0.0, -0.72, 0.7), 0.005),
+                        ((0.0, -0.8, -0.6), 0.004)))
+plate("clav", "chest", AND(H((0.03, 0, 0), -X1), H((0, 0, 1.462), (0.15, 0, -1)), H((0, 0, 1.51), (-0.1, 0, 1)),
+                           H((0.135, 0, 0), X1), H((0, -0.012, 0), Y1), off_neck(0.092), OFF_ARM),
+      T=0.004, facets=(((0.0, -0.5, 0.86), 0.004),))
+for i in range(3):
+    zc = 1.262 - 0.066 * i
+    plate(f"abs{i}", "spine" if i < 2 else "hips",
+          AND(H((0.009, 0, 0), -X1), H((0, 0, zc + 0.028), (0.14, 0, 1)), H((0, 0, zc - 0.026), (-0.14, 0, -1)),
+              H((0.074 - 0.004 * i, 0, zc), (1, 0, -0.35)), H((0, -0.02, 0), Y1), OFF_ARM),
+          T=0.0042, facets=(((0.0, -1.0, 0.0), 0.004), ((0.62, -0.78, 0.0), 0.003), ((0.0, -0.7, -0.7), 0.003)))
 SERR = nrm((0.0, -0.55, 0.835))
 for i in range(3):
     plate(f"serratus{i}", "chest" if i < 2 else "spine",
-          AND(band((0, 0, 1.3 - 0.037 * i), SERR, -0.0115, 0.0115), H((0.1, 0, 0), -X1), H((0, -0.088, 0), -Y1),
+          AND(band((0, 0, 1.3 - 0.037 * i), SERR, -0.0105, 0.0105), H((0.102, 0, 0), -X1), H((0, -0.088, 0), -Y1),
               H((0, 0.03, 0), Y1), H((0, -0.01, 1.36), (0, 0.6, 1)), OFF_ARM),
-          T=0.008, facets=(((1, -0.3, 0), 0.002),))
-# ---------------------------------------------------------------- torso back
-plate("scapula", "chest", AND(H((0.016, 0, 0), -X1), H((0, 0.035, 0), -Y1), H((0, 0, 1.5), (0.22, 0, 1)),
-                              H((0.016, 0, 1.36), (-0.6, 0, -1)), H((0.172, 0, 0), X1), OFF_ARM),
-      T=0.012, inset=(0.009, 0.0013), facets=(((0.55, 0.83, 0.0), 0.004), ((0, 0.75, 0.66), 0.004)))
-plate("lat", "spine", AND(H((0.034, 0, 0), -X1), H((0, 0.03, 0), -Y1), H((0.016, 0, 1.348), (0.6, 0, 1)),
+          T=0.0038, facets=(((1, -0.3, 0), 0.002),))
+# ---------------------------------------------------------------- yoke, back
+plate("trap", "chest", AND(H((0, 0, 1.468), -Z1), H((0.168, 0, 0), X1), H((0, -0.03, 0), -Y1), H((0, 0.085, 0), Y1),
+                           off_neck(0.094), OFF_ARM),
+      T=0.0046, facets=(((0.38, 0.0, 0.92), 0.005), ((0.0, -0.6, 0.8), 0.004), ((0.0, 0.6, 0.8), 0.004)))
+plate("scapula", "chest", AND(H((0.02, 0, 0), -X1), H((0, 0.035, 0), -Y1), H((0, 0, 1.462), (0.22, 0, 1)),
+                              H((0.02, 0, 1.36), (-0.6, 0, -1)), H((0.168, 0, 0), X1), OFF_ARM),
+      T=0.0048, facets=(((0.55, 0.83, 0.0), 0.004), ((0, 0.75, 0.66), 0.004), ((0.0, 1.0, 0.0), 0.006)))
+plate("lat", "spine", AND(H((0.036, 0, 0), -X1), H((0, 0.03, 0), -Y1), H((0.018, 0, 1.338), (0.6, 0, 1)),
                           H((0, 0, 1.2), (0.3, 0, -1)), H((0.165, 0, 0), X1), OFF_ARM),
-      T=0.01, facets=(((0.6, 0.8, 0.0), 0.004),))
+      T=0.0042, facets=(((0.6, 0.8, 0.0), 0.004),))
 for i, zc in enumerate((1.44, 1.376, 1.312, 1.248, 1.184, 1.12)):
     bone = "chest" if zc > 1.3 else ("spine" if zc > 1.15 else "hips")
-    plate(f"spine{i}", bone, AND(MX(H((0.03, 0, 0), X1)), H((0, 0, zc + 0.024), Z1), MX(H((0, 0, zc - 0.03), (1.0, 0, -1))),
+    plate(f"spine{i}", bone, AND(MX(H((0.02, 0, 0), X1)), H((0, 0, zc + 0.024), Z1), MX(H((0, 0, zc - 0.028), (1.0, 0, -1))),
                                  H((0, 0.06, 0), -Y1), OFF_ARM),
-          T=0.014, side=None, facets=(((0.7, 0.7, 0.0), 0.004, True),),
-          glow=AND(MX(H((0.0022, 0, 0), X1)), H((0, 0, zc + 0.008), Z1), H((0, 0, zc - 0.008), -Z1)))
-plate("lumbar", "hips", AND(H((0.034, 0, 0), -X1), H((0.11, 0, 0), X1), H((0, 0, 1.17), (-0.2, 0, 1)),
+          T=0.0052, side=None, facets=(((0.7, 0.7, 0.0), 0.002, True), ((0.0, 1.0, 0.0), 0.003)))
+plate("lumbar", "hips", AND(H((0.03, 0, 0), -X1), H((0.11, 0, 0), X1), H((0, 0, 1.17), (-0.2, 0, 1)),
                              H((0, 0, 1.07), -Z1), H((0, 0.045, 0), -Y1), OFF_ARM),
-      T=0.009, facets=(((0.5, 0.86, 0), 0.0025),))
-plate("gorget", "chest", AND(band((0, 0, 1.528), (0, -0.4, 1), -0.05, 0.072),
-                             lambda x, y, z: np.sqrt(x * x + (y - 0.012) ** 2) - 0.112, OFF_ARM),
-      T=0.009, side=None, ch=0.0025, facets=(((0, 0, 1), 0.004),))
+      T=0.004, facets=(((0.5, 0.86, 0), 0.0025),))
 # ---------------------------------------------------------------- arms
 for s, sx in (("L", 1.0),):
     L = LIMB[s]
@@ -697,27 +666,26 @@ for s, sx in (("L", 1.0),):
     ua, uo, uf = L["ua"], L["ua_out"], L["ua_fr"]
     fa, fo, ff = L["fa"], L["fa_out"], L["fa_fr"]
     hd, pn, hw = L["hd"], L["pn"], L["hw"]
-    plate("pauldron", "upper_arm.L", AND(H(sh + ua * 0.085, ua), H(sh - uo * 0.012, -uo), H((0.135, 0, 0), -X1),
-                                         band(sh, uf, -0.075, 0.075)),
-          T=0.015, facets=(((0.3, 0, 1), 0.008), ((1, 0, 0.1), 0.007), ((0.35, -0.9, 0.3), 0.007), ((0.35, 0.9, 0.3), 0.006),
-                           ((0.75, 0, 0.66), 0.004)),
+    plate("delt", "upper_arm.L", AND(H(sh + ua * 0.082, ua), H(sh - uo * 0.012, -uo), H((0.138, 0, 0), -X1),
+                                     band(sh, uf, -0.07, 0.07)),
+          T=0.0058, facets=(((0.3, 0, 1), 0.005), ((1, 0, 0.1), 0.005), ((0.35, -0.9, 0.3), 0.005),
+                            ((0.35, 0.9, 0.3), 0.005)),
           near=(sh, el, 0.11))
-    plate("lame", "upper_arm.L", AND(band(sh, ua, 0.093, 0.133), H(sh + uo * 0.004, -uo), band(sh, uf, -0.06, 0.06)),
-          T=0.012, facets=((uo, 0.003),), near=(sh, el, 0.09))
-    plate("upperarm", "upper_arm.L", AND(band(sh, ua, 0.146, 0.248), H(sh + uo * 0.0, -uo), band(sh, uf, -0.045, 0.045)),
-          T=0.0095, facets=((uo + 0.75 * uf, 0.0025), (uo - 0.75 * uf, 0.0025)), near=(sh, el, 0.09))
-    plate("elbow", "forearm.L", ball(el - uf * 0.036 + uo * 0.006, 0.025),
-          T=0.011, facets=((-uf + 0.8 * uo, 0.005), (-uf - 0.8 * uo, 0.005), (-uf + 0.8 * ua, 0.005), (-uf - 0.8 * ua, 0.005)),
+    plate("delt_lame", "upper_arm.L", AND(band(sh, ua, 0.092, 0.128), H(sh + uo * 0.004, -uo), band(sh, uf, -0.055, 0.055)),
+          T=0.0048, facets=((uo, 0.003),), near=(sh, el, 0.09))
+    plate("tricep", "upper_arm.L", AND(band(sh, ua, 0.145, 0.25), H(sh + uo * 0.0, -uo), band(sh, uf, -0.042, 0.03)),
+          T=0.0042, facets=((uo + 0.75 * uf, 0.0025), (uo - 0.75 * uf, 0.0025)), near=(sh, el, 0.09))
+    plate("elbow", "forearm.L", ball(el - uf * 0.036 + uo * 0.006, 0.024),
+          T=0.006, facets=((-uf + 0.8 * uo, 0.004), (-uf - 0.8 * uo, 0.004), (-uf + 0.8 * ua, 0.004), (-uf - 0.8 * ua, 0.004)),
           near=(el - ua * 0.05, el + fa * 0.05, 0.08))
     taper = lambda x, y, z, el=el, fa=fa, ff=ff: (np.abs(comp(x, y, z, el, ff))
-                                                  - (0.045 - 0.065 * np.clip(comp(x, y, z, el, fa) - 0.045, 0, 0.2)))
-    plate("forearm", "forearm.L", AND(band(el, fa, 0.045, 0.236), H(el - fo * 0.008, -fo), taper),
-          T=0.011, facets=((fo + 0.75 * ff, 0.003), (fo - 0.75 * ff, 0.003)), near=(el, wr, 0.08),
-          glow=AND(lambda x, y, z: np.abs(comp(x, y, z, el, ff)) - 0.0017, band(el, fa, 0.075, 0.2)))
+                                                  - (0.042 - 0.06 * np.clip(comp(x, y, z, el, fa) - 0.045, 0, 0.2)))
+    plate("forearm", "forearm.L", AND(band(el, fa, 0.05, 0.236), H(el - fo * 0.008, -fo), taper),
+          T=0.0046, facets=((fo + 0.75 * ff, 0.003), (fo - 0.75 * ff, 0.003)), near=(el, wr, 0.08))
     plate("hand", "hand.L", AND(band(wr, hd, 0.02, 0.09), H(wr - pn * 0.004, pn), band(wr, hw, -0.04, 0.04)),
-          T=0.0075, facets=((-pn, 0.0015),), near=(wr, kn, 0.06))
+          T=0.004, facets=((-pn, 0.0015),), near=(wr, kn, 0.06))
     plate("knuckles", "fingers.L", AND(band(kn, hd, 0.004, 0.032), H(kn - pn * 0.002, pn), band(kn, hw, -0.042, 0.042)),
-          T=0.0068, facets=((-pn + 0.5 * hd, 0.0015),), near=(kn - hd * 0.02, kn + hd * 0.06, 0.05))
+          T=0.0038, facets=((-pn + 0.5 * hd, 0.0015),), near=(kn - hd * 0.02, kn + hd * 0.06, 0.05))
 # ---------------------------------------------------------------- legs
 for s, sx in (("L", 1.0),):
     L = LIMB[s]
@@ -725,50 +693,32 @@ for s, sx in (("L", 1.0),):
     th, to, tf = L["th"], L["th_out"], L["th_fr"]
     sv, so, sf = L["sv"], L["sv_out"], L["sv_fr"]
     thigh_taper = lambda x, y, z, hp=hp, th=th, to=to: (np.abs(comp(x, y, z, hp, to) - 0.008)
-                                                         - (0.064 - 0.11 * np.clip(comp(x, y, z, hp, th) - 0.15, 0, 0.25)))
-    plate("thigh", "thigh.L", AND(lambda x, y, z: (0.14 - 0.55 * comp(x, y, z, hp, to)) - comp(x, y, z, hp, th),
-                                  H(hp + th * 0.37, th), H(hp, -tf), thigh_taper),
-          T=0.012, inset=(0.009, 0.0012), facets=((tf + 0.6 * to, 0.005), (tf - 0.6 * to, 0.005)), near=(hp, kne, 0.13))
-    plate("tasset", "thigh.L", AND(band(hp, th, -0.05, 0.175), H(hp + to * 0.02, -to), band(hp, tf, -0.055, 0.05),
-                                   H(hp + th * 0.1, -th + 0.5 * tf)),
-          T=0.012, facets=((to, 0.003), (to + 0.6 * th, 0.003)), near=(hp - th * 0.08, kne, 0.14),
-          glow=AND(lambda x, y, z: np.abs(comp(x, y, z, hp, tf) + 0.004) - 0.0017, band(hp, th, 0.0, 0.13)))
-    diamond = lambda x, y, z, kne=kne, th=th, to=to: (np.abs(comp(x, y, z, kne, to)) / 0.042
-                                                      + np.abs(comp(x, y, z, kne, th) + 0.004) / 0.06 - 1.0) * 0.03
+                                                         - (0.062 - 0.1 * np.clip(comp(x, y, z, hp, th) - 0.15, 0, 0.25)))
+    quad = AND(lambda x, y, z: (0.15 - 0.55 * comp(x, y, z, hp, to)) - comp(x, y, z, hp, th),
+               H(hp + th * 0.375, th), H(hp, -tf), thigh_taper)
+    split = lambda x, y, z, hp=hp, to=to: comp(x, y, z, hp, to) - 0.008
+    plate("quad_out", "thigh.L", AND(quad, lambda x, y, z, f=split: F32(0.004) - f(x, y, z)),
+          T=0.0048, facets=((tf + 0.6 * to, 0.005), (tf, 0.004)), near=(hp, kne, 0.13))
+    plate("quad_in", "thigh.L", AND(quad, lambda x, y, z, f=split: f(x, y, z) + F32(0.004)),
+          T=0.0048, facets=((tf - 0.6 * to, 0.005), (tf, 0.004)), near=(hp, kne, 0.13))
+    plate("thigh_side", "thigh.L", AND(band(hp, th, 0.23, 0.36), H(hp + to * 0.02, -to), band(hp, tf, -0.045, 0.04)),
+          T=0.0045, facets=((to, 0.003), (to + 0.6 * th, 0.002)), near=(hp, kne, 0.14))
+    diamond = lambda x, y, z, kne=kne, th=th, to=to: (np.abs(comp(x, y, z, kne, to)) / 0.04
+                                                      + np.abs(comp(x, y, z, kne, th) + 0.004) / 0.058 - 1.0) * 0.03
     plate("knee", "shin.L", AND(diamond, H(kne + tf * 0.012, -tf)),
-          T=0.014, facets=((tf + 0.8 * to, 0.006), (tf - 0.8 * to, 0.006), (tf - 0.6 * th, 0.006), (tf + 0.6 * th, 0.006)),
+          T=0.0065, facets=((tf + 0.8 * to, 0.005), (tf - 0.8 * to, 0.005), (tf - 0.6 * th, 0.005), (tf + 0.6 * th, 0.005)),
           near=(kne - th * 0.08, kne + sv * 0.08, 0.1))
-    plate("shin", "shin.L", AND(band(kne, sv, 0.075, 0.37), H(kne, -sf),
+    plate("shin", "shin.L", AND(band(kne, sv, 0.08, 0.37), H(kne, -sf),
                                 lambda x, y, z, kne=kne, sv=sv, so=so: (np.abs(comp(x, y, z, kne, so))
-                                                                       - (0.05 - 0.07 * np.clip(comp(x, y, z, kne, sv) - 0.075, 0, 0.3)))),
-          T=0.012, facets=((sf + 0.7 * so, 0.005), (sf - 0.7 * so, 0.005), (sf - 0.5 * sv, 0.003)), near=(kne, an, 0.09))
+                                                                       - (0.044 - 0.06 * np.clip(comp(x, y, z, kne, sv) - 0.08, 0, 0.3)))),
+          T=0.0048, facets=((sf + 0.7 * so, 0.004), (sf - 0.7 * so, 0.004), (sf - 0.5 * sv, 0.003)), near=(kne, an, 0.09))
     foot = (an + UP * -0.03, np.array((an[0], -0.17, 0.04)), 0.085)
     plate("boot", "foot.L", AND(H((0, 0, 0.047), -Z1), H((0, 0, 0.128), Z1 + 0.25 * Y1)),
-          T=0.0075, ch=0.002, facets=(((0, -0.55, 0.83), 0.004), ((1, -0.2, 0.25), 0.003), ((-1, -0.2, 0.25), 0.003)),
+          T=0.0055, ch=0.0018, facets=(((0, -0.55, 0.83), 0.004), ((1, -0.2, 0.25), 0.003), ((-1, -0.2, 0.25), 0.003)),
           near=foot)
     plate("ankle", "foot.L", AND(ball(an + X1 * 0.046 + UP * 0.016, 0.026), H(an + X1 * 0.02, -X1)),
-          T=0.009, facets=((X1, 0.0025), (X1 + 0.7 * UP, 0.002), (X1 - 0.7 * Y1, 0.002)),
+          T=0.0055, facets=((X1, 0.0025), (X1 + 0.7 * UP, 0.002), (X1 - 0.7 * Y1, 0.002)),
           near=(an - UP * 0.05, an + UP * 0.08, 0.08))
-
-# Undersuit revision (owner, 2026-11-05: "substantially less armour... a sleek interface for the rest
-# of the augmentations"): keep only the collar, low spine nodes, the boots and flat hardpoint pads.
-KEEP = {"gorget", "boot", "ankle"} | {f"spine{i}" for i in range(6)}
-PLATES[:] = [p for p in PLATES if p["name"] in KEEP]
-for p in PLATES:
-    if p["name"] == "gorget":
-        p["T"] = 0.006
-        p["region"] = AND(band((0, 0, 1.528), (0, -0.4, 1), -0.04, 0.05), lambda x, y, z: np.sqrt(x * x + (y - 0.012) ** 2) - 0.112)
-    elif p["name"].startswith("spine"):
-        p["T"], p["facets"] = 0.006, (((0.7, 0.7, 0.0), 0.002, True),)
-    elif p["name"] in ("boot", "ankle"):
-        p["T"] = 0.0055
-
-
-def hardpoint(name, bone, c, r, near):
-    """A flat gunmetal mounting pad with a light dot: where part hardware docks."""
-    c = np.asarray(c, float)
-    plate(name, bone, ball(c, r), T=0.0045, ch=0.0012, mat="trim", facets=((_out(c, near), 0.002),),
-          glow=ball(c + _out(c, near) * 0.006, 0.0032), near=near)
 
 
 def _out(c, near):
@@ -778,97 +728,538 @@ def _out(c, near):
     return nrm(c - (a + t * u))
 
 
+def hardpoint(name, bone, c, r, near):
+    """A flat gunmetal mounting pad with a light dot, standing proud of the plate it sits on."""
+    c = np.asarray(c, float)
+    plate(name, bone, ball(c, r), T=0.0088, ch=0.0012, mat="trim", facets=((_out(c, near), 0.0025),),
+          glow=ball(c + _out(c, near) * 0.009, 0.0028), near=near)
+
+
 _L = LIMB["L"]
-hardpoint("hp_shoulder", "upper_arm.L", _L["sh"] + _L["ua"] * 0.05 + _L["ua_out"] * 0.06, 0.022, (_L["sh"], _L["el"], 0.1))
-hardpoint("hp_forearm", "forearm.L", _L["el"] + _L["fa"] * 0.13 + _L["fa_out"] * 0.04, 0.018, (_L["el"], _L["wr"], 0.07))
-hardpoint("hp_thigh", "thigh.L", _L["hp"] + _L["th"] * 0.2 + _L["th_out"] * 0.08, 0.024, (_L["hp"], _L["knee"], 0.12))
-hardpoint("hp_chest", "chest", np.array((0.0, -0.11, 1.4)), 0.02, (np.array((0, 0, 1.33)), np.array((0, 0, 1.45)), 0.16))
-PLATES[-1]["side"] = None
-log("plates:", len(PLATES), "definitions")
-for sp in PLATES:
-    build_plate(sp)
-log("plates HIGH:", sum(len(sp["high"].data.polygons) for sp in PLATES if sp.get("high")), "quads")
+hardpoint("hp_shoulder", "upper_arm.L", _L["sh"] + _L["ua"] * 0.04 + _L["ua_out"] * 0.092, 0.017, (_L["sh"], _L["el"], 0.1))
+hardpoint("hp_forearm", "forearm.L", _L["el"] + _L["fa"] * 0.14 + _L["fa_out"] * 0.04, 0.014, (_L["el"], _L["wr"], 0.07))
+hardpoint("hp_thigh", "thigh.L", _L["hp"] + _L["th"] * 0.29 + _L["th_out"] * 0.075, 0.018, (_L["hp"], _L["knee"], 0.12))
+if "suit" in ONLY:
+    log("plates:", len(PLATES), "definitions")
+    for sp in PLATES:
+        build_plate(sp)
+    log("plates HIGH:", sum(len(sp["high"].data.polygons) for sp in PLATES if sp.get("high")), "quads")
 
 # ====================================================================== helmet
-HC = np.array((0.0, 0.02, 1.762))   # cranium centre
-
-
-def visor_band(x, y, z):
+def visor_v(x, y, z):
+    """The V visor: brow line falls toward the centre (inner corners low), two eye slits split by a
+    thin bridge, wrapping round to the sides."""
     ax = np.abs(x)
-    top = z - (1.766 + 0.16 * ax)
-    bot = (1.743 + 0.12 * ax + 0.5 * np.maximum(y + 0.05, 0)) - z
-    return np.maximum(np.maximum(top, bot), y - 0.03)
+    top = z - (1.751 + 0.3 * ax)
+    bot = (1.7355 + 0.36 * ax) - z
+    return mx([top, bot, y + 0.004, 0.0045 - ax])
 
 
-def respirator(x, y, z):
+def mouth_region(x, y, z):
+    """Snarl-shaped mouth recess: corners turned down, the lower edge pointed under the centre."""
     ax = np.abs(x)
-    return np.maximum(np.maximum(np.abs(ax - 0.027) - 0.0145, np.abs(z - 1.672) - 0.021), y + 0.05)
+    top = z - (1.705 - 0.32 * ax)
+    bot = (1.679 - 0.2 * ax + 0.5 * np.maximum(0.0, 0.016 - ax)) - z
+    return mx([top, bot, ax - 0.04, y + 0.075])
 
 
-HS, HP = 0.93, np.array((0.0, 0.01, 1.64))   # helmet scale about a pivot near the chin line
+FANGS = (0.0, 0.0115, 0.023)
 
 
-def _hunscale(x, y, z):
-    return x / HS, (y - HP[1]) / HS + HP[1], (z - HP[2]) / HS + HP[2]
+def fang_fins(x):
+    ax = np.abs(x)
+    d = np.abs(ax - F32(FANGS[0])) - 0.0021
+    for xi in FANGS[1:]:
+        d = np.minimum(d, np.abs(ax - F32(xi)) - 0.0021)
+    return d
 
 
-def helmet_field(g):
-    return helmet_sdf(*_hunscale(*g.coords())) * F32(HS)
+def side_panel(x, y, z):
+    ax = np.abs(x)
+    u, v = y - 0.02, z - 1.758
+    return mx([np.abs(u) - 0.034, np.abs(v) - 0.022, 0.72 * np.abs(u) + np.abs(v) - 0.036, 0.07 - ax])
+
+
+def menpo(X, Y, Z, AX):
+    """The oni-style lower mask: a faceted muzzle with flared cheeks (planes, chamfered edges)."""
+    planes = [
+        0.75 * AX - 0.66 * (Y + 0.15),                       # prow: cheek planes meeting at a keel
+        0.95 * (AX - 0.085) - 0.31 * (Y + 0.02),             # flared cheeks
+        0.6 * (AX - 0.058) - 0.8 * (Z - 1.652),              # cheek flare narrows to the jaw
+        -0.94 * (Y + 0.15) - 0.34 * (Z - 1.708),             # front face: nose forward, chin back
+        -0.55 * (Y + 0.132) - 0.835 * (Z - 1.642),           # chin underside
+        0.62 * AX - 0.2 * (Y + 0.124) - 0.76 * (Z - 1.636),  # V jaw: chin bevels (pointed chin)
+        (1.612 + 0.1 * (Y + 0.1)) - Z,                       # jaw line
+        Z - (1.749 + 0.42 * np.minimum(Y + 0.07, 0.0) - 0.25 * AX),  # top: nose bridge down to the tip, cheekbones
+        Y - 0.05,
+    ]
+    d = planes[0]
+    for pl in planes[1:]:
+        d = sdf.cmax(d, pl, 0.0035)
+    return d
+
+
+def cut(d, plane, ch=0.004):
+    return sdf.cmax(d, plane, ch)
 
 
 def helmet_sdf(X, Y, Z):
     AX = np.abs(X)
-    d = sdf.Ellipsoid(HC, (0.092, 0.118, 0.103))(X, Y, Z)
-    jaw = sdf.Ellipsoid((0, -0.03, 1.684), (0.074, 0.086, 0.084))(X, Y, Z)
-    d = sdf.smin(d, jaw, 0.03)
-    nape = sdf.RoundBox((0, 0.098, 1.66), (0.076, 0.022, 0.062), sdf.rot((1, 0, 0), 22), 0.01)(X, Y, Z)
+    d = sdf.Ellipsoid((0, 0.016, 1.778), (0.096, 0.122, 0.114))(X, Y, Z)
+    nape = sdf.RoundBox((0, 0.086, 1.678), (0.08, 0.036, 0.064), sdf.rot((1, 0, 0), 14), 0.01)(X, Y, Z)
     d = sdf.smin(d, nape, 0.02)
-    smooth = d
-    front = 0.03 - Y
-    d = sdf.cmax(d, AX - 0.086, 0.005)                                                   # flat side panels
-    d = sdf.cmax(d, np.minimum(0.8 * (AX - 0.06) - 0.6 * (Y + 0.08), front), 0.004)     # cheek facets
-    d = sdf.cmax(d, np.minimum(0.88 * (AX - 0.068) - 0.47 * (Z - 1.69), front), 0.004)  # V jaw
-    d = sdf.cmax(d, -0.8 * (Y + 0.1) + 0.6 * (Z - 1.8), 0.004)                          # forehead plane
-    d = sdf.cmax(d, -0.5 * (Y + 0.1) - 0.866 * (Z - 1.632), 0.004)                     # chin underside
-    d = np.maximum(d, (1.602 + 0.1 * (Y + 0.11)) - Z)                                  # flat bottom
-    # Raised crest along the top, raised keel down the faceplate, ear pods.
-    keel = mx([AX - 0.0062, Z - 1.738, d - 0.003, Y + 0.05])
-    d = sdf.cmin(d, keel, 0.001)
-    pod = np.maximum(sdf.RoundBox((0, 0.024, 1.742), (0.092, 0.03, 0.028), None, 0.008)(X, Y, Z), 0.05 - AX)
-    d = sdf.cmin(d, pod, 0.002)
-    # Recesses: visor, respirator, panel line round the faceplate, nape line, pod slit.
-    d = carve(d, visor_band(X, Y, Z), 0.0045, k=0.0)
-    d = carve(d, mx([np.abs(AX - 0.02) - 0.0011, 1.79 - Z, -(Y + 0.07)]), 0.0014, k=0.0)       # crown panel lines
-    d = carve(d, respirator(X, Y, Z), 0.0022)
-    for zc in (1.66, 1.672, 1.684):
-        d = carve(d, np.maximum(respirator(X, Y, Z) + 0.002, np.abs(Z - zc) - 0.0018), 0.0038)
-    d = carve(d, np.maximum(np.abs(Z - (1.7 + 0.2 * (Y - 0.08))) - 0.0012, 0.04 - Y), 0.0015)
-    slit = mx([np.abs(Z - 1.742) - 0.0017, np.abs(Y - 0.024) - 0.017, 0.0935 - AX])
-    d = carve(d, slit, 0.0016, k=0.0)
+    jaw = sdf.Ellipsoid((0, 0.0, 1.69), (0.084, 0.07, 0.07))(X, Y, Z)
+    d = sdf.smin(d, jaw, 0.02)
+    # A faceted skull: flat sides, a roof on a central ridge, bevelled upper sides and corners, and a
+    # forehead that is itself a keel (recedes at the sides), so the brow points forward like a prow.
+    d = cut(d, AX - 0.091, 0.005)
+    d = cut(d, 0.4 * AX + 0.916 * (Z - 1.893))
+    d = cut(d, 0.8 * (AX - 0.083) + 0.6 * (Z - 1.835))
+    d = cut(d, 0.45 * (AX - 0.05) - 0.55 * (Y + 0.088) + 0.7 * (Z - 1.85))
+    d = cut(d, -0.72 * (Y + 0.106) + 0.58 * (Z - 1.79) + 0.38 * AX)
+    d = cut(d, 0.7 * (AX - 0.083) - 0.71 * (Y + 0.055))
+    d = cut(d, 0.65 * (Y - 0.085) + 0.76 * (Z - 1.855))
+    d = cut(d, 0.6 * (AX - 0.072) + 0.8 * (Y - 0.085))
+    d = cut(d, 0.9 * (Y - 0.114) - 0.43 * (Z - 1.66))
+    d = np.maximum(d, (1.612 + 0.1 * (Y + 0.1)) - Z)
+    d = sdf.cmin(d, menpo(X, Y, Z, AX), 0.003)
+    shell = d
+    # Raised: crown keel, nose keel down the prow, oni cheek ridges (mouth corner up to the cheekbone).
+    keel = mx([AX - 0.0055, shell - 0.0028, 1.79 - Z, Y - 0.1])
+    d = sdf.cmin(d, keel, 0.0008)
+    nose = mx([AX - 0.0045, shell - 0.0025, Z - 1.738, 1.712 - Z])
+    d = sdf.cmin(d, nose, 0.0008)
+    ridge = np.maximum(seg((0.04, -0.118, 1.684), (0.076, -0.07, 1.724), 0.006)(AX, Y, Z), shell - 0.0042)
+    d = sdf.cmin(d, ridge, 0.001)
+    jawr = np.maximum(seg((0.05, -0.1, 1.648), (0.088, -0.02, 1.64), 0.005)(AX, Y, Z), shell - 0.003)
+    d = sdf.cmin(d, jawr, 0.001)
+    # Recesses: visor (deep, under the brow), mouth with vanes, side sensor panels, nape lame steps.
+    d = carve(d, visor_v(X, Y, Z), 0.0078, k=0.0)
+    d = carve(d, np.maximum(mouth_region(X, Y, Z), -fang_fins(X)), 0.0065, k=0.0006)
+    d = carve(d, mouth_region(X, Y, Z), 0.0018, k=0.0)
+    d = carve(d, np.abs(side_panel(X, Y, Z)) - 0.0011, 0.0013, k=0.0)
+    for zc in (1.668, 1.642):
+        d = carve(d, mx([np.abs(Z - zc - 0.15 * (Y - 0.09)) - 0.0012, 0.05 - Y]), 0.0016, k=0.0)
     return d
 
 
 def helmet_materials(c):
-    x, y, z = _hunscale(c[:, 0], c[:, 1], c[:, 2])
+    x, y, z = c[:, 0], c[:, 1], c[:, 2]
     ax = np.abs(x)
     mi = np.full(len(c), MI["plate"])
-    # Material edges sit on geometric creases (faces never straddle a crease), so they stay crisp.
-    vb = visor_band(x, y, z)
+    vb = visor_v(x, y, z)
     mi[vb < 0.0003] = MI["visor"]
-    bot = (1.743 + 0.12 * ax + 0.5 * np.maximum(y + 0.05, 0)) - z
-    lit = (np.abs(vb) < 0.0003) & (np.abs(bot - vb) < 1e-6)       # the recess's lower wall
+    bot = (1.7355 + 0.36 * ax) - z
+    lit = (np.abs(vb) < 0.0003) & (np.abs(bot - vb) < 1e-6) & (ax > 0.012)
     mi[lit] = MI["glow"]
-    mi[(ax > 0.0905) & (np.abs(z - 1.742) < 0.02) & (np.abs(y - 0.024) < 0.022)] = MI["trim"]
-    slit = mx([np.abs(z - 1.742) - 0.0017, np.abs(y - 0.024) - 0.017, 0.0935 - ax])
-    mi[slit < 0.0003] = MI["glow"]
+    mouth = np.maximum(mouth_region(x, y, z), -fang_fins(x))
+    mi[(mouth < 0.0003) & (y > -0.125)] = MI["trim"]
+    sp = side_panel(x, y, z)
+    mi[(sp < -0.0012) & (ax > 0.085)] = MI["trim"]
+    slit = mx([np.abs(z - 1.762) - 0.0016, np.abs(y - 0.006) - 0.014, 0.0885 - ax])
+    mi[slit < 0.0] = MI["glow"]
     return mi
 
 
-log("helmet field")
-hg = sdf.Grid((-0.125, -0.15, 1.6), (0.125, 0.17, 1.9), H_HELMET)
-HELMET = link(bpy.data.objects.new("helmet_high", sdf.to_mesh("helmet_high", helmet_field(hg), hg)))
-set_materials(HELMET, helmet_materials(face_centers(HELMET.data)))
-log("helmet HIGH:", len(HELMET.data.polygons), "quads")
+HELMET = None
+if "helmet" in ONLY:
+    log("helmet field")
+    hg = sdf.Grid((-0.11, -0.145, 1.595), (0.11, 0.16, 1.915), H_HELMET)
+    HX, HY, HZ = hg.coords()
+    hd = helmet_sdf(HX, HY, HZ)
+    # Sensor slit: a shallow cut in the side panel.
+    hd = carve(hd, mx([np.abs(HZ - 1.762) - 0.0016, np.abs(HY - 0.006) - 0.014, 0.0885 - np.abs(HX)]), 0.0012, k=0.0)
+    HELMET = link(bpy.data.objects.new("helmet_high", sdf.to_mesh("helmet_high", hd, hg)))
+    del hd, HX, HY, HZ
+    set_materials(HELMET, helmet_materials(face_centers(HELMET.data)))
+    log("helmet HIGH:", len(HELMET.data.polygons), "quads")
+
+# ====================================================================== head (helmet off): the owner's face
+LIKE = os.path.join(HERE, "likeness")
+FACE_O = np.array((0.0, -0.082, 1.762))     # where the landmark frame's origin (between the eyes) sits
+HAIR_LO = (0.16, 0.105, 0.065)                # sRGB, from the owner's photos: brown roots, golden tips
+HAIR_HI = (0.52, 0.4, 0.27)
+HMAT = {
+    "skin": material("op_skin", (0.25, 0.15, 0.13), 0.6, bump=0.06, bump_scale=2200),
+    "hair": material("op_hair", (0.08, 0.05, 0.03), 0.62),
+}
+HMAT_ORDER = ["skin", "hair"]
+
+
+class Torus(sdf.Prim):
+    """Ring of radius R about axis n through c, tube radius r (a curl loop)."""
+
+    def __init__(self, c, n, R, r):
+        self.c, self.n, self.R, self.r = np.asarray(c, float), nrm(n), float(R), float(r)
+
+    def aabb(self):
+        m = self.R + self.r
+        return self.c - m, self.c + m
+
+    def __call__(self, x, y, z):
+        px, py, pz = x - F32(self.c[0]), y - F32(self.c[1]), z - F32(self.c[2])
+        h = px * F32(self.n[0]) + py * F32(self.n[1]) + pz * F32(self.n[2])
+        q = np.sqrt(np.maximum(px * px + py * py + pz * pz - h * h, 0.0)) - F32(self.R)
+        return np.sqrt(q * q + h * h) - F32(self.r)
+
+
+def face_mesh():
+    """The owner's landmark face (likeness/face_shape.npy) with eyes and mouth closed over, canonical UVs,
+    smoothed by two subdivision levels."""
+    P = np.load(os.path.join(LIKE, "face_shape.npy")).astype(float) + FACE_O
+    T = np.load(os.path.join(LIKE, "face_tris.npy"))
+    UVc = np.load(os.path.join(LIKE, "face_uv.npy"))
+    me = bpy.data.meshes.new("face_ref")
+    me.from_pydata([tuple(p) for p in P], [], [tuple(int(i) for i in t) for t in T])
+    bm = bmesh.new()
+    bm.from_mesh(me)
+    # The canonical mesh is wound toward +Y in Blender's frame; normals must face forward (-Y).
+    bm.normal_update()
+    if np.mean([f.normal.y for f in bm.faces]) > 0:
+        bmesh.ops.reverse_faces(bm, faces=bm.faces[:])
+    bmesh.ops.holes_fill(bm, edges=bm.edges[:], sides=30)          # eyes and mouth, not the outer rim
+    bmesh.ops.triangulate(bm, faces=bm.faces[:])
+    uvl = bm.loops.layers.uv.new("UVMap")
+    for f in bm.faces:
+        for lp in f.loops:
+            lp[uvl].uv = tuple(UVc[lp.vert.index])
+    bm.to_mesh(me)
+    bm.free()
+    ob = link(bpy.data.objects.new("face_ref", me))
+    apply_mod(ob, "SUBSURF", levels=2, render_levels=2, uv_smooth="PRESERVE_BOUNDARIES")
+    bm = bmesh.new()
+    bm.from_mesh(ob.data)
+    bmesh.ops.triangulate(bm, faces=bm.faces[:])
+    bm.to_mesh(ob.data)
+    bm.free()
+    ob.hide_render = True
+    return ob
+
+
+def load_face_tex():
+    """likeness/face_tex.png as an (h, w, 4) array of raw sRGB-encoded values, row 0 = v 0."""
+    img = bpy.data.images.load(os.path.join(LIKE, "face_tex.png"))
+    img.colorspace_settings.name = "Non-Color"
+    w, h = img.size
+    a = np.empty(w * h * 4, np.float32)
+    img.pixels.foreach_get(a)
+    return a.reshape(h, w, 4)
+
+
+def face_data(ob):
+    me = ob.data
+    nv = len(me.vertices)
+    V3 = np.empty(nv * 3)
+    me.vertices.foreach_get("co", V3)
+    V3 = V3.reshape(-1, 3)
+    LV = np.empty(len(me.loops), np.int64)
+    me.loops.foreach_get("vertex_index", LV)
+    LUV = np.empty(len(me.loops) * 2)
+    me.uv_layers.active.data.foreach_get("uv", LUV)
+    LUV = LUV.reshape(-1, 2)
+    LS = np.empty(len(me.polygons), np.int64)
+    me.polygons.foreach_get("loop_start", LS)
+    tri_v = np.stack([LV[LS + i] for i in range(3)], 1)
+    tri_uv = np.stack([LUV[LS + i] for i in range(3)], 1)
+    bvh = BVHTree.FromPolygons([tuple(v) for v in V3], [tuple(t) for t in tri_v])
+    return dict(V=V3, tri_v=tri_v, tri_uv=tri_uv, bvh=bvh)
+
+
+FACE_TEX = None
+
+
+def face_sample(fd, P, max_dist=0.03):
+    """For points P: (uv (N,2), dist (N,), normal (N,3), hit mask)."""
+    n = len(P)
+    loc = np.zeros((n, 3))
+    idx = np.full(n, -1, np.int64)
+    dist = np.full(n, np.inf)
+    nor = np.zeros((n, 3))
+    bvh = fd["bvh"]
+    for i in range(n):
+        r = bvh.find_nearest(V(P[i]), max_dist)
+        if r[0] is not None:
+            loc[i] = r[0][:]
+            nor[i] = r[1][:]
+            idx[i] = r[2]
+            dist[i] = r[3]
+    hit = idx >= 0
+    uv = np.zeros((n, 2))
+    if hit.any():
+        tv = fd["V"][fd["tri_v"][idx[hit]]]                 # (m, 3, 3)
+        p = loc[hit]
+        v0, v1, v2 = tv[:, 0], tv[:, 1], tv[:, 2]
+        e0, e1, ep = v1 - v0, v2 - v0, p - v0
+        d00, d01, d11 = (e0 * e0).sum(1), (e0 * e1).sum(1), (e1 * e1).sum(1)
+        d20, d21 = (ep * e0).sum(1), (ep * e1).sum(1)
+        den = np.maximum(d00 * d11 - d01 * d01, 1e-18)
+        b1 = (d11 * d20 - d01 * d21) / den
+        b2 = (d00 * d21 - d01 * d20) / den
+        b0 = 1 - b1 - b2
+        tuv = fd["tri_uv"][idx[hit]]
+        uv[hit] = tuv[:, 0] * b0[:, None] + tuv[:, 1] * b1[:, None] + tuv[:, 2] * b2[:, None]
+    return uv, dist, nor, hit
+
+
+def tex_lookup(T, uv):
+    """Bilinear lookup in an (h, w, c) array with v = 0 at row 0."""
+    h, w = T.shape[:2]
+    x = np.clip(uv[:, 0] * w - 0.5, 0, w - 1.001)
+    y = np.clip(uv[:, 1] * h - 0.5, 0, h - 1.001)
+    x0, y0 = x.astype(int), y.astype(int)
+    fx, fy = (x - x0)[:, None], (y - y0)[:, None]
+    a = T[y0, x0] * (1 - fx) + T[y0, x0 + 1] * fx
+    b = T[y0 + 1, x0] * (1 - fx) + T[y0 + 1, x0 + 1] * fx
+    return a * (1 - fy) + b * fy
+
+
+FACE_OVAL = [10, 338, 297, 332, 284, 251, 389, 356, 454, 323, 361, 288, 397, 365, 379, 378, 400, 377, 152, 148,
+             176, 149, 150, 136, 172, 58, 132, 93, 234, 127, 162, 21, 54, 103, 67, 109]
+
+
+def skull_model():
+    m = sdf.Model()
+    m.add(E((0, 0.012, 1.79), (0.078, 0.1, 0.098)))                       # cranium
+    # Jaw and cheek sides from the owner's own face outline: capsules from each lower outline point
+    # (inset) back to the ear line and down to the neck, so the sculpted sides meet the real jawline.
+    P = np.load(os.path.join(LIKE, "face_shape.npy")).astype(float) + FACE_O
+    centre = np.array((0.0, 0.0, 1.73))
+    for i in FACE_OVAL:
+        p = P[i]
+        if p[2] > 1.775:
+            continue
+        p_in = p + nrm(centre - p) * 0.012
+        q = np.array((p[0] * 0.8, 0.03, max(p[2], 1.66) + 0.01))
+        m.add(RC(p_in, q, 0.011, 0.03), k=0.012)
+    m.add(E((0, -0.03, 1.72), (0.064, 0.056, 0.08)), k=0.03)              # face mass (sits behind the face)
+    for sx in (1.0, -1.0):
+        m.add(E((0.06 * sx, -0.036, 1.738), (0.02, 0.034, 0.026)), k=0.018)   # cheekbones
+        m.add(E((0.066 * sx, -0.02, 1.79), (0.016, 0.04, 0.034)), k=0.02)     # temples
+    m.add(RC((0, 0.024, 1.53), (0, 0.03, 1.7), 0.064, 0.054), k=0.03)     # neck (ends inside the seal)
+    for sx in (1.0, -1.0):
+        Rear = sdf.rot((0, 0, 1), 22 * sx) @ sdf.rot((0, 1, 0), 8 * sx)
+        ear_c = np.array((0.079 * sx, 0.016, 1.748))
+        m.add(E(ear_c, (0.0065, 0.021, 0.031), Rear), k=0.004)                                # ear
+        m.add(E((0.073 * sx, 0.006, 1.742), (0.007, 0.012, 0.016)), k=0.006)   # ear root
+    return m
+
+
+def hairline(x, y):
+    h = np.interp(y, [-0.14, -0.085, -0.055, -0.02, 0.035, 0.07, 0.14], [1.8, 1.8, 1.792, 1.786, 1.78, 1.725, 1.69])
+    temple = sdf.ss((np.abs(x) - 0.04) / 0.03) * sdf.ss((-y - 0.03) / 0.03) * 0.008
+    return h + temple
+
+
+def hair_cap(x, y, z):
+    """Hair volume over the cranium: thin at the hairline, thick on top."""
+    hl = hairline(x, y)
+    t = 0.004 + 0.021 * sdf.ss((z - hl) / 0.05)
+    cap = sdf.Ellipsoid((0, 0.012, 1.79), (0.077, 0.1, 0.098))(x, y, z) - t
+    return sdf.smax(cap, F32(1.0) * (hl - z), 0.004)
+
+
+def hair_model(rng):
+    m = sdf.Model()
+    m.fn((-0.12, -0.14, 1.62), (0.12, 0.15, 1.96), lambda f, x, y, z: np.minimum(f, hair_cap(x, y, z) + 0.003))
+    # Curl volumes on the cap (Fibonacci-spread, jittered), then small ringlet loops among them.
+    C0, R0 = np.array((0, 0.012, 1.79)), np.array((0.077, 0.1, 0.098))
+    n = 2400
+    k = np.arange(n) + 0.5
+    phi = np.arccos(1 - 2 * k / n)
+    th = math.pi * (1 + 5 ** 0.5) * k
+    U = np.stack([np.sin(phi) * np.cos(th), np.sin(phi) * np.sin(th), np.cos(phi)], 1)
+    base = C0 + U * R0
+    keep = base[:, 2] > hairline(base[:, 0], base[:, 1]) - 0.01
+    cnt = 0
+    for p0, u in zip(base[keep], U[keep]):
+        nv_ = nrm(u / R0)
+        hl = hairline(np.array([p0[0]]), np.array([p0[1]]))[0]
+        t = 0.004 + 0.021 * float(sdf.ss(np.array((p0[2] - hl) / 0.05)))
+        p = p0 + nv_ * t
+        r = rng.uniform(0.0052, 0.0072) * (0.75 + 0.35 * t / 0.025)
+        m.add(sdf.Sphere(p + rng.normal(0, 0.0025, 3), r), k=0.0024)
+        cnt += 1
+        if rng.random() < 0.6:
+            ax = nrm(nv_ + rng.normal(0, 0.8, 3))
+            m.add(Torus(p + nv_ * r * 0.7 + rng.normal(0, 0.002, 3), ax,
+                        rng.uniform(0.0034, 0.0046), rng.uniform(0.0012, 0.0016)), k=0.0014)
+    log("hair curls:", cnt)
+    return m
+
+
+def upsample2(c, shape):
+    """Linear 2x upsampling of a coarse field sampled at fine[::2, ::2, ::2] back to `shape`."""
+    out = c
+    for ax in range(3):
+        n = shape[ax]
+        a = np.moveaxis(out, ax, 0)
+        f = np.empty((n,) + a.shape[1:], a.dtype)
+        f[0::2] = a[:(n + 1) // 2]
+        mid = 0.5 * (a[:-1] + a[1:])
+        f[1::2] = mid[:n // 2] if len(mid) >= n // 2 else np.concatenate([mid, a[-1:]])[:n // 2]
+        out = np.moveaxis(f, 0, ax)
+    return out
+
+
+def face_field(fd, X, Y, Z, S):
+    """Signed distance to the owner's face surface and the photo's trust at the nearest point, for
+    grid points near the front of the skull field S (others: +1 and 0)."""
+    sel = np.nonzero((np.abs(S) < 0.04) & (Y < 0.05) & (Z > 1.6) & (Z < 1.85))
+    P = np.stack([X[sel], Y[sel], Z[sel]], 1).astype(float)
+    n = len(P)
+    dist = np.full(n, 1.0)
+    sgn = np.ones(n)
+    loc = np.zeros((n, 3))
+    idx = np.full(n, -1, np.int64)
+    bvh = fd["bvh"]
+    for i in range(n):
+        r = bvh.find_nearest(V(P[i]), 0.05)
+        if r[0] is not None:
+            loc[i] = r[0][:]
+            dist[i] = r[3]
+            idx[i] = r[2]
+            sgn[i] = 1.0 if (V(P[i]) - r[0]).dot(r[1]) >= 0 else -1.0
+    hit = idx >= 0
+    uv, _d, _n, _h = face_sample(fd, loc[hit], 1e-4) if hit.any() else (np.zeros((0, 2)), 0, 0, 0)
+    alpha = np.zeros(n)
+    alpha[hit] = tex_lookup(FACE_TEX[..., 3:4], uv)[:, 0]
+    Df = np.ones(X.shape, np.float32)
+    A = np.zeros(X.shape, np.float32)
+    Df[sel] = sgn * dist
+    A[sel] = np.clip(alpha * 1.25, 0, 1) * sdf.ss((0.045 - dist) / 0.015)
+    return Df, A
+
+
+HEAD = HAIR = FACE = None
+if "head" in ONLY:
+    log("head")
+    rng = np.random.default_rng(7)
+    FACE_TEX = load_face_tex()
+    FACE = face_mesh()
+    FD = face_data(FACE)
+    skull = skull_model()
+    hh = 0.0012 if not QUICK else 0.002
+    gh = sdf.Grid((-0.11, -0.16, 1.55), (0.11, 0.14, 1.9), hh)
+    S = skull.evaluate(gh)
+    X, Y, Z = (np.broadcast_to(c, S.shape) for c in gh.coords())
+    # The face: a 35 mm slab behind the owner's face surface, morphed in over the skull by the photo's
+    # trust (the rim of the landmark mesh fades back to the sculpted skull). Evaluated at half
+    # resolution (BVH queries) and upsampled.
+    sl = (slice(None, None, 2),) * 3
+    Dc, Ac = face_field(FD, X[sl], Y[sl], Z[sl], S[sl])
+    Df, Wf = upsample2(Dc, S.shape), upsample2(Ac, S.shape)
+    slab = np.maximum(Df, -(Df + 0.035))
+    Hf = (1 - Wf) * S + Wf * np.minimum(slab, S + 0.014)
+    del Df, Wf, slab, X, Y, Z
+    HEAD = link(bpy.data.objects.new("head_high", sdf.to_mesh("head_high", Hf, gh)))
+    del Hf, S
+    log("head HIGH:", len(HEAD.data.polygons), "quads")
+    log("hair field")
+    hm = hair_model(rng)
+    ghh = sdf.Grid((-0.12, -0.14, 1.66), (0.12, 0.15, 1.97), 0.0011 if not QUICK else 0.0018)
+    HAIR = link(bpy.data.objects.new("hair_high", sdf.to_mesh("hair_high", hm.evaluate(ghh), ghh)))
+    log("hair HIGH:", len(HAIR.data.polygons), "quads")
+    set_materials(HEAD, np.zeros(len(HEAD.data.polygons)), HMAT, HMAT_ORDER)
+    set_materials(HAIR, np.ones(len(HAIR.data.polygons)), HMAT, HMAT_ORDER)
+
+# ---------------------------------------------------------------- head colour (per point: texels or verts)
+EYE_RINGS = ([33, 7, 163, 144, 145, 153, 154, 155, 133, 173, 157, 158, 159, 160, 161, 246],
+             [263, 249, 390, 373, 374, 380, 381, 382, 362, 398, 384, 385, 386, 387, 388, 466])
+LIP_RING = [61, 146, 91, 181, 84, 17, 314, 405, 321, 375, 291, 409, 270, 269, 267, 0, 37, 39, 40, 185]
+
+
+def noise3(P, scale, seed=0):
+    """Value noise in [0, 1] (trilinear over a hashed lattice)."""
+    Q = np.asarray(P, float) * scale + seed * 17.13
+    i = np.floor(Q).astype(np.int64)
+    f = Q - i
+    f = f * f * (3 - 2 * f)
+
+    def h(dx, dy, dz):
+        n = (i[:, 0] + dx) * 73856093 ^ (i[:, 1] + dy) * 19349663 ^ (i[:, 2] + dz) * 83492791 ^ (seed * 2654435761)
+        n = (n ^ (n >> 13)) * 1274126177
+        return ((n ^ (n >> 16)) & 0xFFFF) / 65535.0
+    out = 0
+    for dx in (0, 1):
+        for dy in (0, 1):
+            for dz in (0, 1):
+                w = (f[:, 0] if dx else 1 - f[:, 0]) * (f[:, 1] if dy else 1 - f[:, 1]) * (f[:, 2] if dz else 1 - f[:, 2])
+                out = out + w * h(dx, dy, dz)
+    return out
+
+
+def in_poly(uv, poly):
+    x, y = uv[:, 0], uv[:, 1]
+    inside = np.zeros(len(uv), bool)
+    n = len(poly)
+    for i in range(n):
+        x0, y0 = poly[i]
+        x1, y1 = poly[(i + 1) % n]
+        cross = ((y0 > y) != (y1 > y)) & (x < (x1 - x0) * (y - y0) / (y1 - y0 + 1e-12) + x0)
+        inside ^= cross
+    return inside
+
+
+def head_colour(P, hair):
+    """sRGB colour (N, 3) and roughness (N,) for head points P; `hair` marks hair points."""
+    tex = FACE_TEX
+    edge = (tex[..., 3] > 0.25) & (tex[..., 3] < 0.85)          # the face's own rim: match the skin to it
+    skin0 = np.median(tex[..., :3][edge], 0)
+    n = len(P)
+    col = np.tile(skin0, (n, 1))
+    rough = np.full(n, 0.62)
+    x, y, z = P[:, 0], P[:, 1], P[:, 2]
+    col *= (1 + 0.07 * (noise3(P, 70, 1) - 0.5))[:, None] * np.array((0.92, 0.87, 0.86))
+    fr = np.clip((noise3(P, 1100, 2) - 0.66) / 0.12, 0, 1) * (0.35 + 0.4 * noise3(P, 40, 3))
+    col = col * (1 - 0.32 * fr[:, None]) + np.array((0.08, 0.02, -0.01)) * fr[:, None]
+    ear = sdf.ss((np.abs(x) - 0.066) / 0.01) * sdf.ss((1.79 - z) / 0.01) * sdf.ss((z - 1.7) / 0.01)
+    col *= (1 + np.stack([0.06 * ear, -0.03 * ear, -0.03 * ear], 1))
+    stub = sdf.ss((1.668 - z) / 0.02) * sdf.ss((z - 1.6) / 0.025) * sdf.ss((0.035 - y) / 0.03)
+    sn = np.clip((noise3(P, 2600, 4) - 0.45) / 0.3, 0, 1)
+    col = col * (1 - (0.3 * stub * sn)[:, None]) + (np.array((0.44, 0.31, 0.22)) * (0.3 * stub * sn)[:, None])
+    # The face itself, from the photo.
+    sk = ~hair
+    if sk.any():
+        uv, dist, _n, hit = face_sample(FD, P[sk], 0.008)
+        a = tex_lookup(tex[..., 3:4], uv)[:, 0] * hit * sdf.ss((0.008 - np.where(hit, dist, 1)) / 0.004)
+        fc = tex_lookup(tex[..., :3], uv)
+        cs = col[sk]
+        col[sk] = cs * (1 - a[:, None]) + fc * a[:, None]
+        UVc = np.load(os.path.join(LIKE, "face_uv.npy"))
+        rs = rough[sk]
+        for ring in EYE_RINGS:
+            rs[in_poly(uv, UVc[ring]) & hit] = 0.12
+        rs[in_poly(uv, UVc[LIP_RING]) & hit] = 0.36
+        rough[sk] = rs
+    if hair.any():
+        Ph = P[hair]
+        t = np.clip((hair_cap(Ph[:, 0], Ph[:, 1], Ph[:, 2]) + 0.002) / 0.014, 0, 1) ** 0.8
+        lo, hi = np.array(HAIR_LO), np.array(HAIR_HI)
+        hc = lo + (hi - lo) * t[:, None]
+        hc *= (0.82 + 0.36 * noise3(Ph, 500, 5))[:, None]
+        hc *= (0.9 + 0.2 * noise3(Ph * np.array((1, 1, 0.25)), 3000, 6))[:, None]   # strand streaks
+        col[hair] = hc
+        rough[hair] = 0.6
+    return np.clip(col, 0, 1), rough
+
+
+def paint_vertices(ob, hair):
+    """Preview only: head colour as a vertex colour attribute read by the HIGH materials."""
+    me = ob.data
+    P = np.empty(len(me.vertices) * 3)
+    me.vertices.foreach_get("co", P)
+    P = P.reshape(-1, 3)
+    col, _r = head_colour(P, np.full(len(P), hair))
+    lin = np.where(col <= 0.04045, col / 12.92, ((col + 0.055) / 1.055) ** 2.4)
+    attr = me.color_attributes.new("Col", "FLOAT_COLOR", "POINT")
+    attr.data.foreach_set("color", np.hstack([lin, np.ones((len(lin), 1))]).astype(np.float32).ravel())
+    for m in HMAT.values():
+        nt = m.node_tree
+        if not nt.nodes.get("vcol"):
+            a = nt.nodes.new("ShaderNodeVertexColor")
+            a.name = "vcol"
+            a.layer_name = "Col"
+            nt.links.new(a.outputs["Color"], nt.nodes["Principled BSDF"].inputs["Base Color"])
 
 
 # ====================================================================== mirror right-side plates
@@ -888,7 +1279,7 @@ def r_bone(b):
     return b[:-2] + ".R" if b.endswith(".L") else b
 
 
-RIGID = []   # (high object, bone, low target scale)
+RIGID = []   # (high object, bone, plate spec)
 for sp in PLATES:
     if not sp.get("high"):
         continue
@@ -896,7 +1287,8 @@ for sp in PLATES:
     if sp["side"] == "L":
         RIGID.append((mirrored(sp["high"], sp["name"] + "_R"), r_bone(sp["bone"]), sp))
         sp["high"].name = sp["name"] + "_L"
-HIGH_PARTS = [SUIT, HELMET] + [r[0] for r in RIGID]
+SUIT_PARTS = ([SUIT] if SUIT else []) + [r[0] for r in RIGID]
+VIS = {"suit": SUIT_PARTS, "helmet": [HELMET] if HELMET else [], "head": [o for o in (HEAD, HAIR) if o]}
 
 
 # ====================================================================== preview
@@ -953,12 +1345,18 @@ def stage():
     return cam
 
 
+# name: (lens, (angle, distance, height), target z, show helmet)
 VIEWS = {
-    "front": (75, (-22, 4.6, 1.0), 0.97),
-    "back": (75, (158, 4.6, 1.0), 0.97),
-    "side": (75, (90, 4.6, 1.0), 0.97),
-    "hero": (50, (-38, 3.4, 0.45), 1.05),
-    "helmet": (100, (-28, 1.15, 1.72), 1.66),
+    "front": (75, (-22, 4.6, 1.0), 0.97, True),
+    "back": (75, (158, 4.6, 1.0), 0.97, True),
+    "side": (75, (90, 4.6, 1.0), 0.97, True),
+    "hero": (50, (-38, 3.4, 0.45), 1.05, True),
+    "bare": (50, (34, 3.4, 0.45), 1.05, False),
+    "helmet": (100, (-32, 1.2, 1.78), 1.755, True),
+    "head": (100, (26, 1.15, 1.79), 1.765, False),
+    "helmet_front": (100, (-4, 1.2, 1.77), 1.755, True),
+    "helmet_side": (100, (78, 1.2, 1.77), 1.755, True),
+    "head_side": (100, (70, 1.15, 1.79), 1.765, False),
 }
 
 
@@ -966,7 +1364,13 @@ def render_views(prefix):
     cam = stage()
     paths = []
     for name in [v for v in args.views.split(",") if v in VIEWS]:
-        lens, (ang, dist, h), tz = VIEWS[name]
+        lens, (ang, dist, h), tz, helm = VIEWS[name]
+        if not VIS["helmet" if helm else "head"]:
+            continue
+        for o in VIS["helmet"]:
+            o.hide_render = not helm
+        for o in VIS["head"]:
+            o.hide_render = helm
         cam.data.lens = lens
         a = math.radians(ang)
         look(cam, (math.sin(a) * dist, -math.cos(a) * dist, h), (0, 0, tz))
@@ -986,6 +1390,9 @@ def render_views(prefix):
 
 
 if QUICK or args.nobake:
+    if HEAD:
+        paint_vertices(HEAD, False)
+        paint_vertices(HAIR, True)
     if args.preview:
         os.makedirs(os.path.dirname(os.path.abspath(args.preview)) or ".", exist_ok=True)
         render_views(args.preview)
@@ -1006,6 +1413,12 @@ def decimate_to(ob, target, symmetric=False):
         ob.select_set(True)
         bpy.context.view_layer.objects.active = ob
         bpy.ops.object.modifier_apply(modifier=m.name)
+
+
+def planar(ob, deg=1.0):
+    """Merge coplanar faces first: flat facets become single polygons and keep their hard edges."""
+    apply_mod(ob, "DECIMATE", decimate_type="DISSOLVE", angle_limit=math.radians(deg))
+    apply_mod(ob, "TRIANGULATE")
 
 
 def low_copy(ob, name):
@@ -1033,36 +1446,47 @@ def plate_area(ob):
     return sum(p.area for p in ob.data.polygons)
 
 
+def smooth(obs, angle=None):
+    for ob in obs:
+        bpy.ops.object.select_all(action="DESELECT")
+        ob.select_set(True)
+        bpy.context.view_layer.objects.active = ob
+        if angle is None:
+            bpy.ops.object.shade_smooth()
+        else:
+            bpy.ops.object.shade_smooth_by_angle(angle=math.radians(angle))
+
+
 log("LOW")
 SUIT_LOW = low_copy(SUIT, "suit_low")
 decimate_to(SUIT_LOW, 15000, symmetric=True)
 HELMET_LOW = low_copy(HELMET, "helmet_low")
-decimate_to(HELMET_LOW, 5200, symmetric=True)
+planar(HELMET_LOW)
+decimate_to(HELMET_LOW, 9000, symmetric=True)
+HEAD_LOW = low_copy(HEAD, "head_low")
+decimate_to(HEAD_LOW, 5200)
+HAIR_LOW = low_copy(HAIR, "hair_low")
+apply_mod(HAIR_LOW, "REMESH", mode="VOXEL", voxel_size=0.0028)   # curl loops would block the decimator
+decimate_to(HAIR_LOW, 4200)
+set_materials(HAIR_LOW, np.ones(len(HAIR_LOW.data.polygons)), HMAT, HMAT_ORDER)   # the remesh drops them
 RIGID_LOW = []
-low_of = {}
 for ob, bone, sp in RIGID:
     if ob.name.endswith("_R"):
         continue
     lo_ob = low_copy(ob, ob.name + "_low")
     drop_hidden(lo_ob)
-    target = int(np.clip(plate_area(lo_ob) * 15000, 50, 650))
+    if len(lo_ob.data.polygons) == 0:
+        log("  plate hidden under the suit, dropped:", ob.name)
+        bpy.data.objects.remove(lo_ob)
+        continue
+    target = int(np.clip(plate_area(lo_ob) * 15000, 50, 600))
     decimate_to(lo_ob, target, symmetric=sp["side"] is None)
-    low_of[ob.name] = lo_ob
     RIGID_LOW.append((lo_ob, bone))
     if sp["side"] == "L":
         RIGID_LOW.append((mirrored(lo_ob, sp["name"] + "_R_low"), r_bone(bone)))
-for ob in [SUIT_LOW]:
-    bpy.ops.object.select_all(action="DESELECT")
-    ob.select_set(True)
-    bpy.context.view_layer.objects.active = ob
-    bpy.ops.object.shade_smooth()
-for ob in [HELMET_LOW] + [r[0] for r in RIGID_LOW]:
-    bpy.ops.object.select_all(action="DESELECT")
-    ob.select_set(True)
-    bpy.context.view_layer.objects.active = ob
-    bpy.ops.object.shade_smooth_by_angle(angle=math.radians(34))
-# Guard: every rigid piece must sit on its bone. (A plate outline that also caught an A-pose arm
-# left pieces hanging in the air once the arms came down.)
+smooth([SUIT_LOW, HEAD_LOW, HAIR_LOW])
+smooth([HELMET_LOW] + [r[0] for r in RIGID_LOW], 34)
+# Guard: every rigid piece must sit on its bone.
 _SEG = {name: (np.array(head[:]), np.array(tail[:])) for name, head, tail, _p, _r in BONES}
 for ob, bone in RIGID_LOW:
     Pv = np.empty(len(ob.data.vertices) * 3)
@@ -1074,7 +1498,8 @@ for ob, bone in RIGID_LOW:
     far = np.linalg.norm(Pv - (a_ + tt[:, None] * dv), axis=1).max()
     if far > 0.25:
         raise RuntimeError(f"{ob.name} strays {far:.2f} m from bone {bone}")
-log("LOW tris: suit", tris(SUIT_LOW), "helmet", tris(HELMET_LOW), "plates", sum(tris(o) for o, _b in RIGID_LOW))
+log("LOW tris: suit", tris(SUIT_LOW), "plates", sum(tris(o) for o, _b in RIGID_LOW), "helmet", tris(HELMET_LOW),
+    "head", tris(HEAD_LOW), "hair", tris(HAIR_LOW))
 
 
 # ====================================================================== weights
@@ -1121,52 +1546,9 @@ def seg_dist_np(P, a, b):
     return np.linalg.norm(P - (a + t[:, None] * dv), axis=1)
 
 
-def suit_weights(ob):
+def write_weights(ob, W):
     me = ob.data
     n = len(me.vertices)
-    P = np.empty(n * 3)
-    me.vertices.foreach_get("co", P)
-    P = P.reshape(-1, 3)
-    x, y, z = P[:, 0], P[:, 1], P[:, 2]
-    W = np.zeros((n, len(BONE_NAMES)))
-    bi = {b: i for i, b in enumerate(BONE_NAMES)}
-
-    def add_w(mask, wd):
-        for b, w in wd.items():
-            W[mask, bi[b]] += (w if np.ndim(w) == 0 else w[mask])
-
-    side_L = x > 0
-    arm_d = np.minimum.reduce([np.minimum(seg_dist_np(P, A[f"shoulder.{s}"], A[f"elbow.{s}"]),
-                                          seg_dist_np(P, A[f"elbow.{s}"], A[f"tip.{s}"])) for s, _ in SIDES])
-    torso_score = np.sqrt((x / 0.2) ** 2 + (y / 0.14) ** 2)
-    arm_region = (arm_d / 0.078 < torso_score) & (z < 1.56) & (z > 0.75)
-    leg_d = np.minimum.reduce([seg_dist_np(P, A[f"hip.{s}"], A[f"ankle.{s}"]) for s, _ in SIDES])
-    pelvis_score = np.sqrt((x / 0.18) ** 2 + (y / 0.13) ** 2)
-    leg_region = ~arm_region & ((z < 0.88) | ((leg_d / 0.1 < pelvis_score) & (z < 1.0)))
-    torso_region = ~arm_region & ~leg_region
-    tw = chain_weights(P, [(0, 0, 1.09), (0, 0, 1.27), (0, 0, 1.535), (0, 0, 1.635)],
-                       ["hips", "spine", "chest", "neck", "head"], [0.05, 0.05, 0.03, 0.02])
-    clav = ss((np.abs(x) - 0.075) / 0.1) * ss((z - 1.33) / 0.1) * 0.65
-    chest_w = tw["chest"]
-    tw["chest"] = chest_w * (1 - clav)
-    tw["clavicle.L"] = chest_w * clav * side_L
-    tw["clavicle.R"] = chest_w * clav * ~side_L
-    add_w(torso_region, tw)
-    for s, m in (("L", side_L), ("R", ~side_L)):
-        mask = arm_region & m
-        aw = chain_weights(P, [A[f"shoulder.{s}"], A[f"elbow.{s}"], A[f"wrist.{s}"]],
-                           [f"clavicle.{s}", f"upper_arm.{s}", f"forearm.{s}", f"hand.{s}"], [0.06, 0.045, 0.02])
-        fd = np.minimum.reduce([seg_dist_np(P, a, b) for a, b in FINGERS[s]["fingers"]])
-        tdist = np.minimum.reduce([seg_dist_np(P, a, b) for a, b in FINGERS[s]["thumb"]])
-        tk = (P - LIMB[s]["kn"]) @ LIMB[s]["hd"]
-        fing = mask & (fd < tdist) & (fd < 0.016) & (tk > -0.008)
-        fw = ss((tk + 0.008) / 0.012) * fing
-        aw[f"fingers.{s}"] = fw * aw[f"hand.{s}"]
-        aw[f"hand.{s}"] = aw[f"hand.{s}"] * (1 - fw)
-        add_w(mask, aw)
-        lmask = leg_region & m
-        add_w(lmask, chain_weights(P, [A[f"hip.{s}"], A[f"knee.{s}"], A[f"ankle.{s}"]],
-                                   ["hips", f"thigh.{s}", f"shin.{s}", f"foot.{s}"], [0.07, 0.05, 0.03]))
     edges = np.empty(len(me.edges) * 2, dtype=np.int64)
     me.edges.foreach_get("vertices", edges)
     edges = edges.reshape(-1, 2)
@@ -1191,6 +1573,68 @@ def suit_weights(ob):
             vg.add([int(i)], float(W2[i, j]), "REPLACE")
 
 
+def verts(ob):
+    P = np.empty(len(ob.data.vertices) * 3)
+    ob.data.vertices.foreach_get("co", P)
+    return P.reshape(-1, 3)
+
+
+def suit_weights(ob):
+    P = verts(ob)
+    n = len(P)
+    x, y, z = P[:, 0], P[:, 1], P[:, 2]
+    W = np.zeros((n, len(BONE_NAMES)))
+    bi = {b: i for i, b in enumerate(BONE_NAMES)}
+
+    def add_w(mask, wd):
+        for b, w in wd.items():
+            W[mask, bi[b]] += (w if np.ndim(w) == 0 else w[mask])
+
+    side_L = x > 0
+    arm_d = np.minimum.reduce([np.minimum(seg_dist_np(P, A[f"shoulder.{s}"], A[f"elbow.{s}"]),
+                                          seg_dist_np(P, A[f"elbow.{s}"], A[f"tip.{s}"])) for s, _ in SIDES])
+    torso_score = np.sqrt((x / 0.2) ** 2 + (y / 0.14) ** 2)
+    arm_region = (arm_d / 0.078 < torso_score) & (z < 1.56) & (z > 0.75)
+    leg_d = np.minimum.reduce([seg_dist_np(P, A[f"hip.{s}"], A[f"ankle.{s}"]) for s, _ in SIDES])
+    pelvis_score = np.sqrt((x / 0.18) ** 2 + (y / 0.13) ** 2)
+    leg_region = ~arm_region & ((z < 0.88) | ((leg_d / 0.1 < pelvis_score) & (z < 1.0)))
+    torso_region = ~arm_region & ~leg_region
+    tw = chain_weights(P, [(0, 0, 1.09), (0, 0, 1.27), (0, 0, 1.535), (0, 0, 1.66)],
+                       ["hips", "spine", "chest", "neck", "head"], [0.05, 0.05, 0.03, 0.02])
+    clav = ss((np.abs(x) - 0.075) / 0.1) * ss((z - 1.33) / 0.1) * 0.65
+    chest_w = tw["chest"]
+    tw["chest"] = chest_w * (1 - clav)
+    tw["clavicle.L"] = chest_w * clav * side_L
+    tw["clavicle.R"] = chest_w * clav * ~side_L
+    add_w(torso_region, tw)
+    for s, m in (("L", side_L), ("R", ~side_L)):
+        mask = arm_region & m
+        aw = chain_weights(P, [A[f"shoulder.{s}"], A[f"elbow.{s}"], A[f"wrist.{s}"]],
+                           [f"clavicle.{s}", f"upper_arm.{s}", f"forearm.{s}", f"hand.{s}"], [0.06, 0.045, 0.02])
+        fd = np.minimum.reduce([seg_dist_np(P, a, b) for a, b in FINGERS[s]["fingers"]])
+        tdist = np.minimum.reduce([seg_dist_np(P, a, b) for a, b in FINGERS[s]["thumb"]])
+        tk = (P - LIMB[s]["kn"]) @ LIMB[s]["hd"]
+        fing = mask & (fd < tdist) & (fd < 0.016) & (tk > -0.008)
+        fw = ss((tk + 0.008) / 0.012) * fing
+        aw[f"fingers.{s}"] = fw * aw[f"hand.{s}"]
+        aw[f"hand.{s}"] = aw[f"hand.{s}"] * (1 - fw)
+        add_w(mask, aw)
+        lmask = leg_region & m
+        add_w(lmask, chain_weights(P, [A[f"hip.{s}"], A[f"knee.{s}"], A[f"ankle.{s}"]],
+                                   ["hips", f"thigh.{s}", f"shin.{s}", f"foot.{s}"], [0.07, 0.05, 0.03]))
+    write_weights(ob, W)
+
+
+def head_weights(ob):
+    """Head mesh: the head bone, blending to the neck down where the neck enters the seal."""
+    P = verts(ob)
+    W = np.zeros((len(P), len(BONE_NAMES)))
+    h = ss((P[:, 2] - 1.6) / 0.06)
+    W[:, BONE_NAMES.index("head")] = h
+    W[:, BONE_NAMES.index("neck")] = 1 - h
+    write_weights(ob, W)
+
+
 def rigid(ob, bone):
     ob.vertex_groups.clear()
     vg = ob.vertex_groups.new(name=bone)
@@ -1200,6 +1644,8 @@ def rigid(ob, bone):
 log("weights")
 suit_weights(SUIT_LOW)
 rigid(HELMET_LOW, "head")
+head_weights(HEAD_LOW)
+rigid(HAIR_LOW, "head")
 for ob, bone in RIGID_LOW:
     rigid(ob, bone)
 
@@ -1217,20 +1663,24 @@ def join(obs, name):
     return j
 
 
-LOW = join([SUIT_LOW, HELMET_LOW] + [r[0] for r in RIGID_LOW], "operative")
-bm = bmesh.new()
-bm.from_mesh(LOW.data)
-bmesh.ops.dissolve_degenerate(bm, dist=1e-6, edges=bm.edges[:])
-loose = [v for v in bm.verts if not v.link_faces]
-bmesh.ops.delete(bm, geom=loose, context="VERTS")
-bm.to_mesh(LOW.data)
-bm.free()
-log("LOW validate fixed something:", LOW.data.validate(verbose=True))
-HIGH = join(HIGH_PARTS, "operative_high")
-log("LOW", tris(LOW), "tris; HIGH", tris(HIGH), "tris")
+def clean(ob):
+    bm = bmesh.new()
+    bm.from_mesh(ob.data)
+    bmesh.ops.dissolve_degenerate(bm, dist=1e-6, edges=bm.edges[:])
+    loose = [v for v in bm.verts if not v.link_faces]
+    bmesh.ops.delete(bm, geom=loose, context="VERTS")
+    bm.to_mesh(ob.data)
+    bm.free()
+    ob.data.validate()
 
 
-def unwrap(ob):
+def tag(ob, value):
+    a = ob.data.attributes.new("part", "INT", "FACE")
+    a.data.foreach_set("value", np.full(len(ob.data.polygons), value, np.int32))
+
+
+def unwrap(ob, boost):
+    """Smart-project, scale islands by boost(poly centre, material name), pack."""
     bpy.ops.object.select_all(action="DESELECT")
     ob.select_set(True)
     bpy.context.view_layer.objects.active = ob
@@ -1238,22 +1688,12 @@ def unwrap(ob):
     bpy.ops.mesh.select_all(action="SELECT")
     bpy.ops.uv.smart_project(angle_limit=math.radians(62), island_margin=0.002)
     bpy.ops.object.mode_set(mode="OBJECT")
-    # More texels for the helmet and the plates (seen most), fewer under the soles.
     me = ob.data
     uv = me.uv_layers.active.data
-    P = np.empty(len(me.vertices) * 3)
-    me.vertices.foreach_get("co", P)
-    P = P.reshape(-1, 3)
-    for poly in me.polygons:
-        zc = P[list(poly.vertices), 2].mean()
-        mname = MAT_ORDER[poly.material_index]
-        f = 1.0
-        if zc > 1.62 and mname != "suit":
-            f = 1.8
-        elif mname in ("plate", "trim", "glow"):
-            f = 1.15
-        elif mname == "sole":
-            f = 0.5
+    names = [m.name for m in me.materials]
+    C = face_centers(me)
+    for poly, c in zip(me.polygons, C):
+        f = boost(c, names[poly.material_index])
         if f != 1.0:
             for li in poly.loop_indices:
                 uv[li].uv = uv[li].uv * f
@@ -1263,18 +1703,211 @@ def unwrap(ob):
     bpy.ops.object.mode_set(mode="OBJECT")
 
 
-log("unwrap")
-unwrap(LOW)
+def body_boost(c, mname):
+    if c[2] > 1.6 and mname != "op_weave":
+        return 1.7          # helmet
+    if mname in ("op_plate", "op_trim", "op_glow"):
+        return 1.15
+    if mname == "op_sole":
+        return 0.5
+    return 1.0
+
+
+def head_boost(c, mname):
+    if mname == "op_skin" and c[1] < -0.03 and 1.63 < c[2] < 1.83:
+        return 2.2          # the face
+    if mname == "op_hair":
+        return 0.8
+    return 1.0
+
+
 tex_dir = os.path.join(os.path.dirname(os.path.abspath(args.out or "/tmp/operative/x.gltf")), "textures")
-log("bake", args.tex)
-TEX = bakeutil.bake_textures(HIGH, LOW, [MAT[k] for k in MAT_ORDER], args.tex, tex_dir, "operative",
+BODY_PARTS = [SUIT_LOW] + [r[0] for r in RIGID_LOW]
+for o in BODY_PARTS:
+    tag(o, 0)
+tag(HELMET_LOW, 1)
+ATLAS = join(BODY_PARTS + [HELMET_LOW], "operative")
+clean(ATLAS)
+HIGH = join(SUIT_PARTS + [HELMET], "operative_high")
+log("atlas LOW", tris(ATLAS), "tris; HIGH", tris(HIGH), "tris")
+unwrap(ATLAS, body_boost)
+for o in (HEAD, HAIR, HEAD_LOW, HAIR_LOW):
+    o.hide_render = True
+log("bake body", args.tex)
+TEX = bakeutil.bake_textures(HIGH, ATLAS, [MAT[k] for k in MAT_ORDER], args.tex, tex_dir, "operative",
                              cage=0.004, ray=0.011, ao_distance=0.035, grime=0.5, log=log)
-bakeutil.apply_baked_material(LOW, TEX, "operative", emission_strength=2.5)
+bakeutil.apply_baked_material(ATLAS, TEX, "operative", emission_strength=2.5)
 HIGH.hide_render = True
 HIGH.hide_set(True)
-LOW.parent = ARM
-mod = LOW.modifiers.new("Armature", "ARMATURE")
-mod.object = ARM
+
+# Split the helmet back out (same material and atlas; its own mesh so the game can take it off).
+def keep_part(ob, value):
+    me = ob.data
+    part = np.empty(len(me.polygons), np.int32)
+    me.attributes["part"].data.foreach_get("value", part)
+    bm = bmesh.new()
+    bm.from_mesh(me)
+    bm.faces.ensure_lookup_table()
+    dead = [f for f in bm.faces if part[f.index] != value]
+    bmesh.ops.delete(bm, geom=dead, context="FACES")
+    loose = [v for v in bm.verts if not v.link_faces]
+    bmesh.ops.delete(bm, geom=loose, context="VERTS")
+    bm.to_mesh(me)
+    bm.free()
+    me.attributes.remove(me.attributes["part"])
+
+
+HELM = link(bpy.data.objects.new("operative_helmet", ATLAS.data.copy()))
+HELM.data.name = "operative_helmet"
+for vg in ATLAS.vertex_groups:
+    HELM.vertex_groups.new(name=vg.name)
+BODY = ATLAS
+keep_part(HELM, 1)
+keep_part(BODY, 0)
+log("split: body", tris(BODY), "helmet", tris(HELM))
+
+# ---------------------------------------------------------------- head: bake normal/AO, colour per texel
+HEADM = join([HEAD_LOW, HAIR_LOW], "operative_head")
+clean(HEADM)
+HEAD_HIGH = join([HEAD, HAIR], "head_high_all")
+unwrap(HEADM, head_boost)
+HSIZE = args.tex
+for o in (BODY, HELM):
+    o.hide_render = True
+for o in (HEAD_HIGH, HEADM):
+    o.hide_render = False
+log("bake head", HSIZE)
+for m in HMAT.values():   # the preview vertex-colour node is not used in the bake
+    v = m.node_tree.nodes.get("vcol")
+    if v:
+        m.node_tree.nodes.remove(v)
+HTEX = bakeutil.bake_textures(HEAD_HIGH, HEADM, [HMAT[k] for k in HMAT_ORDER], HSIZE, tex_dir, "operative_head",
+                              cage=0.004, ray=0.012, ao_distance=0.03, grime=0.0, log=log)
+HEAD_HIGH.hide_render = True
+HEAD_HIGH.hide_set(True)
+
+
+def raster_uv(ob, size):
+    """Per texel of `ob`'s UV map: world position, material index and coverage (numpy rasterizer),
+    with positions grown 8 px past island edges so filtering never reads an empty texel."""
+    me = ob.data
+    me.calc_loop_triangles()
+    nt = len(me.loop_triangles)
+    LT = np.empty(nt * 3, np.int64)
+    me.loop_triangles.foreach_get("loops", LT)
+    LT = LT.reshape(-1, 3)
+    TM = np.empty(nt, np.int64)
+    me.loop_triangles.foreach_get("material_index", TM)
+    LV = np.empty(len(me.loops), np.int64)
+    me.loops.foreach_get("vertex_index", LV)
+    UVL = np.empty(len(me.loops) * 2)
+    me.uv_layers.active.data.foreach_get("uv", UVL)
+    UVL = UVL.reshape(-1, 2) * size - 0.5
+    Pv = verts(ob)
+    pos = np.zeros((size, size, 3))
+    mat = np.full((size, size), -1, np.int64)
+    for t in range(nt):
+        uv = UVL[LT[t]]
+        pv = Pv[LV[LT[t]]]
+        x0, y0 = np.floor(uv.min(0)).astype(int)
+        x1, y1 = np.ceil(uv.max(0)).astype(int)
+        x0, y0, x1, y1 = max(x0, 0), max(y0, 0), min(x1, size - 1), min(y1, size - 1)
+        if x1 < x0 or y1 < y0:
+            continue
+        gx, gy = np.meshgrid(np.arange(x0, x1 + 1), np.arange(y0, y1 + 1))
+        (ax, ay), (bx, by), (cx, cy) = uv
+        den = (by - cy) * (ax - cx) + (cx - bx) * (ay - cy)
+        if abs(den) < 1e-12:
+            continue
+        w0 = ((by - cy) * (gx - cx) + (cx - bx) * (gy - cy)) / den
+        w1 = ((cy - ay) * (gx - cx) + (ax - cx) * (gy - cy)) / den
+        w2 = 1 - w0 - w1
+        m = (w0 >= -0.02) & (w1 >= -0.02) & (w2 >= -0.02)
+        if not m.any():
+            continue
+        p = w0[..., None] * pv[0] + w1[..., None] * pv[1] + w2[..., None] * pv[2]
+        pos[gy[m], gx[m]] = p[m]
+        mat[gy[m], gx[m]] = TM[t]
+    cov = mat >= 0
+    grown = cov.copy()
+    for _ in range(8):
+        acc = np.zeros_like(pos)
+        cnt = np.zeros((size, size))
+        macc = np.full((size, size), -1, np.int64)
+        for dy, dx in ((0, 1), (0, -1), (1, 0), (-1, 0)):
+            sh = np.roll(np.roll(grown, dy, 0), dx, 1)
+            acc += np.roll(np.roll(pos, dy, 0), dx, 1) * sh[..., None]
+            cnt += sh
+            macc = np.where(sh & (macc < 0), np.roll(np.roll(mat, dy, 0), dx, 1), macc)
+        new = ~grown & (cnt > 0)
+        pos[new] = acc[new] / cnt[new][:, None]
+        mat[new] = macc[new]
+        grown |= new
+    return pos.reshape(-1, 3), mat.ravel(), grown.ravel()
+
+
+POS, MATI, valid = raster_uv(HEADM, HSIZE)
+HAIRMASK = MATI == HMAT_ORDER.index("hair")
+log("head texels:", int(valid.sum()), "hair:", int((HAIRMASK & valid).sum()))
+colour = np.zeros((HSIZE * HSIZE, 3))
+rough = np.full(HSIZE * HSIZE, 0.5)
+idx = np.nonzero(valid)[0]
+for chunk in np.array_split(idx, 16):
+    c_, r_ = head_colour(POS[chunk], HAIRMASK[chunk])
+    colour[chunk], rough[chunk] = c_, r_
+ao = np.empty(HSIZE * HSIZE * 4, np.float32)
+HTEX["orm"].pixels.foreach_get(ao)
+ao = ao.reshape(-1, 4)
+colour *= (0.7 + 0.3 * ao[:, 0])[:, None]
+base_px = np.ones((HSIZE * HSIZE, 4), np.float32)
+base_px[:, :3] = colour
+HTEX["basecolor"].pixels.foreach_set(base_px.ravel())
+HTEX["basecolor"].save()
+ao[:, 1] = rough
+ao[:, 2] = 0.0
+HTEX["orm"].pixels.foreach_set(ao.ravel())
+HTEX["orm"].save()
+os.remove(HTEX["emission"].filepath_raw)
+
+
+def apply_head_material(ob, tex):
+    mat = bpy.data.materials.new("operative_head")
+    nt = mat.node_tree
+    N, L_ = nt.nodes, nt.links
+    bsdf = N["Principled BSDF"]
+
+    def img(i):
+        n = N.new("ShaderNodeTexImage")
+        n.image = i
+        return n
+    L_.new(img(tex["basecolor"]).outputs["Color"], bsdf.inputs["Base Color"])
+    sep = N.new("ShaderNodeSeparateColor")
+    L_.new(img(tex["orm"]).outputs["Color"], sep.inputs["Color"])
+    L_.new(sep.outputs["Green"], bsdf.inputs["Roughness"])
+    L_.new(sep.outputs["Blue"], bsdf.inputs["Metallic"])
+    occl = N.new("ShaderNodeGroup")
+    occl.node_tree = bakeutil._gltf_output_group()
+    L_.new(sep.outputs["Red"], occl.inputs["Occlusion"])
+    nmap = N.new("ShaderNodeNormalMap")
+    L_.new(img(tex["normal"]).outputs["Color"], nmap.inputs["Color"])
+    L_.new(nmap.outputs["Normal"], bsdf.inputs["Normal"])
+    bsdf.inputs["Specular IOR Level"].default_value = 0.3      # skin and hair: little sheen
+    mat.use_backface_culling = True
+    ob.data.materials.clear()
+    ob.data.materials.append(mat)
+    for p in ob.data.polygons:
+        p.material_index = 0
+
+
+apply_head_material(HEADM, HTEX)
+for o in (BODY, HELM):
+    o.hide_render = False
+for o in (BODY, HELM, HEADM):
+    o.parent = ARM
+    md = o.modifiers.new("Armature", "ARMATURE")
+    md.object = ARM
+FACE.hide_render = True
+log("final tris: body", tris(BODY), "helmet", tris(HELM), "head", tris(HEADM))
 
 
 # ====================================================================== pose for the preview
@@ -1298,8 +1931,8 @@ def relaxed_pose():
 if args.out:
     os.makedirs(os.path.dirname(os.path.abspath(args.out)), exist_ok=True)
     bpy.ops.object.select_all(action="DESELECT")
-    ARM.select_set(True)
-    LOW.select_set(True)
+    for o in (ARM, BODY, HELM, HEADM):
+        o.select_set(True)
     bpy.context.view_layer.objects.active = ARM
     bpy.ops.export_scene.gltf(filepath=os.path.abspath(args.out), export_format="GLTF_SEPARATE",
                               export_texture_dir="textures", use_selection=True, export_apply=False,
@@ -1309,6 +1942,10 @@ if args.out:
 
 if args.preview:
     os.makedirs(os.path.dirname(os.path.abspath(args.preview)) or ".", exist_ok=True)
+    VIS.update({"suit": [BODY], "helmet": [HELM], "head": [HEADM]})
+    for o in bpy.data.objects:
+        if o.type == "MESH" and o not in (BODY, HELM, HEADM) and o.name != "floor":
+            o.hide_render = True
     relaxed_pose()
     render_views(args.preview)
 log("done")
