@@ -38,6 +38,8 @@ func _ready() -> void:
 	add_child(status)
 	if "--capture-body" in OS.get_cmdline_user_args():
 		status.open.call_deferred()
+		if "--capture-bare" in OS.get_cmdline_user_args():
+			status.toggle_helmet.call_deferred()
 	if not parts.is_empty() and not CaptureDirector.is_capturing():
 		hud = AugmentHud.new()
 		hud.augments = self

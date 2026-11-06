@@ -54,8 +54,10 @@ func test_textures_are_vram_compressed() -> void:
 			"res://assets/weapons/rail_carbine/textures/rail_carbine",
 			"res://assets/characters/fp_arms_rail/textures/fp_arms_rail",
 			"res://assets/weapons/m14p/textures/m14p", "res://assets/characters/fp_arms_m14p/textures/fp_arms_m14p",
-			"res://assets/characters/operative/textures/operative"]:
+			"res://assets/characters/operative/textures/operative", "res://assets/characters/operative/textures/operative_head"]:
 		for name: String in ["basecolor", "orm", "normal", "emission"]:
+			if prefix.ends_with("operative_head") and name == "emission":
+				continue   # the bare head has no lights
 			var cfg: ConfigFile = ConfigFile.new()
 			var path: String = "%s_%s.png.import" % [prefix, name]
 			assert_eq(cfg.load(path), OK, path)
