@@ -190,7 +190,11 @@ for _ in range(24):
     out[grow] = blur[grow] / cb[grow][:, None]
     c[grow] = 1
 # Alpha: trust falls off over the outer ring of the mesh (ears, hairline and background smear there).
-dist = cv2.distanceTransform((cov > 0).astype(np.uint8), cv2.DIST_L2, 5)
+solid = (cov > 0).astype(np.uint8)
+fill = solid.copy()
+cv2.floodFill(fill, np.zeros((N + 2, N + 2), np.uint8), (0, 0), 2)
+solid[fill == 0] = 1                     # eye and mouth holes count as covered (only the outer rim fades)
+dist = cv2.distanceTransform(solid, cv2.DIST_L2, 5)
 alpha = np.clip((dist - N * 0.03) / (N * 0.09), 0, 1)
 rgba = np.dstack([out, alpha]) * 255
 cv2.imwrite(os.path.join(args.out, "face_tex.png"), rgba.astype(np.uint8))

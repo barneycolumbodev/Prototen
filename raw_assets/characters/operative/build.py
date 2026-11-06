@@ -1040,7 +1040,7 @@ def skull_model():
         Rear = sdf.rot((0, 0, 1), 22 * sx) @ sdf.rot((0, 1, 0), 8 * sx)
         ear_c = np.array((0.079 * sx, 0.016, 1.748))
         m.add(E(ear_c, (0.0065, 0.021, 0.031), Rear), k=0.004)                                # ear
-        m.sub(E(ear_c + np.array((0.0055 * sx, -0.003, -0.004)), (0.0035, 0.012, 0.016), Rear), k=0.002)  # concha
+        m.sub(E(ear_c + np.array((0.0075 * sx, -0.003, -0.004)), (0.003, 0.011, 0.015), Rear), k=0.002)  # concha
         m.add(E((0.073 * sx, 0.006, 1.742), (0.007, 0.012, 0.016)), k=0.006)   # ear root
     return m
 
@@ -1210,7 +1210,7 @@ def head_colour(P, hair):
     col = np.tile(skin0, (n, 1))
     rough = np.full(n, 0.5)
     x, y, z = P[:, 0], P[:, 1], P[:, 2]
-    col *= (1 + 0.07 * (noise3(P, 70, 1) - 0.5))[:, None] * np.array((0.97, 0.95, 0.95))
+    col *= (1 + 0.07 * (noise3(P, 70, 1) - 0.5))[:, None] * np.array((0.86, 0.82, 0.82))
     fr = np.clip((noise3(P, 1100, 2) - 0.66) / 0.12, 0, 1) * (0.35 + 0.4 * noise3(P, 40, 3))
     col = col * (1 - 0.32 * fr[:, None]) + np.array((0.08, 0.02, -0.01)) * fr[:, None]
     ear = sdf.ss((np.abs(x) - 0.066) / 0.01) * sdf.ss((1.79 - z) / 0.01) * sdf.ss((z - 1.7) / 0.01)
@@ -1462,6 +1462,7 @@ decimate_to(HEAD_LOW, 5200)
 HAIR_LOW = low_copy(HAIR, "hair_low")
 apply_mod(HAIR_LOW, "REMESH", mode="VOXEL", voxel_size=0.0028)   # curl loops would block the decimator
 decimate_to(HAIR_LOW, 4200)
+set_materials(HAIR_LOW, np.ones(len(HAIR_LOW.data.polygons)), HMAT, HMAT_ORDER)   # the remesh drops them
 RIGID_LOW = []
 for ob, bone, sp in RIGID:
     if ob.name.endswith("_R"):
@@ -1724,6 +1725,8 @@ clean(ATLAS)
 HIGH = join(SUIT_PARTS + [HELMET], "operative_high")
 log("atlas LOW", tris(ATLAS), "tris; HIGH", tris(HIGH), "tris")
 unwrap(ATLAS, body_boost)
+for o in (HEAD, HAIR, HEAD_LOW, HAIR_LOW):
+    o.hide_render = True
 log("bake body", args.tex)
 TEX = bakeutil.bake_textures(HIGH, ATLAS, [MAT[k] for k in MAT_ORDER], args.tex, tex_dir, "operative",
                              cage=0.004, ray=0.011, ao_distance=0.035, grime=0.5, log=log)
@@ -1763,6 +1766,10 @@ clean(HEADM)
 HEAD_HIGH = join([HEAD, HAIR], "head_high_all")
 unwrap(HEADM, head_boost)
 HSIZE = args.tex
+for o in (BODY, HELM):
+    o.hide_render = True
+for o in (HEAD_HIGH, HEADM):
+    o.hide_render = False
 log("bake head", HSIZE)
 for m in HMAT.values():   # the preview vertex-colour node is not used in the bake
     v = m.node_tree.nodes.get("vcol")
@@ -1890,6 +1897,8 @@ def apply_head_material(ob, tex):
 
 
 apply_head_material(HEADM, HTEX)
+for o in (BODY, HELM):
+    o.hide_render = False
 for o in (BODY, HELM, HEADM):
     o.parent = ARM
     md = o.modifiers.new("Armature", "ARMATURE")
