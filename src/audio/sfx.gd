@@ -37,7 +37,12 @@ var _muffle: AudioEffectLowPassFilter
 const DEATH_VOICE_WINDOW: float = 0.6
 const DEATH_VOICE_MAX: int = 2
 ## Seconds between ricochet whines (an MG42 burst along the street would chain them).
-const RICOCHET_GAP: float = 0.12
+const RICOCHET_GAP: float = 0.35
+## Only some glancing rounds are heard at all.
+const RICOCHET_AUDIBLE: float = 0.4
+## Casing landings: at most one per this many seconds (an MG42 burst drops 20 a second).
+const CASING_GAP: float = 0.15
+var _last_casing: float = -10.0
 
 
 func _ready() -> void:
@@ -155,6 +160,15 @@ func play_at(name: StringName, at: Vector3, volume_db: float = 0.0, pitch_rand: 
 	p.play()
 
 
+## A spent case landing near the player: a soft tick, rate-limited.
+func play_casing(bank_name: StringName, at: Vector3) -> void:
+	var now: float = Time.get_ticks_msec() * 0.001
+	if now - _last_casing < CASING_GAP:
+		return
+	_last_casing = now
+	play_at(bank_name, at, -20.0, 0.08)
+
+
 ## Muffles everything (time dilation): 0 = clear, 1 = cut off at `cutoff_hz`.
 func set_muffle(amount: float, cutoff_hz: float = 2400.0) -> void:
 	var bus: int = AudioServer.get_bus_index(&"Master")
@@ -199,7 +213,7 @@ func _on_hit(hit: BallisticHit) -> void:
 	# range's steel ping, which every grazing street hit used to play).
 	if hit.result == BallisticHit.Result.RICOCHET:
 		var now: float = Time.get_ticks_msec() * 0.001
-		if now - _last_ricochet > RICOCHET_GAP:
+		if now - _last_ricochet > RICOCHET_GAP and _rng.randf() < RICOCHET_AUDIBLE:
 			_last_ricochet = now
 			play_at(&"ricochet", hit.point, vol - 4.0, 0.1)
 

@@ -115,6 +115,9 @@ func _ready() -> void:
 	sweep.name = "FeatureSweep"
 	sweep.atmos = atmos
 	sweep.bench = _bench
+	for c: Node in player.camera().get_children():
+		if c is Node3D:
+			sweep.viewmodel.append(c as Node3D)
 	add_child(sweep)
 	sweep.finished.connect(_on_sweep_finished)
 	_hud = preload("res://src/ui/hud.gd").new()

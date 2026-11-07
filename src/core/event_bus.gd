@@ -33,6 +33,9 @@ signal player_died
 ## Wave mode: wave number, enemies left (-1 = between waves).
 @warning_ignore("unused_signal")
 signal wave_changed(wave: int, left: int)
+## The player slid into a living enemy and shoved him (m/s given to him).
+@warning_ignore("unused_signal")
+signal slide_impact(enemy: Node, push: float)
 ## Pause menu: start or stop wave mode.
 @warning_ignore("unused_signal")
 signal wave_mode_requested

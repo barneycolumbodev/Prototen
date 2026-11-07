@@ -25,6 +25,7 @@ const STATS: Array[StringName] = [
 	&"recoil",          # (M2) multiplier on recoil
 	&"aim_speed",       # (M2) multiplier on ADS speed
 	&"reload_speed",    # (M2) multiplier on reload speed
+	&"strength",        # Player: multiplier on slide knockback (and later melee, carry)
 ]
 
 var frame: PlayerBodyConfig

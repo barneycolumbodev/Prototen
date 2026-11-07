@@ -79,6 +79,7 @@ func _build() -> void:
 	_add("scale", Settings.cycle_render_scale)
 	_add("adaptive", Settings.toggle_adaptive_resolution)
 	_add("fps", Settings.cycle_max_fps)
+	_add("bloom", Settings.toggle_bloom)
 	_add("look", Settings.cycle_look_preset)
 	_add("look_speed", Settings.cycle_look_sensitivity)
 	# Left/right on the look-speed button steps it down/up.
@@ -126,6 +127,7 @@ func _refresh() -> void:
 	_label("scale", ("Render scale: up to %d%%" if Settings.adaptive_resolution else "Render scale: %d%%") % roundi(Settings.render_scale * 100.0))
 	_label("adaptive", "Resolution: %s" % ("auto (holds the frame rate)" if Settings.adaptive_resolution else "fixed"))
 	_label("fps", "Frame cap: %d fps" % Settings.max_fps)
+	_label("bloom", "Bloom: %s" % ("on (costs ~3 ms)" if Settings.bloom else "off"))
 	_label("look", "Look curve: %s" % Settings.look_config().display_name)
 	_label("look_speed", "Look speed: %d%%   (< >)" % roundi(Settings.look_sensitivity * 100.0))
 	_label("overlay", "Debug overlay: %s" % ("on" if Settings.overlay_visible else "off"))

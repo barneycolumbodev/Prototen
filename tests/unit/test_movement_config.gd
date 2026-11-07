@@ -25,3 +25,12 @@ func test_approach_accelerates_and_clamps() -> void:
 func test_approach_uses_decel_when_stopping() -> void:
 	var v: Vector3 = MovementConfig.approach(Vector3(10, 0, 0), Vector3.ZERO, 50.0, 20.0, 0.1)
 	assert_almost_eq(v.x, 8.0, 0.001)
+
+
+func test_slide_knockback_scales_with_mass_strength_and_speed() -> void:
+	var cfg: MovementConfig = load("res://data/player/movement_default.tres") as MovementConfig
+	var base: float = Player.slide_knock_strength(cfg, 100.0, 1.0, cfg.slide_knock_ref_speed)
+	assert_almost_eq(base, cfg.slide_knock_speed, 0.001, "reference: 100 kg, strength 1")
+	assert_gt(Player.slide_knock_strength(cfg, 160.0, 1.0, cfg.slide_knock_ref_speed), base, "heavier body hits harder")
+	assert_gt(Player.slide_knock_strength(cfg, 100.0, 1.5, cfg.slide_knock_ref_speed), base, "stronger body hits harder")
+	assert_lt(Player.slide_knock_strength(cfg, 100.0, 1.0, 6.0), base, "a slow slide barely pushes")

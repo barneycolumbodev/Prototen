@@ -174,7 +174,7 @@ static func describe(b: BodyModel) -> String:
 	lines.append("")
 	lines.append("[b]INSTALLED[/b]")
 	for p: PartData in b.loadout.parts:
-		var kind: String = "ACTIVE (%s)" % Augments.BUTTONS[(p as ActivePartData).slot - 1] if p.is_active() else "passive"
+		var kind: String = "ACTIVE (LB, %s)" % Augments.SLOT_NAMES[(p as ActivePartData).slot - 1] if p.is_active() else "passive"
 		var loc: String = PartData.Location.keys()[p.location]
 		lines.append("[color=#ffd28a]%s[/color]  [color=#8a9a9a]%s · %s[/color]" % [p.display_name, loc.to_lower(), kind])
 		lines.append("    %.1f kg   %+.0f W   %+.0f W heat   cap %d" % [p.mass_kg, p.power_draw_w, p.heat_w, p.capacity])

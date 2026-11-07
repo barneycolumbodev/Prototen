@@ -90,5 +90,5 @@ func test_status_text_lists_parts_and_totals() -> void:
 	var b: BodyModel = BodyModel.new(frame, lo)
 	var t: String = BodyStatus.describe(b)
 	assert_string_contains(t, "RX-9 Reflex Overclock")
-	assert_string_contains(t, "ACTIVE (LB)")
+	assert_string_contains(t, "ACTIVE (LB, D-LEFT)")
 	assert_string_contains(t, "%.1f kg" % b.mass_kg)

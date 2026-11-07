@@ -71,6 +71,8 @@ var _mantle_from: Vector3
 var _mantle_to: Vector3
 var _mantle_t: float = 0.0
 var _roll: float = 0.0
+## Enemies already shoved during this slide (each only once).
+var _slide_hit: Array[Node] = []
 
 var _tilt_time: float = 0.0
 var _sprinting: bool = false
@@ -279,7 +281,7 @@ func _physics_process(delta: float) -> void:
 			_mantle(delta)
 			return
 		MoveState.SLIDE:
-			_slide(delta, wish, b_held)
+			_slide(delta, wish, b_pressed, b_held, stick)
 			return
 		MoveState.WALLRUN:
 			_wallrun(delta, forward_push)
@@ -409,10 +411,11 @@ func _start_slide(horizontal: Vector3) -> void:
 	var speed: float = minf(horizontal.length() + cfg.slide_boost, cfg.slide_max_speed)
 	var h: Vector3 = horizontal.normalized() * speed
 	velocity = Vector3(h.x, velocity.y, h.z)
+	_slide_hit.clear()
 	Sfx.play_ui(&"slide", -6.0, 0.05)
 
 
-func _slide(delta: float, wish: Vector3, b_held: bool) -> void:
+func _slide(delta: float, wish: Vector3, b_pressed: bool, b_held: bool, stick: Vector2) -> void:
 	var cfg: MovementConfig = movement
 	_crouching = true
 	var h: Vector3 = Vector3(velocity.x, 0.0, velocity.z)
@@ -435,10 +438,52 @@ func _slide(delta: float, wish: Vector3, b_held: bool) -> void:
 		return
 	velocity = Vector3(h.x, vy, h.z)
 	_move_with_steps(delta, is_on_floor())
-	if speed <= cfg.slide_end_speed or not b_held or not is_on_floor():
+	_slide_knock(dir, speed)
+	var released: bool = not b_held if cfg.slide_hold else b_pressed
+	var braked: bool = stick.y > cfg.slide_brake_stick
+	if speed <= cfg.slide_end_speed or released or braked or not is_on_floor():
 		move_state = MoveState.NORMAL
 		_slide_cd = cfg.slide_cooldown
-		_crouching = b_held and is_on_floor()
+		_crouching = b_held and is_on_floor() and not b_pressed
+
+
+## Sliding into a living enemy: shove him along the slide, stagger him, lose
+## a little speed. Strength scales with the body's mass and `strength` stat.
+func _slide_knock(dir: Vector3, speed: float) -> void:
+	var cfg: MovementConfig = movement
+	if speed < cfg.slide_knock_min_speed:
+		return
+	var me: Vector3 = global_position
+	for n: Node in get_tree().get_nodes_in_group(&"enemies"):
+		var e: Enemy = n as Enemy
+		if e == null or not e.alive or n in _slide_hit:
+			continue
+		var to: Vector3 = e.global_position - me
+		if absf(to.y) > 1.2:
+			continue
+		to.y = 0.0
+		if to.length() > cfg.slide_knock_reach or (to.length() > 0.2 and to.normalized().dot(dir) < 0.15):
+			continue
+		_slide_hit.append(n)
+		var push: float = slide_knock_strength(cfg, body.mass_kg, body.stat(&"strength"), speed)
+		# Mostly along the slide, partly away from the line of contact.
+		var away: Vector3 = (dir * 0.7 + to.normalized() * 0.3).normalized() if to.length() > 0.05 else dir
+		e.knock_back(away * push + Vector3.UP * push * 0.25, self, cfg.slide_knock_damage, cfg.slide_knock_morale)
+		var keep: float = 1.0 - cfg.slide_knock_speed_loss
+		velocity.x *= keep
+		velocity.z *= keep
+		EventBus.slide_impact.emit(e, push)
+		# Feel it: a hard thump in the pads and a short hit-stop.
+		TimeControl.hitstop(0.05, 0.1)
+		for pad: int in Input.get_connected_joypads():
+			Input.start_joy_vibration(pad, 0.6, 0.9, 0.16)
+		var w: PlayerWeapon = weapon()
+		if w and w.cam_recoil:
+			w.cam_recoil.kick(Vector3(-1.2, 0.0, 2.0 * signf(to.x if absf(to.x) > 0.01 else 1.0)))
+
+
+static func slide_knock_strength(cfg: MovementConfig, mass_kg: float, strength: float, speed: float) -> float:
+	return cfg.slide_knock_speed * (mass_kg / 100.0) * strength * clampf(speed / cfg.slide_knock_ref_speed, 0.5, 1.4)
 
 
 func _side_wall() -> Dictionary:

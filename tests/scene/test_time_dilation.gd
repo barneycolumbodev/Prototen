@@ -17,15 +17,15 @@ func before_each() -> void:
 
 
 func after_each() -> void:
-	for a: StringName in [&"active_1", &"move_forward"]:
+	for a: StringName in [&"active_use", &"move_forward"]:
 		Input.action_release(a)
 	TimeControl.set_dilation(1.0, 1.0)
 
 
 func _tap_lb() -> void:
-	Input.action_press(&"active_1")
+	Input.action_press(&"active_use")
 	await wait_frames(2)
-	Input.action_release(&"active_1")
+	Input.action_release(&"active_use")
 	await wait_frames(1)
 
 

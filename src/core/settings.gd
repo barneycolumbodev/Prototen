@@ -24,6 +24,10 @@ var adaptive_resolution: bool = true
 var adaptive: AdaptiveResolution
 var max_fps: int = 60
 var overlay_visible: bool = true
+## Godot's bloom. Off by default: on the Moto G it cost 3.2 ms of a 17.9 ms
+## frame (map cost test, 2026-11-07) and side-by-side captures of Chinatown
+## with and without it are nearly identical. Levels read this.
+var bloom: bool = false
 ## Gore.Level: 0 off, 1 standard, 2 maximum (dismemberment). Maximum by default in the prototype.
 var gore_level: int = 2
 var look_preset: String = "standard"
@@ -55,6 +59,7 @@ func load_settings() -> void:
 	max_fps = cfg.get_value("video", "max_fps", max_fps)
 	vertical_fov = cfg.get_value("video", "vertical_fov", vertical_fov)
 	overlay_visible = cfg.get_value("debug", "overlay_visible", overlay_visible)
+	bloom = cfg.get_value("video", "bloom_v2", bloom)
 	var gore: int = cfg.get_value("video", "gore_level", gore_level)
 	gore_level = clampi(gore, 0, 2)
 	look_preset = cfg.get_value("input", "look_preset", look_preset)
@@ -74,6 +79,7 @@ func save_settings() -> void:
 	cfg.set_value("video", "max_fps", max_fps)
 	cfg.set_value("video", "vertical_fov", vertical_fov)
 	cfg.set_value("debug", "overlay_visible", overlay_visible)
+	cfg.set_value("video", "bloom_v2", bloom)
 	cfg.set_value("video", "gore_level", gore_level)
 	cfg.set_value("debug", "bench_results", bench_results)
 	cfg.set_value("input", "look_preset", look_preset)
@@ -110,6 +116,11 @@ func cycle_max_fps() -> void:
 	for c: int in FPS_CAPS:
 		caps.append(float(c))
 	max_fps = int(next_in(caps, float(max_fps)))
+	_commit()
+
+
+func toggle_bloom() -> void:
+	bloom = not bloom
 	_commit()
 
 
