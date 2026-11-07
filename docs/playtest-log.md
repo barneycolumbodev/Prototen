@@ -284,6 +284,8 @@ What changed:
 - **Actives:** D-pad left/down/right picks which active LB uses (RX-9 on left, GX-4 on down). Shell type moved to D-pad up. RB is free.
 - **GX-4 Gauss arm** (design §3.4): select with D-pad down, LB. Gun down, open hand up, fist, the fist splits into a fork, forearm opens, rails and coils slide out, fins up (1.6 s). RT fires; 10 rounds on the forearm LEDs and the HUD; goes through everyone in line; corkscrew beam and blood spiral, the bodies electrocuted. LB folds it away; empty, it folds by itself; rounds come back while folded.
 
+Build: `dev-latest` from branch `claude/map-cause-perf-combat-nt6g7g` @ 40ff0de, CI run #19 (manual run, GUT passed), `graft-debug.apk` 249 MB. GUT 209/209 in the cloud. Installs over the previous build (same fixed debug key).
+
 Cloud evidence: GUT (new: slide distance, B cancels, slide shove, knockback scaling; arm deploys and stows the gun, transforms fully, a slug kills two men in line, empty → folds and the gun returns, LB early keeps rounds, RX-9 and the arm together). Captures: `docs/previews/gx4_gauss_arm_sequence.png` (Blender), `gx4_gauss_arm_ingame.png` (in game, software renderer, daylight test range).
 
 Please try:
