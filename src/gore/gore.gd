@@ -115,6 +115,21 @@ func _ready() -> void:
 		_mists.append(m)
 
 
+## Weapon-specific gore (WeaponData.gore_style), e.g. the GX-4's corkscrew
+## wound and electrocution. `body`: the enemy's body (null for props).
+var gauss: GaussGore
+
+
+func special_hit(hit: BallisticHit, body: EnemyBody) -> void:
+	match hit.weapon.gore_style:
+		&"gauss":
+			if gauss == null:
+				gauss = GaussGore.new()
+				gauss.name = "GaussGore"
+				add_child(gauss)
+			gauss.hit(hit, body)
+
+
 func level() -> int:
 	return Settings.gore_level if enabled else Level.OFF
 

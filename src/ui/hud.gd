@@ -312,6 +312,26 @@ func _process(delta: float) -> void:
 		_scope.amount = weapon.scope_amount()
 		_scope.ammo = weapon.magazine_ammo()
 		_update_shell(delta)
+		_update_stowed()
+
+
+## While an active part has the hands (the GX-4 arm), the ammo counter shows
+## its rounds instead of the holstered gun's.
+var _showing_part: bool = false
+
+
+func _update_stowed() -> void:
+	var arm: GaussArm = weapon.stowed_by as GaussArm if weapon.stowed else null
+	if arm:
+		_showing_part = true
+		var n: int = arm.rounds()
+		_ammo.text = "GX-4  %d" % n
+		_ammo.add_theme_color_override("font_color", Color(1.0, 0.45, 0.35) if n <= 2 else Color(0.6, 0.82, 1.0))
+		_reticle.shape = Reticle.Shape.CROSS
+		_reticle.gap_px = 6.0
+	elif _showing_part:
+		_showing_part = false
+		_on_ammo_changed(weapon.mechanism.loaded(), weapon.mechanism.reserve)
 
 
 ## Loaded shell type; while a swap is pending, the one coming in (blinking).

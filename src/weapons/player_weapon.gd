@@ -260,6 +260,44 @@ func is_switching() -> bool:
 	return switching_to >= 0
 
 
+## An active part has the hands (the GX-4 arm cannon): the gun goes down and
+## stays down, no firing, reloading, switching or aiming until unstow().
+var stowed: bool = false
+## The part holding the hands while stowed (the HUD shows its rounds).
+var stowed_by: ActivePart
+var _stow_left: float = 0.0
+
+
+func stow() -> void:
+	if stowed:
+		return
+	stowed = true
+	if wheel_open:
+		_close_wheel(false)
+	for ev: StringName in mechanism.holster():
+		_handle(ev)
+	_stop_charge_whine()
+	_stow_left = data.holster_time
+	Sfx.play_ui(&"holster", -4.0)
+
+
+func unstow() -> void:
+	if not stowed:
+		return
+	stowed = false
+	stowed_by = null
+	_stow_left = 0.0
+	slots[current].rig.visible = true
+	motion.start_draw()
+	mechanism.draw()
+	Sfx.play_ui(&"draw", -4.0)
+
+
+## The gun is all the way down (hidden) while stowed.
+func is_stowed_away() -> bool:
+	return stowed and _stow_left <= 0.0
+
+
 func index_of(display_name: String) -> int:
 	for i: int in slots.size():
 		if slots[i].data.display_name == display_name:
@@ -324,7 +362,7 @@ func _close_wheel(apply: bool) -> void:
 
 ## Y and the wheel, in real time (the wheel slows the game down).
 func _update_wheel() -> void:
-	var active: bool = input_enabled and _player.input_enabled
+	var active: bool = input_enabled and _player.input_enabled and not stowed
 	var held: bool = _script_y if _script_wheel else (active and not _scripted and Input.is_action_pressed(&"switch_weapon"))
 	var now: int = Time.get_ticks_msec()
 	if held and _y_down_ms < 0:
@@ -455,7 +493,7 @@ func _physics_process(delta: float) -> void:
 		aim_held = false
 
 	# Shell type: pick now, swap once the presses stop.
-	if ammo_step != 0 and not is_switching():
+	if ammo_step != 0 and not is_switching() and not stowed:
 		select_ammo(ammo_step)
 	if _select_left >= 0.0:
 		_select_left -= delta
@@ -467,6 +505,16 @@ func _physics_process(delta: float) -> void:
 		pull = false
 		held = false
 		aim_held = false
+	if stowed:
+		pull = false
+		held = false
+		reload = false
+		switch = false
+		aim_held = false
+		if _stow_left > 0.0:
+			_stow_left -= delta
+			if _stow_left <= 0.0:
+				slots[current].rig.visible = false
 	if switch:
 		quick_switch()
 	if is_switching():
@@ -491,7 +539,7 @@ func _physics_process(delta: float) -> void:
 		_sprint_out = data.sprint_to_fire
 	else:
 		_sprint_out = maxf(0.0, _sprint_out - delta)
-	var blocked: bool = _player.is_sprinting() or _sprint_out > 0.0 or is_switching() or _player.is_mantling()
+	var blocked: bool = _player.is_sprinting() or _sprint_out > 0.0 or is_switching() or _player.is_mantling() or stowed
 
 	# Holstered guns keep recharging and cooling.
 	for i: int in slots.size():
@@ -542,7 +590,7 @@ func _process(delta: float) -> void:
 		_player.aim_assist.ads = a
 
 	var pose: int = 0
-	if is_switching() or _player.is_mantling():
+	if is_switching() or _player.is_mantling() or stowed:
 		pose = 3
 	elif is_reloading():
 		pose = 2

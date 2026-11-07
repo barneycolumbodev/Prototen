@@ -16,6 +16,7 @@ extends Node3D
 ##   land, and small fires (pooled, capped) on flammable surfaces and on
 ##   targets that burn. Fires on targets ride along with them.
 ## - 12-gauge shells: their own small pool, hull tinted per load.
+## - GX-4 arm cannon beams: a core and a corkscrew helix (GaussBeam), 3 pooled.
 
 const MAX_HOLES: int = 24
 const MAX_STATIC_HOLES: int = 128
@@ -111,6 +112,31 @@ func _ready() -> void:
 
 
 # ------------------------------------------------------------------ muzzle
+
+const MAX_BEAMS: int = 3
+var _beams: Array[GaussBeam] = []
+var _beam_next: int = 0
+
+
+## The GX-4's beam from `from` to `to` (Fx keeps 3; the oldest is reused).
+func gauss_beam(from: Vector3, to: Vector3, color: Color) -> void:
+	if _beams.is_empty():
+		for i: int in MAX_BEAMS:
+			var b: GaussBeam = GaussBeam.new()
+			add_child(b)
+			_beams.append(b)
+	var beam: GaussBeam = _beams[_beam_next]
+	_beam_next = (_beam_next + 1) % _beams.size()
+	beam.fire(from, to, color)
+
+
+func live_beams() -> int:
+	var n: int = 0
+	for b: GaussBeam in _beams:
+		if b.is_live():
+			n += 1
+	return n
+
 
 func muzzle_flash(muzzle: Transform3D, data: WeaponData) -> void:
 	if not enabled:

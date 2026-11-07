@@ -62,6 +62,12 @@ func player_boost() -> float:
 	return dilation_player_scale / dilation_scale
 
 
+## How fast the player's own time runs against real time right now (1 normally;
+## dilation_player_scale while dilated; less during hit-stop and the wheel).
+func player_scale_now() -> float:
+	return Engine.time_scale * player_boost()
+
+
 ## Real seconds for a frame whose (scaled) delta is `delta`. Capped, so a
 ## hitch or a near-frozen hit-stop can't produce a huge step.
 func real_delta(delta: float) -> float:

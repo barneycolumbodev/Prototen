@@ -41,6 +41,10 @@ var look_scale: float = 1.0
 var move_scale: float = 1.0
 ## Degrees added to the field of view (time dilation widens it a touch).
 var fov_add_deg: float = 0.0
+## A shot's field-of-view punch (degrees; the arm cannon), and an extra zoom
+## from an active part's own aiming (1 = none).
+var fov_punch_deg: float = 0.0
+var fov_extra_scale: float = 1.0
 ## Set by the weapon: carrying a heavy gun cuts sprint speed and jump height.
 var sprint_scale: float = 1.0
 var jump_scale: float = 1.0
@@ -241,7 +245,7 @@ func _process(delta: float) -> void:
 			rate = aim_assist.apply(self, rate, look_dt)
 		set_view(yaw - deg_to_rad(rate.x) * look_dt, pitch - deg_to_rad(rate.y) * look_dt)
 	_update_crouch_pose(delta)
-	_camera.fov = Settings.vertical_fov * fov_scale + fov_add_deg
+	_camera.fov = Settings.vertical_fov * fov_scale * fov_extra_scale + fov_add_deg + fov_punch_deg
 	if delta > 0.0:
 		var measured: Vector2 = Vector2(-angle_difference(_last_yaw, yaw), angle_difference(_last_pitch, pitch)) / delta
 		look_velocity = look_velocity.lerp(Vector2(rad_to_deg(measured.x), rad_to_deg(measured.y)), clampf(delta * 20.0, 0.0, 1.0))

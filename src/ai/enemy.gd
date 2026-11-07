@@ -189,7 +189,11 @@ func on_part_hit(part: HitboxPart, hit: BallisticHit) -> void:
 	if hit.result == BallisticHit.Result.PENETRATED:
 		body.add_wound(zone, hit.exit_point, clampf(0.012 + hit.energy_out * 0.000004, 0.012, 0.045), true)
 	var violence: float = sqrt(maxf(dep, 30.0) / 300.0)
-	Gore.flesh_hit(hit, violence, head)
+	if hit.weapon and hit.weapon.gore_style != &"":
+		# Its own effect replaces the usual sprays (the GX-4's corkscrew).
+		Gore.special_hit(hit, body)
+	else:
+		Gore.flesh_hit(hit, violence, head)
 	var impulse: Vector3 = hit.direction * hit.damage.impulse * TimeControl.impact_multiplier()
 	if not alive:
 		body.push_bone(zone, impulse * 1.2, hit.point)

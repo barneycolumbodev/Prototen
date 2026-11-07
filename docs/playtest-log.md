@@ -272,3 +272,28 @@ Owner: the latest APK (CI run #17, 7a0f3e7) wouldn't install: "App not installed
 Cause: not the file. The release copy verifies (zip intact, v1/v2/v3 signatures, versionCode 17, sha256 matches GitHub's digest), and the phone's installer read the name and icon from it, so the download was complete. CI's run annotation says the keystore secrets aren't set, so every run signed with a newly generated key; Android refuses an update whose signature differs from the installed copy.
 
 Fix: CI now signs with one fixed debug key committed at `tools/android/graft-debug.keystore` (debug only). **One last time:** uninstall GRAFT, then install. After that, new builds install over the old one.
+
+## 2026-11-07 — Map cost results, the ding, slide knockback, three actives, GX-4 Gauss arm (waiting for the owner)
+
+Owner's notes on the last build: "the game felt genuinely satisfying to kill enemies for the first time." Map cost test (screenshot, Moto G, resolution auto had dropped to 60 %): all on GPU 17.9 ms / frame 21.5 ms; bloom off −3.2 ms GPU (frame 18.4); reflections, water streaks, ripples, rain, steam, fog each within ±0.3 ms (noise). Average ~46 fps in play; the picture looked grainier (the auto resolution sitting at its 60 % floor). Still dings on every shot. Wants: a longer slide with a moderate knockback into enemies; three actives on LB, picked with the D-pad; the next active, a prosthetic arm that transforms into a Gauss cannon (10 shots, spiral gore, loud, overpenetrates).
+
+What changed:
+- **Bloom off by default** (Pause → Bloom to compare). Cloud captures of Chinatown with and without it are nearly identical; on the phone it was 3.2 ms of 17.9. With that headroom the auto resolution should climb back up, which is what the grain was. The world shader also uses the cheaper diffuse model (its lighting is baked, so nothing visible changes). The map cost test now also times "gun hidden" and the map at 100 % and 70 % resolution, so the next screenshot shows how much the frame depends on pixels.
+- **The ding:** every shot ejects a casing, and its bounce was a pure 3–6 kHz ring, so each shot was followed by a "ting". Casings now tick once, quietly and dull; shutter and steel-post hits are a dead thwack and rattle instead of a clang; thin metal is a flat tsk; ricochets are a short hiss and only 40 % of them are heard.
+- **Slide:** a tap of B runs the whole slide (~18 m from a sprint); B again, A or stick back ends it. Sliding into an enemy shoves him ~1.5 m and staggers him (scales with mass × strength × speed).
+- **Actives:** D-pad left/down/right picks which active LB uses (RX-9 on left, GX-4 on down). Shell type moved to D-pad up. RB is free.
+- **GX-4 Gauss arm** (design §3.4): select with D-pad down, LB. Gun down, open hand up, fist, the fist splits into a fork, forearm opens, rails and coils slide out, fins up (1.6 s). RT fires; 10 rounds on the forearm LEDs and the HUD; goes through everyone in line; corkscrew beam and blood spiral, the bodies electrocuted. LB folds it away; empty, it folds by itself; rounds come back while folded.
+
+Cloud evidence: GUT (new: slide distance, B cancels, slide shove, knockback scaling; arm deploys and stows the gun, transforms fully, a slug kills two men in line, empty → folds and the gun returns, LB early keeps rounds, RX-9 and the arm together). Captures: `docs/previews/gx4_gauss_arm_sequence.png` (Blender), `gx4_gauss_arm_ingame.png` (in game, software renderer, daylight test range).
+
+Please try:
+1. Pause → Map cost test in Chinatown again and screenshot it. Does FPS hold nearer 60 with bloom off? Does the picture look sharper? Flip Bloom on and off: can you see a difference?
+2. Shoot along the street, at shutters and posts: any ding left?
+3. Slide (tap B) into an enemy. Is the slide length right? Is the shove too weak or strong?
+4. D-pad down, LB: watch the arm transform. Too slow or too fast? Fire through a group. Is the beam and the corkscrew readable at night? Is the shot loud enough?
+5. RX-9 (D-pad left, LB), then the arm (D-pad down, LB) while time is slowed.
+
+- Device / renderer / settings:
+- Measured:
+- Notes from the owner:
+- Follow-ups: the arm's materials are flat colours (no baked textures yet); first-person suit arms for the guns; the arm on the full body (body-status screen).
