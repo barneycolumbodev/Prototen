@@ -81,12 +81,16 @@ jobs:
             echo "$KEYSTORE_B64" | base64 -d > "$keystore"
             alias="$KEYSTORE_ALIAS"; password="$KEYSTORE_PASSWORD"
           else
-            echo "::warning::ANDROID_KEYSTORE_* secrets are not set. Signing with a throwaway key: uninstall the old APK before installing this one."
+            # A fixed debug key committed to the repo, so every build has the same
+            # signature and installs over the last one. Debug builds only: never
+            # use it for a release. (A new key per run made Android refuse every
+            # update: "package appears to be invalid", 2026-11-07.)
+            echo "ANDROID_KEYSTORE_* secrets are not set. Signing with the committed debug key (tools/android/graft-debug.keystore)."
+            cp tools/android/graft-debug.keystore "$keystore"
             alias=graftdebug; password=graftdebug
-            "$java_home/bin/keytool" -genkeypair -v -keystore "$keystore" -alias "$alias" \
-              -keyalg RSA -keysize 2048 -validity 10000 -storepass "$password" -keypass "$password" \
-              -dname "CN=GRAFT Debug, O=GRAFT, C=US" >/dev/null 2>&1
           fi
+          "$java_home/bin/keytool" -list -v -keystore "$keystore" -storepass "$password" -alias "$alias" \
+            | grep -E "^\s*SHA256:" | sed 's/^/Signing certificate /'
           {
             echo "GODOT_ANDROID_KEYSTORE_DEBUG_PATH=$keystore"
             echo "GODOT_ANDROID_KEYSTORE_DEBUG_USER=$alias"

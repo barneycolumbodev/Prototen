@@ -11,6 +11,8 @@ export_credentials.cfg
 *.aab
 *.keystore
 *.jks
+# Fixed debug signing key (CI fallback; debug builds only)
+!tools/android/graft-debug.keystore
 
 # Tool output
 /screenshots/

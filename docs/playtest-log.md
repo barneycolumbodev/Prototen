@@ -264,3 +264,11 @@ What changed: all the carapace plates are gone except a slim collar, low spine n
 
 - Notes from the owner:
 - Follow-ups: first-person arms in the same suit.
+
+## 2026-11-07 — APK "package appears to be invalid"
+
+Owner: the latest APK (CI run #17, 7a0f3e7) wouldn't install: "App not installed as package appears to be invalid".
+
+Cause: not the file. The release copy verifies (zip intact, v1/v2/v3 signatures, versionCode 17, sha256 matches GitHub's digest), and the phone's installer read the name and icon from it, so the download was complete. CI's run annotation says the keystore secrets aren't set, so every run signed with a newly generated key; Android refuses an update whose signature differs from the installed copy.
+
+Fix: CI now signs with one fixed debug key committed at `tools/android/graft-debug.keystore` (debug only). **One last time:** uninstall GRAFT, then install. After that, new builds install over the old one.
