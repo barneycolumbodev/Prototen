@@ -299,3 +299,27 @@ Please try:
 - Measured:
 - Notes from the owner:
 - Follow-ups: the arm's materials are flat colours (no baked textures yet); first-person suit arms for the guns; the arm on the full body (body-status screen).
+
+## 2026-11-08 — Passive augments: core stats, the library, the loadout screen (waiting for the owner)
+
+Owner: hasn't played the GX-4 build yet. Asked for the passive system: core stats (mobility, melee, gun proficiency by type, hitbox size, slide knock power from momentum and strength), a large library of grounded passives that each trade one thing for another, stat requirements and stat effects on actives (connectivity for drones and their range), a few parts with finished looks and neutral placeholders for the rest.
+
+What changed (design §3.6):
+- **Core stats:** about 35, in eight groups, each read by gameplay: movement (speed, agility, jump, slide, wall-run, climb), strength and structure, melee, firearms (recoil, aim, reload, handling, stability, proficiency for handguns, shotguns, rifles, heavy weapons), signature (silhouette, signature, noise: enemies see and hear you by them), neural (processing, connectivity, perception), power and heat.
+- **Relationships:** load = mass ÷ usable strength slows heavy bodies; strength is capped by structure; slide and melee impact come from mass × strength × impact; heat raises your signature and stops regen when full; an empty power reserve stops powered actives.
+- **37 passives** in 15 body locations, each with a tradeoff; some need stats from others (HM-5 muscle needs a reinforced skeleton, the FC-1 link needs connectivity, the spinal bus needs processing). Parts that don't meet their requirements go offline.
+- **Actives read stats:** RX-9 needs processing (SA-2) and gets faster and longer with more; GX-4 needs structure (TL-3) and kicks less on a stronger frame, recharges faster with spare power.
+- **R3 strike** (new): a lunge and a blow; how hard depends on strength, mass, impact and melee power.
+- **Loadout screen** (View): browse parts per body location, the body and every number preview them, A installs, X removes, presets at the top (Operator, Ghost, Juggernaut, Marksman), LT zooms, right stick turns, B applies. Saved between sessions.
+- **Finished hardware:** CT-7 trauma plating, HS-5 heat sinks, NL-3 cortical uplink, KD-2 dampers (baked textures). The rest are gunmetal placeholders.
+- **The default loadout changed** to the Operator: TL-3 skeleton, SA-2, EM-2 myofibrils, HS-5, RX-9, GX-4. With EM-2 you run about 10 % faster than the last build.
+
+Please try:
+1. View → browse the Torso row to CT-7, then the presets. Does the body look right? Are the numbers readable on the phone?
+2. Play each preset in the wave mode. Do they feel different? Juggernaut: slide into enemies (should break them), hip-fire the MG42. Ghost: can you get close before they notice?
+3. R3 near an enemy: does the strike land and feel heavy?
+4. Take SA-2 out: RX-9 should show OFFLINE on the HUD.
+
+- Device / renderer / settings:
+- Notes from the owner:
+- Follow-ups: finished hardware for more parts; first-person arms showing forearm parts (HS-5 fins, EM-2 vents); a drone active using connectivity.
