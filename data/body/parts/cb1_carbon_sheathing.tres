@@ -1,0 +1,39 @@
+[gd_resource type="Resource" script_class="PartData" load_steps=8 format=3]
+
+[ext_resource type="Script" path="res://src/body/part_data.gd" id="1"]
+[ext_resource type="Script" path="res://src/body/stat_modifier.gd" id="2"]
+[ext_resource type="Script" path="res://src/body/part_visual.gd" id="3"]
+[ext_resource type="Script" path="res://src/body/stat_requirement.gd" id="4"]
+
+[sub_resource type="Resource" id="mod_0"]
+script = ExtResource("2")
+stat = &"structure"
+add = 0.25
+mul = 1.0
+
+[sub_resource type="Resource" id="mod_1"]
+script = ExtResource("2")
+stat = &"carry_kg"
+add = 10.0
+mul = 1.0
+
+[sub_resource type="Resource" id="mod_2"]
+script = ExtResource("2")
+stat = &"max_health"
+add = 10.0
+mul = 1.0
+
+[resource]
+script = ExtResource("1")
+id = &"cb1_carbon_sheathing"
+display_name = "CB-1 Carbon-Weave Bone Sheathing"
+description = "Carbon-fibre sleeves bonded round the long bones. Light; just enough for a Gauss arm."
+location = 3
+mass_kg = 2.5
+power_draw_w = 0.0
+heat_w = 0.0
+capacity = 1
+modifiers = Array[ExtResource("2")]([SubResource("mod_0"), SubResource("mod_1"), SubResource("mod_2")])
+requirements = Array[ExtResource("4")]([])
+synergy = "Structure ×1.25: exactly the GX-4's requirement, for builds that can't spare the mass of TL-3."
+visuals = Array[ExtResource("3")]([])

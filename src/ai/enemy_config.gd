@@ -74,6 +74,9 @@ extends Resource
 ## Hearing range for unsuppressed shots; suppressed ones count at a fraction.
 @export_range(5.0, 120.0) var hearing_range: float = 40.0
 @export_range(0.0, 1.0) var suppressed_hearing: float = 0.25
+## Hears the operative moving within this many metres at a full sprint with
+## noise ×1 (scales with speed and the body's noise stat; crouched is quieter).
+@export_range(0.0, 60.0) var footstep_hearing: float = 13.0
 
 @export_group("Morale")
 @export_range(0.0, 1.0) var courage: float = 0.6

@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="MeleeConfig" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/player/melee_config.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+reach = 2.1
+cone_deg = 55.0
+windup = 0.07
+recovery = 0.42
+damage = 55.0
+push = 7.0
+lethal_push = 17.0
+morale_loss = 0.25
+lunge_speed = 5.0
+hitstop_time = 0.07
+hitstop_scale = 0.08
+rumble = Vector3(0.8, 1, 0.18)
+camera_kick_deg = Vector3(-2.2, 1.4, 3.5)
+viewmodel_jolt = Vector3(-0.06, -0.03, -0.12)
+viewmodel_jolt_rot_deg = Vector3(-12, 18, 28)

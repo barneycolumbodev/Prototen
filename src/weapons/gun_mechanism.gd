@@ -75,6 +75,10 @@ var load_ammo: int = 0
 ## Load of the round the last EV_FIRE fired, and of the shell the last swap racked out.
 var fired_ammo: int = 0
 var ejected_ammo: int = 0
+## Set by the weapon from the body (docs/design.md §3.6): reloads and draws
+## run this many times faster (reload speed × proficiency, handling).
+var reload_rate: float = 1.0
+var draw_rate: float = 1.0
 
 var _state_time: float = 0.0
 var _buffered: float = -1.0
@@ -119,7 +123,8 @@ func loaded() -> int:
 
 
 func reload_duration() -> float:
-	return data.reload_empty_time if empty_reload and data.closed_bolt else data.reload_tactical_time
+	var t: float = data.reload_empty_time if empty_reload and data.closed_bolt else data.reload_tactical_time
+	return t / maxf(reload_rate, 0.05)
 
 
 ## 0..1 progress through the current reload (0 when not reloading).
@@ -199,7 +204,7 @@ func update(delta: float, pull: bool, held: bool, reload: bool, blocked: bool, c
 
 	match state:
 		State.DRAWING:
-			if _state_time >= data.draw_time:
+			if _state_time >= data.draw_time / maxf(draw_rate, 0.05):
 				_enter(State.READY)
 		State.CYCLING:
 			if _state_time + 0.00001 >= data.fire_interval:

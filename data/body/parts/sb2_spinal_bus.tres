@@ -1,0 +1,42 @@
+[gd_resource type="Resource" script_class="PartData" load_steps=8 format=3]
+
+[ext_resource type="Script" path="res://src/body/part_data.gd" id="1"]
+[ext_resource type="Script" path="res://src/body/stat_modifier.gd" id="2"]
+[ext_resource type="Script" path="res://src/body/part_visual.gd" id="3"]
+[ext_resource type="Script" path="res://src/body/stat_requirement.gd" id="4"]
+
+[sub_resource type="Resource" id="mod_0"]
+script = ExtResource("2")
+stat = &"capacity"
+add = 3.0
+mul = 1.0
+
+[sub_resource type="Resource" id="req_0"]
+script = ExtResource("4")
+stat = &"processing"
+at_least = 1.1
+reason = "the bus needs a co-processor to arbitrate it"
+
+[sub_resource type="Resource" id="vis_0"]
+script = ExtResource("3")
+socket = &"spine"
+shape = 1
+size = Vector3(0.02, 0.3, 0.012)
+offset = Vector3(0.0, 0.12, -0.12)
+rotation_deg = Vector3(0.0, 0.0, 0.0)
+finish = "glow"
+
+[resource]
+script = ExtResource("1")
+id = &"sb2_spinal_bus"
+display_name = "SB-2 Spinal Bus Extender"
+description = "A second data and power trunk along the spine: room for three more capacity of hardware."
+location = 9
+mass_kg = 1.0
+power_draw_w = 40.0
+heat_w = 35.0
+capacity = 0
+modifiers = Array[ExtResource("2")]([SubResource("mod_0")])
+requirements = Array[ExtResource("4")]([SubResource("req_0")])
+synergy = "Costs no capacity and adds 3; needs processing ×1.10 (SA-2, MR-1 + TG-6...)."
+visuals = Array[ExtResource("3")]([SubResource("vis_0")])

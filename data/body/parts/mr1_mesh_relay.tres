@@ -1,0 +1,48 @@
+[gd_resource type="Resource" script_class="PartData" load_steps=9 format=3]
+
+[ext_resource type="Script" path="res://src/body/part_data.gd" id="1"]
+[ext_resource type="Script" path="res://src/body/stat_modifier.gd" id="2"]
+[ext_resource type="Script" path="res://src/body/part_visual.gd" id="3"]
+[ext_resource type="Script" path="res://src/body/stat_requirement.gd" id="4"]
+
+[sub_resource type="Resource" id="mod_0"]
+script = ExtResource("2")
+stat = &"connectivity"
+add = 1.5
+mul = 1.0
+
+[sub_resource type="Resource" id="mod_1"]
+script = ExtResource("2")
+stat = &"processing"
+add = 0.05
+mul = 1.0
+
+[sub_resource type="Resource" id="mod_2"]
+script = ExtResource("2")
+stat = &"signature"
+add = 0.0
+mul = 1.05
+
+[sub_resource type="Resource" id="vis_0"]
+script = ExtResource("3")
+socket = &"head"
+shape = 3
+size = Vector3(0.006, 0.004, 0.006)
+offset = Vector3(0.0, 0.11, -0.07)
+rotation_deg = Vector3(0.0, 0.0, 0.0)
+finish = "glow"
+
+[resource]
+script = ExtResource("1")
+id = &"mr1_mesh_relay"
+display_name = "MR-1 Mesh Relay Lattice"
+description = "A filament lattice laid over the motor cortex that relays signals to external hardware. Leaks a little RF."
+location = 2
+mass_kg = 0.1
+power_draw_w = 30.0
+heat_w = 15.0
+capacity = 1
+modifiers = Array[ExtResource("2")]([SubResource("mod_0"), SubResource("mod_1"), SubResource("mod_2")])
+requirements = Array[ExtResource("4")]([])
+synergy = "Connectivity 1.5 on its own: enough for an FC-1 link. With an NL-3 it reaches 4.5 (180 m of drone range)."
+visuals = Array[ExtResource("3")]([SubResource("vis_0")])

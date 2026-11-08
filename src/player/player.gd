@@ -15,6 +15,8 @@ extends CharacterBody3D
 var body: BodyModel
 ## Active parts on LB/RB/D-pad up.
 var augments: Augments
+## R3 strike.
+var melee: PlayerMelee
 ## Turned off while a benchmark or cutscene drives the camera.
 @export var input_enabled: bool = true
 ## The weapon wheel is open: the right stick picks a gun instead of looking.
@@ -101,6 +103,12 @@ func _ready() -> void:
 	add_to_group(&"suppressible")
 	set_meta(&"surface", &"flesh")
 	set_meta(&"stops_rounds", true)
+	# The default loadout is replaced by the one saved from the loadout screen;
+	# either way the player edits a copy, never the resource on disk.
+	if loadout.resource_path == LoadoutStore.DEFAULT_PATH:
+		loadout = LoadoutStore.load_saved(loadout)
+	else:
+		loadout = loadout.copy()
 	body = BodyModel.new(body_config, loadout)
 	health = max_health()
 	collision_layer = Ballistics.LAYER_PLAYER
@@ -114,6 +122,9 @@ func _ready() -> void:
 	augments = Augments.new()
 	augments.name = "Augments"
 	add_child(augments)
+	melee = PlayerMelee.new()
+	melee.name = "Melee"
+	add_child(melee)
 	# Snap down curbs and stairs instead of flying off them; constant speed on slopes.
 	floor_snap_length = movement.step_height + 0.05
 	floor_constant_speed = true
@@ -264,7 +275,8 @@ func _physics_process(delta: float) -> void:
 		_slide_move()
 		return
 	body.tick(delta)
-	if _since_hit > body.stat(&"regen_delay") and health < max_health():
+	var can_regen: bool = not (body.frame.overheat_stops_regen and body.overheated())
+	if can_regen and _since_hit > body.stat(&"regen_delay") and health < max_health():
 		health = minf(health + body.stat(&"regen_rate") * delta, max_health())
 	var cfg: MovementConfig = movement
 	var stick: Vector2 = Vector2.ZERO
@@ -315,11 +327,12 @@ func _physics_process(delta: float) -> void:
 		speed = cfg.sprint_speed * sprint_scale
 	elif _crouching:
 		speed = cfg.crouch_speed
-	speed *= move_scale * body.stat(&"move_speed")
+	speed *= move_scale * speed_factor()
+	var agility: float = body.stat(&"agility")
 	if is_on_floor():
-		horizontal = MovementConfig.approach(horizontal, wish * speed, cfg.ground_accel, cfg.ground_decel, delta)
+		horizontal = MovementConfig.approach(horizontal, wish * speed, cfg.ground_accel * agility, cfg.ground_decel * agility, delta)
 	else:
-		horizontal = MovementConfig.approach(horizontal, wish * speed, cfg.air_accel, cfg.air_accel * 0.25, delta)
+		horizontal = MovementConfig.approach(horizontal, wish * speed, cfg.air_accel * agility, cfg.air_accel * 0.25 * agility, delta)
 
 	_coyote = cfg.coyote_time if is_on_floor() else _coyote - delta
 	var vy: float = velocity.y
@@ -330,7 +343,7 @@ func _physics_process(delta: float) -> void:
 		_jump_buffer = 0.0
 		return
 	if _jump_buffer > 0.0 and _coyote > 0.0:
-		vy = cfg.jump_velocity * jump_scale * sqrt(body.stat(&"jump"))
+		vy = jump_velocity()
 		_jump_buffer = 0.0
 		_coyote = 0.0
 	velocity = Vector3(horizontal.x, vy, horizontal.z)
@@ -341,7 +354,7 @@ func _physics_process(delta: float) -> void:
 	if is_on_floor() and not was_on_floor and vy < -1.0:
 		landed.emit(-vy)
 	# Airborne next to a wall, pushing forward at speed: run along it.
-	if not is_on_floor() and forward_push > 0.5 and _wall_cd <= 0.0 and horizontal.length() >= cfg.wallrun_min_speed:
+	if not is_on_floor() and forward_push > 0.5 and _wall_cd <= 0.0 and horizontal.length() >= cfg.wallrun_min_speed and wallrun_time() > 0.05:
 		_try_wallrun(horizontal)
 
 
@@ -412,7 +425,8 @@ func _start_slide(horizontal: Vector3) -> void:
 	move_state = MoveState.SLIDE
 	_sprinting = false
 	_crouching = true
-	var speed: float = minf(horizontal.length() + cfg.slide_boost, cfg.slide_max_speed)
+	var slide: float = body.stat(&"slide")
+	var speed: float = minf(horizontal.length() + cfg.slide_boost * slide, cfg.slide_max_speed * sqrt(slide))
 	var h: Vector3 = horizontal.normalized() * speed
 	velocity = Vector3(h.x, velocity.y, h.z)
 	_slide_hit.clear()
@@ -423,12 +437,13 @@ func _slide(delta: float, wish: Vector3, b_pressed: bool, b_held: bool, stick: V
 	var cfg: MovementConfig = movement
 	_crouching = true
 	var h: Vector3 = Vector3(velocity.x, 0.0, velocity.z)
-	var speed: float = maxf(0.0, h.length() - cfg.slide_friction * delta)
+	var speed: float = maxf(0.0, h.length() - cfg.slide_friction / maxf(body.stat(&"slide"), 0.1) * delta)
 	var dir: Vector3 = h.normalized() if h.length() > 0.01 else -global_basis.z
 	# A little steering with the stick.
 	if wish.length() > 0.2:
 		var ang: float = dir.signed_angle_to(wish.normalized(), Vector3.UP)
-		dir = dir.rotated(Vector3.UP, clampf(ang, -cfg.slide_steer * delta, cfg.slide_steer * delta))
+		var steer: float = cfg.slide_steer * body.stat(&"agility")
+		dir = dir.rotated(Vector3.UP, clampf(ang, -steer * delta, steer * delta))
 	h = dir * speed
 	var vy: float = velocity.y - cfg.gravity * delta if not is_on_floor() else -1.0
 	if _jump_buffer > 0.0:
@@ -437,7 +452,7 @@ func _slide(delta: float, wish: Vector3, b_pressed: bool, b_held: bool, stick: V
 		move_state = MoveState.NORMAL
 		_crouching = false
 		_slide_cd = cfg.slide_cooldown
-		velocity = Vector3(h.x, cfg.jump_velocity * jump_scale, h.z)
+		velocity = Vector3(h.x, jump_velocity(), h.z)
 		_slide_move()
 		return
 	velocity = Vector3(h.x, vy, h.z)
@@ -469,10 +484,11 @@ func _slide_knock(dir: Vector3, speed: float) -> void:
 		if to.length() > cfg.slide_knock_reach or (to.length() > 0.2 and to.normalized().dot(dir) < 0.15):
 			continue
 		_slide_hit.append(n)
-		var push: float = slide_knock_strength(cfg, body.mass_kg, body.stat(&"strength"), speed)
+		var push: float = slide_knock_strength(cfg, body.mass_kg, body.usable_strength() * body.stat(&"impact"), speed)
 		# Mostly along the slide, partly away from the line of contact.
 		var away: Vector3 = (dir * 0.7 + to.normalized() * 0.3).normalized() if to.length() > 0.05 else dir
-		e.knock_back(away * push + Vector3.UP * push * 0.25, self, cfg.slide_knock_damage, cfg.slide_knock_morale)
+		var dmg: float = slide_knock_damage(cfg, push)
+		e.knock_back(away * push + Vector3.UP * push * 0.25, self, dmg, cfg.slide_knock_morale)
 		var keep: float = 1.0 - cfg.slide_knock_speed_loss
 		velocity.x *= keep
 		velocity.z *= keep
@@ -486,8 +502,60 @@ func _slide_knock(dir: Vector3, speed: float) -> void:
 			w.cam_recoil.kick(Vector3(-1.2, 0.0, 2.0 * signf(to.x if absf(to.x) > 0.01 else 1.0)))
 
 
+## Speed (m/s) a slide gives the enemy it hits: momentum of the operative
+## (mass × slide speed) × strength × impact (docs/design.md §3.6).
 static func slide_knock_strength(cfg: MovementConfig, mass_kg: float, strength: float, speed: float) -> float:
 	return cfg.slide_knock_speed * (mass_kg / 100.0) * strength * clampf(speed / cfg.slide_knock_ref_speed, 0.5, 1.4)
+
+
+## Damage of a slide hit: grows with the square of the shove (energy). At
+## slide_knock_lethal_speed and above it breaks the body (lethal).
+static func slide_knock_damage(cfg: MovementConfig, push: float) -> float:
+	if push >= cfg.slide_knock_lethal_speed:
+		return 9999.0
+	var k: float = push / maxf(cfg.slide_knock_speed, 0.1)
+	return cfg.slide_knock_damage * k * k
+
+
+## What the body does to ground speed: the move_speed stat × the load.
+func speed_factor() -> float:
+	return body.stat(&"move_speed") * body.load_scale()
+
+
+## Jump take-off speed: jump height scales with the jump stat and the load.
+func jump_velocity() -> float:
+	return movement.jump_velocity * jump_scale * sqrt(body.stat(&"jump") * body.load_scale())
+
+
+## How long a wall-run lasts (0: the body can't wall-run, e.g. the DL-1 frame).
+func wallrun_time() -> float:
+	return movement.wallrun_time * body.stat(&"wallrun") * body.load_scale()
+
+
+## 0..1+ how much noise the operative makes moving (enemies hear it):
+## speed relative to a sprint × the noise stat; crouching is quieter.
+func noise_level() -> float:
+	if dead:
+		return 0.0
+	var h: float = Vector3(velocity.x, 0.0, velocity.z).length()
+	var n: float = clampf(h / movement.sprint_speed, 0.0, 1.5)
+	if _crouching and move_state != MoveState.SLIDE:
+		n *= 0.4
+	if not is_on_floor() and move_state != MoveState.WALLRUN:
+		n *= 0.3
+	return n * body.stat(&"noise")
+
+
+## Rebuilds everything that depends on the body after the loadout changed
+## (the loadout screen): stats, actives, health kept in proportion.
+func apply_loadout(lo: BodyLoadout) -> void:
+	var frac: float = health_fraction()
+	loadout = lo
+	body.loadout = lo
+	body.rebuild()
+	health = max_health() * frac
+	if augments:
+		augments.rebuild()
 
 
 func _side_wall() -> Dictionary:
@@ -529,12 +597,13 @@ func _wallrun(delta: float, forward_push: float) -> void:
 	var cfg: MovementConfig = movement
 	_wall_time += delta
 	var res: Dictionary = _side_wall()
-	var off: bool = res.is_empty() or forward_push < 0.3 or _wall_time > cfg.wallrun_time or is_on_floor()
+	var run_time: float = wallrun_time()
+	var off: bool = res.is_empty() or forward_push < 0.3 or _wall_time > run_time or is_on_floor()
 	if _jump_buffer > 0.0:
 		# Jump off the wall: away from it, up, and on along it.
 		_jump_buffer = 0.0
 		var h: Vector3 = Vector3(velocity.x, 0.0, velocity.z)
-		velocity = h * 0.9 + _wall_normal * cfg.wallrun_jump_out + Vector3.UP * cfg.wallrun_jump_up * jump_scale
+		velocity = h * 0.9 + _wall_normal * cfg.wallrun_jump_out + Vector3.UP * cfg.wallrun_jump_up * jump_scale * sqrt(body.stat(&"jump") * body.load_scale())
 		_end_wallrun()
 		_slide_move()
 		return
@@ -548,7 +617,7 @@ func _wallrun(delta: float, forward_push: float) -> void:
 	var h2: Vector3 = Vector3(velocity.x, 0.0, velocity.z)
 	if t.dot(h2) < 0.0:
 		t = -t
-	var k: float = clampf(_wall_time / cfg.wallrun_time, 0.0, 1.0)
+	var k: float = clampf(_wall_time / maxf(run_time, 0.05), 0.0, 1.0)
 	var g: float = cfg.gravity * lerpf(cfg.wallrun_gravity_scale, 1.0, k * k)
 	var vy: float = velocity.y - g * delta
 	var speed: float = maxf(h2.length(), cfg.wallrun_speed * move_scale)
@@ -580,7 +649,8 @@ func _try_mantle() -> bool:
 	if wall.is_empty():
 		return false
 	var wall_at: Vector3 = wall["position"]
-	var probe: Vector3 = Vector3(wall_at.x, feet.y + cfg.mantle_max_height + 0.3, wall_at.z) + fwd * 0.4
+	var max_h: float = cfg.mantle_max_height * body.stat(&"climb")
+	var probe: Vector3 = Vector3(wall_at.x, feet.y + max_h + 0.3, wall_at.z) + fwd * 0.4
 	var down: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(probe, Vector3(probe.x, feet.y + cfg.mantle_min_height - 0.05, probe.z), Ballistics.LAYER_WORLD)
 	var top: Dictionary = space.intersect_ray(down)
 	if top.is_empty():
@@ -588,7 +658,7 @@ func _try_mantle() -> bool:
 	var top_at: Vector3 = top["position"]
 	var top_n: Vector3 = top["normal"]
 	var height: float = top_at.y - feet.y
-	if top_n.y < 0.7 or height < cfg.mantle_min_height or height > cfg.mantle_max_height:
+	if top_n.y < 0.7 or height < cfg.mantle_min_height or height > max_h:
 		return false
 	# Room to stand up there?
 	var shape: PhysicsShapeQueryParameters3D = PhysicsShapeQueryParameters3D.new()
@@ -613,7 +683,7 @@ func _try_mantle() -> bool:
 func _mantle(delta: float) -> void:
 	var cfg: MovementConfig = movement
 	var height: float = maxf(_mantle_to.y - _mantle_from.y, 0.1)
-	_mantle_t = minf(_mantle_t + delta / (cfg.mantle_time * (0.7 + 0.3 * height / cfg.mantle_max_height)), 1.0)
+	_mantle_t = minf(_mantle_t + delta * body.stat(&"agility") / (cfg.mantle_time * (0.7 + 0.3 * height / cfg.mantle_max_height)), 1.0)
 	# Up first, then over the edge.
 	var up: float = clampf(_mantle_t / 0.65, 0.0, 1.0)
 	var over: float = clampf((_mantle_t - 0.45) / 0.55, 0.0, 1.0)

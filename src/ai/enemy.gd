@@ -229,8 +229,8 @@ func on_part_hit(part: HitboxPart, hit: BallisticHit) -> void:
 func knock_back(push: Vector3, from: Node, damage: float, morale_loss: float) -> void:
 	if not alive:
 		return
-	_knock = Vector3(push.x, 0.0, push.z)
-	velocity.y = maxf(velocity.y, push.y)
+	_knock = Vector3(push.x, 0.0, push.z).limit_length(14.0)
+	velocity.y = maxf(velocity.y, minf(push.y, 6.0))
 	body.play_stumble()
 	body.flinch(push.normalized(), clampf(push.length() / 2.5, 0.6, 3.5), false)
 	suppression = minf(suppression + 0.6, 1.0)
@@ -242,7 +242,9 @@ func knock_back(push: Vector3, from: Node, damage: float, morale_loss: float) ->
 		_pain_cooldown = 1.5
 		Sfx.play_at(&"enemy_pain", body.head_position(), -3.0, 0.12)
 	if health <= 0.0:
-		die(null, &"chest", &"shot")
+		# Broken by the impact: he goes flying the way he was shoved.
+		velocity = Vector3(push.x, maxf(push.y, 2.0), push.z).limit_length(9.0)
+		die(null, &"chest", &"impact")
 
 
 ## A round hit a plate in the carrier (stopped or not: Ballistics decided).
@@ -533,7 +535,8 @@ func _update_perception(dt: float) -> void:
 		_unseen_for = 0.0
 		_seen_for += dt
 		last_known = p.global_position
-		var rate: float = (3.0 if dist < 12.0 else 1.4) * (2.0 if p.velocity.length() > 7.0 else 1.0)
+		# A bigger, hotter body is spotted faster (silhouette × signature, docs/design.md §3.6).
+		var rate: float = (3.0 if dist < 12.0 else 1.4) * (2.0 if p.velocity.length() > 7.0 else 1.0) * p.body.detection_scale()
 		awareness = minf(awareness + rate * dt, 1.0)
 		if awareness >= 1.0 and state in [State.IDLE, State.ALERT] and not passive:
 			_enter(State.COMBAT)
@@ -545,7 +548,14 @@ func _update_perception(dt: float) -> void:
 	else:
 		_seen_for = 0.0
 		_unseen_for += dt
-		if state == State.IDLE:
+		# Footsteps: heard within footstep_hearing × how much noise he makes.
+		var heard_at: float = config.footstep_hearing * p.noise_level()
+		if heard_at > 0.5 and global_position.distance_to(p.global_position) < heard_at:
+			awareness = minf(awareness + 0.9 * dt, 1.0)
+			last_known = p.global_position
+			if state == State.IDLE and awareness > 0.3:
+				_enter(State.ALERT)
+		elif state == State.IDLE:
 			awareness = maxf(0.0, awareness - dt * 0.1)
 
 
@@ -798,6 +808,8 @@ func _try_fire(p: Player, _delta: float) -> void:
 func _aim_error(p: Player) -> float:
 	var settle: float = lerpf(1.7, 1.0, clampf(_seen_for / maxf(config.aim_settle_time, 0.01), 0.0, 1.0))
 	var e: float = config.aim_error_deg * settle * (1.0 + 2.2 * suppression) * (1.0 + p.velocity.length() / 6.0)
+	# A bigger silhouette is easier to hit: the same aim error covers less of it.
+	e /= maxf(p.body.stat(&"profile"), 0.3)
 	if arm_hurt:
 		e *= 2.2
 	if limping:

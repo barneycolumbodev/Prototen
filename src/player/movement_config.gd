@@ -58,8 +58,12 @@ extends Resource
 @export var slide_knock_reach: float = 1.05
 ## Share of the player's slide speed lost per enemy hit.
 @export var slide_knock_speed_loss: float = 0.2
-## Damage per hit, and how much it shakes his morale.
+## Damage per hit at slide_knock_speed (grows with the square of the shove),
+## and how much it shakes his morale.
 @export var slide_knock_damage: float = 8.0
+## A shove this fast (m/s) breaks him: he dies and flies as a ragdoll. The
+## base operative gets ~6.5; a heavy, strong, plated one 14+ (docs/design.md §3.6).
+@export var slide_knock_lethal_speed: float = 16.0
 @export var slide_knock_morale: float = 0.15
 @export_group("Wall-run")
 ## Airborne, pushing forward, at least this fast, with a wall at your side.

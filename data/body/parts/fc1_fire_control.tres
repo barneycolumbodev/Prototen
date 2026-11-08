@@ -1,0 +1,81 @@
+[gd_resource type="Resource" script_class="PartData" load_steps=14 format=3]
+
+[ext_resource type="Script" path="res://src/body/part_data.gd" id="1"]
+[ext_resource type="Script" path="res://src/body/stat_modifier.gd" id="2"]
+[ext_resource type="Script" path="res://src/body/part_visual.gd" id="3"]
+[ext_resource type="Script" path="res://src/body/stat_requirement.gd" id="4"]
+
+[sub_resource type="Resource" id="mod_0"]
+script = ExtResource("2")
+stat = &"recoil"
+add = 0.0
+mul = 0.85
+
+[sub_resource type="Resource" id="mod_1"]
+script = ExtResource("2")
+stat = &"handgun"
+add = 0.0
+mul = 1.15
+
+[sub_resource type="Resource" id="mod_2"]
+script = ExtResource("2")
+stat = &"rifle"
+add = 0.0
+mul = 1.1
+
+[sub_resource type="Resource" id="mod_3"]
+script = ExtResource("2")
+stat = &"shotgun"
+add = 0.0
+mul = 1.05
+
+[sub_resource type="Resource" id="mod_4"]
+script = ExtResource("2")
+stat = &"heavy"
+add = 0.0
+mul = 1.05
+
+[sub_resource type="Resource" id="mod_5"]
+script = ExtResource("2")
+stat = &"handling"
+add = 0.0
+mul = 1.1
+
+[sub_resource type="Resource" id="req_0"]
+script = ExtResource("4")
+stat = &"connectivity"
+at_least = 1.0
+reason = "the pads need a neural link to talk to the gun"
+
+[sub_resource type="Resource" id="vis_0"]
+script = ExtResource("3")
+socket = &"hand.L"
+shape = 1
+size = Vector3(0.04, 0.05, 0.004)
+offset = Vector3(0.0, 0.04, -0.012)
+rotation_deg = Vector3(0.0, 0.0, 0.0)
+finish = "glow"
+
+[sub_resource type="Resource" id="vis_1"]
+script = ExtResource("3")
+socket = &"hand.R"
+shape = 1
+size = Vector3(0.04, 0.05, 0.004)
+offset = Vector3(-0.0, 0.04, -0.012)
+rotation_deg = Vector3(0.0, 0.0, 0.0)
+finish = "glow"
+
+[resource]
+script = ExtResource("1")
+id = &"fc1_fire_control"
+display_name = "FC-1 Fire-Control Link"
+description = "Contact pads in the palms that talk to the gun's fire-control chip: the hand knows where the bore points and corrects for it."
+location = 7
+mass_kg = 0.2
+power_draw_w = 15.0
+heat_w = 5.0
+capacity = 2
+modifiers = Array[ExtResource("2")]([SubResource("mod_0"), SubResource("mod_1"), SubResource("mod_2"), SubResource("mod_3"), SubResource("mod_4"), SubResource("mod_5")])
+requirements = Array[ExtResource("4")]([SubResource("req_0")])
+synergy = "Needs connectivity 1 (MR-1 or NL-3)."
+visuals = Array[ExtResource("3")]([SubResource("vis_0"), SubResource("vis_1")])

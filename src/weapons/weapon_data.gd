@@ -7,7 +7,12 @@ extends Resource
 ## Weapon space follows the glTF models: +X muzzle, +Y up, +Z the gun's right
 ## side, origin on the bore axis above the grip.
 
+## Which body proficiency stat it uses (docs/design.md §3.6): handgun,
+## shotgun, rifle (rifles and rail guns) or heavy (machine guns).
+enum WeaponClass { HANDGUN, SHOTGUN, RIFLE, HEAVY }
+
 @export var display_name: String = "Five-seveN SR"
+@export var weapon_class: WeaponClass = WeaponClass.HANDGUN
 @export var caliber: String = "5.7×28mm"
 ## Weapon wheel icon (raw_assets/ui/weapon_icons/build.py renders one per gun).
 @export var icon: Texture2D
@@ -290,10 +295,12 @@ func charge_power(since_shot: float) -> float:
 
 
 ## Full-width spread cone in degrees for the current state.
-func spread_deg(aim: float, move_fraction: float, airborne: bool, bloom: float, hip_walk: float = 0.0) -> float:
-	var extra: float = move_spread_deg * clampf(move_fraction, 0.0, 1.0) + bloom + hip_walk
+## `stability` (body stat) divides the movement and air penalties.
+func spread_deg(aim: float, move_fraction: float, airborne: bool, bloom: float, hip_walk: float = 0.0, stability: float = 1.0) -> float:
+	var st: float = maxf(stability, 0.1)
+	var extra: float = move_spread_deg * clampf(move_fraction, 0.0, 1.0) / st + bloom + hip_walk
 	if airborne:
-		extra += air_spread_deg
+		extra += air_spread_deg / st
 	var mech: float = mechanical_moa / 60.0
 	var hip: float = maxf(hip_spread_deg + extra, mech)
 	# Aimed: the gun's own precision plus a fraction of the movement/bloom penalty.

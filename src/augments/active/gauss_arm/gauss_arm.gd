@@ -74,7 +74,7 @@ func hud_name() -> String:
 
 
 func hud_pips() -> int:
-	return roundi(data.charge_max)
+	return roundi(charge_capacity())
 
 
 ## Rounds left (whole).
@@ -315,11 +315,12 @@ func _fire() -> void:
 	Sfx.play_ui(&"gx4_crack", 0.0, 0.04)
 	# Kick: camera, arm, field of view, pads, a beat of hit-stop.
 	var w: PlayerWeapon = player.weapon()
+	var k: float = kick_scale()
 	if w and w.cam_recoil:
-		w.cam_recoil.kick(Vector3(cfg.camera_kick_deg.x, cfg.camera_kick_deg.y * _rng.randf_range(-1.0, 1.0), cfg.camera_kick_deg.z * _rng.randf_range(-1.0, 1.0)))
-	_kick_pos.kick(Vector3(-cfg.arm_kick_back * 0.4, 0.012, cfg.arm_kick_back))
-	_kick_rot.kick(Vector3(0.0, 0.0, deg_to_rad(cfg.arm_kick_rise_deg)))
-	player.fov_punch_deg = cfg.fov_punch_deg
+		w.cam_recoil.kick(Vector3(cfg.camera_kick_deg.x, cfg.camera_kick_deg.y * _rng.randf_range(-1.0, 1.0), cfg.camera_kick_deg.z * _rng.randf_range(-1.0, 1.0)) * k)
+	_kick_pos.kick(Vector3(-cfg.arm_kick_back * 0.4, 0.012, cfg.arm_kick_back) * k)
+	_kick_rot.kick(Vector3(0.0, 0.0, deg_to_rad(cfg.arm_kick_rise_deg) * k))
+	player.fov_punch_deg = cfg.fov_punch_deg * sqrt(k)
 	_rumble(cfg.rumble_fire)
 	TimeControl.hitstop(cfg.shot_hitstop_time, cfg.shot_hitstop_scale)
 	_flash = 1.0
@@ -330,6 +331,22 @@ func _fire() -> void:
 		Sfx.play_ui(&"gx4_empty", -4.0, 0.0)
 	else:
 		Sfx.play_ui(&"gx4_recharge", -10.0, 0.03)
+
+
+## How hard each shot kicks (1 = as tuned): bracing = structure × usable
+## strength against the reference (docs/design.md §3.6).
+func kick_scale() -> float:
+	if body == null:
+		return 1.0
+	var brace: float = body.stat(&"structure") * body.usable_strength()
+	return clampf(cfg.brace_ref / maxf(brace, 0.1), cfg.brace_min_kick, 1.8)
+
+
+## Rounds recharge faster with more spare power.
+func regen_scale() -> float:
+	if body == null:
+		return 1.0
+	return clampf(body.headroom_w() / maxf(cfg.power_ref_w, 1.0), cfg.recharge_min_scale, cfg.recharge_max_scale)
 
 
 func _update_leds() -> void:

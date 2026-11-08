@@ -41,6 +41,18 @@ extends ActivePartData
 @export_range(0.05, 1.0) var shot_hitstop_scale: float = 0.15
 @export_range(0.0, 0.3) var shot_hitstop_time: float = 0.06
 
+@export_group("Body stats (docs/design.md §3.6)")
+## Bracing = structure × usable strength. At brace_ref (TL-3 + EM-2) the
+## kick is as tuned above; a stronger frame shrinks it (down to
+## brace_min_kick of it), a weaker one grows it.
+@export var brace_ref: float = 1.67
+@export_range(0.1, 1.0) var brace_min_kick: float = 0.45
+## Rounds recharge at regen_per_s × headroom ÷ power_ref_w (supply minus
+## draw while it's folded), between these limits.
+@export var power_ref_w: float = 300.0
+@export var recharge_min_scale: float = 0.35
+@export var recharge_max_scale: float = 1.8
+
 @export_group("Look")
 ## Glow colour of the coils, seams and round counter.
 @export var glow_color: Color = Color(0.45, 0.72, 1.0)

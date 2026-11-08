@@ -5,6 +5,7 @@
 [resource]
 script = ExtResource("1")
 display_name = "GX-4 Gauss arm"
+weapon_class = 2
 caliber = "40 g tungsten-steel slug"
 magazine_size = 10
 infinite_reserve = true

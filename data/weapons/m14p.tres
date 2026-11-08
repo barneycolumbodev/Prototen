@@ -7,6 +7,7 @@
 script = ExtResource("1")
 icon = ExtResource("wheel_icon")
 display_name = "M14/P"
+weapon_class = 2
 caliber = "7.62×51mm"
 magazine_size = 20
 closed_bolt = true

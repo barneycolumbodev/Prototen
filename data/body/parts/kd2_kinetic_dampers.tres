@@ -1,0 +1,46 @@
+[gd_resource type="Resource" script_class="PartData" load_steps=10 format=3]
+
+[ext_resource type="Script" path="res://src/body/part_data.gd" id="1"]
+[ext_resource type="Script" path="res://src/body/stat_modifier.gd" id="2"]
+[ext_resource type="Script" path="res://src/body/part_visual.gd" id="3"]
+[ext_resource type="Script" path="res://src/body/stat_requirement.gd" id="4"]
+[ext_resource type="PackedScene" path="res://assets/augments/passives/kd2_kinetic_dampers/kd2_kinetic_dampers.gltf" id="5"]
+
+[sub_resource type="Resource" id="mod_0"]
+script = ExtResource("2")
+stat = &"noise"
+add = 0.0
+mul = 0.55
+
+[sub_resource type="Resource" id="mod_1"]
+script = ExtResource("2")
+stat = &"slide"
+add = 0.0
+mul = 1.3
+
+[sub_resource type="Resource" id="mod_2"]
+script = ExtResource("2")
+stat = &"jump"
+add = 0.0
+mul = 1.05
+
+[sub_resource type="Resource" id="vis_0"]
+script = ExtResource("3")
+socket = &"root"
+scene = ExtResource("5")
+model_space = true
+
+[resource]
+script = ExtResource("1")
+id = &"kd2_kinetic_dampers"
+display_name = "KD-2 Kinetic Dampers"
+description = "Magnetorheological dampers at the knees and ankles: chrome piston rods in sealed sleeves. Soft, silent landings and long, smooth slides."
+location = 8
+mass_kg = 4.0
+power_draw_w = 10.0
+heat_w = 0.0
+capacity = 2
+modifiers = Array[ExtResource("2")]([SubResource("mod_0"), SubResource("mod_1"), SubResource("mod_2")])
+requirements = Array[ExtResource("4")]([])
+synergy = ""
+visuals = Array[ExtResource("3")]([SubResource("vis_0")])

@@ -41,7 +41,15 @@ class View:
 				draw_string(font, Vector2(0, y - 3), "LB", HORIZONTAL_ALIGNMENT_LEFT, -1, 13, Color(1, 1, 1, 0.95))
 			x0 = 24.0
 			var label: String = "%s  %s" % [Augments.SLOT_ARROWS[slot - 1], p.hud_name()]
+			var why: String = p.offline_reason()
+			if why != "":
+				# Requirements not met (or a brown-out): grey, with the reason.
+				col = Color(0.5, 0.52, 0.54)
+				label += "  OFFLINE: " + why
 			draw_string(font, Vector2(x0, y - 3), label, HORIZONTAL_ALIGNMENT_LEFT, -1, 13, Color(col, alpha))
+			if why != "":
+				i += 1
+				continue
 			var w: float = W - x0
 			var pips: int = p.hud_pips()
 			if pips > 0:
@@ -59,7 +67,7 @@ class View:
 				draw_rect(Rect2(x0, y, w, H), Color(0, 0, 0, 0.45))
 				draw_rect(Rect2(x0, y, w * p.charge_fraction(), H), Color(col, 0.9 * alpha + 0.05))
 				# Where it can start again.
-				var mx: float = x0 + w * p.data.min_to_start / p.data.charge_max
+				var mx: float = x0 + w * p.data.min_to_start / maxf(p.charge_capacity(), 0.01)
 				draw_line(Vector2(mx, y - 1), Vector2(mx, y + H + 1), Color(1, 1, 1, 0.4), 1.0)
 				draw_rect(Rect2(x0, y, w, H), Color(1, 1, 1, 0.3 if sel else 0.15), false, 1.0)
 			i += 1
