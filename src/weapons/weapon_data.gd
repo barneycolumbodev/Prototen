@@ -102,6 +102,10 @@ extends Resource
 ## Multiplies real bullet momentum for physics pushes (props, plates, ragdolls).
 @export_range(0.0, 200.0) var impulse_scale: float = 30.0
 
+## Special gore for this round (Gore.special_hit): &"gauss" = the GX-4 arm
+## cannon's corkscrew wound and electrocution. Empty = the normal wounds.
+@export var gore_style: StringName = &""
+
 @export_group("Capacitor and heat")
 ## Railguns: seconds after a shot until the capacitor bank is full again.
 ## 0 = a conventional gun (every shot full power, no heat).

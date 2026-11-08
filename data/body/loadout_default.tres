@@ -1,11 +1,12 @@
-[gd_resource type="Resource" script_class="BodyLoadout" load_steps=5 format=3]
+[gd_resource type="Resource" script_class="BodyLoadout" load_steps=6 format=3]
 
 [ext_resource type="Script" path="res://src/body/body_loadout.gd" id="1"]
 [ext_resource type="Script" path="res://src/body/part_data.gd" id="2"]
 [ext_resource type="Resource" path="res://data/body/parts/cs1_carapace.tres" id="3"]
 [ext_resource type="Resource" path="res://data/body/parts/rx9_reflex_overclock.tres" id="4"]
+[ext_resource type="Resource" path="res://data/body/parts/gx4_gauss_arm.tres" id="5"]
 
 [resource]
 script = ExtResource("1")
 display_name = "Operative (base)"
-parts = Array[ExtResource("2")]([ExtResource("3"), ExtResource("4")])
+parts = Array[ExtResource("2")]([ExtResource("3"), ExtResource("4"), ExtResource("5")])

@@ -28,13 +28,15 @@ func test_power_and_heat_pools() -> void:
 	assert_almost_eq(b.heat_j, 1000.0, 0.01, "and heats the body")
 
 
-func test_default_loadout_is_the_base_suit_and_rx9_on_lb() -> void:
+func test_default_loadout_is_the_base_suit_rx9_and_the_gauss_arm() -> void:
 	var lo: BodyLoadout = load("res://data/body/loadout_default.tres")
 	assert_true(lo.has_part(&"cs1_carapace"))
 	var actives: Array[ActivePartData] = lo.actives()
-	assert_eq(actives.size(), 1)
+	assert_eq(actives.size(), 2)
 	assert_eq(actives[0].id, &"rx9_reflex_overclock")
-	assert_eq(actives[0].slot, 1, "LB")
+	assert_eq(actives[0].slot, 1, "D-pad left")
+	assert_eq(actives[1].id, &"gx4_gauss_arm")
+	assert_eq(actives[1].slot, 2, "D-pad down")
 
 
 func test_every_part_file_loads_with_known_stats() -> void:

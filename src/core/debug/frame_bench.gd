@@ -12,6 +12,7 @@ var _duration: float = 0.0
 var _elapsed: float = 0.0
 var _running: bool = false
 var _saved_max_fps: int = 0
+var _saved_held: bool = false
 
 
 func is_running() -> bool:
@@ -32,6 +33,7 @@ func start(duration_sec: float) -> void:
 	# Uncap so the numbers show headroom; vsync still limits to the panel rate.
 	_saved_max_fps = Engine.max_fps
 	Engine.max_fps = 0
+	_saved_held = Settings.adaptive.held
 	Settings.adaptive.held = true
 	RenderingServer.viewport_set_measure_render_time(get_viewport().get_viewport_rid(), true)
 
@@ -51,7 +53,7 @@ func _process(delta: float) -> void:
 func _finish() -> void:
 	_running = false
 	Engine.max_fps = _saved_max_fps
-	Settings.adaptive.held = false
+	Settings.adaptive.held = _saved_held
 	var result: Dictionary = summarize(_frame_ms)
 	result["gpu_avg_ms"] = _mean(_gpu_ms)
 	result["renderer"] = RenderingServer.get_current_rendering_method()

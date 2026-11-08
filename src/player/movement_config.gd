@@ -41,6 +41,26 @@ extends Resource
 @export var slide_steer: float = 1.4
 @export var slide_cooldown: float = 0.35
 @export var slide_tilt_deg: float = 5.0
+## Off: a tap of B slides until the speed runs out (B again or A ends it
+## early; owner, 2026-11-07: "longer"). On: let go of B to stop.
+@export var slide_hold: bool = false
+## Pulling the stick back this far ends the slide.
+@export var slide_brake_stick: float = 0.6
+@export_group("Slide knockback")
+## Sliding into a living enemy shoves him away and staggers him (owner,
+## 2026-11-07). Speed given to him (m/s) for a 100 kg operative at strength
+## 1 sliding at slide_knock_ref_speed; scales with mass × strength × speed.
+@export var slide_knock_speed: float = 6.5
+@export var slide_knock_ref_speed: float = 12.0
+## The player has to be sliding at least this fast.
+@export var slide_knock_min_speed: float = 5.0
+## How close (m, centre to centre, horizontal) counts as hitting him.
+@export var slide_knock_reach: float = 1.05
+## Share of the player's slide speed lost per enemy hit.
+@export var slide_knock_speed_loss: float = 0.2
+## Damage per hit, and how much it shakes his morale.
+@export var slide_knock_damage: float = 8.0
+@export var slide_knock_morale: float = 0.15
 @export_group("Wall-run")
 ## Airborne, pushing forward, at least this fast, with a wall at your side.
 @export var wallrun_min_speed: float = 5.5

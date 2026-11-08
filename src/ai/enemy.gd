@@ -90,6 +90,9 @@ var _flash: MeshInstance3D
 var _flash_time: float = 0.0
 var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
 var _pain_cooldown: float = 0.0
+## Shove from a slide or a blast (m/s, world); decays on the ground.
+var _knock: Vector3 = Vector3.ZERO
+const KNOCK_DECAY: float = 13.0
 ## State when the killing blow landed (picks the death voice).
 var state_before_death: State = State.IDLE
 
@@ -186,7 +189,11 @@ func on_part_hit(part: HitboxPart, hit: BallisticHit) -> void:
 	if hit.result == BallisticHit.Result.PENETRATED:
 		body.add_wound(zone, hit.exit_point, clampf(0.012 + hit.energy_out * 0.000004, 0.012, 0.045), true)
 	var violence: float = sqrt(maxf(dep, 30.0) / 300.0)
-	Gore.flesh_hit(hit, violence, head)
+	if hit.weapon and hit.weapon.gore_style != &"":
+		# Its own effect replaces the usual sprays (the GX-4's corkscrew).
+		Gore.special_hit(hit, body)
+	else:
+		Gore.flesh_hit(hit, violence, head)
 	var impulse: Vector3 = hit.direction * hit.damage.impulse * TimeControl.impact_multiplier()
 	if not alive:
 		body.push_bone(zone, impulse * 1.2, hit.point)
@@ -214,6 +221,28 @@ func on_part_hit(part: HitboxPart, hit: BallisticHit) -> void:
 		_react(zone, dmg, hit)
 	EventBus.target_hit.emit(kind, hit)
 	EventBus.damage_applied.emit(hit.damage, self)
+
+
+## Shoved by the operative (a slide into him): flies back along `push`,
+## staggers, gets hurt a little and badly rattled. Dead men don't get shoved
+## here (their ragdoll takes hits through push_bone).
+func knock_back(push: Vector3, from: Node, damage: float, morale_loss: float) -> void:
+	if not alive:
+		return
+	_knock = Vector3(push.x, 0.0, push.z)
+	velocity.y = maxf(velocity.y, push.y)
+	body.play_stumble()
+	body.flinch(push.normalized(), clampf(push.length() / 2.5, 0.6, 3.5), false)
+	suppression = minf(suppression + 0.6, 1.0)
+	morale -= morale_loss
+	_alerted_by(from)
+	health -= damage
+	Sfx.play_at(&"body_fall", body.chest_position(), -6.0, 0.1)
+	if _pain_cooldown <= 0.0:
+		_pain_cooldown = 1.5
+		Sfx.play_at(&"enemy_pain", body.head_position(), -3.0, 0.12)
+	if health <= 0.0:
+		die(null, &"chest", &"shot")
 
 
 ## A round hit a plate in the carrier (stopped or not: Ballistics decided).
@@ -878,7 +907,12 @@ func _move(delta: float) -> void:
 		if to2.length() > 0.8:
 			want = to2.normalized() * speed
 	var horizontal: Vector3 = Vector3(velocity.x, 0, velocity.z).move_toward(want, 14.0 * delta)
-	velocity = Vector3(horizontal.x, velocity.y - 20.0 * delta if not is_on_floor() else -0.5, horizontal.z)
+	if _knock.length_squared() > 0.01:
+		# Shoved: the push wins over his own legs until it dies away.
+		horizontal = _knock
+		_knock = _knock.move_toward(Vector3.ZERO, KNOCK_DECAY * delta)
+	var vy: float = velocity.y - 20.0 * delta if (not is_on_floor() or velocity.y > 0.0) else -0.5
+	velocity = Vector3(horizontal.x, vy, horizontal.z)
 	move_and_slide()
 	if horizontal.length() > 0.3 and (run or state in [State.FLEE, State.CRAWL] or not sees_player):
 		_turn_toward(atan2(horizontal.x, horizontal.z), delta)

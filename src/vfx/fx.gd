@@ -16,6 +16,7 @@ extends Node3D
 ##   land, and small fires (pooled, capped) on flammable surfaces and on
 ##   targets that burn. Fires on targets ride along with them.
 ## - 12-gauge shells: their own small pool, hull tinted per load.
+## - GX-4 arm cannon beams: a core and a corkscrew helix (GaussBeam), 3 pooled.
 
 const MAX_HOLES: int = 24
 const MAX_STATIC_HOLES: int = 128
@@ -111,6 +112,31 @@ func _ready() -> void:
 
 
 # ------------------------------------------------------------------ muzzle
+
+const MAX_BEAMS: int = 3
+var _beams: Array[GaussBeam] = []
+var _beam_next: int = 0
+
+
+## The GX-4's beam from `from` to `to` (Fx keeps 3; the oldest is reused).
+func gauss_beam(from: Vector3, to: Vector3, color: Color) -> void:
+	if _beams.is_empty():
+		for i: int in MAX_BEAMS:
+			var b: GaussBeam = GaussBeam.new()
+			add_child(b)
+			_beams.append(b)
+	var beam: GaussBeam = _beams[_beam_next]
+	_beam_next = (_beam_next + 1) % _beams.size()
+	beam.fire(from, to, color)
+
+
+func live_beams() -> int:
+	var n: int = 0
+	for b: GaussBeam in _beams:
+		if b.is_live():
+			n += 1
+	return n
+
 
 func muzzle_flash(muzzle: Transform3D, data: WeaponData) -> void:
 	if not enabled:
@@ -215,8 +241,10 @@ func _physics_process(delta: float) -> void:
 		s.velocity = vt * 0.6 - vn * SHELL_RESTITUTION
 		s.spin *= 0.5
 		s.node.global_position = p + n * 0.004
-		if s.bounces < 2 and s.velocity.length() > 0.5:
-			Sfx.play_at(s.bank, p, -16.0 - s.bounces * 7.0)
+		# Only the first landing ticks, and quietly: a ringing casing after
+		# every shot was the "metal ding" (owner, 2026-11-07).
+		if s.bounces == 0 and s.velocity.length() > 0.5:
+			Sfx.play_casing(s.bank, p)
 		s.bounces += 1
 		if s.velocity.length() < 0.35 or s.bounces > 6:
 			s.resting = true

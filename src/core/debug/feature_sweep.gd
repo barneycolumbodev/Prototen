@@ -12,9 +12,11 @@ signal finished(rows: Array[Dictionary])
 
 const STEP_SECONDS: float = 4.0
 const SETTLE_SECONDS: float = 1.0
-## [label, features switched off]. Render scale steps are handled separately.
+## [label, features switched off, render scale (0 = the scale it started at)].
+## 2026-11-07: rows for the gun model and two fixed resolutions, so the next
+## round shows how much the frame scales with pixels on the phone.
 const STEPS: Array = [
-	["all on", []],
+	["all on", [], 0.0],
 	["reflections off", [&"probes"]],
 	["bloom off", [&"glow"]],
 	["water streaks off", [&"water_streaks"]],
@@ -22,9 +24,16 @@ const STEPS: Array = [
 	["rain off", [&"rain"]],
 	["steam off", [&"steam"]],
 	["fog off", [&"fog"]],
+	["gun hidden", [&"viewmodel"]],
+	["all on @ 100% res", [], 1.0],
+	["all on @ 70% res", [], 0.7],
 ]
 
 var atmos: NightAtmosphere
+## Hidden for the "gun hidden" row: the first-person rigs and their fill light.
+var viewmodel: Array[Node3D] = []
+var _vm_saved: Dictionary[Node3D, bool] = {}
+var _start_scale: float = 1.0
 var bench: FrameBench
 var rows: Array[Dictionary] = []
 var _i: int = -1
@@ -44,15 +53,24 @@ func is_running() -> bool:
 func start() -> void:
 	rows.clear()
 	_i = 0
+	_start_scale = get_tree().root.scaling_3d_scale
+	Settings.adaptive.held = true
 	_begin_step()
 
 
 func _begin_step() -> void:
 	for f: StringName in NightAtmosphere.FEATURES:
 		atmos.set_feature(f, true)
-	var off: Array = STEPS[_i][1]
+	_show_viewmodel(true)
+	var step: Array = STEPS[_i]
+	var off: Array = step[1]
 	for f: StringName in off:
-		atmos.set_feature(f, false)
+		if f == &"viewmodel":
+			_show_viewmodel(false)
+		else:
+			atmos.set_feature(f, false)
+	var s: float = step[2] if step.size() > 2 else 0.0
+	get_tree().root.scaling_3d_scale = s if s > 0.0 else _start_scale
 	_settle = SETTLE_SECONDS
 
 
@@ -65,6 +83,22 @@ func _process(delta: float) -> void:
 		bench.start(STEP_SECONDS)
 
 
+## Hides the rigs (remembering which were showing), or puts them back.
+func _show_viewmodel(on: bool) -> void:
+	if not on:
+		if not _vm_saved.is_empty():
+			return
+		for n: Node3D in viewmodel:
+			if is_instance_valid(n):
+				_vm_saved[n] = n.visible
+				n.visible = false
+		return
+	for n: Node3D in _vm_saved:
+		if is_instance_valid(n):
+			n.visible = _vm_saved[n]
+	_vm_saved.clear()
+
+
 ## 0..1 over the whole sweep.
 func progress() -> float:
 	if _i < 0:
@@ -74,7 +108,7 @@ func progress() -> float:
 
 func _on_step_done(result: Dictionary) -> void:
 	rows.append({"step": STEPS[_i][0], "gpu_ms": result.get("gpu_avg_ms", 0.0), "frame_ms": result.get("avg_ms", 0.0),
-		"p95_ms": result.get("p95_ms", 0.0)})
+		"p95_ms": result.get("p95_ms", 0.0), "scale": get_tree().root.scaling_3d_scale})
 	_i += 1
 	if _i < STEPS.size():
 		_begin_step()
@@ -82,9 +116,18 @@ func _on_step_done(result: Dictionary) -> void:
 	_i = -1
 	for f: StringName in NightAtmosphere.FEATURES:
 		atmos.set_feature(f, true)
+	atmos.set_feature(&"glow", Settings.bloom)
+	_show_viewmodel(true)
+	get_tree().root.scaling_3d_scale = _start_scale
+	Settings.adaptive.held = false
 	_save()
 	_show()
 	finished.emit(rows)
+
+
+static func _scale_of(row: Dictionary) -> float:
+	var v: Variant = row.get("scale", 1.0)
+	return v if v is float else 1.0
 
 
 ## One line per step: GPU ms and the saving against "all on".
@@ -94,7 +137,7 @@ static func format_rows(r: Array[Dictionary]) -> String:
 	var base_gpu: float = r[0]["gpu_ms"]
 	var base_frame: float = r[0]["frame_ms"]
 	var lines: PackedStringArray = PackedStringArray()
-	lines.append("MAP COST TEST  (GPU ms per frame; saving vs all on)")
+	lines.append("MAP COST TEST  (GPU ms per frame; saving vs all on; res %d%%)" % roundi(_scale_of(r[0]) * 100.0))
 	for row: Dictionary in r:
 		var g: float = row["gpu_ms"]
 		var f: float = row["frame_ms"]

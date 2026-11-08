@@ -10,7 +10,7 @@ shader_type spatial;
 // - CUSTOM0.x = emission strength (neon, lanterns, lit windows; the albedo
 //   alpha masks it), CUSTOM0.y = 1 outdoors: the rain makes those surfaces
 //   darker and glossier and fills hollows on the ground with rippling puddles.
-render_mode blend_mix, depth_draw_opaque, cull_back, diffuse_burley, specular_schlick_ggx;
+render_mode blend_mix, depth_draw_opaque, cull_back, diffuse_lambert, specular_schlick_ggx;
 
 uniform sampler2DArray albedo_arr : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
 uniform sampler2DArray normal_arr : hint_normal, filter_linear_mipmap, repeat_enable;

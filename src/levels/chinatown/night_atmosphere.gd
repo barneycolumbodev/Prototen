@@ -111,9 +111,19 @@ func _build_environment() -> void:
 	env.adjustment_contrast = config.contrast
 	if "--nofog" in OS.get_cmdline_user_args():
 		env.fog_enabled = false
+	env.glow_enabled = Settings.bloom and not ("--noglow" in OS.get_cmdline_user_args())
+	if "--glow" in OS.get_cmdline_user_args():
+		env.glow_enabled = true
+	Settings.changed.connect(_on_settings_changed)
 	var we: WorldEnvironment = WorldEnvironment.new()
 	we.environment = env
 	add_child(we)
+
+
+func _on_settings_changed() -> void:
+	# The cost sweep switches glow itself; otherwise the setting rules.
+	if env:
+		env.glow_enabled = Settings.bloom
 
 
 func _moon_dir() -> Vector3:

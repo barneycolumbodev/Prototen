@@ -46,6 +46,16 @@ func is_running() -> bool:
 	return state == State.DEPLOYING or state == State.ACTIVE
 
 
+## Name on the HUD row (the first word of the display name by default).
+func hud_name() -> String:
+	return data.display_name.get_slice(" ", 0)
+
+
+## > 0: the HUD draws the charge as this many pips (one per use) instead of a bar.
+func hud_pips() -> int:
+	return 0
+
+
 func charge_fraction() -> float:
 	return charge / maxf(data.charge_max, 0.001)
 

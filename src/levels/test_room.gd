@@ -123,7 +123,11 @@ func _ready() -> void:
 			wave_mode.start.call_deferred()
 		if arg == "--god":
 			player.invulnerable = true
-		if arg == "--demo=gore":
+		if arg == "--demo=gauss":
+			var gauss: GaussDemo = GaussDemo.new()
+			gauss.room = self
+			add_child(gauss)
+		elif arg == "--demo=gore":
 			var gd: GoreDemo = GoreDemo.new()
 			gd.room = self
 			add_child(gd)
