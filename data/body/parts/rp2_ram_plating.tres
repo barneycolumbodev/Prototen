@@ -4,6 +4,7 @@
 [ext_resource type="Script" path="res://src/body/stat_modifier.gd" id="2"]
 [ext_resource type="Script" path="res://src/body/part_visual.gd" id="3"]
 [ext_resource type="Script" path="res://src/body/stat_requirement.gd" id="4"]
+[ext_resource type="PackedScene" path="res://assets/augments/passives/rp2_ram_plating/rp2_ram_plating.gltf" id="5"]
 
 [sub_resource type="Resource" id="mod_0"]
 script = ExtResource("2")
@@ -37,27 +38,15 @@ mul = 0.95
 
 [sub_resource type="Resource" id="vis_0"]
 script = ExtResource("3")
-socket = &"clavicle.L"
-shape = 1
-size = Vector3(0.12, 0.03, 0.12)
-offset = Vector3(0.0, 0.12, 0.0)
-rotation_deg = Vector3(0.0, 0.0, 0.0)
-finish = "plate"
-
-[sub_resource type="Resource" id="vis_1"]
-script = ExtResource("3")
-socket = &"clavicle.R"
-shape = 1
-size = Vector3(0.12, 0.03, 0.12)
-offset = Vector3(-0.0, 0.12, 0.0)
-rotation_deg = Vector3(0.0, 0.0, 0.0)
-finish = "plate"
+socket = &"root"
+scene = ExtResource("5")
+model_space = true
 
 [resource]
 script = ExtResource("1")
 id = &"rp2_ram_plating"
 display_name = "RP-2 Reactive Ram Plating"
-description = "Wedge plates on the shoulders and forearms backed by reactive pads that fire on contact. Built for going through people."
+description = "Wedge plates on the shoulders and a prow down the sternum, faced with reactive tiles that fire on contact. Built for going through people."
 location = 5
 mass_kg = 11.0
 power_draw_w = 0.0
@@ -66,4 +55,4 @@ capacity = 2
 modifiers = Array[ExtResource("2")]([SubResource("mod_0"), SubResource("mod_1"), SubResource("mod_2"), SubResource("mod_3"), SubResource("mod_4")])
 requirements = Array[ExtResource("4")]([])
 synergy = "Impact multiplies slide and melee knockback: with mass and strength, slides break bodies."
-visuals = Array[ExtResource("3")]([SubResource("vis_0"), SubResource("vis_1")])
+visuals = Array[ExtResource("3")]([SubResource("vis_0")])

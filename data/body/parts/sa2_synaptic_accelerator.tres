@@ -1,9 +1,10 @@
-[gd_resource type="Resource" script_class="PartData" load_steps=10 format=3]
+[gd_resource type="Resource" script_class="PartData" load_steps=11 format=3]
 
 [ext_resource type="Script" path="res://src/body/part_data.gd" id="1"]
 [ext_resource type="Script" path="res://src/body/stat_modifier.gd" id="2"]
 [ext_resource type="Script" path="res://src/body/part_visual.gd" id="3"]
 [ext_resource type="Script" path="res://src/body/stat_requirement.gd" id="4"]
+[ext_resource type="PackedScene" path="res://assets/augments/passives/sa2_synaptic_accelerator/sa2_synaptic_accelerator.gltf" id="5"]
 
 [sub_resource type="Resource" id="mod_0"]
 script = ExtResource("2")
@@ -31,12 +32,9 @@ mul = 1.05
 
 [sub_resource type="Resource" id="vis_0"]
 script = ExtResource("3")
-socket = &"neck"
-shape = 1
-size = Vector3(0.05, 0.03, 0.02)
-offset = Vector3(0.0, 0.01, -0.098)
-rotation_deg = Vector3(0.0, 0.0, 0.0)
-finish = "hardware"
+socket = &"root"
+scene = ExtResource("5")
+model_space = true
 
 [resource]
 script = ExtResource("1")

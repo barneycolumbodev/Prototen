@@ -51,7 +51,7 @@ part("sa2_synaptic_accelerator", "SA-2 Synaptic Accelerator", NERVOUS, 0.3, 35, 
      [("processing", 0.2, 1), ("aim_speed", 0, 1.2), ("reload_speed", 0, 1.1), ("handling", 0, 1.05)],
      "A myelin-sheath co-processor wrapped round the brainstem. Speeds up every motor loop: sights come up and magazines go in faster.",
      synergy="Processing ×1.20 meets the RX-9 Reflex Overclock's requirement on its own and stretches its charge. Needed by the SB-2 bus.",
-     vis=[("neck", BOX, (0.05, 0.03, 0.02), (0, 0.01, -0.098), "hardware")])
+     vis=scene("res://assets/augments/passives/sa2_synaptic_accelerator/sa2_synaptic_accelerator.gltf", *[("neck", BOX, (0.05, 0.03, 0.02), (0, 0.01, -0.098), "hardware")]))
 part("er2_reflex_bypass", "ER-2 Reflex Arc Bypass", NERVOUS, 0.2, 20, 20, 2,
      [("agility", 0, 1.12), ("melee_speed", 0, 1.3), ("handling", 0, 1.15), ("recoil", 0, 1.08)],
      "Spinal shunts that route trained motor reflexes past the brain. The body moves before you decide to; the hands overcorrect under recoil.",
@@ -61,7 +61,7 @@ part("mr1_mesh_relay", "MR-1 Mesh Relay Lattice", NERVOUS, 0.1, 30, 15, 1,
      [("connectivity", 1.5, 1), ("processing", 0.05, 1), ("signature", 0, 1.05)],
      "A filament lattice laid over the motor cortex that relays signals to external hardware. Leaks a little RF.",
      synergy="Connectivity 1.5 on its own: enough for an FC-1 link. With an NL-3 it reaches 4.5 (180 m of drone range).",
-     vis=[("head", CYL, (0.006, 0.004, 0.006), (0, 0.11, -0.07), "glow")])
+     vis=scene("res://assets/augments/passives/mr1_mesh_relay/mr1_mesh_relay.gltf", *[("head", CYL, (0.006, 0.004, 0.006), (0, 0.11, -0.07), "glow")]))
 part("nl3_cortical_uplink", "NL-3 Cortical Uplink", HEAD, 0.6, 25, 20, 2,
      [("connectivity", 3.0, 1), ("perception", 0, 1.05), ("signature", 0, 1.12)],
      "A skull-mounted transceiver module at the base of the skull: a phased antenna array in two blades and a fibre trunk into the cervical spine. "
@@ -78,7 +78,7 @@ part("tg6_threat_graph", "TG-6 Threat-Graph Co-processor", HEAD, 0.5, 45, 45, 2,
 part("ob5_ocular_ballistics", "OB-5 Ocular Ballistics Suite", EYES, 0.05, 20, 10, 2,
      [("perception", 0, 1.2), ("rifle", 0, 1.12), ("handgun", 0, 1.05), ("aim_speed", 0, 1.05)],
      "Replacement eyes with a rangefinder and a ballistic solver. Holdover and lead are drawn straight onto the retina.",
-     vis=[("head", CYL, (0.008, 0.004, 0.008), (0.032, 0.07, 0.085), "glow"), ("head", CYL, (0.008, 0.004, 0.008), (-0.032, 0.07, 0.085), "glow")])
+     vis=scene("res://assets/augments/passives/ob5_ocular_ballistics/ob5_ocular_ballistics.gltf", *[("head", CYL, (0.008, 0.004, 0.008), (0.032, 0.07, 0.085), "glow"), ("head", CYL, (0.008, 0.004, 0.008), (-0.032, 0.07, 0.085), "glow")]))
 part("ir3_thermographic_retinas", "IR-3 Thermographic Retinas", EYES, 0.05, 15, 5, 1,
      [("perception", 0, 1.15)],
      "Cooled microbolometer retinas. Bodies glow through smoke and darkness. Cheap and simple.",
@@ -86,14 +86,14 @@ part("ir3_thermographic_retinas", "IR-3 Thermographic Retinas", EYES, 0.05, 15, 
 part("vs1_vestibular_stabilizer", "VS-1 Vestibular Stabilizer", EARS, 0.02, 10, 0, 1,
      [("stability", 0, 1.6), ("wallrun", 0, 1.15), ("agility", 0, 1.03)],
      "Gyroscopic inner-ear grafts. The horizon stays level whatever the body does: full accuracy while sliding, wall-running and in the air.",
-     vis=[("head", CYL, (0.012, 0.006, 0.012), (0.075, 0.05, -0.01), "hardware", (0, 0, 90)), ("head", CYL, (0.012, 0.006, 0.012), (-0.075, 0.05, -0.01), "hardware", (0, 0, 90))])
+     vis=scene("res://assets/augments/passives/vs1_vestibular_stabilizer/vs1_vestibular_stabilizer.gltf", *[("head", CYL, (0.012, 0.006, 0.012), (0.075, 0.05, -0.01), "hardware", (0, 0, 90)), ("head", CYL, (0.012, 0.006, 0.012), (-0.075, 0.05, -0.01), "hardware", (0, 0, 90))]))
 
 # ============================================================== skeleton
 part("tl3_titanium_skeleton", "TL-3 Titanium-Lattice Skeleton", SKELETON, 9.0, 0, 0, 2,
      [("structure", 0.45, 1), ("carry_kg", 25, 1), ("recoil", 0, 0.9), ("max_health", 20, 1), ("damage_per_kj", 0, 0.95)],
      "Long bones laced with a printed titanium lattice; anchor bolts show at the wrists and knuckles. The frame for heavy muscle and heavy guns.",
      synergy="Structure ×1.45: meets the GX-4 Gauss arm's requirement, lifts the strength cap to ×1.89 and steadies heavy weapons.",
-     vis=pair("hand", CYL, (0.008, 0.008, 0.008), (0.0, 0.03, 0.025)))
+     vis=scene("res://assets/augments/passives/tl3_titanium_skeleton/tl3_titanium_skeleton.gltf", *pair("hand", CYL, (0.008, 0.008, 0.008), (0.0, 0.03, 0.025))))
 part("cb1_carbon_sheathing", "CB-1 Carbon-Weave Bone Sheathing", SKELETON, 2.5, 0, 0, 1,
      [("structure", 0.25, 1), ("carry_kg", 10, 1), ("max_health", 10, 1)],
      "Carbon-fibre sleeves bonded round the long bones. Light; just enough for a Gauss arm.",
@@ -103,20 +103,20 @@ part("tn9_tungsten_cores", "TN-9 Tungsten Long-Bone Cores", SKELETON, 18.0, 0, 0
       ("damage_per_kj", 0, 0.92), ("jump", 0, 0.88), ("agility", 0, 0.92)],
      "The marrow is replaced with tungsten-alloy cores. Nearly unbreakable, and you hit like a falling engine block. You also weigh like one.",
      synergy="18 kg: without strong muscle (HM-5) the load slows you. Structure ×1.9 lifts the strength cap to ×2.47.",
-     vis=pair("forearm", CYL, (0.01, 0.02, 0.01), (0.0, 0.25, 0.03)))
+     vis=scene("res://assets/augments/passives/tn9_tungsten_cores/tn9_tungsten_cores.gltf", *pair("forearm", CYL, (0.01, 0.02, 0.01), (0.0, 0.25, 0.03))))
 
 # ============================================================== muscle
 part("em2_myofibrils", "EM-2 Electroactive Myofibrils", MUSCLE, 3.0, 60, 80, 2,
      [("move_speed", 0, 1.1), ("jump", 0, 1.15), ("strength", 0.15, 1), ("agility", 0, 1.06)],
      "Synthetic muscle bands woven through the limbs, glowing faintly through vents in the forearms. Faster, springier; draws power and runs hot.",
      synergy="Heat 80 W: with HS-5 heat sinks you never build up heat; without cooling, sustained actives push you towards overheating.",
-     vis=pair("forearm", BOX, (0.03, 0.16, 0.012), (0, 0.12, -0.04), "glow"))
+     vis=scene("res://assets/augments/passives/em2_myofibrils/em2_myofibrils.gltf", *pair("forearm", BOX, (0.03, 0.16, 0.012), (0, 0.12, -0.04), "glow")))
 part("hm5_hydraulic_myomer", "HM-5 Hydraulic Myomer Bundles", MUSCLE, 9.0, 90, 120, 3,
      [("strength", 0.65, 1), ("melee_power", 0, 1.3), ("carry_kg", 15, 1), ("impact", 0, 1.15), ("agility", 0, 0.9), ("noise", 0, 1.25)],
      "Pressurised myomer bundles over the shoulders, back and thighs. Enormous force, slow to change direction, and you can hear the pumps.",
      reqs=[("structure", 1.2, "the bundles would snap organic bone")],
      synergy="Usable strength is capped at structure × 1.3: TL-3 or TN-9 lets it use all of it. Strength divides the load, so it carries heavy armour.",
-     vis=pair("upper_arm", CAPSULE, (0.04, 0.18, 0.04), (0.02, 0.14, -0.035), "hardware"))
+     vis=scene("res://assets/augments/passives/hm5_hydraulic_myomer/hm5_hydraulic_myomer.gltf", *pair("upper_arm", CAPSULE, (0.04, 0.18, 0.04), (0.02, 0.14, -0.035), "hardware")))
 part("ft1_fast_twitch", "FT-1 Fast-Twitch Fiber Graft", MUSCLE, 1.0, 15, 35, 1,
      [("agility", 0, 1.2), ("move_speed", 0, 1.05), ("melee_speed", 0, 1.2), ("handling", 0, 1.1), ("strength", -0.1, 1), ("max_health", -15, 1)],
      "Engineered type IIx fibres replace slow muscle. Explosive and quick, but less force and less meat between you and a bullet.")
@@ -132,7 +132,7 @@ part("pc3_power_cell", "PC-3 Betavoltaic Power Cell", ORGANS, 4.0, 0, 70, 2,
      [("power_supply_w", 200, 1), ("signature", 0, 1.08)],
      "A sealed tritium cell under the ribs. Two hundred watts more, forever, and a little warmer.",
      synergy="Power headroom recharges the GX-4's rounds faster and keeps power-hungry builds out of brown-out.",
-     vis=[("spine", BOX, (0.08, 0.06, 0.02), (0, 0.04, 0.115), "hardware")])
+     vis=scene("res://assets/augments/passives/pc3_power_cell/pc3_power_cell.gltf", *[("spine", BOX, (0.08, 0.06, 0.02), (0, 0.04, 0.115), "hardware")]))
 part("fb1_fuel_bladder", "FB-1 Glucose Fuel Bladder", ORGANS, 3.0, 0, 0, 1,
      [("power_capacity_j", 60000, 1), ("profile", 0, 1.02)],
      "A glucose reservoir and fuel cell in the abdomen. Doubles the stored energy for actives.")
@@ -151,9 +151,9 @@ part("ct7_trauma_plating", "CT-7 Ceramic Trauma Plating", TORSO, 18.0, 0, 0, 3,
                ("chest", BOX, (0.34, 0.24, 0.04), (0, 0.1, 0.13), "plate"), ("chest", BOX, (0.34, 0.26, 0.04), (0, 0.1, -0.13), "plate")))
 part("rp2_ram_plating", "RP-2 Reactive Ram Plating", TORSO, 11.0, 0, 0, 2,
      [("impact", 0, 1.7), ("damage_per_kj", 0, 0.88), ("melee_power", 0, 1.15), ("profile", 0, 1.1), ("agility", 0, 0.95)],
-     "Wedge plates on the shoulders and forearms backed by reactive pads that fire on contact. Built for going through people.",
+     "Wedge plates on the shoulders and a prow down the sternum, faced with reactive tiles that fire on contact. Built for going through people.",
      synergy="Impact multiplies slide and melee knockback: with mass and strength, slides break bodies.",
-     vis=pair("clavicle", BOX, (0.12, 0.03, 0.12), (0.0, 0.12, 0.0), "plate"))
+     vis=scene("res://assets/augments/passives/rp2_ram_plating/rp2_ram_plating.gltf", *pair("clavicle", BOX, (0.12, 0.03, 0.12), (0.0, 0.12, 0.0), "plate")))
 part("ab1_ablative_shell", "AB-1 Ablative Polymer Shell", TORSO, 7.0, 0, 0, 2,
      [("damage_per_kj", 0, 0.75), ("signature", 0, 0.85), ("regen_rate", 0, 0.85), ("heat_dissipation_w", -60, 1)],
      "A radar-absorbent polymer shell that boils away under hits instead of passing the energy on. Quiet to sensors, hot inside, slow to repair.",
@@ -168,7 +168,7 @@ part("ks2_striker_rams", "KS-2 Kinetic Striker Rams", ARMS, 4.0, 20, 20, 2,
      [("melee_power", 0, 1.7), ("impact", 0, 1.1), ("reload_speed", 0, 0.93)],
      "Pneumatic rams in the forearms that drive the fist forward at the moment of impact.",
      reqs=[("structure", 1.15, "the rams fire through the forearm bones")],
-     vis=pair("forearm", CYL, (0.018, 0.12, 0.018), (0.0, 0.16, -0.035), "hardware"))
+     vis=scene("res://assets/augments/passives/ks2_striker_rams/ks2_striker_rams.gltf", *pair("forearm", CYL, (0.018, 0.12, 0.018), (0.0, 0.16, -0.035), "hardware")))
 
 # ============================================================== hands
 part("fc1_fire_control", "FC-1 Fire-Control Link", HANDS, 0.2, 15, 5, 2,
@@ -176,10 +176,11 @@ part("fc1_fire_control", "FC-1 Fire-Control Link", HANDS, 0.2, 15, 5, 2,
      "Contact pads in the palms that talk to the gun's fire-control chip: the hand knows where the bore points and corrects for it.",
      reqs=[("connectivity", 1.0, "the pads need a neural link to talk to the gun")],
      synergy="Needs connectivity 1 (MR-1 or NL-3).",
-     vis=pair("hand", BOX, (0.04, 0.05, 0.004), (0.0, 0.04, -0.012), "glow"))
+     vis=scene("res://assets/augments/passives/fc1_fire_control/fc1_fire_control.gltf", *pair("hand", BOX, (0.04, 0.05, 0.004), (0.0, 0.04, -0.012), "glow")))
 part("dg3_dexterity_grafts", "DG-3 Dexterity Grafts", HANDS, 0.3, 0, 0, 1,
      [("reload_speed", 0, 1.3), ("handling", 0, 1.2), ("handgun", 0, 1.05)],
-     "Rebuilt tendons and joint sensors in the hands and wrists. Magazines and grips just happen.")
+     "Rebuilt tendons and joint sensors in the hands and wrists. Magazines and grips just happen.",
+     vis=scene("res://assets/augments/passives/dg3_dexterity_grafts/dg3_dexterity_grafts.gltf"))
 part("gp1_setal_pads", "GP-1 Setal Grip Pads", HANDS, 0.2, 0, 0, 1,
      [("climb", 0, 1.25), ("wallrun", 0, 1.3), ("reload_speed", 0, 0.95)],
      "Gecko-style setal pads on the palms and fingers. Hold on to walls and ledges; fiddly with magazines.",
@@ -194,7 +195,7 @@ part("kd2_kinetic_dampers", "KD-2 Kinetic Dampers", LEGS, 4.0, 10, 0, 2,
 part("sp6_sprint_pistons", "SP-6 Calf Sprint Pistons", LEGS, 6.0, 50, 60, 2,
      [("move_speed", 0, 1.15), ("jump", 0, 1.25), ("slide", 0, 1.1), ("noise", 0, 1.4)],
      "Gas pistons along the calves that kick on every stride. Very fast, very loud.",
-     vis=pair("shin", CYL, (0.014, 0.24, 0.014), (0.0, 0.2, -0.05), "hardware"))
+     vis=scene("res://assets/augments/passives/sp6_sprint_pistons/sp6_sprint_pistons.gltf", *pair("shin", CYL, (0.014, 0.24, 0.014), (0.0, 0.2, -0.05), "hardware")))
 part("lf8_leg_frame", "LF-8 Load-Bearing Leg Frame", LEGS, 10.0, 0, 0, 2,
      [("carry_kg", 25, 1), ("impact", 0, 1.2), ("structure", 0.1, 1), ("slide", 0, 0.85), ("agility", 0, 0.9), ("jump", 0, 0.92)],
      "An external frame from hip to ankle that takes weight off the legs. Stable as a tripod, and about as nimble.",
@@ -206,7 +207,7 @@ part("dl1_dorsal_load_frame", "DL-1 Dorsal Load Frame", SPINE, 14.0, 20, 0, 3,
      "A spinal exoframe with shoulder outriggers and an ammunition feed over the shoulder: hip-fire a machine gun at full speed. Too rigid to wall-run.",
      reqs=[("structure", 1.2, "the frame anchors to the vertebrae")],
      synergy="Carry +55 kg removes the MG42's handling penalty; no wall-running at all.",
-     vis=[("spine", BOX, (0.2, 0.36, 0.06), (0, 0.18, -0.14), "hardware"), ("chest", BOX, (0.44, 0.04, 0.05), (0, 0.18, -0.13), "hardware")])
+     vis=scene("res://assets/augments/passives/dl1_dorsal_load_frame/dl1_dorsal_load_frame.gltf", *[("spine", BOX, (0.2, 0.36, 0.06), (0, 0.18, -0.14), "hardware"), ("chest", BOX, (0.44, 0.04, 0.05), (0, 0.18, -0.13), "hardware")]))
 part("sb2_spinal_bus", "SB-2 Spinal Bus Extender", SPINE, 1.0, 40, 35, 0,
      [("capacity", 3, 1)],
      "A second data and power trunk along the spine: room for three more capacity of hardware.",
@@ -224,7 +225,7 @@ part("hs5_heat_sinks", "HS-5 Subdermal Heat Sinks", SKIN, 3.0, 0, 0, 1,
 part("cm1_chromatophore_mesh", "CM-1 Chromatophore Skin Mesh", SKIN, 0.8, 30, 10, 2,
      [("signature", 0, 0.55), ("profile", 0, 0.92), ("damage_per_kj", 0, 1.1)],
      "An electrochromic mesh under the suit that matches the background and masks body heat. Thin where the plates used to bond.",
-     vis=[("chest", BOX, (0.04, 0.04, 0.004), (0.1, 0.15, 0.13), "glow")])
+     vis=scene("res://assets/augments/passives/cm1_chromatophore_mesh/cm1_chromatophore_mesh.gltf", *[("chest", BOX, (0.04, 0.04, 0.004), (0.1, 0.15, 0.13), "glow")]))
 part("ds2_dermal_lattice", "DS-2 Dermal Armour Lattice", SKIN, 5.0, 0, 0, 1,
      [("damage_per_kj", 0, 0.86), ("max_health", 15, 1), ("heat_dissipation_w", -60, 1), ("agility", 0, 0.97)],
      "A hexagonal ceramic lattice in the dermis. Tougher skin that holds heat in.")

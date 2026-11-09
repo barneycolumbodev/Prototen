@@ -323,3 +323,25 @@ Please try:
 - Device / renderer / settings:
 - Notes from the owner:
 - Follow-ups: finished hardware for more parts; first-person arms showing forearm parts (HS-5 fins, EM-2 vents); a drone active using connectivity.
+
+## 2026-11-09 — Passive hardware: 17 more finished parts (waiting for the owner)
+
+Owner: "replace the placeholder assets, at least a decent amount of them, with new assets that are in line with all the other ones... that match the passive augmentation."
+
+What changed (design §3.6, "Finished hardware"):
+- **16 more passives modelled, baked and mounted** (20 of 37 now), plus the **RX-9** module: EM-2, TL-3, SA-2, DL-1, HM-5, TN-9, FC-1, VS-1, PC-3, SP-6, KS-2, RP-2, OB-5, MR-1, CM-1, DG-3. Same pipeline and look as CT-7/HS-5/NL-3/KD-2: Blender generators, modelled on the operative, HIGH → LOW bake into 1024² base colour / ORM / normal / emission, mounted on the bones.
+- **Every preset is now fully finished**: Operator, Ghost, Juggernaut and Marksman show no placeholders. Parts in the same preset were built around each other (DL-1 over CT-7, RX-9 between the NL-3 blades, five forearm parts sharing the forearm).
+- The 9 remaining placeholders are minor parts (ER-2, TG-6, IR-3, NW-4, AB-1, SR-3, GP-1, LF-8, SB-2); 8 internal parts have nothing to show.
+- RP-2's text now says shoulders and sternum (it had said forearms; the forearms are taken by the arm parts).
+- Gameplay numbers are unchanged.
+
+Cloud evidence: GUT 235/236 in the cloud (the one failure is the existing pistol camera-kick test, which samples the peak frame by frame and missed its lower bound by about 1 %; it passed on rerun; no stats changed). The passive asset test now covers all 20 parts (bones, triangle budget 300–6000, baked textures, VRAM compression) and checks every preset part with hardware uses a finished model. Previews: `docs/previews/passives_overview.png` (Blender close-ups) and `docs/previews/<id>.png`; in game: `docs/previews/passives_ingame.png` (the four presets on the loadout screen, cloud software renderer).
+
+Please try:
+1. View → Presets: look at each of the four builds, front and back (right stick turns, LT zooms). Do any pieces look wrong, float, or clip the suit?
+2. Which three parts look best and which look worst? That decides what gets a second pass.
+3. Juggernaut: turn to the back. Does the DL-1 frame and the ammo chute read as a machine-gun mount?
+
+- Device / renderer / settings:
+- Notes from the owner:
+- Follow-ups: the 9 remaining placeholders; first-person arms showing forearm and hand parts (EM-2, HS-5, TL-3, FC-1, DG-3, KS-2, TN-9); a second pass on whatever the owner flags.

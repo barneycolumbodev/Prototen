@@ -4,6 +4,7 @@
 [ext_resource type="Script" path="res://src/body/stat_modifier.gd" id="2"]
 [ext_resource type="Script" path="res://src/body/part_visual.gd" id="3"]
 [ext_resource type="Script" path="res://src/body/stat_requirement.gd" id="4"]
+[ext_resource type="PackedScene" path="res://assets/augments/passives/tl3_titanium_skeleton/tl3_titanium_skeleton.gltf" id="5"]
 
 [sub_resource type="Resource" id="mod_0"]
 script = ExtResource("2")
@@ -37,21 +38,9 @@ mul = 0.95
 
 [sub_resource type="Resource" id="vis_0"]
 script = ExtResource("3")
-socket = &"hand.L"
-shape = 3
-size = Vector3(0.008, 0.008, 0.008)
-offset = Vector3(0.0, 0.03, 0.025)
-rotation_deg = Vector3(0.0, 0.0, 0.0)
-finish = "hardware"
-
-[sub_resource type="Resource" id="vis_1"]
-script = ExtResource("3")
-socket = &"hand.R"
-shape = 3
-size = Vector3(0.008, 0.008, 0.008)
-offset = Vector3(-0.0, 0.03, 0.025)
-rotation_deg = Vector3(0.0, 0.0, 0.0)
-finish = "hardware"
+socket = &"root"
+scene = ExtResource("5")
+model_space = true
 
 [resource]
 script = ExtResource("1")
@@ -66,4 +55,4 @@ capacity = 2
 modifiers = Array[ExtResource("2")]([SubResource("mod_0"), SubResource("mod_1"), SubResource("mod_2"), SubResource("mod_3"), SubResource("mod_4")])
 requirements = Array[ExtResource("4")]([])
 synergy = "Structure ×1.45: meets the GX-4 Gauss arm's requirement, lifts the strength cap to ×1.89 and steadies heavy weapons."
-visuals = Array[ExtResource("3")]([SubResource("vis_0"), SubResource("vis_1")])
+visuals = Array[ExtResource("3")]([SubResource("vis_0")])
