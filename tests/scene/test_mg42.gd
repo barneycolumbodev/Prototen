@@ -60,7 +60,10 @@ func test_mg42_slows_you_down() -> void:
 	Input.action_press(&"move_forward")
 	await wait_seconds(0.8)
 	var mg_speed: float = Vector2(player.velocity.x, player.velocity.z).length()
-	assert_almost_eq(mg_speed / pistol_speed, weapon.data.carry_speed_scale, 0.03,
+	# The penalty shrinks with the body's carry stat (TL-3 in the default loadout).
+	assert_lt(weapon.carry_scale(weapon.data.carry_speed_scale), 1.0)
+	assert_gt(weapon.carry_scale(weapon.data.carry_speed_scale), weapon.data.carry_speed_scale, "TL-3 carries some of it")
+	assert_almost_eq(mg_speed / pistol_speed, weapon.carry_scale(weapon.data.carry_speed_scale), 0.03,
 			"walk speed scaled by the carry penalty (%.2f vs %.2f m/s)" % [mg_speed, pistol_speed])
 	assert_lt(player.sprint_scale, 1.0)
 	assert_lt(player.jump_scale, 1.0)

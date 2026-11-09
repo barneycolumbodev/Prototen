@@ -11,6 +11,7 @@
 script = ExtResource("1")
 icon = ExtResource("wheel_icon")
 display_name = "Saiga-12K"
+weapon_class = 1
 caliber = "12 ga"
 magazine_size = 10
 closed_bolt = true

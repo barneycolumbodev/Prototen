@@ -1,12 +1,17 @@
-[gd_resource type="Resource" script_class="BodyLoadout" load_steps=6 format=3]
+[gd_resource type="Resource" script_class="BodyLoadout" load_steps=10 format=3]
 
 [ext_resource type="Script" path="res://src/body/body_loadout.gd" id="1"]
 [ext_resource type="Script" path="res://src/body/part_data.gd" id="2"]
-[ext_resource type="Resource" path="res://data/body/parts/cs1_carapace.tres" id="3"]
-[ext_resource type="Resource" path="res://data/body/parts/rx9_reflex_overclock.tres" id="4"]
-[ext_resource type="Resource" path="res://data/body/parts/gx4_gauss_arm.tres" id="5"]
+[ext_resource type="Resource" path="res://data/body/parts/cs1_carapace.tres" id="p0"]
+[ext_resource type="Resource" path="res://data/body/parts/tl3_titanium_skeleton.tres" id="p1"]
+[ext_resource type="Resource" path="res://data/body/parts/sa2_synaptic_accelerator.tres" id="p2"]
+[ext_resource type="Resource" path="res://data/body/parts/em2_myofibrils.tres" id="p3"]
+[ext_resource type="Resource" path="res://data/body/parts/hs5_heat_sinks.tres" id="p4"]
+[ext_resource type="Resource" path="res://data/body/parts/rx9_reflex_overclock.tres" id="p5"]
+[ext_resource type="Resource" path="res://data/body/parts/gx4_gauss_arm.tres" id="p6"]
 
 [resource]
 script = ExtResource("1")
-display_name = "Operative (base)"
-parts = Array[ExtResource("2")]([ExtResource("3"), ExtResource("4"), ExtResource("5")])
+display_name = "Operator"
+description = "The all-rounder: titanium frame, fast muscle, cooling, the synaptic accelerator; RX-9 and the GX-4 arm."
+parts = Array[ExtResource("2")]([ExtResource("p0"), ExtResource("p1"), ExtResource("p2"), ExtResource("p3"), ExtResource("p4"), ExtResource("p5"), ExtResource("p6")])

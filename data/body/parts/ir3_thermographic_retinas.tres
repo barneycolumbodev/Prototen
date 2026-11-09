@@ -1,0 +1,45 @@
+[gd_resource type="Resource" script_class="PartData" load_steps=8 format=3]
+
+[ext_resource type="Script" path="res://src/body/part_data.gd" id="1"]
+[ext_resource type="Script" path="res://src/body/stat_modifier.gd" id="2"]
+[ext_resource type="Script" path="res://src/body/part_visual.gd" id="3"]
+[ext_resource type="Script" path="res://src/body/stat_requirement.gd" id="4"]
+
+[sub_resource type="Resource" id="mod_0"]
+script = ExtResource("2")
+stat = &"perception"
+add = 0.0
+mul = 1.15
+
+[sub_resource type="Resource" id="vis_0"]
+script = ExtResource("3")
+socket = &"head"
+shape = 3
+size = Vector3(0.007, 0.004, 0.007)
+offset = Vector3(0.032, 0.07, 0.085)
+rotation_deg = Vector3(0.0, 0.0, 0.0)
+finish = "glow"
+
+[sub_resource type="Resource" id="vis_1"]
+script = ExtResource("3")
+socket = &"head"
+shape = 3
+size = Vector3(0.007, 0.004, 0.007)
+offset = Vector3(-0.032, 0.07, 0.085)
+rotation_deg = Vector3(0.0, 0.0, 0.0)
+finish = "glow"
+
+[resource]
+script = ExtResource("1")
+id = &"ir3_thermographic_retinas"
+display_name = "IR-3 Thermographic Retinas"
+description = "Cooled microbolometer retinas. Bodies glow through smoke and darkness. Cheap and simple."
+location = 1
+mass_kg = 0.05
+power_draw_w = 15.0
+heat_w = 5.0
+capacity = 1
+modifiers = Array[ExtResource("2")]([SubResource("mod_0")])
+requirements = Array[ExtResource("4")]([])
+synergy = ""
+visuals = Array[ExtResource("3")]([SubResource("vis_0"), SubResource("vis_1")])

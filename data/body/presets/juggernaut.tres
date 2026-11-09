@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="BodyLoadout" load_steps=10 format=3]
+
+[ext_resource type="Script" path="res://src/body/body_loadout.gd" id="1"]
+[ext_resource type="Script" path="res://src/body/part_data.gd" id="2"]
+[ext_resource type="Resource" path="res://data/body/parts/cs1_carapace.tres" id="p0"]
+[ext_resource type="Resource" path="res://data/body/parts/ct7_trauma_plating.tres" id="p1"]
+[ext_resource type="Resource" path="res://data/body/parts/tn9_tungsten_cores.tres" id="p2"]
+[ext_resource type="Resource" path="res://data/body/parts/hm5_hydraulic_myomer.tres" id="p3"]
+[ext_resource type="Resource" path="res://data/body/parts/dl1_dorsal_load_frame.tres" id="p4"]
+[ext_resource type="Resource" path="res://data/body/parts/gx4_gauss_arm.tres" id="p5"]
+[ext_resource type="Resource" path="res://data/body/parts/ch2_cardiac_pump.tres" id="p6"]
+
+[resource]
+script = ExtResource("1")
+display_name = "Juggernaut"
+description = "Tungsten bones, hydraulic muscle, trauma plating and the dorsal frame: the MG42 from the hip, slides that break bodies. No slow motion, no wall-running."
+parts = Array[ExtResource("2")]([ExtResource("p0"), ExtResource("p1"), ExtResource("p2"), ExtResource("p3"), ExtResource("p4"), ExtResource("p5"), ExtResource("p6")])

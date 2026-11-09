@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="BodyLoadout" load_steps=13 format=3]
+
+[ext_resource type="Script" path="res://src/body/body_loadout.gd" id="1"]
+[ext_resource type="Script" path="res://src/body/part_data.gd" id="2"]
+[ext_resource type="Resource" path="res://data/body/parts/cs1_carapace.tres" id="p0"]
+[ext_resource type="Resource" path="res://data/body/parts/nl3_cortical_uplink.tres" id="p1"]
+[ext_resource type="Resource" path="res://data/body/parts/mr1_mesh_relay.tres" id="p2"]
+[ext_resource type="Resource" path="res://data/body/parts/fc1_fire_control.tres" id="p3"]
+[ext_resource type="Resource" path="res://data/body/parts/ob5_ocular_ballistics.tres" id="p4"]
+[ext_resource type="Resource" path="res://data/body/parts/vs1_vestibular_stabilizer.tres" id="p5"]
+[ext_resource type="Resource" path="res://data/body/parts/sa2_synaptic_accelerator.tres" id="p6"]
+[ext_resource type="Resource" path="res://data/body/parts/cb1_carbon_sheathing.tres" id="p7"]
+[ext_resource type="Resource" path="res://data/body/parts/gx4_gauss_arm.tres" id="p8"]
+[ext_resource type="Resource" path="res://data/body/parts/pc3_power_cell.tres" id="p9"]
+
+[resource]
+script = ExtResource("1")
+display_name = "Marksman"
+description = "Linked: the cortical uplink and mesh relay feed the fire-control link and the ballistic eyes. Rifles and the Gauss arm on a light carbon frame."
+parts = Array[ExtResource("2")]([ExtResource("p0"), ExtResource("p1"), ExtResource("p2"), ExtResource("p3"), ExtResource("p4"), ExtResource("p5"), ExtResource("p6"), ExtResource("p7"), ExtResource("p8"), ExtResource("p9")])

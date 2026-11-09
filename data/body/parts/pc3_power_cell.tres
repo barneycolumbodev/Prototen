@@ -1,0 +1,42 @@
+[gd_resource type="Resource" script_class="PartData" load_steps=8 format=3]
+
+[ext_resource type="Script" path="res://src/body/part_data.gd" id="1"]
+[ext_resource type="Script" path="res://src/body/stat_modifier.gd" id="2"]
+[ext_resource type="Script" path="res://src/body/part_visual.gd" id="3"]
+[ext_resource type="Script" path="res://src/body/stat_requirement.gd" id="4"]
+
+[sub_resource type="Resource" id="mod_0"]
+script = ExtResource("2")
+stat = &"power_supply_w"
+add = 200.0
+mul = 1.0
+
+[sub_resource type="Resource" id="mod_1"]
+script = ExtResource("2")
+stat = &"signature"
+add = 0.0
+mul = 1.08
+
+[sub_resource type="Resource" id="vis_0"]
+script = ExtResource("3")
+socket = &"spine"
+shape = 1
+size = Vector3(0.08, 0.06, 0.02)
+offset = Vector3(0.0, 0.04, 0.115)
+rotation_deg = Vector3(0.0, 0.0, 0.0)
+finish = "hardware"
+
+[resource]
+script = ExtResource("1")
+id = &"pc3_power_cell"
+display_name = "PC-3 Betavoltaic Power Cell"
+description = "A sealed tritium cell under the ribs. Two hundred watts more, forever, and a little warmer."
+location = 13
+mass_kg = 4.0
+power_draw_w = 0.0
+heat_w = 70.0
+capacity = 2
+modifiers = Array[ExtResource("2")]([SubResource("mod_0"), SubResource("mod_1")])
+requirements = Array[ExtResource("4")]([])
+synergy = "Power headroom recharges the GX-4's rounds faster and keeps power-hungry builds out of brown-out."
+visuals = Array[ExtResource("3")]([SubResource("vis_0")])

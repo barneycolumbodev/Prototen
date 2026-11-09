@@ -76,7 +76,14 @@ func test_parts_mount_their_hardware() -> void:
 	await wait_frames(1)
 	var expected: int = 0
 	for p: PartData in lo.parts:
-		expected += p.visuals.size()
+		for v: PartVisual in p.visuals:
+			if v.scene and v.model_space:
+				# A modelled part: one piece per bone it rides on.
+				var root: Node = v.scene.instantiate()
+				expected += root.find_children("*", "MeshInstance3D", true, false).size()
+				root.free()
+			else:
+				expected += 1
 	assert_eq(a.mounted.size(), expected, "every visual mounted")
 	lo.parts = [load("res://data/body/parts/cs1_carapace.tres")]
 	a.rebuild()
@@ -91,4 +98,4 @@ func test_status_text_lists_parts_and_totals() -> void:
 	var t: String = BodyStatus.describe(b)
 	assert_string_contains(t, "RX-9 Reflex Overclock")
 	assert_string_contains(t, "ACTIVE (LB, D-LEFT)")
-	assert_string_contains(t, "%.1f kg" % b.mass_kg)
+	assert_string_contains(t, "%.0f kg" % b.mass_kg)

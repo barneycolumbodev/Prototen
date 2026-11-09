@@ -13,10 +13,10 @@ func test_body_sums_parts_and_applies_modifiers() -> void:
 	assert_almost_eq(b.mass_kg, frame.base_mass_kg + myo.mass_kg + plate.mass_kg, 0.001)
 	assert_almost_eq(b.power_draw_w, myo.power_draw_w + plate.power_draw_w, 0.001)
 	assert_eq(b.capacity_used, myo.capacity + plate.capacity)
-	# move_speed = 1 × 1.12 × 0.93
-	assert_almost_eq(b.stat(&"move_speed"), 1.12 * 0.93, 0.001)
-	assert_almost_eq(b.stat(&"damage_per_kj"), frame.damage_per_kj * 0.65, 0.001)
-	assert_almost_eq(b.stat(&"max_health"), frame.max_health, 0.001, "untouched stats keep the frame's value")
+	assert_almost_eq(b.stat(&"move_speed"), 1.1, 0.001)
+	assert_almost_eq(b.stat(&"damage_per_kj"), frame.damage_per_kj * 0.62, 0.001)
+	assert_almost_eq(b.stat(&"max_health"), frame.max_health + 40.0, 0.001)
+	assert_almost_eq(b.stat(&"regen_rate"), frame.regen_rate, 0.001, "untouched stats keep the frame's value")
 
 
 func test_power_and_heat_pools() -> void:
@@ -31,6 +31,10 @@ func test_power_and_heat_pools() -> void:
 func test_default_loadout_is_the_base_suit_rx9_and_the_gauss_arm() -> void:
 	var lo: BodyLoadout = load("res://data/body/loadout_default.tres")
 	assert_true(lo.has_part(&"cs1_carapace"))
+	var b: BodyModel = BodyModel.new(frame, lo)
+	assert_eq(b.problems().size(), 0, "the default loadout is valid: %s" % ", ".join(b.problems()))
+	assert_true(b.is_online(&"rx9_reflex_overclock"), "SA-2 meets the RX-9's processing requirement")
+	assert_true(b.is_online(&"gx4_gauss_arm"), "TL-3 meets the GX-4's structure requirement")
 	var actives: Array[ActivePartData] = lo.actives()
 	assert_eq(actives.size(), 2)
 	assert_eq(actives[0].id, &"rx9_reflex_overclock")
@@ -49,9 +53,13 @@ func test_every_part_file_loads_with_known_stats() -> void:
 		assert_not_null(p, f)
 		assert_ne(p.id, &"", f)
 		for m: StatModifier in p.modifiers:
-			assert_has(BodyModel.STATS, m.stat, "%s: %s" % [f, m.stat])
+			assert_true(Stats.has(m.stat), "%s: %s" % [f, m.stat])
+		for r: StatRequirement in p.requirements:
+			assert_true(Stats.has(r.stat), "%s requires %s" % [f, r.stat])
+			for m: StatModifier in p.modifiers:
+				assert_ne(m.stat, r.stat, "%s can't meet its own requirement" % f)
 		n += 1
-	assert_gt(n, 6)
+	assert_gt(n, 30, "the passive library")
 
 
 func test_time_control_dilation_and_player_boost() -> void:

@@ -1,0 +1,48 @@
+[gd_resource type="Resource" script_class="PartData" load_steps=9 format=3]
+
+[ext_resource type="Script" path="res://src/body/part_data.gd" id="1"]
+[ext_resource type="Script" path="res://src/body/stat_modifier.gd" id="2"]
+[ext_resource type="Script" path="res://src/body/part_visual.gd" id="3"]
+[ext_resource type="Script" path="res://src/body/stat_requirement.gd" id="4"]
+
+[sub_resource type="Resource" id="mod_0"]
+script = ExtResource("2")
+stat = &"perception"
+add = 0.0
+mul = 1.35
+
+[sub_resource type="Resource" id="mod_1"]
+script = ExtResource("2")
+stat = &"processing"
+add = 0.1
+mul = 1.0
+
+[sub_resource type="Resource" id="mod_2"]
+script = ExtResource("2")
+stat = &"rifle"
+add = 0.0
+mul = 1.05
+
+[sub_resource type="Resource" id="vis_0"]
+script = ExtResource("3")
+socket = &"head"
+shape = 1
+size = Vector3(0.07, 0.012, 0.05)
+offset = Vector3(0.0, 0.15, -0.03)
+rotation_deg = Vector3(0.0, 0.0, 0.0)
+finish = "hardware"
+
+[resource]
+script = ExtResource("1")
+id = &"tg6_threat_graph"
+display_name = "TG-6 Threat-Graph Co-processor"
+description = "A cranial co-processor that tracks every body in view and predicts where it will be. Runs hot."
+location = 0
+mass_kg = 0.5
+power_draw_w = 45.0
+heat_w = 45.0
+capacity = 2
+modifiers = Array[ExtResource("2")]([SubResource("mod_0"), SubResource("mod_1"), SubResource("mod_2")])
+requirements = Array[ExtResource("4")]([])
+synergy = "Shares the cranial slot with the NL-3: perception or connectivity, not both."
+visuals = Array[ExtResource("3")]([SubResource("vis_0")])

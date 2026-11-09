@@ -1,40 +1,64 @@
-[gd_resource type="Resource" script_class="PartData" load_steps=7 format=3]
+[gd_resource type="Resource" script_class="PartData" load_steps=13 format=3]
 
 [ext_resource type="Script" path="res://src/body/part_data.gd" id="1"]
 [ext_resource type="Script" path="res://src/body/stat_modifier.gd" id="2"]
 [ext_resource type="Script" path="res://src/body/part_visual.gd" id="3"]
+[ext_resource type="Script" path="res://src/body/stat_requirement.gd" id="4"]
+[ext_resource type="PackedScene" path="res://assets/augments/passives/ct7_trauma_plating/ct7_trauma_plating.gltf" id="5"]
 
 [sub_resource type="Resource" id="mod_0"]
 script = ExtResource("2")
 stat = &"damage_per_kj"
 add = 0.0
-mul = 0.65
+mul = 0.62
 
 [sub_resource type="Resource" id="mod_1"]
 script = ExtResource("2")
-stat = &"move_speed"
+stat = &"max_health"
+add = 40.0
+mul = 1.0
+
+[sub_resource type="Resource" id="mod_2"]
+script = ExtResource("2")
+stat = &"impact"
 add = 0.0
-mul = 0.93
+mul = 1.25
+
+[sub_resource type="Resource" id="mod_3"]
+script = ExtResource("2")
+stat = &"profile"
+add = 0.0
+mul = 1.18
+
+[sub_resource type="Resource" id="mod_4"]
+script = ExtResource("2")
+stat = &"noise"
+add = 0.0
+mul = 1.15
+
+[sub_resource type="Resource" id="mod_5"]
+script = ExtResource("2")
+stat = &"heat_dissipation_w"
+add = -40.0
+mul = 1.0
 
 [sub_resource type="Resource" id="vis_0"]
 script = ExtResource("3")
-socket = &"chest"
-shape = 1
-size = Vector3(0.34, 0.24, 0.04)
-offset = Vector3(0, 0.1, 0.13)
-rotation_deg = Vector3(0, 0, 0)
-finish = "plate"
-first_person = false
+socket = &"root"
+scene = ExtResource("5")
+model_space = true
 
 [resource]
 script = ExtResource("1")
 id = &"ct7_trauma_plating"
 display_name = "CT-7 Ceramic Trauma Plating"
-description = "Bolted ceramic plates over chest and shoulders. Stops rifle rounds; heavy."
+description = "Boron-carbide trauma plates bolted over the graft suit: a breastplate, a back plate, shoulder pauldrons and a collar. Stops rifle rounds; makes you a bigger, louder target and traps heat."
 location = 5
-mass_kg = 14.0
+mass_kg = 18.0
 power_draw_w = 0.0
 heat_w = 0.0
 capacity = 3
-modifiers = Array[ExtResource("2")]([SubResource("mod_0"), SubResource("mod_1")])
+modifiers = Array[ExtResource("2")]([SubResource("mod_0"), SubResource("mod_1"), SubResource("mod_2"), SubResource("mod_3"), SubResource("mod_4"), SubResource("mod_5")])
+requirements = Array[ExtResource("4")]([])
+synergy = "18 kg: carried by strength (load = mass ÷ usable strength). Its mass and impact make slides hit much harder."
 visuals = Array[ExtResource("3")]([SubResource("vis_0")])

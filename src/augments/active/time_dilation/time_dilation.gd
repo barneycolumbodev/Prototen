@@ -84,9 +84,27 @@ func _on_denied() -> void:
 	Sfx.play_ui(&"td_denied", -8.0, 0.0)
 
 
+## Body processing relative to the tuning reference (1 without a body).
+func processing_ratio() -> float:
+	var c: TimeDilationData = data as TimeDilationData
+	if body == null or c == null:
+		return 1.0
+	return body.stat(&"processing") / maxf(c.processing_ref, 0.01)
+
+
+## How fast the operative runs while dilated: faster with more processing.
+func player_scale_now() -> float:
+	var c: TimeDilationData = data as TimeDilationData
+	return clampf(c.player_scale * (1.0 + c.processing_speed_share * (processing_ratio() - 1.0)), c.world_scale, c.max_player_scale)
+
+
+func charge_capacity() -> float:
+	return data.charge_max * processing_ratio()
+
+
 func _on_blend(a: float) -> void:
 	var e: float = a * a * (3.0 - 2.0 * a)
-	TimeControl.set_dilation(lerpf(1.0, cfg.world_scale, e), lerpf(1.0, cfg.player_scale, e))
+	TimeControl.set_dilation(lerpf(1.0, cfg.world_scale, e), lerpf(1.0, player_scale_now(), e))
 	if _env:
 		_env.adjustment_saturation = lerpf(_base_saturation, _base_saturation * cfg.saturation, e)
 	(_overlay.material as ShaderMaterial).set_shader_parameter(&"amount", e)

@@ -30,7 +30,7 @@ func test_stick_forward_moves_north_at_walk_speed() -> void:
 	Input.action_press(&"move_forward", 1.0)
 	await wait_physics_frames(30)
 	var speed: float = Vector2(player.velocity.x, player.velocity.z).length()
-	assert_almost_eq(speed, player.movement.walk_speed, 0.2)
+	assert_almost_eq(speed, player.movement.walk_speed * player.speed_factor(), 0.2, "walk speed × the body's speed factor")
 	assert_lt(player.global_position.z, start.z - 1.0, "moved toward -Z")
 
 
@@ -41,7 +41,7 @@ func test_sprint_is_faster_and_ends_when_stick_released() -> void:
 	Input.action_release(&"sprint")
 	await wait_physics_frames(30)
 	assert_true(player.is_sprinting())
-	assert_almost_eq(Vector2(player.velocity.x, player.velocity.z).length(), player.movement.sprint_speed, 0.3)
+	assert_almost_eq(Vector2(player.velocity.x, player.velocity.z).length(), player.movement.sprint_speed * player.speed_factor(), 0.3)
 	Input.action_release(&"move_forward")
 	await wait_physics_frames(2)
 	assert_false(player.is_sprinting())

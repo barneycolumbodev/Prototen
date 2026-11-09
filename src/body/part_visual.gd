@@ -11,6 +11,11 @@ enum Shape { NONE, BOX, CAPSULE, CYLINDER }
 ## Socket on the operative body, e.g. &"spine_upper", &"forearm.L", &"head".
 @export var socket: StringName = &"chest"
 @export var scene: PackedScene
+## The scene was modelled on the whole operative in its rest pose (model
+## space, raw_assets/augments/passives/): each mesh in it is named
+## "B_<bone>__<piece>" (bone with "_L"/"_R" for ".L"/".R") and goes on that
+## bone, so the pieces follow the body as it moves. `socket` is ignored.
+@export var model_space: bool = false
 @export var shape: Shape = Shape.NONE
 @export var size: Vector3 = Vector3(0.05, 0.05, 0.05)
 @export var offset: Vector3 = Vector3.ZERO

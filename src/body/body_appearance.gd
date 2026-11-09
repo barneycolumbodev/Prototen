@@ -77,6 +77,9 @@ func rebuild() -> void:
 		return
 	for p: PartData in loadout.parts:
 		for v: PartVisual in p.visuals:
+			if v.scene and v.model_space:
+				_mount_model_space(p, v)
+				continue
 			var node: Node3D = _make_visual(v)
 			if node == null:
 				continue
@@ -85,6 +88,50 @@ func rebuild() -> void:
 			node.position = v.offset
 			node.rotation_degrees = v.rotation_deg
 			mounted.append(node)
+
+
+## A piece modelled on the whole operative (raw_assets/augments/passives):
+## each mesh named "B_<bone>__<piece>" goes on that bone, placed so it sits
+## where it was modelled in the rest pose.
+func _mount_model_space(p: PartData, v: PartVisual) -> void:
+	var root: Node = v.scene.instantiate()
+	for n: Node in root.find_children("*", "MeshInstance3D", true, false):
+		var mi: MeshInstance3D = n as MeshInstance3D
+		var bone: StringName = bone_from_node_name(mi.name)
+		var bi: int = skeleton.find_bone(bone)
+		if bi < 0:
+			push_warning("BodyAppearance: %s piece %s has no bone '%s'" % [p.id, mi.name, bone])
+			continue
+		var model_xform: Transform3D = _model_space_xform(mi, root)
+		mi.get_parent().remove_child(mi)
+		mi.owner = null
+		mi.name = "%s_%d" % [p.id, mounted.size()]
+		_socket(bone).add_child(mi)
+		# BoneAttachment3D sits at the bone's pose; undo its rest so the piece
+		# lands where it was modelled (skeleton space = model space).
+		mi.transform = skeleton.get_bone_global_rest(bi).affine_inverse() * model_xform
+		mounted.append(mi)
+	root.free()
+
+
+## Transform of `n` relative to `root`.
+static func _model_space_xform(n: Node3D, root: Node) -> Transform3D:
+	var t: Transform3D = n.transform
+	var p: Node = n.get_parent()
+	while p and p != root:
+		var p3: Node3D = p as Node3D
+		if p3:
+			t = p3.transform * t
+		p = p.get_parent()
+	return t
+
+
+## "B_forearm_L__fins" -> &"forearm.L"; "B_chest__plate" -> &"chest".
+static func bone_from_node_name(n: String) -> StringName:
+	var core: String = n.trim_prefix("B_").get_slice("__", 0)
+	if core.ends_with("_L") or core.ends_with("_R"):
+		core = core.substr(0, core.length() - 2) + "." + core.right(1)
+	return StringName(core)
 
 
 func _socket(bone: StringName) -> BoneAttachment3D:

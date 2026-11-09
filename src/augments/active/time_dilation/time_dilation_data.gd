@@ -11,6 +11,16 @@ extends ActivePartData
 ## How fast the operative runs (movement, gun, reloads). Looking is always real time.
 @export_range(0.05, 1.0) var player_scale: float = 0.65
 
+@export_group("Processing (docs/design.md §3.6)")
+## The body's processing stat at which `player_scale` and `charge_max` apply
+## (the default loadout's SA-2 gives ×1.20).
+@export var processing_ref: float = 1.2
+## How much of the processing difference goes into the operative's speed:
+## player scale × (1 + share × (processing ÷ ref − 1)). The charge scales
+## fully (charge_max × processing ÷ ref).
+@export_range(0.0, 2.0) var processing_speed_share: float = 0.5
+@export_range(0.1, 1.0) var max_player_scale: float = 0.9
+
 @export_group("Feel")
 ## Ragdoll and limb impulses, and blood sprays, are this much heavier while
 ## dilated (F.E.A.R.-style impacts; docs/design.md §3.4).

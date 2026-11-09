@@ -1,0 +1,57 @@
+[gd_resource type="Resource" script_class="PartData" load_steps=10 format=3]
+
+[ext_resource type="Script" path="res://src/body/part_data.gd" id="1"]
+[ext_resource type="Script" path="res://src/body/stat_modifier.gd" id="2"]
+[ext_resource type="Script" path="res://src/body/part_visual.gd" id="3"]
+[ext_resource type="Script" path="res://src/body/stat_requirement.gd" id="4"]
+
+[sub_resource type="Resource" id="mod_0"]
+script = ExtResource("2")
+stat = &"climb"
+add = 0.0
+mul = 1.25
+
+[sub_resource type="Resource" id="mod_1"]
+script = ExtResource("2")
+stat = &"wallrun"
+add = 0.0
+mul = 1.3
+
+[sub_resource type="Resource" id="mod_2"]
+script = ExtResource("2")
+stat = &"reload_speed"
+add = 0.0
+mul = 0.95
+
+[sub_resource type="Resource" id="vis_0"]
+script = ExtResource("3")
+socket = &"fingers.L"
+shape = 1
+size = Vector3(0.04, 0.05, 0.004)
+offset = Vector3(0.0, 0.03, -0.01)
+rotation_deg = Vector3(0.0, 0.0, 0.0)
+finish = "hardware"
+
+[sub_resource type="Resource" id="vis_1"]
+script = ExtResource("3")
+socket = &"fingers.R"
+shape = 1
+size = Vector3(0.04, 0.05, 0.004)
+offset = Vector3(-0.0, 0.03, -0.01)
+rotation_deg = Vector3(0.0, 0.0, 0.0)
+finish = "hardware"
+
+[resource]
+script = ExtResource("1")
+id = &"gp1_setal_pads"
+display_name = "GP-1 Setal Grip Pads"
+description = "Gecko-style setal pads on the palms and fingers. Hold on to walls and ledges; fiddly with magazines."
+location = 7
+mass_kg = 0.2
+power_draw_w = 0.0
+heat_w = 0.0
+capacity = 1
+modifiers = Array[ExtResource("2")]([SubResource("mod_0"), SubResource("mod_1"), SubResource("mod_2")])
+requirements = Array[ExtResource("4")]([])
+synergy = ""
+visuals = Array[ExtResource("3")]([SubResource("vis_0"), SubResource("vis_1")])

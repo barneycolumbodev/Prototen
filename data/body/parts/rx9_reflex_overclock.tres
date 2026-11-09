@@ -1,9 +1,10 @@
-[gd_resource type="Resource" script_class="TimeDilationData" load_steps=9 format=3]
+[gd_resource type="Resource" script_class="TimeDilationData" load_steps=11 format=3]
 
 [ext_resource type="Script" path="res://src/augments/active/time_dilation/time_dilation_data.gd" id="1"]
 [ext_resource type="Script" path="res://src/body/stat_modifier.gd" id="2"]
 [ext_resource type="Script" path="res://src/body/part_visual.gd" id="3"]
 [ext_resource type="Script" path="res://src/augments/active/time_dilation/time_dilation.gd" id="4"]
+[ext_resource type="Script" path="res://src/body/stat_requirement.gd" id="5"]
 
 [sub_resource type="Resource" id="vis_0"]
 script = ExtResource("3")
@@ -45,6 +46,12 @@ rotation_deg = Vector3(90, 0, 0)
 finish = "glow"
 first_person = false
 
+[sub_resource type="Resource" id="req_0"]
+script = ExtResource("5")
+stat = &"processing"
+at_least = 1.15
+reason = "overclocking an unassisted brain causes seizures"
+
 [resource]
 script = ExtResource("1")
 id = &"rx9_reflex_overclock"
@@ -54,8 +61,10 @@ location = 2
 mass_kg = 0.4
 power_draw_w = 20.0
 heat_w = 10.0
-capacity = 3
+capacity = 2
 modifiers = Array[ExtResource("2")]([])
+requirements = Array[ExtResource("5")]([SubResource("req_0")])
+synergy = "Needs processing ×1.15 (SA-2). Processing sets how fast you move while the world is slowed (×0.65 of real time at ×1.20, faster above) and how long the charge lasts."
 visuals = Array[ExtResource("3")]([SubResource("vis_0"), SubResource("vis_1"), SubResource("vis_2"), SubResource("vis_3")])
 behaviour = ExtResource("4")
 slot = 1
@@ -76,3 +85,6 @@ saturation = 0.55
 lowpass_hz = 2400.0
 fov_kick_deg = 3.0
 tint = Color(0.45, 0.85, 0.95, 0.16)
+processing_ref = 1.2
+processing_speed_share = 0.5
+max_player_scale = 0.9

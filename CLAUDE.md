@@ -153,7 +153,7 @@ Put an empty `.gdignore` file in `raw_assets/`, `tools/` and `docs/` so Godot do
 | Input | Action |
 |---|---|
 | Left stick / L3 | Move / sprint |
-| Right stick / R3 | Look / melee |
+| Right stick / R3 | Look / melee strike (built 2026-11-08) |
 | LT (hold) / RT | Aim down sights / fire |
 | LB | The selected active part (tap on / tap off). RB: free (owner, 2026-11-07) |
 | A | Jump (wall-run on contact) |
@@ -161,7 +161,7 @@ Put an empty `.gdignore` file in `raw_assets/`, `tools/` and `docs/` so Godot do
 | X | Reload (hold to interact) |
 | Y | Tap: previous weapon. Hold: weapon wheel (owner, 2026-11-02; the MG barrel change needs another input in M3) |
 | D-pad | Left / down / right: select active part 1 / 2 / 3 for LB (RX-9 / GX-4 arm / empty). Up: shell type on guns that take several (Saiga-12K) (owner, 2026-11-07) |
-| Menu / View | Pause / body status (built 2026-11-05) |
+| Menu / View | Pause / body status and loadout (built 2026-11-05; loadout 2026-11-08) |
 
 Aiming: response-curve presets, acceleration on full tilt, radial deadzones, aim assist in layers (slowdown near targets, slight pull while aiming down sights). Gyro aiming from the phone if the controller holds it.
 
@@ -265,6 +265,7 @@ Each milestone ends with an APK on the owner's phone and an entry in `docs/playt
    Done when the owner wants to keep playing the wave mode. Status 2026-11-04: all slices built (M1a gunplay, M1b movement, M1c triad enemies, gore, ragdolls, AI, waves); waiting for the owner's playtest. Owner, 2026-11-04: M1 is more or less complete; next, polish and atmosphere, starting with the Chinatown docks map with rolling spawns (design §7, now the main scene; the test range is under Pause → Map).
 3. **M2 – Parts system.** Loadout screen. Power, heat, mass and capacity. At least 8 passives with visible changes. The drone, whip and time slowdown.
    Done when three different loadouts play noticeably differently.
+   2026-11-08 (owner): the passive system: ~35 core stats with relationships (load, structure cap, momentum, link range, heat), 37 passives with tradeoffs and requirements, four presets, a loadout screen, the R3 strike; four parts with finished hardware (design §3.6).
    Started 2026-11-05 (owner): the parts system foundation, the operative's base body (the GS-2 graft suit; helmet on or off, with the owner's face; Y on the body-status screen) on a body-status screen, and the time slowdown (RX-9 on LB). See design §3.4, §3.4a. 2026-11-07: three actives on LB picked with the D-pad, and the second active, the GX-4 Gauss arm.
 4. **M3 – Heavy weapons.** MG42-style machine gun with heat and barrel changes (the gun itself, its handling and a flat carry penalty were pulled into M1 by the owner on 2026-11-01; heat and barrel changes stay here). Heavy armor parts, two more actives, dismemberment, machine-gunner and anti-augment enemies.
    Done when sustained fire tears up a room and the phone holds its frame rate.

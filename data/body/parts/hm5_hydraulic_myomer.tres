@@ -1,0 +1,81 @@
+[gd_resource type="Resource" script_class="PartData" load_steps=14 format=3]
+
+[ext_resource type="Script" path="res://src/body/part_data.gd" id="1"]
+[ext_resource type="Script" path="res://src/body/stat_modifier.gd" id="2"]
+[ext_resource type="Script" path="res://src/body/part_visual.gd" id="3"]
+[ext_resource type="Script" path="res://src/body/stat_requirement.gd" id="4"]
+
+[sub_resource type="Resource" id="mod_0"]
+script = ExtResource("2")
+stat = &"strength"
+add = 0.65
+mul = 1.0
+
+[sub_resource type="Resource" id="mod_1"]
+script = ExtResource("2")
+stat = &"melee_power"
+add = 0.0
+mul = 1.3
+
+[sub_resource type="Resource" id="mod_2"]
+script = ExtResource("2")
+stat = &"carry_kg"
+add = 15.0
+mul = 1.0
+
+[sub_resource type="Resource" id="mod_3"]
+script = ExtResource("2")
+stat = &"impact"
+add = 0.0
+mul = 1.15
+
+[sub_resource type="Resource" id="mod_4"]
+script = ExtResource("2")
+stat = &"agility"
+add = 0.0
+mul = 0.9
+
+[sub_resource type="Resource" id="mod_5"]
+script = ExtResource("2")
+stat = &"noise"
+add = 0.0
+mul = 1.25
+
+[sub_resource type="Resource" id="req_0"]
+script = ExtResource("4")
+stat = &"structure"
+at_least = 1.2
+reason = "the bundles would snap organic bone"
+
+[sub_resource type="Resource" id="vis_0"]
+script = ExtResource("3")
+socket = &"upper_arm.L"
+shape = 2
+size = Vector3(0.04, 0.18, 0.04)
+offset = Vector3(0.02, 0.14, -0.035)
+rotation_deg = Vector3(0.0, 0.0, 0.0)
+finish = "hardware"
+
+[sub_resource type="Resource" id="vis_1"]
+script = ExtResource("3")
+socket = &"upper_arm.R"
+shape = 2
+size = Vector3(0.04, 0.18, 0.04)
+offset = Vector3(-0.02, 0.14, -0.035)
+rotation_deg = Vector3(0.0, 0.0, 0.0)
+finish = "hardware"
+
+[resource]
+script = ExtResource("1")
+id = &"hm5_hydraulic_myomer"
+display_name = "HM-5 Hydraulic Myomer Bundles"
+description = "Pressurised myomer bundles over the shoulders, back and thighs. Enormous force, slow to change direction, and you can hear the pumps."
+location = 4
+mass_kg = 9.0
+power_draw_w = 90.0
+heat_w = 120.0
+capacity = 3
+modifiers = Array[ExtResource("2")]([SubResource("mod_0"), SubResource("mod_1"), SubResource("mod_2"), SubResource("mod_3"), SubResource("mod_4"), SubResource("mod_5")])
+requirements = Array[ExtResource("4")]([SubResource("req_0")])
+synergy = "Usable strength is capped at structure × 1.3: TL-3 or TN-9 lets it use all of it. Strength divides the load, so it carries heavy armour."
+visuals = Array[ExtResource("3")]([SubResource("vis_0"), SubResource("vis_1")])

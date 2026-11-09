@@ -77,9 +77,9 @@ The owner's examples:
   - **Three meshes:** the suit with its plates (about 26.6k triangles), the helmet (about 8.9k) and the bare head (about 9.4k with hair); about 35.5k on screen either way. Suit and helmet share one baked atlas (base colour, ORM, normal, emission); the head has its own (base colour, ORM, normal). `BodyAppearance.helmet_on` swaps helmet and head; on the body-status screen **Y** toggles it (cloud capture: `--capture-body --capture-bare`).
   - Seen on the **body-status screen** (View button): a turntable in a relaxed stance (arms down, elbows bent, fingers curled) under a studio sky that only the gloss plates reflect. Next: first-person arms in the same suit, the full body in shadows and reflections.
 - **Code** (§9.2 proposal, now built): `PartData` (location, mass, power, heat, capacity, `StatModifier`s, `PartVisual`s), `ActivePartData` (button slot, timings, charge), `BodyLoadout`, `BodyModel` (totals; stat = (base + Σadd) × Πmul; a power reserve and stored heat), `ActivePart` (idle → deploying → active → recovering → cooldown, interrupt), `Augments` (LB/RB/D-pad up), `BodyAppearance` (mounts part hardware on bone sockets). Frame values (mass, capacity, power, heat) in `data/player/body_default.tres`; parts in `data/body/parts/`; the default loadout (GS-2 graft suit, part id `cs1_carapace`, + RX-9) in `data/body/loadout_default.tres`.
-- Wired so far: health, damage taken, regen, move speed and jump read body stats. Power and heat are summed and shown but don't limit anything yet (M2). The §3.5 parts exist as data with first-guess numbers, not installed.
+- Wired so far: see §3.6 (2026-11-08): every core stat is read by gameplay, power and heat have consequences, and the loadout screen builds bodies from the passive library.
 
-### 3.5 Starter parts *(proposal)*
+### 3.5 Starter parts *(proposal, superseded by the §3.6 library)*
 
 | Part | Location | Effect | Cost or drawback | Appearance |
 |---|---|---|---|---|
@@ -99,6 +99,62 @@ The owner's examples:
 More actives *(proposal)*: mark several targets in slow motion and fire at all of them; shoulder ram; brace mode for heavy weapons; grapple line; through-wall scan; take over a turret or drone.
 
 Shared resources *(proposal)*: power, heat, mass, and a capacity budget for the loadout.
+
+### 3.6 Core stats, passive library and the loadout screen (built 2026-11-08)
+
+Owner (2026-11-08): "Each passive augment needs to make sense, have a high effort corresponding texture on the character, and contribute to a solid stat boost in one direction with a tradeoff in another... Core stats should affect mobility, melee, potentially gun proficiency of different types, hitbox size, knock power when sliding (derived from a momentum/strength function which is heavily rooted in passive augments)... an extensive library... baseline stats from passives are necessary to meet requirements to use some active augs, or the passive stat changes something about how the active is used... connectivity... controls if remote control of drone-type augments can be used... and how far the drone can fly... Relationships like this should be very common." Not every part needs its finished look yet; a few should look really good, neutral placeholders for the rest.
+
+**Core stats** (`src/body/stats.gd` lists them with what reads each; base values in `data/player/body_default.tres`). Every stat = (base + Σ add) × Π mul over the parts that are online, clamped to a range.
+
+| Group | Stats and what reads them |
+|---|---|
+| Durability | health; damage per kJ of a hit (armour); regen rate; regen delay |
+| Mobility | move speed; agility (acceleration, braking, air control, slide steering, mantle speed); jump; slide (friction and launch); wall-run (duration; 0 = can't); climb (highest mantle) |
+| Strength | strength (muscle force); structure (skeletal rating); carry (kg of weapon without a handling penalty); impact (how hard the body hits) |
+| Melee | melee power; melee speed (R3 strike, new) |
+| Firearms | recoil; aim speed; reload speed; handling (draw, holster, sprint-to-fire); stability (accuracy moving and in the air); proficiency per class: handguns, shotguns, rifles (and rail guns), heavy weapons — each scales recoil (÷), spread (÷ √), aim and reload speed (×) for its guns |
+| Signature | silhouette (hitbox size: enemies' aim error ÷ it, spotted faster); signature (thermal/visual: how fast enemies spot you); noise (how far enemies hear you move: 13 m at a sprint ×1, quieter crouched) |
+| Neural | processing; connectivity (0 without a neural link); perception (aim-assist strength) |
+| Power and heat | power supply; power reserve; cooling; capacity (the loadout budget, 16) |
+
+**Relationships** (`src/body/body_model.gd`):
+- **Usable strength** = min(strength, structure × 1.3): muscle stronger than the skeleton can take is throttled.
+- **Load** = mass ÷ usable strength. Up to 104 kg nothing changes; above it speed, jump and wall-run fall off, down to −40 % at 174 kg. Below 88 kg a light body gets +6 %. So heavy armour needs muscle, and muscle needs bone.
+- **Slide hit** = 6.5 m/s × mass/100 × usable strength × impact × slide speed; damage grows with its square; 16 m/s or more breaks the body (lethal, ragdoll). The base operative shoves (~9 m/s, 16 damage); the Juggernaut kills.
+- **R3 strike:** 55 × melee power × usable strength damage; the shove is 7 m/s × mass/100 × usable strength × impact; 17 m/s or more is lethal; recovery 0.42 s ÷ melee speed. A short lunge, hit-stop, rumble, blood. Values in `data/player/melee_default.tres`.
+- **Heavy weapons:** recoil also ÷ √(usable strength × structure); the carry penalty of a heavy gun shrinks with the carry stat (base 40 kg ÷ carry).
+- **Link range** = connectivity × 40 m (for drones, when they exist).
+- **Signature now** = signature × (1 + stored heat fraction); enemies spot you at silhouette × signature.
+- **Power:** constant draw above supply drains the reserve; an empty reserve (brown-out) stops actives that draw power from starting. **Heat:** stored heat (30 kJ) fills when heat made exceeds cooling; full = overheated: no regen, a hot signature.
+- **Requirements:** a part can need stats (`StatRequirement`). If they're not met it stays installed (mass and capacity count) but is **offline**: no stats, power or heat; an offline active shows OFFLINE and the reason on the HUD and can't start. Requirements chain (taking one part offline can take others with it).
+- **Actives read stats:** RX-9 needs processing ×1.15; processing sets the operative's speed in slow motion (×0.65 of real time at ×1.20, faster above) and the charge (8 s at ×1.20). GX-4 needs structure ×1.25; bracing (structure × usable strength) scales its kick (×1 for the Operator, about half for the Juggernaut); power headroom sets how fast rounds recharge. FC-1 needs connectivity 1. Future drones: connectivity gates them and sets their range.
+
+**Body locations** (each holds one part unless noted): suit (fixed: the GS-2), cranial, eyes, inner ear, nervous system (2), skeleton, musculature, organs (2), torso armour, arms (2; the GX-4 takes one), hands, legs, spine, skin, blood.
+
+**Passive library** (37 passives; generated from the table in `tools/parts/gen_parts.py` into `data/body/parts/`, listed in `data/body/part_library.tres`). Each improves something and costs something (mass, power, heat, capacity, a requirement or a stat):
+
+| Location | Parts |
+|---|---|
+| Nervous | SA-2 Synaptic Accelerator (processing, aim, reload); ER-2 Reflex Arc Bypass (agility, melee speed, handling; more recoil); MR-1 Mesh Relay Lattice (connectivity 1.5; signature) |
+| Cranial | NL-3 Cortical Uplink (connectivity 3; signature); TG-6 Threat-Graph Co-processor (perception, processing; hot) |
+| Eyes | OB-5 Ocular Ballistics Suite (perception, rifles, handguns); IR-3 Thermographic Retinas (perception, cheap) |
+| Inner ear | VS-1 Vestibular Stabilizer (stability ×1.6, wall-run) |
+| Skeleton | TL-3 Titanium-Lattice (structure ×1.45, carry, recoil, health); CB-1 Carbon-Weave Sheathing (structure ×1.25, light); TN-9 Tungsten Long-Bone Cores (structure ×1.9, impact, health; 18 kg, less jump and agility) |
+| Musculature | EM-2 Electroactive Myofibrils (speed, jump, strength; power, heat); HM-5 Hydraulic Myomer (strength +0.65, melee; needs structure 1.2, slower to turn, loud); FT-1 Fast-Twitch Graft (agility, melee speed; less strength and health) |
+| Organs | HP-4 Hyperoxic Lungs (regen delay, cooling); CH-2 Cardiac Pump (regen, health); PC-3 Power Cell (+200 W; heat, signature); FB-1 Fuel Bladder (+60 kJ reserve) |
+| Torso armour | NW-4 Nanoweave (armour, light); CT-7 Ceramic Trauma Plating (armour ×0.62, health, impact; 18 kg, silhouette, noise, traps heat); RP-2 Reactive Ram Plating (impact ×1.7, melee); AB-1 Ablative Shell (armour, low signature; slow regen, hot) |
+| Arms | SR-3 Servo-Recoil Struts (recoil ×0.75, heavy); KS-2 Kinetic Striker Rams (melee ×1.7; needs structure 1.15) |
+| Hands | FC-1 Fire-Control Link (recoil, all proficiencies; needs connectivity 1); DG-3 Dexterity Grafts (reload ×1.3, handling); GP-1 Setal Grip Pads (climb, wall-run) |
+| Legs | KD-2 Kinetic Dampers (noise ×0.55, slide ×1.3); SP-6 Sprint Pistons (speed, jump; noise ×1.4); LF-8 Leg Frame (carry, impact; less agility and slide) |
+| Spine | DL-1 Dorsal Load Frame (carry +55, heavy ×1.35; no wall-running, big silhouette; needs structure 1.2); SB-2 Spinal Bus Extender (+3 capacity; needs processing 1.1) |
+| Skin | HS-5 Heat Sinks (cooling +260 W; signature ×1.3); CM-1 Chromatophore Mesh (signature ×0.55, smaller silhouette; thinner); DS-2 Dermal Lattice (armour, health; holds heat) |
+| Blood | HN-1 Hemostatic Nanites (regen); OC-2 Respirocytes (speed, regen delay, cooling) |
+
+**Presets** (`data/body/presets/`, on the loadout screen): **Operator** (the default: TL-3, SA-2, EM-2, HS-5, RX-9, GX-4), **Ghost** (silent and quick; no Gauss arm), **Juggernaut** (CT-7, TN-9, HM-5, DL-1, GX-4: heavy hip fire, killing slides; no slow motion, no wall-running), **Marksman** (NL-3 + MR-1 feed the FC-1 and OB-5; light carbon frame, GX-4).
+
+**Finished hardware** (Blender, baked 1024² texture sets; generators in `raw_assets/augments/passives/<id>/build.py`, sharing `_common.py`; each piece modelled on the operative's real surface and mounted on its bone): **CT-7** (split faceted breastplate with a chevron edge, abdominal lames, back plate with a spine channel, pauldrons with lower lames, collar guards; hex bolts, stencils, status lights; 2.8k triangles), **HS-5** (temper-coloured fin stacks on the forearms over an amber hot core; 1.8k), **NL-3** (nape transceiver with swept antenna blades along the helmet, fibre trunk and junction block), **KD-2** (knee hubs with a light ring, chrome piston rods into damper bodies, ankle dampers). The other parts show neutral gunmetal or glow placeholders at their mount points. Previews: `docs/previews/<id>.png`.
+
+**Loadout screen** (View button; Pause → Body status): rows for every body location and the presets. Up/down picks a row, left/right browses what fits there (the model and every number preview it, with green/red changes), A installs or applies, X removes, Y helmet, LT zooms on the upper body, the right stick turns the model, B closes and puts the loadout on the player (saved to `user://loadout.cfg`). The card shows mass, power, heat, capacity, every effect coloured by whether it helps, requirements met or not (with the current value) and how the part combines with others.
 
 ---
 

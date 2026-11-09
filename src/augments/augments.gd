@@ -28,6 +28,70 @@ var status: BodyStatus
 
 func _ready() -> void:
 	player = get_parent() as Player
+	_build_parts()
+	player.died.connect(_on_died)
+	status = BodyStatus.new()
+	status.player = player
+	add_child(status)
+	if "--capture-body" in OS.get_cmdline_user_args():
+		_capture_setup.call_deferred()
+	if not CaptureDirector.is_capturing():
+		hud = AugmentHud.new()
+		hud.augments = self
+		add_child(hud)
+
+
+## Cloud captures of the loadout screen: --capture-body opens it;
+## --capture-parts=a,b installs parts first; --capture-preset=N applies a
+## preset; --capture-browse=id puts the cursor on that part (its card and
+## preview); --capture-yaw=deg turns the model; --capture-bare: helmet off;
+## --capture-zoom: the close-up.
+func _capture_setup() -> void:
+	var lib: PartLibrary = LoadoutStore.LIBRARY
+	for a: String in OS.get_cmdline_user_args():
+		if a.begins_with("--capture-preset="):
+			player.apply_loadout(LoadoutStore.presets()[a.get_slice("=", 1).to_int()].copy())
+		elif a.begins_with("--capture-parts="):
+			var lo: BodyLoadout = player.loadout.copy()
+			for id: String in a.get_slice("=", 1).split(","):
+				var p: PartData = lib.find(StringName(id))
+				if p:
+					lo.install(p)
+			player.apply_loadout(lo)
+	status.open()
+	for a: String in OS.get_cmdline_user_args():
+		if a.begins_with("--capture-browse="):
+			var p: PartData = lib.find(StringName(a.get_slice("=", 1)))
+			if p:
+				status.select_row(p.location)
+				status.browse_to(p.id)
+		elif a.begins_with("--capture-yaw="):
+			status.set_yaw(deg_to_rad(a.get_slice("=", 1).to_float()))
+		elif a == "--capture-bare":
+			status.toggle_helmet()
+		elif a == "--capture-zoom":
+			status.set_zoom(true)
+
+
+## The loadout changed (loadout screen): rebuild the active parts. A part
+## that stays keeps its charge.
+func rebuild() -> void:
+	var kept: Dictionary[StringName, float] = {}
+	for p: ActivePart in parts.values():
+		p.interrupt()
+		kept[p.data.id] = p.charge
+		remove_child(p)
+		p.queue_free()
+	parts.clear()
+	selected = 0
+	_build_parts()
+	for p: ActivePart in parts.values():
+		if kept.has(p.data.id):
+			p.charge = minf(kept[p.data.id], p.charge_capacity())
+	selected_changed.emit(selected)
+
+
+func _build_parts() -> void:
 	for a: ActivePartData in player.loadout.actives():
 		if a.behaviour == null:
 			push_warning("Augments: %s has no behaviour script" % a.id)
@@ -45,22 +109,10 @@ func _ready() -> void:
 		node.setup(a, player.body, player)
 		add_child(node)
 		parts[a.slot] = node
-	for s: int in [1, 2, 3]:
-		if parts.has(s):
-			selected = s
+	for slot: int in [1, 2, 3]:
+		if parts.has(slot):
+			selected = slot
 			break
-	player.died.connect(_on_died)
-	status = BodyStatus.new()
-	status.player = player
-	add_child(status)
-	if "--capture-body" in OS.get_cmdline_user_args():
-		status.open.call_deferred()
-		if "--capture-bare" in OS.get_cmdline_user_args():
-			status.toggle_helmet.call_deferred()
-	if not parts.is_empty() and not CaptureDirector.is_capturing():
-		hud = AugmentHud.new()
-		hud.augments = self
-		add_child(hud)
 
 
 func part(slot: int) -> ActivePart:

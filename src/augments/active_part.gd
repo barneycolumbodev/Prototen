@@ -34,7 +34,7 @@ func setup(p_data: ActivePartData, p_body: BodyModel, p_player: Player) -> void:
 	data = p_data
 	body = p_body
 	player = p_player
-	charge = data.charge_max
+	charge = charge_capacity()
 
 
 func _ready() -> void:
@@ -57,11 +57,42 @@ func hud_pips() -> int:
 
 
 func charge_fraction() -> float:
-	return charge / maxf(data.charge_max, 0.001)
+	return charge / maxf(charge_capacity(), 0.001)
+
+
+## Full charge. Subclasses scale it with body stats (RX-9: processing).
+func charge_capacity() -> float:
+	return data.charge_max
+
+
+## Multiplier on the refill rate (GX-4: power headroom).
+func regen_scale() -> float:
+	return 1.0
+
+
+## Why it can't run at all: its requirements aren't met (docs/design.md
+## §3.6), or the power reserve is empty and it draws power. "" = fine.
+func offline_reason() -> String:
+	if body == null:
+		return ""
+	if body.offline.has(data.id):
+		return body.offline[data.id]
+	if data.active_power_w > 0.0 and body.brownout():
+		return "power reserve empty"
+	return ""
+
+
+func is_offline() -> bool:
+	return offline_reason() != ""
 
 
 func can_start() -> bool:
-	return state == State.IDLE and charge >= data.min_to_start and (player == null or not player.dead)
+	return state == State.IDLE and charge >= data.min_to_start and (player == null or not player.dead) and not is_offline()
+
+
+## The loadout changed (body stats may differ): keep the charge in range.
+func refresh_stats() -> void:
+	charge = minf(charge, charge_capacity())
 
 
 ## The button was pressed: start if idle, stop if running.
@@ -111,7 +142,7 @@ func _process(delta: float) -> void:
 	if not is_running():
 		_since_stop += real
 		if _since_stop >= data.regen_delay:
-			charge = minf(charge + data.regen_per_s * real, data.charge_max)
+			charge = minf(charge + data.regen_per_s * regen_scale() * real, charge_capacity())
 
 
 func _drain(real: float) -> void:

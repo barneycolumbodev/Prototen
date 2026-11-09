@@ -277,7 +277,7 @@ func stow() -> void:
 	for ev: StringName in mechanism.holster():
 		_handle(ev)
 	_stop_charge_whine()
-	_stow_left = data.holster_time
+	_stow_left = data.holster_time / handling()
 	Sfx.play_ui(&"holster", -4.0)
 
 
@@ -430,8 +430,46 @@ func request_switch(index: int = -1) -> void:
 		_handle(ev)
 	_stop_charge_whine()
 	switching_to = target
-	_holster_left = data.holster_time
+	_holster_left = data.holster_time / handling()
 	Sfx.play_ui(&"holster", -4.0)
+
+
+# ------------------------------------------------------------------ body stats (docs/design.md §3.6)
+
+func _stat(s: StringName) -> float:
+	return _player.body.stat(s) if _player and _player.body else 1.0
+
+
+## Proficiency with the current gun's class (handgun, shotgun, rifle, heavy).
+func proficiency() -> float:
+	return _player.body.proficiency(data.weapon_class) if _player and _player.body else 1.0
+
+
+## Recoil multiplier: recoil stat ÷ proficiency (heavy: also strength, structure).
+func recoil_scale() -> float:
+	return _player.body.recoil_scale(data.weapon_class) if _player and _player.body else 1.0
+
+
+func aim_rate() -> float:
+	return maxf(_stat(&"aim_speed") * proficiency(), 0.1)
+
+
+func reload_rate() -> float:
+	return maxf(_stat(&"reload_speed") * proficiency(), 0.1)
+
+
+func handling() -> float:
+	return maxf(_stat(&"handling"), 0.1)
+
+
+## A heavy gun's handling penalty (1 - scale) shrinks with the body's carry
+## stat: base carry ÷ carry, so TL-3 (+25 kg) takes off ~40 % and the DL-1
+## frame (+55 kg) ~60 %.
+func carry_scale(scale: float) -> float:
+	if _player == null or _player.body == null or is_equal_approx(scale, 1.0):
+		return scale
+	var k: float = clampf(_player.body.frame.carry_kg / maxf(_player.body.stat(&"carry_kg"), 1.0), 0.0, 2.0)
+	return clampf(1.0 - (1.0 - scale) * k, 0.1, 1.0)
 
 
 ## Re-reads tuning that springs cache (call after editing `data` live).
@@ -536,7 +574,7 @@ func _physics_process(delta: float) -> void:
 	if (pull or aim_held) and _player.is_sprinting():
 		_player.stop_sprint()
 	if _player.is_sprinting():
-		_sprint_out = data.sprint_to_fire
+		_sprint_out = data.sprint_to_fire / handling()
 	else:
 		_sprint_out = maxf(0.0, _sprint_out - delta)
 	var blocked: bool = _player.is_sprinting() or _sprint_out > 0.0 or is_switching() or _player.is_mantling() or stowed
@@ -546,6 +584,8 @@ func _physics_process(delta: float) -> void:
 		if i != current:
 			slots[i].mechanism.idle(delta)
 	var before: int = mechanism.loaded()
+	mechanism.reload_rate = reload_rate()
+	mechanism.draw_rate = handling()
 	var events: Array[StringName] = mechanism.update(delta, pull, held, reload, blocked)
 	for ev: StringName in events:
 		_handle(ev)
@@ -554,7 +594,7 @@ func _physics_process(delta: float) -> void:
 
 	# ADS: hold LT. Reloading and switching drop the sights.
 	var can_aim: bool = aim_held and not is_reloading() and not _player.is_sprinting() and not is_switching()
-	var aim_time: float = data.optic_ads_time if optic_on() else data.ads_time
+	var aim_time: float = (data.optic_ads_time if optic_on() else data.ads_time) / aim_rate()
 	ads = move_toward(ads, 1.0 if can_aim else 0.0, delta / maxf(aim_time, 0.01))
 	bloom = maxf(0.0, bloom - data.bloom_recovery_deg_s * delta)
 	_since_shot += delta
@@ -565,7 +605,8 @@ func _physics_process(delta: float) -> void:
 		sustained = maxf(0.0, sustained - delta * 3.0)
 	var walk: float = minf(sustained * data.hip_walk_deg_s, data.hip_walk_max_deg)
 	var r: WeaponData = round_data()
-	spread = r.spread_deg(ads, _move_fraction(), not _player.is_on_floor(), bloom, walk)
+	# Stability divides the movement and air penalties; proficiency tightens the whole cone (÷ √).
+	spread = r.spread_deg(ads, _move_fraction(), not _player.is_on_floor(), bloom, walk, _stat(&"stability")) / sqrt(proficiency())
 	reticle_spread = spread + (r.pattern_deg if r.pellets > 1 else 0.0)
 	_check_enemy()
 
@@ -582,10 +623,10 @@ func _process(delta: float) -> void:
 	var fov: float = data.optic_fov_scale if optic else data.ads_fov_scale
 	var sens: float = data.optic_sensitivity if optic else data.ads_sensitivity
 	_player.fov_scale = lerpf(1.0, fov, a)
-	_player.look_scale = lerpf(1.0, sens * fov, a) * data.carry_turn_scale
-	_player.move_scale = lerpf(1.0, data.ads_move_speed, a) * data.carry_speed_scale
-	_player.sprint_scale = data.carry_sprint_scale
-	_player.jump_scale = data.carry_jump_scale
+	_player.look_scale = lerpf(1.0, sens * fov, a) * carry_scale(data.carry_turn_scale)
+	_player.move_scale = lerpf(1.0, data.ads_move_speed, a) * carry_scale(data.carry_speed_scale)
+	_player.sprint_scale = carry_scale(data.carry_sprint_scale)
+	_player.jump_scale = carry_scale(data.carry_jump_scale)
 	if _player.aim_assist:
 		_player.aim_assist.ads = a
 
@@ -766,7 +807,7 @@ func _fire() -> void:
 	var a: float = ads_visual()
 	# Recoil is the round's momentum: for a railgun it goes with speed, √power.
 	var strength: float = sqrt(power)
-	var s: float = lerpf(1.0, data.ads_recoil_scale, a) * strength
+	var s: float = lerpf(1.0, data.ads_recoil_scale, a) * strength * recoil_scale()
 	var pitch_kick: float = r.kick_pitch_deg * _rng.randf_range(0.9, 1.1) * s
 	var yaw_kick: float = (_rng.randf_range(-1.0, 1.0) * r.kick_yaw_deg + data.kick_yaw_bias_deg) * s
 	cam_recoil.kick(Vector3(pitch_kick, yaw_kick, _rng.randf_range(-0.4, 0.4) * s) * (1.0 - data.kick_permanent))

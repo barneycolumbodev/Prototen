@@ -1,0 +1,45 @@
+[gd_resource type="Resource" script_class="PartData" load_steps=9 format=3]
+
+[ext_resource type="Script" path="res://src/body/part_data.gd" id="1"]
+[ext_resource type="Script" path="res://src/body/stat_modifier.gd" id="2"]
+[ext_resource type="Script" path="res://src/body/part_visual.gd" id="3"]
+[ext_resource type="Script" path="res://src/body/stat_requirement.gd" id="4"]
+
+[sub_resource type="Resource" id="mod_0"]
+script = ExtResource("2")
+stat = &"damage_per_kj"
+add = 0.0
+mul = 0.86
+
+[sub_resource type="Resource" id="mod_1"]
+script = ExtResource("2")
+stat = &"max_health"
+add = 15.0
+mul = 1.0
+
+[sub_resource type="Resource" id="mod_2"]
+script = ExtResource("2")
+stat = &"heat_dissipation_w"
+add = -60.0
+mul = 1.0
+
+[sub_resource type="Resource" id="mod_3"]
+script = ExtResource("2")
+stat = &"agility"
+add = 0.0
+mul = 0.97
+
+[resource]
+script = ExtResource("1")
+id = &"ds2_dermal_lattice"
+display_name = "DS-2 Dermal Armour Lattice"
+description = "A hexagonal ceramic lattice in the dermis. Tougher skin that holds heat in."
+location = 10
+mass_kg = 5.0
+power_draw_w = 0.0
+heat_w = 0.0
+capacity = 1
+modifiers = Array[ExtResource("2")]([SubResource("mod_0"), SubResource("mod_1"), SubResource("mod_2"), SubResource("mod_3")])
+requirements = Array[ExtResource("4")]([])
+synergy = ""
+visuals = Array[ExtResource("3")]([])

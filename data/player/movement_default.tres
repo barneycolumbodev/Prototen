@@ -31,6 +31,7 @@ slide_knock_reach = 1.05
 slide_knock_speed_loss = 0.2
 slide_knock_damage = 8.0
 slide_knock_morale = 0.15
+slide_knock_lethal_speed = 16.0
 wallrun_min_speed = 5.5
 wallrun_speed = 11.5
 wallrun_time = 1.6

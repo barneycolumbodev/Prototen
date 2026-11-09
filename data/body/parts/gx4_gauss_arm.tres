@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="GaussArmData" load_steps=7 format=3]
+[gd_resource type="Resource" script_class="GaussArmData" load_steps=9 format=3]
 
 [ext_resource type="Script" path="res://src/augments/active/gauss_arm/gauss_arm_data.gd" id="1"]
 [ext_resource type="Script" path="res://src/body/stat_modifier.gd" id="2"]
@@ -7,6 +7,13 @@
 [ext_resource type="Resource" path="res://data/weapons/gx4_slug.tres" id="5"]
 [ext_resource type="PackedScene" path="res://assets/augments/gx4_gauss_arm/gx4_gauss_arm.gltf" id="6"]
 [ext_resource type="Resource" path="res://data/player/viewmodel_gx4.tres" id="7"]
+[ext_resource type="Script" path="res://src/body/stat_requirement.gd" id="8"]
+
+[sub_resource type="Resource" id="req_0"]
+script = ExtResource("8")
+stat = &"structure"
+at_least = 1.25
+reason = "coil recoil would shatter an organic shoulder"
 
 [resource]
 script = ExtResource("1")
@@ -17,8 +24,10 @@ location = 6
 mass_kg = 7.5
 power_draw_w = 15.0
 heat_w = 5.0
-capacity = 4
+capacity = 3
 modifiers = Array[ExtResource("2")]([])
+requirements = Array[ExtResource("8")]([SubResource("req_0")])
+synergy = "Needs structure ×1.25 (CB-1, TL-3, TN-9). Structure × usable strength soaks up the kick; power headroom (supply minus draw) sets how fast rounds recharge."
 visuals = Array[ExtResource("3")]([])
 behaviour = ExtResource("4")
 slot = 2
@@ -35,3 +44,8 @@ active_heat_w = 600.0
 round = ExtResource("5")
 scene = ExtResource("6")
 viewmodel = ExtResource("7")
+brace_ref = 1.67
+brace_min_kick = 0.45
+power_ref_w = 300.0
+recharge_min_scale = 0.35
+recharge_max_scale = 1.8
