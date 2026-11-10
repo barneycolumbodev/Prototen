@@ -1,0 +1,68 @@
+[gd_resource type="Resource" script_class="WhipData" load_steps=12 format=3]
+
+[ext_resource type="Script" path="res://src/augments/active/whip/whip_data.gd" id="1"]
+[ext_resource type="Script" path="res://src/body/stat_modifier.gd" id="2"]
+[ext_resource type="Script" path="res://src/body/part_visual.gd" id="3"]
+[ext_resource type="Script" path="res://src/augments/active/whip/whip.gd" id="4"]
+[ext_resource type="Script" path="res://src/body/stat_requirement.gd" id="5"]
+[ext_resource type="PackedScene" path="res://assets/augments/mw7_monofilament_whip/mw7_monofilament_whip.gltf" id="6"]
+[ext_resource type="Script" path="res://src/player/viewmodel_config.gd" id="7"]
+
+[sub_resource type="Resource" id="view"]
+script = ExtResource("7")
+eye_position = Vector3(-0.42, 0.27, -0.3)
+look_target = Vector3(1.0, -0.06, -0.08)
+
+[sub_resource type="Resource" id="req_0"]
+script = ExtResource("5")
+stat = &"processing"
+at_least = 1.1
+reason = "the filament is steered by a guidance loop; without a co-processor it takes your own arm off"
+
+[sub_resource type="Resource" id="vis_0"]
+script = ExtResource("3")
+socket = &"forearm.R"
+shape = 1
+size = Vector3(0.06, 0.07, 0.05)
+offset = Vector3(0.0, 0.2, 0.05)
+rotation_deg = Vector3(0.0, 0.0, 0.0)
+finish = "hardware"
+
+[sub_resource type="Resource" id="vis_1"]
+script = ExtResource("3")
+socket = &"forearm.R"
+shape = 3
+size = Vector3(0.022, 0.05, 0.022)
+offset = Vector3(0.0, 0.2, 0.075)
+rotation_deg = Vector3(0.0, 0.0, 90.0)
+finish = "glow"
+
+[resource]
+script = ExtResource("1")
+id = &"mw7_monofilament_whip"
+display_name = "MW-7 Monofilament Whip"
+description = "A reel on the back of the right wrist pays out six and a half metres of monomolecular filament with a tungsten bead on the end. Whatever it crosses at speed is cut: limbs, heads, bodies. Select it on the D-pad, LB to draw it or reel it in. Hold LT: the view holds still and the right stick swings the whip. RT lashes across the crosshair."
+location = 6
+mount = &"arm_right"
+mass_kg = 2.2
+power_draw_w = 10.0
+heat_w = 5.0
+capacity = 2
+modifiers = Array[ExtResource("2")]([])
+requirements = Array[ExtResource("5")]([SubResource("req_0")])
+synergy = "Needs processing ×1.10 (SA-2). Melee speed sets how fast it swings and lashes; melee power how deep it bites. Takes the right arm: not with the GX-4, and guns go away while it's out."
+visuals = Array[ExtResource("3")]([SubResource("vis_0"), SubResource("vis_1")])
+behaviour = ExtResource("4")
+short_name = "MW-7"
+deploy_time = 0.6
+recover_time = 0.4
+cooldown_time = 0.2
+charge_max = 1.0
+drain_per_s = 0.0
+regen_per_s = 1.0
+regen_delay = 0.0
+min_to_start = 0.0
+active_power_w = 60.0
+active_heat_w = 40.0
+scene = ExtResource("6")
+viewmodel = SubResource("view")

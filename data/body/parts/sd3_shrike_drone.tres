@@ -1,0 +1,60 @@
+[gd_resource type="Resource" script_class="ShrikeDroneData" load_steps=10 format=3]
+
+[ext_resource type="Script" path="res://src/augments/active/drone/shrike_drone_data.gd" id="1"]
+[ext_resource type="Script" path="res://src/body/stat_modifier.gd" id="2"]
+[ext_resource type="Script" path="res://src/body/part_visual.gd" id="3"]
+[ext_resource type="Script" path="res://src/augments/active/drone/shrike_drone.gd" id="4"]
+[ext_resource type="Script" path="res://src/body/stat_requirement.gd" id="5"]
+[ext_resource type="PackedScene" path="res://assets/augments/sd3_shrike_drone/sd3_shrike_drone.gltf" id="6"]
+
+[sub_resource type="Resource" id="req_0"]
+script = ExtResource("5")
+stat = &"connectivity"
+at_least = 3.0
+reason = "flying it takes a full neural uplink"
+
+[sub_resource type="Resource" id="vis_0"]
+script = ExtResource("3")
+socket = &"chest"
+shape = 1
+size = Vector3(0.12, 0.2, 0.09)
+offset = Vector3(0.13, 0.2, -0.16)
+rotation_deg = Vector3(0.0, 0.0, 0.0)
+finish = "hardware"
+
+[sub_resource type="Resource" id="vis_1"]
+script = ExtResource("3")
+socket = &"chest"
+shape = 3
+size = Vector3(0.03, 0.02, 0.03)
+offset = Vector3(0.13, 0.31, -0.16)
+rotation_deg = Vector3(0.0, 0.0, 0.0)
+finish = "glow"
+
+[resource]
+script = ExtResource("1")
+id = &"sd3_shrike_drone"
+display_name = "SD-3 Shrike Drone Pod"
+description = "A three-tube pod behind the left shoulder. Each tube holds a Shrike: a folding quadcopter with a shaped charge in its nose. Select it on the D-pad, LB launches one and you see through its camera. Left stick flies, right stick looks, A and B climb and sink, RT detonates, LB cuts the link. Fly it into anyone and it goes off. Your body stands where you left it."
+location = 15
+mass_kg = 4.5
+power_draw_w = 20.0
+heat_w = 5.0
+capacity = 3
+modifiers = Array[ExtResource("2")]([])
+requirements = Array[ExtResource("5")]([SubResource("req_0")])
+synergy = "Needs connectivity 3 (NL-3). Link range = connectivity × 40 m (120 m; 180 m with an MR-1 as well): the picture breaks up near the limit and the drone drops beyond it. Processing sharpens its turning. New drones are printed one every 30 s."
+visuals = Array[ExtResource("3")]([SubResource("vis_0"), SubResource("vis_1")])
+behaviour = ExtResource("4")
+short_name = "SD-3"
+deploy_time = 0.75
+recover_time = 0.25
+cooldown_time = 0.6
+charge_max = 3.0
+drain_per_s = 0.0
+regen_per_s = 0.033
+regen_delay = 2.0
+min_to_start = 1.0
+active_power_w = 120.0
+active_heat_w = 40.0
+scene = ExtResource("6")

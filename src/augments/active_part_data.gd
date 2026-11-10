@@ -9,9 +9,8 @@ extends PartData
 ## to start, press again to stop, or it stops when the charge runs out.
 
 @export var behaviour: Script
-## Which D-pad direction selects it: 1 = left, 2 = down, 3 = right. LB
-## fires whichever is selected (owner, 2026-11-07).
-@export_range(1, 3) var slot: int = 1
+## Two letters and a number for the HUD row ("GX-4").
+@export var short_name: String = ""
 
 @export_group("Timing (s)")
 @export var deploy_time: float = 0.12

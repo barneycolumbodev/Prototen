@@ -33,6 +33,11 @@ var online: Array[PartData] = []
 var offline: Dictionary[StringName, String] = {}
 
 var _stats: Dictionary[StringName, float] = {}
+var _active_loads: Dictionary[Object, Vector2] = {}
+## 0..1: how hidden a running cloak makes the body (TC-4). Cuts detection.
+var cloak: float = 0.0
+## Inside this distance (m) enemies see through the cloak.
+var cloak_reveal_m: float = 3.0
 var _active_draw_w: float = 0.0
 var _active_heat_w: float = 0.0
 
@@ -212,7 +217,12 @@ func signature_now() -> float:
 
 ## How fast enemies spot you, relative to the base body: silhouette × signature.
 func detection_scale() -> float:
-	return stat(&"profile") * signature_now()
+	return stat(&"profile") * signature_now() * (1.0 - 0.97 * cloak)
+
+
+## Hidden from an enemy `dist` metres away (the cloak is up and he's not on top of you).
+func hidden_at(dist: float) -> bool:
+	return cloak > 0.6 and dist > cloak_reveal_m
 
 
 func overheated() -> bool:
@@ -252,9 +262,31 @@ func recoil_scale(weapon_class: int) -> float:
 
 
 ## Power/heat while an active part runs (it calls this on start and stop).
+## Several parts can run at once: each adds its own load under its own key.
+func add_active_load(key: Object, draw_w: float, heat: float) -> void:
+	_active_loads[key] = Vector2(draw_w, heat)
+	_sum_active_loads()
+
+
+func remove_active_load(key: Object) -> void:
+	if _active_loads.erase(key):
+		_sum_active_loads()
+
+
+## One anonymous load (tests, simple callers): replaces the last one set this way.
 func set_active_load(draw_w: float, heat: float) -> void:
-	_active_draw_w = draw_w
-	_active_heat_w = heat
+	if draw_w == 0.0 and heat == 0.0:
+		remove_active_load(self)
+	else:
+		add_active_load(self, draw_w, heat)
+
+
+func _sum_active_loads() -> void:
+	_active_draw_w = 0.0
+	_active_heat_w = 0.0
+	for v: Vector2 in _active_loads.values():
+		_active_draw_w += v.x
+		_active_heat_w += v.y
 
 
 ## Total draw right now (W): constant parts plus running actives.

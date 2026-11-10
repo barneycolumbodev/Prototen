@@ -9,7 +9,7 @@ extends Resource
 
 ## Where it goes. Each location holds SLOTS[location] parts (default 1).
 ## New values go at the end: .tres files store the number.
-enum Location { HEAD, EYES, NERVOUS, SKELETON, MUSCLE, TORSO, ARMS, HANDS, LEGS, SPINE, SKIN, BLOOD, EARS, ORGANS, SUIT }
+enum Location { HEAD, EYES, NERVOUS, SKELETON, MUSCLE, TORSO, ARMS, HANDS, LEGS, SPINE, SKIN, BLOOD, EARS, ORGANS, SUIT, BACK }
 
 ## How many parts each location holds (others: 1). Two nervous-system
 ## co-processors, two organ grafts, two arm prosthetics.
@@ -17,11 +17,12 @@ const SLOTS: Dictionary[int, int] = {
 	Location.NERVOUS: 2,
 	Location.ORGANS: 2,
 	Location.ARMS: 2,
+	Location.BACK: 2,
 }
 
 ## Short names for the loadout screen, in Location order.
 const LOCATION_NAMES: Array[String] = ["Cranial", "Eyes", "Nervous system", "Skeleton", "Musculature", "Torso armour", "Arms",
-	"Hands", "Legs", "Spine", "Skin", "Blood", "Inner ear", "Organs", "Suit"]
+	"Hands", "Legs", "Spine", "Skin", "Blood", "Inner ear", "Organs", "Suit", "Back hardpoints"]
 
 @export var id: StringName = &""
 ## Technical hardware name, e.g. "NW-4 Nanoweave Fiber Vest".
@@ -30,6 +31,10 @@ const LOCATION_NAMES: Array[String] = ["Cranial", "Eyes", "Nervous system", "Ske
 @export var location: Location = Location.TORSO
 ## Part of the base body (the graft suit): always installed, can't be removed.
 @export var fixed: bool = false
+## The one physical mount it takes, if any (&"arm_right", &"arm_left"): two
+## parts can't share a mount, so installing one takes the other out (the
+## GX-4 and the whip are both the right forearm).
+@export var mount: StringName = &""
 
 @export_group("Physical")
 ## kg added to the body.

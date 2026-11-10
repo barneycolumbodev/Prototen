@@ -1,0 +1,67 @@
+[gd_resource type="Resource" script_class="ArcProjectorData" load_steps=12 format=3]
+
+[ext_resource type="Script" path="res://src/augments/active/arc/arc_projector_data.gd" id="1"]
+[ext_resource type="Script" path="res://src/body/stat_modifier.gd" id="2"]
+[ext_resource type="Script" path="res://src/body/part_visual.gd" id="3"]
+[ext_resource type="Script" path="res://src/augments/active/arc/arc_projector.gd" id="4"]
+[ext_resource type="Script" path="res://src/body/stat_requirement.gd" id="5"]
+[ext_resource type="PackedScene" path="res://assets/augments/ad2_arc_projector/ad2_arc_projector.gltf" id="6"]
+[ext_resource type="Script" path="res://src/player/viewmodel_config.gd" id="7"]
+
+[sub_resource type="Resource" id="view"]
+script = ExtResource("7")
+eye_position = Vector3(-0.42, -0.13, -0.26)
+look_target = Vector3(1.0, -0.13, -0.26)
+
+[sub_resource type="Resource" id="req_0"]
+script = ExtResource("5")
+stat = &"power_supply_w"
+at_least = 600.0
+reason = "the capacitor bank won't charge off less than 600 W"
+
+[sub_resource type="Resource" id="vis_0"]
+script = ExtResource("3")
+socket = &"chest"
+shape = 1
+size = Vector3(0.08, 0.05, 0.08)
+offset = Vector3(-0.16, 0.3, -0.1)
+rotation_deg = Vector3(0.0, 0.0, 0.0)
+finish = "hardware"
+
+[sub_resource type="Resource" id="vis_1"]
+script = ExtResource("3")
+socket = &"chest"
+shape = 3
+size = Vector3(0.028, 0.14, 0.028)
+offset = Vector3(-0.16, 0.37, -0.08)
+rotation_deg = Vector3(90.0, 0.0, 0.0)
+finish = "plate"
+
+[resource]
+script = ExtResource("1")
+id = &"ad2_arc_projector"
+display_name = "AD-2 Arc Projector"
+description = "An electrolaser on a mast over the right shoulder. A UV laser ionizes a channel to whoever you're looking at and a capacitor bank dumps down it; the arc jumps on to the next body in reach, and the next. The gun stays in your hands. Select it on the D-pad; LB raises it and fires, LB again fires the second charge. Each discharge takes 18 kJ straight out of the power reserve."
+location = 15
+mass_kg = 5.0
+power_draw_w = 15.0
+heat_w = 10.0
+capacity = 3
+modifiers = Array[ExtResource("2")]([])
+requirements = Array[ExtResource("5")]([SubResource("req_0")])
+synergy = "Needs a 600 W supply (PC-3 power cell). Each arc costs 18 kJ of reserve: a 60 kJ reserve holds three. An FB-1 fuel bladder doubles the reserve and adds two links to the chain. Spare power refills its charges faster."
+visuals = Array[ExtResource("3")]([SubResource("vis_0"), SubResource("vis_1")])
+behaviour = ExtResource("4")
+short_name = "AD-2"
+deploy_time = 0.4
+recover_time = 0.3
+cooldown_time = 0.3
+charge_max = 2.0
+drain_per_s = 0.0
+regen_per_s = 0.1
+regen_delay = 1.5
+min_to_start = 1.0
+active_power_w = 0.0
+active_heat_w = 0.0
+scene = ExtResource("6")
+viewmodel = SubResource("view")

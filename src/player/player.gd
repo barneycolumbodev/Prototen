@@ -21,6 +21,19 @@ var melee: PlayerMelee
 @export var input_enabled: bool = true
 ## The weapon wheel is open: the right stick picks a gun instead of looking.
 var look_blocked: bool = false
+## An active part has the right stick (the whip with LT held): the view holds still.
+var look_frozen: bool = false
+## Which running part has each hand (&"right", &"left"). The gun needs both
+## hands, so it's put away while either is taken.
+var hands: Dictionary[StringName, Node] = {}
+## Running parts that take hits before the body does (the fan shield):
+## func(hit: BallisticHit, amount: float) -> float, the damage left.
+var hit_interceptors: Array[Callable] = []
+## Speed multiplier from running parts (the shield slows you).
+var aug_move_scale: float = 1.0
+## Suit and hardware colours (the loadout screen's Colours page).
+var colors: BodyColors
+signal colors_changed
 
 signal landed(fall_speed: float)
 signal damaged(amount: float, from_dir: Vector3)
@@ -80,6 +93,11 @@ var _roll: float = 0.0
 ## Enemies already shoved during this slide (each only once).
 var _slide_hit: Array[Node] = []
 
+var _dash_vel: Vector3 = Vector3.ZERO
+var _dash_left: float = 0.0
+var _dash_on_hit: Callable = Callable()
+var _dash_struck: Array[Node] = []
+
 var _tilt_time: float = 0.0
 var _sprinting: bool = false
 var _crouching: bool = false
@@ -110,6 +128,7 @@ func _ready() -> void:
 	else:
 		loadout = loadout.copy()
 	body = BodyModel.new(body_config, loadout)
+	colors = LoadoutStore.load_colors()
 	health = max_health()
 	collision_layer = Ballistics.LAYER_PLAYER
 	# Corpses and moving hitboxes don't block; living enemies do (their capsules).
@@ -131,6 +150,19 @@ func _ready() -> void:
 	floor_max_angle = deg_to_rad(46.0)
 	Settings.changed.connect(_on_settings_changed)
 	_on_settings_changed()
+	_repaint.call_deferred()
+
+
+## New colours from the loadout screen: repaint the arms and part models.
+func set_colors(c: BodyColors) -> void:
+	colors = c
+	_repaint()
+	colors_changed.emit()
+
+
+func _repaint() -> void:
+	if is_inside_tree():
+		get_tree().call_group(&"suit_painted", &"repaint", colors)
 
 
 func is_sprinting() -> bool:
@@ -166,7 +198,10 @@ func on_ballistic_hit(hit: BallisticHit) -> void:
 	if dead or invulnerable or hit.shooter == self:
 		return
 	var amount: float = hit.energy_in * 0.001 * body.stat(&"damage_per_kj")
-	take_damage(amount, -hit.direction)
+	for f: Callable in hit_interceptors:
+		amount = f.call(hit, amount)
+	if amount > 0.0:
+		take_damage(amount, -hit.direction)
 
 
 func take_damage(amount: float, from_dir: Vector3) -> void:
@@ -189,6 +224,54 @@ func suppress_point() -> Vector3:
 	return _camera.global_position
 
 
+## True if `side` (&"right" or &"left") isn't held by another part.
+func hand_free(side: StringName, by: Node) -> bool:
+	return not hands.has(side) or hands[side] == by or not is_instance_valid(hands[side])
+
+
+## A part takes a hand; the gun goes down. False if another part has it.
+func claim_hand(side: StringName, by: Node) -> bool:
+	if not hand_free(side, by):
+		return false
+	hands[side] = by
+	_update_hands()
+	return true
+
+
+func release_hand(side: StringName, by: Node) -> void:
+	if hands.get(side) == by:
+		hands.erase(side)
+		_update_hands()
+
+
+func _update_hands() -> void:
+	var w: PlayerWeapon = weapon()
+	if w == null:
+		return
+	if hands.is_empty():
+		w.unstow()
+		return
+	w.stow()
+	# The HUD shows the rounds of the part in the right hand, if there is one.
+	var owner_part: Node = hands.get(&"right", hands.values()[0])
+	w.stowed_by = owner_part as ActivePart
+
+
+## Thrown forward by a part (the ram thrusters): `velocity` for `seconds`,
+## no steering, no gravity; `on_hit` is called for each living enemy struck.
+func start_dash(dash_velocity: Vector3, seconds: float, on_hit: Callable = Callable()) -> void:
+	_dash_vel = dash_velocity
+	_dash_left = seconds
+	_dash_on_hit = on_hit
+	_dash_struck.clear()
+	move_state = MoveState.NORMAL
+	_crouching = false
+
+
+func is_dashing() -> bool:
+	return _dash_left > 0.0
+
+
 func on_near_miss(shooter: Node, _weapon: WeaponData, distance: float, point: Vector3) -> void:
 	if shooter == self or dead:
 		return
@@ -198,6 +281,7 @@ func on_near_miss(shooter: Node, _weapon: WeaponData, distance: float, point: Ve
 
 func respawn() -> void:
 	dead = false
+	_dash_left = 0.0
 	health = max_health()
 	input_enabled = true
 	suppression = 0.0
@@ -247,7 +331,7 @@ func _unhandled_input(event: InputEvent) -> void:
 func _process(delta: float) -> void:
 	# Looking is a reflex: real time, whatever the world's time scale.
 	var look_dt: float = TimeControl.real_delta(delta)
-	if input_enabled and not look_blocked:
+	if input_enabled and not look_blocked and not look_frozen:
 		var look: LookConfig = Settings.look_config()
 		var raw: Vector2 = Input.get_vector(&"look_left", &"look_right", &"look_up", &"look_down", 0.0)
 		_tilt_time = _tilt_time + look_dt if look.is_full_tilt(raw) else 0.0
@@ -292,6 +376,9 @@ func _physics_process(delta: float) -> void:
 	wish.y = 0.0
 	var forward_push: float = -stick.y
 
+	if _dash_left > 0.0:
+		_dash(delta)
+		return
 	match move_state:
 		MoveState.MANTLE:
 			_mantle(delta)
@@ -327,7 +414,7 @@ func _physics_process(delta: float) -> void:
 		speed = cfg.sprint_speed * sprint_scale
 	elif _crouching:
 		speed = cfg.crouch_speed
-	speed *= move_scale * speed_factor()
+	speed *= move_scale * aug_move_scale * speed_factor()
 	var agility: float = body.stat(&"agility")
 	if is_on_floor():
 		horizontal = MovementConfig.approach(horizontal, wish * speed, cfg.ground_accel * agility, cfg.ground_decel * agility, delta)
@@ -356,6 +443,33 @@ func _physics_process(delta: float) -> void:
 	# Airborne next to a wall, pushing forward at speed: run along it.
 	if not is_on_floor() and forward_push > 0.5 and _wall_cd <= 0.0 and horizontal.length() >= cfg.wallrun_min_speed and wallrun_time() > 0.05:
 		_try_wallrun(horizontal)
+
+
+## A thruster dash: straight along _dash_vel; living enemies in the way are
+## reported to the part that started it. Ends early against a wall.
+func _dash(delta: float) -> void:
+	_dash_left -= delta
+	velocity = _dash_vel
+	_sprinting = false
+	var before: Vector3 = global_position
+	_slide_move()
+	var moved: float = (global_position - before).length()
+	var dir: Vector3 = _dash_vel.normalized()
+	if _dash_on_hit.is_valid():
+		for n: Node in get_tree().get_nodes_in_group(&"enemies"):
+			var e: Enemy = n as Enemy
+			if e == null or not e.alive or n in _dash_struck:
+				continue
+			var to: Vector3 = e.global_position + Vector3.UP * 0.9 - (global_position + Vector3.UP * 0.9)
+			if to.length() < 1.5 and (to.length() < 0.6 or to.normalized().dot(dir) > 0.1):
+				_dash_struck.append(n)
+				_dash_on_hit.call(e)
+	if moved < _dash_vel.length() * delta * 0.25 * TimeControl.player_boost():
+		_dash_left = 0.0
+	if _dash_left <= 0.0:
+		# Come out of it running, not flying.
+		var h: Vector3 = Vector3(_dash_vel.x, 0.0, _dash_vel.z)
+		velocity = h.normalized() * minf(h.length(), movement.sprint_speed * 1.2) + Vector3.UP * minf(velocity.y, 2.0)
 
 
 ## move_and_slide, plus walking up steps up to step_height (curbs, sills,

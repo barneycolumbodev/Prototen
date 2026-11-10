@@ -10,6 +10,12 @@ extends Resource
 @export var parts: Array[PartData] = []
 
 
+## Most actives a body can carry: one per D-pad direction.
+const MAX_ACTIVES: int = 3
+
+
+## The actives in D-pad order: the first is on D-pad left, then down, right
+## (owner, 2026-11-07: three actives, LB fires the selected one).
 func actives() -> Array[ActivePartData]:
 	var out: Array[ActivePartData] = []
 	for p: PartData in parts:
@@ -38,13 +44,45 @@ func parts_at(loc: int) -> Array[PartData]:
 	return out
 
 
+## D-pad slot of an installed active (1 = left, 2 = down, 3 = right); 0 if
+## it isn't installed.
+func slot_of(id: StringName) -> int:
+	var acts: Array[ActivePartData] = actives()
+	for i: int in acts.size():
+		if acts[i].id == id:
+			return i + 1
+	return 0
+
+
+## Moves an installed active to the next D-pad direction (it swaps places
+## with the active there; wraps round). Returns its new slot.
+func cycle_slot(id: StringName) -> int:
+	var acts: Array[ActivePartData] = actives()
+	var from: int = slot_of(id) - 1
+	if from < 0 or acts.size() < 2:
+		return from + 1
+	var to: int = (from + 1) % acts.size()
+	var a: int = parts.find(acts[from])
+	var b: int = parts.find(acts[to])
+	parts[a] = acts[to]
+	parts[b] = acts[from]
+	return to + 1
+
+
 ## Installs `part`. If its location is full, the part installed there first
-## comes out to make room (and an active wanting a taken D-pad slot pushes
-## the other active out). Returns what was removed.
+## comes out to make room; a part on the same mount (the right forearm)
+## comes out; a fourth active pushes out the one installed first. Returns
+## what was removed.
 func install(part: PartData) -> Array[PartData]:
 	var removed: Array[PartData] = []
 	if part == null or has_part(part.id):
 		return removed
+	# The same mount first (the other part on that arm), then room in the location.
+	if part.mount != &"":
+		for p: PartData in parts.duplicate():
+			if p.mount == part.mount and not p.fixed:
+				parts.erase(p)
+				removed.append(p)
 	var here: Array[PartData] = parts_at(part.location)
 	while here.size() >= PartData.slots_for(part.location):
 		var out: PartData = null
@@ -57,12 +95,12 @@ func install(part: PartData) -> Array[PartData]:
 		parts.erase(out)
 		here.erase(out)
 		removed.append(out)
-	var act: ActivePartData = part as ActivePartData
-	if act:
-		for a: ActivePartData in actives():
-			if a.slot == act.slot:
-				parts.erase(a)
-				removed.append(a)
+	if part.is_active():
+		var acts: Array[ActivePartData] = actives()
+		while acts.size() >= MAX_ACTIVES:
+			parts.erase(acts[0])
+			removed.append(acts[0])
+			acts.remove_at(0)
 	parts.append(part)
 	return removed
 

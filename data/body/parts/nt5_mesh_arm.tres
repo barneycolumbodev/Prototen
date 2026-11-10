@@ -1,0 +1,74 @@
+[gd_resource type="Resource" script_class="MeshArmData" load_steps=13 format=3]
+
+[ext_resource type="Script" path="res://src/augments/active/mesh_arm/mesh_arm_data.gd" id="1"]
+[ext_resource type="Script" path="res://src/body/stat_modifier.gd" id="2"]
+[ext_resource type="Script" path="res://src/body/part_visual.gd" id="3"]
+[ext_resource type="Script" path="res://src/augments/active/mesh_arm/mesh_arm.gd" id="4"]
+[ext_resource type="Script" path="res://src/body/stat_requirement.gd" id="5"]
+[ext_resource type="PackedScene" path="res://assets/augments/nt5_mesh_arm/nt5_mesh_arm.gltf" id="6"]
+[ext_resource type="Script" path="res://src/player/viewmodel_config.gd" id="7"]
+
+[sub_resource type="Resource" id="view"]
+script = ExtResource("7")
+eye_position = Vector3(-0.42, 0.27, 0.3)
+look_target = Vector3(1.0, -0.06, 0.08)
+
+[sub_resource type="Resource" id="req_0"]
+script = ExtResource("5")
+stat = &"strength"
+at_least = 1.15
+reason = "the braid pulls with whatever the shoulder gives it"
+
+[sub_resource type="Resource" id="req_1"]
+script = ExtResource("5")
+stat = &"structure"
+at_least = 1.2
+reason = "a thrown man would take an organic shoulder with him"
+
+[sub_resource type="Resource" id="vis_0"]
+script = ExtResource("3")
+socket = &"forearm.L"
+shape = 2
+size = Vector3(0.048, 0.26, 0.048)
+offset = Vector3(0.0, 0.13, 0.0)
+rotation_deg = Vector3(0.0, 0.0, 0.0)
+finish = "hardware"
+
+[sub_resource type="Resource" id="vis_1"]
+script = ExtResource("3")
+socket = &"forearm.L"
+shape = 3
+size = Vector3(0.052, 0.012, 0.052)
+offset = Vector3(0.0, 0.02, 0.0)
+rotation_deg = Vector3(0.0, 0.0, 0.0)
+finish = "glow"
+
+[resource]
+script = ExtResource("1")
+id = &"nt5_mesh_arm"
+display_name = "NT-5 Prehensile Mesh Arm"
+description = "The left forearm is a braid of carbon-nanotube muscle mesh. Unbraided it pays out as an eighteen-metre tendril with a four-fingered claw. Select it on the D-pad, LB to unbraid or fold it. RT shoots it at whoever is under the crosshair and hauls him in; he hangs in front of you and takes the rounds meant for you. RT again throws him: he breaks whoever he hits and dies where he lands."
+location = 6
+mount = &"arm_left"
+mass_kg = 5.5
+power_draw_w = 25.0
+heat_w = 15.0
+capacity = 3
+modifiers = Array[ExtResource("2")]([])
+requirements = Array[ExtResource("5")]([SubResource("req_0"), SubResource("req_1")])
+synergy = "Needs strength ×1.15 (EM-2, HM-5) and structure ×1.20. Throw speed = 17 m/s × usable strength ÷ 1.15 × √impact: the Juggernaut throws a man through a wall. Takes the left arm: not with the BW-6 shield; guns go away while it's out, the GX-4 doesn't."
+visuals = Array[ExtResource("3")]([SubResource("vis_0"), SubResource("vis_1")])
+behaviour = ExtResource("4")
+short_name = "NT-5"
+deploy_time = 0.7
+recover_time = 0.45
+cooldown_time = 0.25
+charge_max = 4.0
+drain_per_s = 0.0
+regen_per_s = 0.2
+regen_delay = 2.0
+min_to_start = 1.0
+active_power_w = 150.0
+active_heat_w = 120.0
+scene = ExtResource("6")
+viewmodel = SubResource("view")

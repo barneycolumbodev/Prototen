@@ -19,8 +19,11 @@ var helmet_on: bool = true:
 	set(v):
 		helmet_on = v
 		_apply_helmet()
-## Mounted part pieces (for tests and the loadout screen).
+## Mounted part pieces (for tests and the loadout screen), and the part each belongs to.
 var mounted: Array[Node3D] = []
+var mounted_ids: Array[StringName] = []
+## Suit and hardware colours (null: as built).
+var colors: BodyColors
 
 var _model: Node3D
 var _attach: Dictionary[StringName, BoneAttachment3D] = {}
@@ -73,6 +76,7 @@ func rebuild() -> void:
 	for n: Node3D in mounted:
 		n.queue_free()
 	mounted.clear()
+	mounted_ids.clear()
 	if loadout == null or skeleton == null:
 		return
 	for p: PartData in loadout.parts:
@@ -88,6 +92,18 @@ func rebuild() -> void:
 			node.position = v.offset
 			node.rotation_degrees = v.rotation_deg
 			mounted.append(node)
+			mounted_ids.append(p.id)
+	repaint()
+
+
+## Applies `colors` to the suit, the helmet and every mounted piece.
+func repaint() -> void:
+	if colors == null or _model == null:
+		return
+	colors.apply_to_model(_model, false)
+	for i: int in mounted.size():
+		if is_instance_valid(mounted[i]):
+			colors.apply_to_part(mounted[i], mounted_ids[i])
 
 
 ## A piece modelled on the whole operative (raw_assets/augments/passives):
@@ -111,6 +127,7 @@ func _mount_model_space(p: PartData, v: PartVisual) -> void:
 		# lands where it was modelled (skeleton space = model space).
 		mi.transform = skeleton.get_bone_global_rest(bi).affine_inverse() * model_xform
 		mounted.append(mi)
+		mounted_ids.append(p.id)
 	root.free()
 
 

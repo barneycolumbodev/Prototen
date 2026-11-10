@@ -95,6 +95,14 @@ var _knock: Vector3 = Vector3.ZERO
 const KNOCK_DECAY: float = 13.0
 ## State when the killing blow landed (picks the death voice).
 var state_before_death: State = State.IDLE
+## Seized by the mesh arm (NT-5): limp in its grip, alive until he's thrown
+## or dropped. Out of the fight (no AI, not in the enemies group).
+var held: bool = false
+## Thrown by the mesh arm: flying. He hits whoever is in the way and dies when he lands.
+var _thrown_by: Node
+var _thrown_speed: float = 0.0
+var _thrown_time: float = 0.0
+var _thrown_hit: Array[Node] = []
 
 
 ## A stump spurting blood after a limb or the head came off.
@@ -245,6 +253,73 @@ func knock_back(push: Vector3, from: Node, damage: float, morale_loss: float) ->
 		# Broken by the impact: he goes flying the way he was shoved.
 		velocity = Vector3(push.x, maxf(push.y, 2.0), push.z).limit_length(9.0)
 		die(null, &"chest", &"impact")
+
+
+## Seized by the mesh arm: he goes limp in its grip (a ragdoll, still
+## alive), drops his gun and leaves the fight. Returns false if he can't be
+## taken (dead, already held).
+func seize(by: Node) -> bool:
+	if not alive or held:
+		return false
+	held = true
+	remove_from_group(&"enemies")
+	remove_from_group(&"aim_assist_targets")
+	remove_from_group(&"suppressible")
+	_release_token()
+	_stop()
+	if has_gun:
+		has_gun = false
+		body.drop_gun(Vector3.UP * 1.5)
+	(get_node(^"Capsule") as CollisionShape3D).disabled = true
+	velocity = Vector3.ZERO
+	body.hold_awake = true
+	body.ragdoll(Vector3.ZERO, body.chest_position(), &"chest")
+	morale = 0.0
+	_pain_cooldown = 0.9
+	Sfx.play_at(&"death_scream", body.head_position(), -3.0, 0.12)
+	if squad:
+		squad.on_ally_seized(self, by)
+	return true
+
+
+## Let go by the mesh arm with `throw_velocity` (zero: dropped). He flies,
+## knocks down whoever he hits, and dies where he lands.
+func release(throw_velocity: Vector3, by: Node) -> void:
+	if not held:
+		return
+	held = false
+	body.hold_awake = false
+	body.fling(throw_velocity)
+	_thrown_by = by
+	_thrown_speed = maxf(throw_velocity.length(), 0.5)
+	_thrown_time = 0.0
+	_thrown_hit.clear()
+
+
+func _update_thrown(delta: float) -> void:
+	_thrown_time += delta
+	var at: Vector3 = body.chest_position()
+	var v: Vector3 = body.chest_velocity()
+	if _thrown_speed > 4.0:
+		for n: Node in get_tree().get_nodes_in_group(&"enemies"):
+			var e: Enemy = n as Enemy
+			if e == null or e == self or not e.alive or n in _thrown_hit:
+				continue
+			if e.body.chest_position().distance_to(at) < 1.0:
+				_thrown_hit.append(n)
+				var push: Vector3 = v * 0.6 + Vector3.UP * 1.5
+				var lethal: bool = v.length() >= 13.0
+				e.knock_back(push, _thrown_by, 9999.0 if lethal else v.length() * 6.0, 0.5)
+				Sfx.play_at(&"impact_flesh", at, 2.0, 0.1)
+				Gore.spray(at, v.normalized(), 1.2, 6)
+				EventBus.slide_impact.emit(e, v.length())
+	var landed: bool = _thrown_time > 0.2 and v.length() < maxf(_thrown_speed * 0.45, 2.5)
+	if landed or _thrown_time > 2.0:
+		_thrown_speed = 0.0
+		if alive:
+			Gore.spray(at, Vector3.UP, 1.4, 10)
+			Sfx.play_at(&"impact_flesh", at, 3.0, 0.1)
+			die(null, &"chest", &"impact")
 
 
 ## A round hit a plate in the carrier (stopped or not: Ballistics decided).
@@ -477,6 +552,17 @@ func on_ally_down(where: Vector3, gory: bool, officer: bool) -> void:
 func _physics_process(delta: float) -> void:
 	if not alive:
 		_update_bleeders(delta)
+		if _thrown_speed > 0.0:
+			_update_thrown(delta)
+		return
+	if held or _thrown_speed > 0.0:
+		_update_bleeders(delta)
+		if _thrown_speed > 0.0:
+			_update_thrown(delta)
+		elif _pain_cooldown <= 0.0:
+			_pain_cooldown = _rng.randf_range(1.2, 2.4)
+			Sfx.play_at(&"enemy_pain", body.head_position(), -2.0, 0.15)
+		_pain_cooldown -= delta
 		return
 	_state_time += delta
 	_pain_cooldown -= delta
@@ -528,7 +614,8 @@ func _update_perception(dt: float) -> void:
 	var fwd: Vector3 = global_basis.z
 	var flat: Vector3 = Vector3(to.x, 0, to.z).normalized()
 	var in_fov: bool = fwd.angle_to(flat) < deg_to_rad(config.sight_fov_deg) * 0.5 or dist < 4.0 or awareness >= 1.0
-	if in_fov:
+	# A thermoptic shroud (TC-4) hides the operative unless he's on top of you.
+	if in_fov and not p.body.hidden_at(dist):
 		var q: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(eye, target, LOS_MASK)
 		sees_player = get_world_3d().direct_space_state.intersect_ray(q).is_empty()
 	if sees_player:

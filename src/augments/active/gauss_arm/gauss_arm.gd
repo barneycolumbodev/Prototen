@@ -64,13 +64,14 @@ func _ready() -> void:
 
 
 func _exit_tree() -> void:
+	super._exit_tree()
 	if player and is_instance_valid(player):
 		player.fov_punch_deg = 0.0
 		player.fov_extra_scale = 1.0
 
 
-func hud_name() -> String:
-	return "GX-4"
+func hand() -> StringName:
+	return &"right"
 
 
 func hud_pips() -> int:
@@ -146,9 +147,6 @@ func _on_start() -> void:
 	_empty_wait = -1.0
 	_kick_pos.value = Vector3.ZERO
 	_kick_rot.value = Vector3.ZERO
-	if player and player.weapon():
-		player.weapon().stow()
-		player.weapon().stowed_by = self
 	rig.visible = true
 	_coil_rest.clear()
 	_update_leds()
@@ -227,12 +225,12 @@ func _on_active(real: float) -> void:
 		if _empty_wait < 0.0:
 			stop()
 		return
-	var can_input: bool = player != null and player.input_enabled and not player.dead and not get_tree().paused
-	var want: bool = _script_fire or (can_input and Input.is_action_pressed(&"fire"))
+	var ok: bool = can_input()
+	var want: bool = _script_fire or (ok and Input.is_action_pressed(&"fire"))
 	if want and _cooldown <= 0.0 and rounds() >= 1:
 		_script_fire = false
 		_fire()
-	var aim: bool = can_input and Input.is_action_pressed(&"aim")
+	var aim: bool = ok and Input.is_action_pressed(&"aim")
 	_ads = move_toward(_ads, 1.0 if aim else 0.0, real / maxf(cfg.ads_time, 0.01))
 
 

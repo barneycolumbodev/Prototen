@@ -22,6 +22,16 @@ func at(loc: int) -> Array[PartData]:
 	return out
 
 
+## Every active part, in library order.
+func actives() -> Array[ActivePartData]:
+	var out: Array[ActivePartData] = []
+	for p: PartData in parts:
+		var a: ActivePartData = p as ActivePartData
+		if a:
+			out.append(a)
+	return out
+
+
 ## Builds a loadout from saved part ids (unknown ids are skipped); fixed
 ## parts are always included.
 func loadout_from_ids(ids: PackedStringArray, name: String = "Custom") -> BodyLoadout:
