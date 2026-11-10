@@ -9,6 +9,7 @@ extends Node
 ##                    grab / throw (mesh arm), fly / boom (drone), arc,
 ##                    ram
 ##   --hold=<frames>  frames to let run after the act before freezing (default 6)
+##   --paint=channel:rrggbb,...  suit colours (BodyColors channels)
 ##   --cam=x,y,z,tx,ty,tz  shoot from a camera at x,y,z looking at tx,ty,tz
 ##                    instead of the operative's eye
 ## The capture waits (group capture_busy) until it has frozen.
@@ -42,6 +43,12 @@ func _ready() -> void:
 			act = arg.trim_prefix("--act=")
 		elif arg.begins_with("--hold="):
 			hold = arg.trim_prefix("--hold=").to_int()
+		elif arg.begins_with("--paint="):
+			# channel:rrggbb,... on the operative (the first-person arms follow).
+			var colors: BodyColors = BodyColors.new()
+			for spec: String in arg.trim_prefix("--paint=").split(","):
+				colors.set_color(StringName(spec.get_slice(":", 0)), Color.html(spec.get_slice(":", 1)))
+			room.player.set_colors.call_deferred(colors)
 		elif arg.begins_with("--cam="):
 			var v: PackedFloat64Array = arg.trim_prefix("--cam=").split_floats(",")
 			if v.size() == 6:

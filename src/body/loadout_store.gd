@@ -12,6 +12,9 @@ const PRESETS: Array[String] = [
 	"res://data/body/presets/ghost.tres",
 	"res://data/body/presets/juggernaut.tres",
 	"res://data/body/presets/marksman.tres",
+	"res://data/body/presets/reaper.tres",
+	"res://data/body/presets/handler.tres",
+	"res://data/body/presets/wraith.tres",
 ]
 
 static var path: String = "user://loadout.cfg"

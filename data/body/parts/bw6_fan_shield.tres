@@ -7,6 +7,7 @@
 [ext_resource type="Script" path="res://src/body/stat_requirement.gd" id="5"]
 [ext_resource type="PackedScene" path="res://assets/augments/bw6_fan_shield/bw6_fan_shield.gltf" id="6"]
 [ext_resource type="Script" path="res://src/player/viewmodel_config.gd" id="7"]
+[ext_resource type="PackedScene" path="res://assets/augments/actives_body/bw6_fan_shield/bw6_fan_shield.gltf" id="8"]
 
 [sub_resource type="Resource" id="view"]
 script = ExtResource("7")
@@ -21,21 +22,9 @@ reason = "every round it stops goes through the forearm into the skeleton"
 
 [sub_resource type="Resource" id="vis_0"]
 script = ExtResource("3")
-socket = &"forearm.L"
-shape = 1
-size = Vector3(0.1, 0.38, 0.03)
-offset = Vector3(-0.05, 0.2, 0.0)
-rotation_deg = Vector3(0.0, 0.0, 0.0)
-finish = "plate"
-
-[sub_resource type="Resource" id="vis_1"]
-script = ExtResource("3")
-socket = &"forearm.L"
-shape = 3
-size = Vector3(0.034, 0.05, 0.034)
-offset = Vector3(-0.06, 0.14, 0.0)
-rotation_deg = Vector3(0.0, 0.0, 90.0)
-finish = "hardware"
+socket = &"root"
+scene = ExtResource("8")
+model_space = true
 
 [resource]
 script = ExtResource("1")
@@ -51,7 +40,7 @@ capacity = 2
 modifiers = Array[ExtResource("2")]([])
 requirements = Array[ExtResource("5")]([SubResource("req_0")])
 synergy = "Needs structure ×1.15. Integrity = 14 kJ × structure ÷ 1.45. Takes the left arm: two-handed guns go away, so pair it with the GX-4 or the whip in the right arm, or bash (R3: shove ×1.6, so mass, strength and impact)."
-visuals = Array[ExtResource("3")]([SubResource("vis_0"), SubResource("vis_1")])
+visuals = Array[ExtResource("3")]([SubResource("vis_0")])
 behaviour = ExtResource("4")
 short_name = "BW-6"
 deploy_time = 0.5

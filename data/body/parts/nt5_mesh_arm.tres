@@ -7,6 +7,7 @@
 [ext_resource type="Script" path="res://src/body/stat_requirement.gd" id="5"]
 [ext_resource type="PackedScene" path="res://assets/augments/nt5_mesh_arm/nt5_mesh_arm.gltf" id="6"]
 [ext_resource type="Script" path="res://src/player/viewmodel_config.gd" id="7"]
+[ext_resource type="PackedScene" path="res://assets/augments/actives_body/nt5_mesh_arm/nt5_mesh_arm.gltf" id="8"]
 
 [sub_resource type="Resource" id="view"]
 script = ExtResource("7")
@@ -27,21 +28,9 @@ reason = "a thrown man would take an organic shoulder with him"
 
 [sub_resource type="Resource" id="vis_0"]
 script = ExtResource("3")
-socket = &"forearm.L"
-shape = 2
-size = Vector3(0.048, 0.26, 0.048)
-offset = Vector3(0.0, 0.13, 0.0)
-rotation_deg = Vector3(0.0, 0.0, 0.0)
-finish = "hardware"
-
-[sub_resource type="Resource" id="vis_1"]
-script = ExtResource("3")
-socket = &"forearm.L"
-shape = 3
-size = Vector3(0.052, 0.012, 0.052)
-offset = Vector3(0.0, 0.02, 0.0)
-rotation_deg = Vector3(0.0, 0.0, 0.0)
-finish = "glow"
+socket = &"root"
+scene = ExtResource("8")
+model_space = true
 
 [resource]
 script = ExtResource("1")
@@ -57,7 +46,7 @@ capacity = 3
 modifiers = Array[ExtResource("2")]([])
 requirements = Array[ExtResource("5")]([SubResource("req_0"), SubResource("req_1")])
 synergy = "Needs strength ×1.15 (EM-2, HM-5) and structure ×1.20. Throw speed = 17 m/s × usable strength ÷ 1.15 × √impact: the Juggernaut throws a man through a wall. Takes the left arm: not with the BW-6 shield; guns go away while it's out, the GX-4 doesn't."
-visuals = Array[ExtResource("3")]([SubResource("vis_0"), SubResource("vis_1")])
+visuals = Array[ExtResource("3")]([SubResource("vis_0")])
 behaviour = ExtResource("4")
 short_name = "NT-5"
 deploy_time = 0.7

@@ -7,6 +7,7 @@
 [ext_resource type="Script" path="res://src/body/stat_requirement.gd" id="5"]
 [ext_resource type="PackedScene" path="res://assets/augments/mw7_monofilament_whip/mw7_monofilament_whip.gltf" id="6"]
 [ext_resource type="Script" path="res://src/player/viewmodel_config.gd" id="7"]
+[ext_resource type="PackedScene" path="res://assets/augments/actives_body/mw7_monofilament_whip/mw7_monofilament_whip.gltf" id="8"]
 
 [sub_resource type="Resource" id="view"]
 script = ExtResource("7")
@@ -21,21 +22,9 @@ reason = "the filament is steered by a guidance loop; without a co-processor it 
 
 [sub_resource type="Resource" id="vis_0"]
 script = ExtResource("3")
-socket = &"forearm.R"
-shape = 1
-size = Vector3(0.06, 0.07, 0.05)
-offset = Vector3(0.0, 0.2, 0.05)
-rotation_deg = Vector3(0.0, 0.0, 0.0)
-finish = "hardware"
-
-[sub_resource type="Resource" id="vis_1"]
-script = ExtResource("3")
-socket = &"forearm.R"
-shape = 3
-size = Vector3(0.022, 0.05, 0.022)
-offset = Vector3(0.0, 0.2, 0.075)
-rotation_deg = Vector3(0.0, 0.0, 90.0)
-finish = "glow"
+socket = &"root"
+scene = ExtResource("8")
+model_space = true
 
 [resource]
 script = ExtResource("1")
@@ -51,7 +40,7 @@ capacity = 2
 modifiers = Array[ExtResource("2")]([])
 requirements = Array[ExtResource("5")]([SubResource("req_0")])
 synergy = "Needs processing ×1.10 (SA-2). Melee speed sets how fast it swings and lashes; melee power how deep it bites. Takes the right arm: not with the GX-4, and guns go away while it's out."
-visuals = Array[ExtResource("3")]([SubResource("vis_0"), SubResource("vis_1")])
+visuals = Array[ExtResource("3")]([SubResource("vis_0")])
 behaviour = ExtResource("4")
 short_name = "MW-7"
 deploy_time = 0.6

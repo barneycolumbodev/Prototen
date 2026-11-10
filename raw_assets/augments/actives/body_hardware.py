@@ -228,7 +228,7 @@ elif PART == "nt5_mesh_arm":
     d = (b - a).normalized()
     u = d.cross(Z).normalized()
     v = d.cross(u).normalized()
-    L = (b - a).length()
+    L = (b - a).length
     R0, R1 = 0.055, 0.044
 
     def build(det, out):

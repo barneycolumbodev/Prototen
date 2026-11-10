@@ -257,6 +257,18 @@ PRESETS = {
     "presets/juggernaut": ("Juggernaut", "Tungsten bones, hydraulic muscle, trauma plating and the dorsal frame: the MG42 from the hip, slides that break bodies. No slow motion, no wall-running.",
                            ["cs1_carapace", "ct7_trauma_plating", "tn9_tungsten_cores", "hm5_hydraulic_myomer", "dl1_dorsal_load_frame",
                             "gx4_gauss_arm", "ch2_cardiac_pump"]),
+    "presets/reaper": ("Reaper", "Close work: the monofilament whip in the right hand, the fan shield on the left arm, ram plating and the ram "
+                       "thrusters to get there. No guns while the whip or shield is out.",
+                       ["cs1_carapace", "tl3_titanium_skeleton", "sa2_synaptic_accelerator", "em2_myofibrils", "hs5_heat_sinks",
+                        "rp2_ram_plating", "kr5_ram_thrusters", "mw7_monofilament_whip", "bw6_fan_shield"]),
+    "presets/handler": ("Handler", "Fights from somewhere else: the cortical uplink flies the Shrike out to 120 m, the power cell and fuel "
+                        "bladder feed the arc projector (four links in the chain), RX-9 for when they find you.",
+                        ["cs1_carapace", "nl3_cortical_uplink", "sa2_synaptic_accelerator", "pc3_power_cell", "fb1_fuel_bladder",
+                         "rx9_reflex_overclock", "sd3_shrike_drone", "ad2_arc_projector"]),
+    "presets/wraith": ("Wraith", "Unseen until it has you: the thermoptic shroud on extra cooling, quiet dampers, and the mesh arm on a light "
+                       "carbon frame to pull men out of their squads.",
+                       ["cs1_carapace", "cb1_carbon_sheathing", "em2_myofibrils", "sa2_synaptic_accelerator", "hp4_hyperoxic_lungs",
+                        "oc2_respirocytes", "kd2_kinetic_dampers", "tc4_thermoptic_shroud", "nt5_mesh_arm"]),
     "presets/marksman": ("Marksman", "Linked: the cortical uplink and mesh relay feed the fire-control link and the ballistic eyes. Rifles and the Gauss arm on a light carbon frame.",
                          ["cs1_carapace", "nl3_cortical_uplink", "mr1_mesh_relay", "fc1_fire_control", "ob5_ocular_ballistics",
                           "vs1_vestibular_stabilizer", "sa2_synaptic_accelerator", "cb1_carbon_sheathing", "gx4_gauss_arm", "pc3_power_cell"]),

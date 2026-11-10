@@ -439,6 +439,15 @@ func _reset_candidate() -> void:
 	if working == null:
 		candidate = 0
 		return
+	if _rows[row].x == ROW_ACTIVES:
+		# Start on an active that's installed, so the preview is the body as it is.
+		candidate = 0
+		var acts: Array[ActivePartData] = library.actives()
+		for i: int in acts.size():
+			if working.has_part(acts[i].id):
+				candidate = i
+				break
+		return
 	if _rows[row].x < 0:
 		candidate = 0
 		return
