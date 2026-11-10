@@ -812,6 +812,7 @@ func _colour_list_text() -> String:
 	lines.append("[b]COLOURS[/b]  [color=%s]%s[/color]" % [C_NAME, working.display_name])
 	lines.append("[color=%s]Each piece keeps the look it was built with until you paint it.[/color]" % C_DIM)
 	lines.append("")
+	var table: String = "[table=3]"
 	for i: int in _channels.size():
 		var ch: StringName = _channels[i]
 		var sel: bool = i == color_row
@@ -824,13 +825,14 @@ func _colour_list_text() -> String:
 		var fin: int = working_colors.finish(ch)
 		if fin != BodyColors.Finish.DEFAULT:
 			what += ", " + BodyColors.FINISH_NAMES[fin]
-		var arrow: String = "[color=%s]< [/color]" % C_GOOD if sel and not editing else "  "
-		var tail: String = "[color=%s] >[/color]" % C_GOOD if sel and not editing else ""
-		var line: String = "[color=%s]%-20s[/color] %s%s [color=%s]%s[/color]%s" % [C_DIM if not sel else "#ffffff", _channel_labels[i], arrow, _chip(ch),
-			C_NAME if working_colors.has(ch) else C_DIM, what, tail]
-		if sel:
-			line = "[bgcolor=#1d3a36]" + line + "[/bgcolor]"
-		lines.append(line)
+		var mark: String = "[color=%s]> [/color]" % C_GOOD if sel else "  "
+		var name_col: String = "#ffffff" if sel else C_DIM
+		var bg0: String = "[bgcolor=#1d3a36]" if sel else ""
+		var bg1: String = "[/bgcolor]" if sel else ""
+		table += "[cell]%s%s[color=%s]%s[/color]  %s[/cell]" % [bg0, mark, name_col, _channel_labels[i], bg1]
+		table += "[cell]%s  [/cell]" % _chip(ch)
+		table += "[cell]%s[color=%s]%s[/color]%s[/cell]" % [bg0, C_NAME if working_colors.has(ch) else C_DIM, what, bg1]
+	lines.append(table + "[/table]")
 	lines.append("")
 	if editing:
 		lines.append("[color=%s]Up/down: slider   Left/right: change   A or B: back   X: as built[/color]" % C_DIM)
