@@ -3,7 +3,13 @@ extends GutTest
 ## the operative, stays in budget, uses its baked textures, and mounts on
 ## the body where it was modelled.
 
-const PARTS: Array[String] = ["ct7_trauma_plating", "hs5_heat_sinks", "nl3_cortical_uplink", "kd2_kinetic_dampers"]
+const PARTS: Array[String] = [
+	"ct7_trauma_plating", "hs5_heat_sinks", "nl3_cortical_uplink", "kd2_kinetic_dampers",
+	"em2_myofibrils", "tl3_titanium_skeleton", "sa2_synaptic_accelerator", "dl1_dorsal_load_frame",
+	"hm5_hydraulic_myomer", "tn9_tungsten_cores", "fc1_fire_control", "vs1_vestibular_stabilizer",
+	"pc3_power_cell", "sp6_sprint_pistons", "ks2_striker_rams", "rp2_ram_plating",
+	"ob5_ocular_ballistics", "mr1_mesh_relay", "cm1_chromatophore_mesh", "dg3_dexterity_grafts",
+]
 
 
 func _tris(mi: MeshInstance3D) -> int:
@@ -56,3 +62,22 @@ func test_plating_mounts_on_the_chest_where_it_was_modelled() -> void:
 		var mi: MeshInstance3D = n as MeshInstance3D
 		var c: Vector3 = a.skeleton.global_transform.affine_inverse() * mi.global_transform * mi.get_aabb().get_center()
 		assert_lt(c.distance_to(chest), 0.45, "%s sits on the upper body (%s)" % [mi.name, c])
+
+
+func test_part_data_uses_the_modelled_scene() -> void:
+	for id: String in PARTS:
+		var p: PartData = load("res://data/body/parts/%s.tres" % id) as PartData
+		assert_not_null(p, id)
+		var scenes: int = 0
+		for v: PartVisual in p.visuals:
+			if v.scene and v.model_space:
+				scenes += 1
+			assert_eq(v.shape, PartVisual.Shape.NONE, "%s: no placeholder shapes once modelled" % id)
+		assert_eq(scenes, 1, "%s mounts its glTF" % id)
+
+
+func test_every_preset_part_with_hardware_is_modelled() -> void:
+	for lo: BodyLoadout in LoadoutStore.presets():
+		for p: PartData in lo.parts:
+			for v: PartVisual in p.visuals:
+				assert_true(v.scene != null and v.model_space, "%s (%s): finished hardware, not a placeholder" % [p.id, lo.display_name])

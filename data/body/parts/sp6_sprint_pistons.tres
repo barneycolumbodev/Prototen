@@ -4,6 +4,7 @@
 [ext_resource type="Script" path="res://src/body/stat_modifier.gd" id="2"]
 [ext_resource type="Script" path="res://src/body/part_visual.gd" id="3"]
 [ext_resource type="Script" path="res://src/body/stat_requirement.gd" id="4"]
+[ext_resource type="PackedScene" path="res://assets/augments/passives/sp6_sprint_pistons/sp6_sprint_pistons.gltf" id="5"]
 
 [sub_resource type="Resource" id="mod_0"]
 script = ExtResource("2")
@@ -31,21 +32,9 @@ mul = 1.4
 
 [sub_resource type="Resource" id="vis_0"]
 script = ExtResource("3")
-socket = &"shin.L"
-shape = 3
-size = Vector3(0.014, 0.24, 0.014)
-offset = Vector3(0.0, 0.2, -0.05)
-rotation_deg = Vector3(0.0, 0.0, 0.0)
-finish = "hardware"
-
-[sub_resource type="Resource" id="vis_1"]
-script = ExtResource("3")
-socket = &"shin.R"
-shape = 3
-size = Vector3(0.014, 0.24, 0.014)
-offset = Vector3(-0.0, 0.2, -0.05)
-rotation_deg = Vector3(0.0, 0.0, 0.0)
-finish = "hardware"
+socket = &"root"
+scene = ExtResource("5")
+model_space = true
 
 [resource]
 script = ExtResource("1")
@@ -60,4 +49,4 @@ capacity = 2
 modifiers = Array[ExtResource("2")]([SubResource("mod_0"), SubResource("mod_1"), SubResource("mod_2"), SubResource("mod_3")])
 requirements = Array[ExtResource("4")]([])
 synergy = ""
-visuals = Array[ExtResource("3")]([SubResource("vis_0"), SubResource("vis_1")])
+visuals = Array[ExtResource("3")]([SubResource("vis_0")])

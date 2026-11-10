@@ -4,6 +4,7 @@
 [ext_resource type="Script" path="res://src/body/stat_modifier.gd" id="2"]
 [ext_resource type="Script" path="res://src/body/part_visual.gd" id="3"]
 [ext_resource type="Script" path="res://src/body/stat_requirement.gd" id="4"]
+[ext_resource type="PackedScene" path="res://assets/augments/passives/ks2_striker_rams/ks2_striker_rams.gltf" id="5"]
 
 [sub_resource type="Resource" id="mod_0"]
 script = ExtResource("2")
@@ -31,21 +32,9 @@ reason = "the rams fire through the forearm bones"
 
 [sub_resource type="Resource" id="vis_0"]
 script = ExtResource("3")
-socket = &"forearm.L"
-shape = 3
-size = Vector3(0.018, 0.12, 0.018)
-offset = Vector3(0.0, 0.16, -0.035)
-rotation_deg = Vector3(0.0, 0.0, 0.0)
-finish = "hardware"
-
-[sub_resource type="Resource" id="vis_1"]
-script = ExtResource("3")
-socket = &"forearm.R"
-shape = 3
-size = Vector3(0.018, 0.12, 0.018)
-offset = Vector3(-0.0, 0.16, -0.035)
-rotation_deg = Vector3(0.0, 0.0, 0.0)
-finish = "hardware"
+socket = &"root"
+scene = ExtResource("5")
+model_space = true
 
 [resource]
 script = ExtResource("1")
@@ -60,4 +49,4 @@ capacity = 2
 modifiers = Array[ExtResource("2")]([SubResource("mod_0"), SubResource("mod_1"), SubResource("mod_2")])
 requirements = Array[ExtResource("4")]([SubResource("req_0")])
 synergy = ""
-visuals = Array[ExtResource("3")]([SubResource("vis_0"), SubResource("vis_1")])
+visuals = Array[ExtResource("3")]([SubResource("vis_0")])

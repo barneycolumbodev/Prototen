@@ -152,7 +152,33 @@ Owner (2026-11-08): "Each passive augment needs to make sense, have a high effor
 
 **Presets** (`data/body/presets/`, on the loadout screen): **Operator** (the default: TL-3, SA-2, EM-2, HS-5, RX-9, GX-4), **Ghost** (silent and quick; no Gauss arm), **Juggernaut** (CT-7, TN-9, HM-5, DL-1, GX-4: heavy hip fire, killing slides; no slow motion, no wall-running), **Marksman** (NL-3 + MR-1 feed the FC-1 and OB-5; light carbon frame, GX-4).
 
-**Finished hardware** (Blender, baked 1024² texture sets; generators in `raw_assets/augments/passives/<id>/build.py`, sharing `_common.py`; each piece modelled on the operative's real surface and mounted on its bone): **CT-7** (split faceted breastplate with a chevron edge, abdominal lames, back plate with a spine channel, pauldrons with lower lames, collar guards; hex bolts, stencils, status lights; 2.8k triangles), **HS-5** (temper-coloured fin stacks on the forearms over an amber hot core; 1.8k), **NL-3** (nape transceiver with swept antenna blades along the helmet, fibre trunk and junction block), **KD-2** (knee hubs with a light ring, chrome piston rods into damper bodies, ankle dampers). The other parts show neutral gunmetal or glow placeholders at their mount points. Previews: `docs/previews/<id>.png`.
+**Finished hardware** (Blender, baked 1024² texture sets; generators in `raw_assets/augments/passives/<id>/build.py`, sharing `_common.py`; each piece modelled on the operative's real surface and mounted on its bone). 20 of the 37 passives, every passive with hardware in the four presets, and the RX-9 active (2026-11-09: owner, "replace the placeholder assets, at least a decent amount of them"). Overview: `docs/previews/passives_overview.png`; per part: `docs/previews/<id>.png`. Parts that share a preset were built around each other (DL-1 clears CT-7's back plate and anchors through its spine channel; HM-5 leaves the back to them; RX-9 sits between NL-3's blades; the forearm is shared out: HS-5 outside, EM-2 front, TN-9 ulna edge, KS-2 inside, FC-1 inner wrist, TL-3 back of the wrist).
+
+| Part | Hardware |
+|---|---|
+| CT-7 | Split faceted breastplate with a chevron edge, abdominal lames, back plate with a spine channel, pauldrons with lower lames, collar guards; hex bolts, stencils, status lights. |
+| HS-5 | Temper-coloured fin stacks on the outer forearms over an amber hot core. |
+| NL-3 | Nape transceiver with swept antenna blades along the helmet, fibre trunk and junction block. |
+| KD-2 | Knee hubs with a light ring, chrome piston rods into damper bodies, ankle dampers. |
+| EM-2 | Vented trays on the front of the forearms and biceps: striated polymer strands with electric-blue light between them, cross straps, tendon anchors. |
+| TL-3 | Titanium wrist saddles pocketed with the hex lattice, gold-anodised anchor bolts; a knuckle bar with one anchor per metacarpal. |
+| SA-2 | Two signal spools on the sides of the neck: pearl myelin discs lit teal in a faceted capsule, fibre leads round to the spine. |
+| RX-9 (active) | Slim module on the occipital keel between the NL-3 blades: a cold white escapement slit, heat-sink ribs, fibre leads into the nape. |
+| DL-1 | Twin-rail spine beam on standoffs into the vertebrae, yoke and outrigger hubs, hooked arms over the shoulders to chest clamps, lumbar belt; a 250-round canister on the right hip feeding an armoured chute over the right shoulder to a hazard-banded feed mouth. Dark olive over gunmetal. |
+| HM-5 | Corrugated myomer bellows around a chrome ram on each thigh, a big ram on each triceps, hip pumps with an amber pressure window and a gauge. |
+| TN-9 | Segmented tungsten strike bars down the ulna edge and the shins, the core exposed in the gaps (machined rings, steel collars); core caps below the knees. |
+| RP-2 | Crowned shoulder wedges and a sternum prow faced with reactive tiles (chevrons, bolts) and a red firing strip. |
+| KS-2 | Twin pneumatic rams on the inner forearm, valve block with a ready light, air bottle, striker yoke at the wrist. |
+| FC-1 | Gold contact grid in each palm inside a teal link ring; inner-wrist link module with a bore-alignment readout; fibre between them. |
+| OB-5 | Laser rangefinder pod on the right brow (violet objective, red emitter, amber ready light) and a ballistic sensor on the left. |
+| MR-1 | Geodesic filament lattice over the crown with lit relay nodes; the forehead stays clear. |
+| VS-1 | Gyro pucks behind the ears: brass gimbal rings in a recessed bezel, a teal horizon bar, a teardrop fairing into the helmet. |
+| PC-3 | Sealed tritium cell on the left flank in a cradle: green phosphor window, yellow trefoil band, knurled caps, conduit into the ribs. |
+| SP-6 | Twin gas pistons down the back of each calf from a manifold to heel spurs; oxide-red gas bottle and a sooty exhaust block on the outer calf. |
+| CM-1 | Panels of hexagonal chromatophore cells in mixed dark tones on the outer upper arms and the flanks, with driver nodes. |
+| DG-3 | Four micro-actuators over the extensor tendons on the back of each hand, from a lit header at the wrist; gold tips. |
+
+Of the other 17 passives, 9 still show neutral gunmetal or glow placeholders at their mount points (ER-2, TG-6, IR-3, NW-4, AB-1, SR-3, GP-1, LF-8, SB-2) and 8 are internal with nothing to show (CB-1, FT-1, HP-4, CH-2, FB-1, DS-2, HN-1, OC-2). Shared kit for new parts in `_common.py` (2026-11-09): `cyl`, `slab`, `prism`, `sweep`, `link_chain`, `cable`, `add_obstacle` (cast against another part so pieces clear it) and `run` (bake, export, preview sheet).
 
 **Loadout screen** (View button; Pause → Body status): rows for every body location and the presets. Up/down picks a row, left/right browses what fits there (the model and every number preview it, with green/red changes), A installs or applies, X removes, Y helmet, LT zooms on the upper body, the right stick turns the model, B closes and puts the loadout on the player (saved to `user://loadout.cfg`). The card shows mass, power, heat, capacity, every effect coloured by whether it helps, requirements met or not (with the current value) and how the part combines with others.
 

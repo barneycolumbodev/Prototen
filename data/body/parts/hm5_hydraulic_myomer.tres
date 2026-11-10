@@ -4,6 +4,7 @@
 [ext_resource type="Script" path="res://src/body/stat_modifier.gd" id="2"]
 [ext_resource type="Script" path="res://src/body/part_visual.gd" id="3"]
 [ext_resource type="Script" path="res://src/body/stat_requirement.gd" id="4"]
+[ext_resource type="PackedScene" path="res://assets/augments/passives/hm5_hydraulic_myomer/hm5_hydraulic_myomer.gltf" id="5"]
 
 [sub_resource type="Resource" id="mod_0"]
 script = ExtResource("2")
@@ -49,21 +50,9 @@ reason = "the bundles would snap organic bone"
 
 [sub_resource type="Resource" id="vis_0"]
 script = ExtResource("3")
-socket = &"upper_arm.L"
-shape = 2
-size = Vector3(0.04, 0.18, 0.04)
-offset = Vector3(0.02, 0.14, -0.035)
-rotation_deg = Vector3(0.0, 0.0, 0.0)
-finish = "hardware"
-
-[sub_resource type="Resource" id="vis_1"]
-script = ExtResource("3")
-socket = &"upper_arm.R"
-shape = 2
-size = Vector3(0.04, 0.18, 0.04)
-offset = Vector3(-0.02, 0.14, -0.035)
-rotation_deg = Vector3(0.0, 0.0, 0.0)
-finish = "hardware"
+socket = &"root"
+scene = ExtResource("5")
+model_space = true
 
 [resource]
 script = ExtResource("1")
@@ -78,4 +67,4 @@ capacity = 3
 modifiers = Array[ExtResource("2")]([SubResource("mod_0"), SubResource("mod_1"), SubResource("mod_2"), SubResource("mod_3"), SubResource("mod_4"), SubResource("mod_5")])
 requirements = Array[ExtResource("4")]([SubResource("req_0")])
 synergy = "Usable strength is capped at structure × 1.3: TL-3 or TN-9 lets it use all of it. Strength divides the load, so it carries heavy armour."
-visuals = Array[ExtResource("3")]([SubResource("vis_0"), SubResource("vis_1")])
+visuals = Array[ExtResource("3")]([SubResource("vis_0")])

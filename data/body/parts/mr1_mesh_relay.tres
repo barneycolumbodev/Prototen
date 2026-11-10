@@ -1,9 +1,10 @@
-[gd_resource type="Resource" script_class="PartData" load_steps=9 format=3]
+[gd_resource type="Resource" script_class="PartData" load_steps=10 format=3]
 
 [ext_resource type="Script" path="res://src/body/part_data.gd" id="1"]
 [ext_resource type="Script" path="res://src/body/stat_modifier.gd" id="2"]
 [ext_resource type="Script" path="res://src/body/part_visual.gd" id="3"]
 [ext_resource type="Script" path="res://src/body/stat_requirement.gd" id="4"]
+[ext_resource type="PackedScene" path="res://assets/augments/passives/mr1_mesh_relay/mr1_mesh_relay.gltf" id="5"]
 
 [sub_resource type="Resource" id="mod_0"]
 script = ExtResource("2")
@@ -25,12 +26,9 @@ mul = 1.05
 
 [sub_resource type="Resource" id="vis_0"]
 script = ExtResource("3")
-socket = &"head"
-shape = 3
-size = Vector3(0.006, 0.004, 0.006)
-offset = Vector3(0.0, 0.11, -0.07)
-rotation_deg = Vector3(0.0, 0.0, 0.0)
-finish = "glow"
+socket = &"root"
+scene = ExtResource("5")
+model_space = true
 
 [resource]
 script = ExtResource("1")

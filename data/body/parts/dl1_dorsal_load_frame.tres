@@ -4,6 +4,7 @@
 [ext_resource type="Script" path="res://src/body/stat_modifier.gd" id="2"]
 [ext_resource type="Script" path="res://src/body/part_visual.gd" id="3"]
 [ext_resource type="Script" path="res://src/body/stat_requirement.gd" id="4"]
+[ext_resource type="PackedScene" path="res://assets/augments/passives/dl1_dorsal_load_frame/dl1_dorsal_load_frame.gltf" id="5"]
 
 [sub_resource type="Resource" id="mod_0"]
 script = ExtResource("2")
@@ -43,21 +44,9 @@ reason = "the frame anchors to the vertebrae"
 
 [sub_resource type="Resource" id="vis_0"]
 script = ExtResource("3")
-socket = &"spine"
-shape = 1
-size = Vector3(0.2, 0.36, 0.06)
-offset = Vector3(0.0, 0.18, -0.14)
-rotation_deg = Vector3(0.0, 0.0, 0.0)
-finish = "hardware"
-
-[sub_resource type="Resource" id="vis_1"]
-script = ExtResource("3")
-socket = &"chest"
-shape = 1
-size = Vector3(0.44, 0.04, 0.05)
-offset = Vector3(0.0, 0.18, -0.13)
-rotation_deg = Vector3(0.0, 0.0, 0.0)
-finish = "hardware"
+socket = &"root"
+scene = ExtResource("5")
+model_space = true
 
 [resource]
 script = ExtResource("1")
@@ -72,4 +61,4 @@ capacity = 3
 modifiers = Array[ExtResource("2")]([SubResource("mod_0"), SubResource("mod_1"), SubResource("mod_2"), SubResource("mod_3"), SubResource("mod_4")])
 requirements = Array[ExtResource("4")]([SubResource("req_0")])
 synergy = "Carry +55 kg removes the MG42's handling penalty; no wall-running at all."
-visuals = Array[ExtResource("3")]([SubResource("vis_0"), SubResource("vis_1")])
+visuals = Array[ExtResource("3")]([SubResource("vis_0")])

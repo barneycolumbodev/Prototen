@@ -631,3 +631,257 @@ def sheet(paths, out, cols=None):
     img.file_format = "PNG"
     img.save()
     log("sheet", out)
+
+
+# ====================================================================== shared kit for the part scripts (2026-11-09)
+# Small building blocks most part scripts need. Each takes `det` (True = HIGH, False = LOW): HIGH gets bevels
+# and more segments, LOW stays light. Pieces are built twice from the same code.
+def args_parser():
+    import argparse
+    argv = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--out", default="")
+    ap.add_argument("--preview", default="")
+    ap.add_argument("--quick", action="store_true")
+    ap.add_argument("--tex", type=int, default=1024)
+    ap.add_argument("--samples", type=int, default=40)
+    return ap.parse_args(argv)
+
+
+def setmat(ob, m):
+    ob.data.materials.clear()
+    ob.data.materials.append(m)
+    return ob
+
+
+def bev(ob, w, seg=2, angle=35):
+    """Angle-limited bevel with hardened normals, applied."""
+    b = ob.modifiers.new("bevel", "BEVEL")
+    b.width = w
+    b.segments = seg
+    b.limit_method = "ANGLE"
+    b.angle_limit = math.radians(angle)
+    b.harden_normals = True
+    ob.data.shade_smooth()
+    ob.modifiers.new("wn", "WEIGHTED_NORMAL").keep_sharp = True
+    return apply_all(ob)
+
+
+def cyl(name, p0, p1, r, mat, det, verts=24, w=0.0008, r2=None):
+    """Cylinder (or cone with r2) from p0 to p1; LOW gets half the sides."""
+    hs.set_detail(hs.HIGH if det else hs.LOW)
+    ob = setmat(hs.cyl_between(name, V(p0), V(p1), r, verts=verts, radius2=r2), mat)
+    if det and w:
+        return bev(ob, w)
+    ob.data.shade_smooth()
+    ob.modifiers.new("wn", "WEIGHTED_NORMAL").keep_sharp = True
+    return apply_all(ob)
+
+
+def slab(name, center, axes, size, mat, det, w=0.0012):
+    """Box of `size` on the axes (x, y, z) around `center`."""
+    bm = bmesh.new()
+    bmesh.ops.create_cube(bm, size=1.0)
+    bmesh.ops.transform(bm, matrix=basis4(*axes, center) @ Matrix.Diagonal((*size, 1)), verts=bm.verts)
+    me = bpy.data.meshes.new(name)
+    bm.to_mesh(me)
+    bm.free()
+    ob = bpy.data.objects.new(name, me)
+    bpy.context.scene.collection.objects.link(ob)
+    setmat(ob, mat)
+    return bev(ob, w) if det and w else ob
+
+
+def prism(name, pts2d, frame, depth, mat, det, w=0.001, angle=35):
+    """A flat outline (u, v) in `frame` = (origin, U, Vv, N) extruded `depth` along N (from 0 to depth):
+    machined housings, brackets, faceted caps."""
+    o, U, Vv, Nn = frame
+    bm = bmesh.new()
+    vs = [bm.verts.new(V(o) + V(U) * u + V(Vv) * v) for u, v in pts2d]
+    f = bm.faces.new(vs)
+    ext = bmesh.ops.extrude_face_region(bm, geom=[f])
+    bmesh.ops.translate(bm, verts=[g for g in ext["geom"] if isinstance(g, bmesh.types.BMVert)], vec=V(Nn) * depth)
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+    me = bpy.data.meshes.new(name)
+    bm.to_mesh(me)
+    bm.free()
+    ob = bpy.data.objects.new(name, me)
+    bpy.context.scene.collection.objects.link(ob)
+    setmat(ob, mat)
+    if det and w:
+        return bev(ob, w, angle=angle)
+    ob.data.shade_smooth()
+    ob.modifiers.new("wn", "WEIGHTED_NORMAL").keep_sharp = True
+    return apply_all(ob)
+
+
+def chamfer_rect(hu, hv, c):
+    """Rectangle outline (half sizes hu, hv) with corners cut by c."""
+    return [(-hu + c, -hv), (hu - c, -hv), (hu, -hv + c), (hu, hv - c), (hu - c, hv), (-hu + c, hv), (-hu, hv - c), (-hu, -hv + c)]
+
+
+def cable(name, pts, r, mat, det):
+    """A round cable along a smooth path through pts."""
+    hs.set_detail(hs.HIGH if det else hs.LOW)
+    ob = hs.tube_path(name, [tuple(V(p)) for p in pts], r, resolution=8 if det else 3)
+    setmat(ob, mat)
+    ob.data.shade_smooth()
+    return ob
+
+
+def ribbed_cable(name, pts, r, mat, det, rib_mat=None, step=0.012):
+    """A cable with clamp rings every `step` m (HIGH only): fibre trunks, hydraulic hoses."""
+    out = [cable(name, pts, r, mat, det)]
+    if det:
+        pts = [V(p) for p in pts]
+        L = 0.0
+        for a, b in zip(pts[:-1], pts[1:]):
+            seg = (b - a).length
+            n = max(1, int(seg / step))
+            for k in range(n):
+                p = a.lerp(b, (k + 0.5) / n)
+                d = (b - a).normalized()
+                out.append(cyl(name + "_rib", p - d * 0.0012, p + d * 0.0012, r * 1.25, rib_mat or mat, True, 12, 0.0))
+            L += seg
+    return out
+
+
+def frame_at(origin, normal, up_hint):
+    """(origin, U, Vv, N) with N = normal, Vv as close to up_hint as possible."""
+    n = V(normal).normalized()
+    v = (V(up_hint) - n * V(up_hint).dot(n)).normalized()
+    u = v.cross(n).normalized()
+    return (V(origin), u, v, n)
+
+
+def run(part_id, args, mats, views, bake_kw=None, bare=False, show=()):
+    """Bake + export (unless --quick), then the preview sheet. `views` are (name, camera, target, lens).
+    `show`: reference objects (other parts) made visible for the previews only, after the bake."""
+    log("pieces:", len(PIECES), "low tris", sum(tris(p.low) for p in PIECES))
+    kw = dict(cage=0.001, ray=0.004, ao=0.012, emission_strength=3.0)
+    kw.update(bake_kw or {})
+    if not args.quick and args.out:
+        bake_and_export(part_id, os.path.join(ROOT, args.out), mats, tex=args.tex, **kw)
+    else:
+        for p in PIECES:
+            p.low.hide_render = True
+    if args.preview:
+        body = _BODY[0]
+        body.show_head(bare)
+        for o in show:
+            o.hide_render = False
+        stage(body)
+        base = os.path.join(ROOT, args.preview) if not args.preview.startswith("/") else args.preview
+        os.makedirs(os.path.dirname(base), exist_ok=True)
+        paths = []
+        for name, cam, tgt, lens in views:
+            pth = f"{base}_{name}.png"
+            render(pth, cam, tgt, lens=lens, res=(720, 960), samples=args.samples)
+            paths.append(pth)
+        sheet(paths, base + ".png")
+        for pth in paths:
+            os.remove(pth)
+
+
+_BODY = []
+
+
+def body_once():
+    """The operative, loaded once per script (run() needs it for previews)."""
+    if not _BODY:
+        _BODY.append(Body())
+    return _BODY[0]
+
+
+def add_obstacle(body, part_id, key=None):
+    """Imports another part's exported hardware so casts can clear it (e.g. the DL-1 frame over the CT-7 plates).
+    The imported meshes are reference only: hidden from renders unless `show` is set on the returned objects."""
+    path = os.path.join(ROOT, "assets", "augments", "passives", part_id, part_id + ".gltf")
+    before = set(bpy.data.objects)
+    bpy.ops.import_scene.gltf(filepath=path)
+    new = [o for o in bpy.data.objects if o not in before and o.type == "MESH"]
+    me_obs = []
+    for o in new:
+        me_obs.append(o)
+    verts, polys = [], []
+    dg = bpy.context.evaluated_depsgraph_get()
+    for o in me_obs:
+        ev = o.evaluated_get(dg)
+        me = ev.to_mesh()
+        base = len(verts)
+        verts += [o.matrix_world @ v.co for v in me.vertices]
+        polys += [tuple(base + i for i in p.vertices) for p in me.polygons]
+        ev.to_mesh_clear()
+    body.bvh[key or part_id] = BVHTree.FromPolygons(verts, polys)
+    for o in me_obs:
+        o.hide_render = True
+    body.ref += me_obs
+    return me_obs
+
+
+def spline(pts, per_seg=8):
+    """Catmull-Rom points through `pts` (per_seg samples per span), ends included."""
+    P = [V(p) for p in pts]
+    P = [P[0] * 2 - P[1]] + P + [P[-1] * 2 - P[-2]]
+    out = []
+    for i in range(1, len(P) - 2):
+        p0, p1, p2, p3 = P[i - 1], P[i], P[i + 1], P[i + 2]
+        for k in range(per_seg):
+            t = k / per_seg
+            t2, t3 = t * t, t * t * t
+            out.append(0.5 * ((2 * p1) + (-p0 + p2) * t + (2 * p0 - 5 * p1 + 4 * p2 - p3) * t2 + (-p0 + 3 * p1 - 3 * p2 + p3) * t3))
+    out.append(P[-2])
+    return out
+
+
+def sweep(name, pts, normals, half_n, half_w, mat, det, power=4.0, per_seg=None, n=None, cap=True):
+    """A bar swept along a smooth path: rounded-rectangle section, `half_n` thick along each point's normal
+    (interpolated), `half_w` wide across it. Returns the mesh object."""
+    per = per_seg or (10 if det else 3)
+    path = spline(pts, per)
+    nrm = spline(normals, per)
+    stations = []
+    for i, p in enumerate(path):
+        t = (path[min(i + 1, len(path) - 1)] - path[max(i - 1, 0)]).normalized()
+        nn = V(nrm[i])
+        nn = (nn - t * nn.dot(t)).normalized()
+        w = t.cross(nn).normalized()
+        hn = half_n(i / (len(path) - 1)) if callable(half_n) else half_n
+        hw = half_w(i / (len(path) - 1)) if callable(half_w) else half_w
+        stations.append((p, nn, w, hn, hw))
+    hs.set_detail(hs.HIGH if det else hs.LOW)
+    ob = hs.loft(name, stations, n=n or (24 if det else 8), power=power, cap=cap)
+    setmat(ob, mat)
+    ob.data.shade_smooth()
+    ob.modifiers.new("wn", "WEIGHTED_NORMAL").keep_sharp = True
+    return apply_all(ob)
+
+
+def link_chain(name, pts, normals, size, gap, mat, det, rib_mat=None):
+    """Rigid links (boxes of `size` = along, across, thick) spaced along a smooth path: belt chutes, armoured
+    hoses. Returns a list of objects."""
+    path = spline(pts, 40)
+    nrm = spline(normals, 40)
+    # Arc-length resample.
+    acc = [0.0]
+    for a, b in zip(path[:-1], path[1:]):
+        acc.append(acc[-1] + (b - a).length)
+    step = size[0] + gap
+    out = []
+    s = step * 0.5
+    j = 0
+    while s < acc[-1] - step * 0.4:
+        while acc[j + 1] < s:
+            j += 1
+        f = (s - acc[j]) / max(acc[j + 1] - acc[j], 1e-9)
+        p = path[j].lerp(path[j + 1], f)
+        t = (path[j + 1] - path[j]).normalized()
+        nn = V(nrm[j]).lerp(V(nrm[j + 1]), f)
+        nn = (nn - t * nn.dot(t)).normalized()
+        w = nn.cross(t).normalized()
+        out.append(slab(name, p, (t, w, nn), size, mat, det, 0.0012))
+        if det:
+            out.append(slab(name + "_rib", p + nn * size[2] * 0.5, (t, w, nn), (size[0] * 0.35, size[1] * 0.8, 0.0024),
+                            rib_mat or mat, True, 0.0006))
+        s += step
+    return out

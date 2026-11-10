@@ -1,50 +1,17 @@
-[gd_resource type="Resource" script_class="TimeDilationData" load_steps=11 format=3]
+[gd_resource type="Resource" script_class="TimeDilationData" load_steps=9 format=3]
 
 [ext_resource type="Script" path="res://src/augments/active/time_dilation/time_dilation_data.gd" id="1"]
 [ext_resource type="Script" path="res://src/body/stat_modifier.gd" id="2"]
 [ext_resource type="Script" path="res://src/body/part_visual.gd" id="3"]
 [ext_resource type="Script" path="res://src/augments/active/time_dilation/time_dilation.gd" id="4"]
+[ext_resource type="PackedScene" path="res://assets/augments/rx9_reflex_overclock/rx9_reflex_overclock.gltf" id="6"]
 [ext_resource type="Script" path="res://src/body/stat_requirement.gd" id="5"]
 
 [sub_resource type="Resource" id="vis_0"]
 script = ExtResource("3")
-socket = &"neck"
-shape = 1
-size = Vector3(0.07, 0.05, 0.035)
-offset = Vector3(0, -0.008, -0.108)
-rotation_deg = Vector3(0, 0, 0)
-finish = "hardware"
-first_person = false
-
-[sub_resource type="Resource" id="vis_1"]
-script = ExtResource("3")
-socket = &"neck"
-shape = 1
-size = Vector3(0.05, 0.006, 0.004)
-offset = Vector3(0, -0.003, -0.127)
-rotation_deg = Vector3(0, 0, 0)
-finish = "glow"
-first_person = false
-
-[sub_resource type="Resource" id="vis_2"]
-script = ExtResource("3")
-socket = &"head"
-shape = 3
-size = Vector3(0.012, 0.006, 0.012)
-offset = Vector3(0.028, 0.022, -0.108)
-rotation_deg = Vector3(90, 0, 0)
-finish = "glow"
-first_person = false
-
-[sub_resource type="Resource" id="vis_3"]
-script = ExtResource("3")
-socket = &"head"
-shape = 3
-size = Vector3(0.012, 0.006, 0.012)
-offset = Vector3(-0.028, 0.022, -0.108)
-rotation_deg = Vector3(90, 0, 0)
-finish = "glow"
-first_person = false
+socket = &"root"
+scene = ExtResource("6")
+model_space = true
 
 [sub_resource type="Resource" id="req_0"]
 script = ExtResource("5")
@@ -65,7 +32,7 @@ capacity = 2
 modifiers = Array[ExtResource("2")]([])
 requirements = Array[ExtResource("5")]([SubResource("req_0")])
 synergy = "Needs processing ×1.15 (SA-2). Processing sets how fast you move while the world is slowed (×0.65 of real time at ×1.20, faster above) and how long the charge lasts."
-visuals = Array[ExtResource("3")]([SubResource("vis_0"), SubResource("vis_1"), SubResource("vis_2"), SubResource("vis_3")])
+visuals = Array[ExtResource("3")]([SubResource("vis_0")])
 behaviour = ExtResource("4")
 slot = 1
 deploy_time = 0.18
