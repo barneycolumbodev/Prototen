@@ -152,7 +152,7 @@ func test_presets_are_valid_and_different() -> void:
 		var key: String = "%.2f %.2f %.2f" % [b.stat(&"damage_per_kj"), b.load_scale() * b.stat(&"move_speed"), b.stat(&"signature")]
 		assert_false(seen.has(key), "%s plays differently" % lo.display_name)
 		seen[key] = true
-	assert_eq(seen.size(), 4)
+	assert_eq(seen.size(), 7)
 
 
 func test_loadout_round_trips_through_ids() -> void:

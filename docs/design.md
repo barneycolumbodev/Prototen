@@ -55,6 +55,7 @@ The owner's examples:
   - Built (2026-11-05) as **RX-9 Reflex Overclock** (nervous system; a neural co-processor at the base of the skull overclocks perception and motor control). World at 30 %, the operative at 65 % (moving, shooting, reloading); looking stays real time. 8 s of charge, refills at 0.45/s after 2 s, needs 1.5 s to start. Colour drains, a cool vignette, everything muffled and pitched down (your own gun less), FOV +3°, ragdoll/limb/flinch impulses ×1.8. Charge bar above the health bar. Values in `data/body/parts/rx9_reflex_overclock.tres`. Not yet: knocking living enemies into a ragdoll.
 
 - **Three actives on one button** (owner, 2026-11-07): "there's going to be basically 3 active augmentations that you can use at one time, but they're all activated by the same button, LB." **D-pad left / down / right** selects slot 1 / 2 / 3; **LB** toggles the selected part. A part keeps running when you select another (RX-9 can stay on while you raise the arm cannon); select it again and press LB to stop it. The HUD rows above the health bar show each part's D-pad arrow and charge, the selected one bright and tagged LB. RB is free. The Saiga's shell type moved to **D-pad up**. Loadout: RX-9 on D-pad left, GX-4 on D-pad down, right empty.
+  - 2026-11-10: with nine actives, the D-pad directions follow **the order the actives were installed in** (first = left, second = down, third = right; `BodyLoadout.slot_of`). A fourth pushes out the first. On the loadout screen, A on an installed active moves it to the next direction.
 - **GX-4 Gauss arm** (owner, 2026-11-07): "a prosthetic arm that's also a Gauss cannon... the character lifts up his hand and it badassly, complexly cyber transforms into this almost Doom-like Gauss cannon. You have 10 shots... a very special gore effect where it almost blows a spiral through them... a horrific electronic weapon. Very loud, really powerful, can overpenetrate... like the golden gun in Destiny." Built:
   - **Hardware:** the right forearm is a prosthetic coilgun in the graft-suit look (satin black plates with lit seams over a gunmetal chassis, pistons underneath). Inside, six copper drive coils on two guide rails; a capacitor bank at the elbow; three dorsal heat-sink fins; a ten-LED round counter on the top plate. Model and animation: `raw_assets/augments/gx4_gauss_arm/build.py` (Blender, 33.8k triangles, factor materials, not baked yet). Previews: `docs/previews/gx4_gauss_arm_sequence.png`, `gx4_gauss_arm_ingame.png`.
   - **Transformation (1.6 s, one keyframed clip):** the gun goes down and the open hand comes up, palm in; it holds a beat, the fingers curl into a fist one by one, the wrist turns forward, the forearm plates swing open on the glowing coils, the fist splits into a two-pronged fork, the rails telescope out through it, the six coils slide forward and lock one after another, the muzzle ring runs to the tip, and the fins stand up. A sound sequence is timed to every step (servos, joint clicks, hiss, six coil clacks, a power-up whine). LB folds it back (the clip reversed, 0.8 s); the gun comes back up.
@@ -62,6 +63,69 @@ The owner's examples:
   - **Beam:** a white-hot core and a blue double helix of ionized air that corkscrews round it, spreads out and lingers (`src/vfx/gauss_beam.*`, one mesh built once, 3 pooled).
   - **Gore** (`src/gore/gauss_gore.gd`): replaces the usual sprays. Blood and red mist leave every body it passes through along a double helix that spins outward (the corkscrew); blue arcs crawl between the body's joints for 1.5 s, sparks spit from the wounds, smoke curls off them, and the corpse spasms. At Maximum, chunks blow out of the exit wound; heads and limbs come apart on the usual energy thresholds.
   - Tuning: `data/body/parts/gx4_gauss_arm.tres` (timings, rounds, kick, glow), `data/weapons/gx4_slug.tres` (the round), `data/player/viewmodel_gx4.tres` (where the arm sits).
+
+### 3.4b The seven actives of 2026-11-10
+
+Owner (2026-11-10): "Based on the system of passive augments we have and how they set requirements, it's time to instantiate the ability keys, the active augmentations. Mono filament razor whip, shoulder launcher suicide drone, ultra prehensile nanotech mesh arm thing that grabs and can throw enemies... I need at least 4 more active augmentations added in this pass... with animations and models and stuff." The three the owner named, and four more *(Claude's choice: proposal)*: ram thrusters, a thermoptic shroud, a fan shield, an arc projector. All are hardware; each needs stats from the passives and changes with them.
+
+| Part | Where | Needs | What the body's stats change |
+|---|---|---|---|
+| **MW-7 Monofilament Whip** | right arm | processing ×1.10 | melee speed: how fast it swings and lashes; melee power: how deep it cuts |
+| **NT-5 Prehensile Mesh Arm** | left arm | strength ×1.15, structure ×1.20 | throw speed = 17 m/s × usable strength ÷ 1.15 × √impact (9–34 m/s) |
+| **BW-6 Bulwark Fan Shield** | left arm | structure ×1.15 | integrity = 14 kJ × structure ÷ 1.45; the R3 bash uses mass, strength and impact |
+| **SD-3 Shrike Drone Pod** | back hardpoint | connectivity 3 | link range = connectivity × 40 m; processing sharpens its turning |
+| **AD-2 Arc Projector** | back hardpoint | power supply 600 W | each arc takes 18 kJ of reserve; +1 chain link per 30 kJ of extra reserve; spare power refills charges faster |
+| **KR-5 Ram Thrusters** | back hardpoint | structure ×1.30 | the hit = the slide hit × 1.8 (mass × usable strength × impact); lighter bodies fly faster; 7 kJ and 4.5 kJ of heat per burn |
+| **TC-4 Thermoptic Shroud** | skin | cooling 420 W | traps 2.4 kW while up: cooling decides how long before it overheats and fails; signature scales the distance they see through it |
+
+- **Hands** (`Player.claim_hand`): a part that needs a hand takes it while it runs; two parts can't share a hand; the gun needs both, so it goes away while either is taken. Right hand: GX-4, whip. Left hand: mesh arm, shield. So the whip and the shield run together, or the Gauss arm behind the shield. The arc projector, ram thrusters, shroud, drone and RX-9 need no hand: the gun stays up.
+- **One part per arm** (`PartData.mount`): the GX-4 and the whip are both the right forearm; the mesh arm and the shield are both the left. Installing one takes the other out.
+- **A new body location, back hardpoints** (two slots): the drone pod (behind the left shoulder), the arc projector (over the right shoulder), the ram thrusters (shoulder blades).
+
+**MW-7 Monofilament Whip** (owner, §3.4: "Hold LT to stop looking around; the right stick then moves the whip through the air. A melee weapon.")
+- A reel on the back of the right wrist pays out 6.5 m of filament with a tungsten bead. The filament is 17 points simulated in the world: the reel is its root, the direction the hand points drags each link (hard near the hand, weakly at the bead, so the tip lags and cracks), every link keeps its length, the world stops it (sparks, a scrape).
+- **LT held:** the view freezes and the right stick places the hand (full stick = 62° to the side, 42° up or down). **RT:** a lash, a 115° sweep across the crosshair in 0.2 s, alternating sides. Otherwise it hangs low on the right.
+- Whatever a link crosses at 8 m/s or more is cut: an `AugHit` on the hitbox it crossed (95 damage × √melee power, treated as 1.5 kJ for wounds), so at Maximum gore limbs and heads come off, and corpses can be cut up. A swoosh trail behind the bead, a crack above 75 m/s, a short hit-stop and rumble on each cut.
+- Model: `raw_assets/augments/actives/mw7_monofilament_whip/build.py` (14k triangles): the graft-suit forearm, a copper drum between cheek plates, a feed boom that slides out over the knuckles, a ceramic nozzle whose jaws open, two blade guards that stand up, the hand making a two-finger point. Deploy clip 0.6 s.
+
+**NT-5 Prehensile Mesh Arm**
+- The left forearm is a braid of twelve carbon-nanotube muscle strands. Deploy (0.7 s): three clamp plates lift off, the braid loosens and turns, the hand draws into the wrist ring and a four-fingered claw takes its place.
+- **RT** shoots the tendril (75 m/s, 18 m reach) at whoever is nearest the crosshair. On contact the man is **seized** (`Enemy.seize`): he drops his gun, goes limp as a living ragdoll, leaves the fight, and is hauled to a point in front and left of the operative, where he takes the rounds meant for you. **RT again** throws him along the view (`Enemy.release`): he flies, anyone within a metre of his path is knocked down (killed at 13 m/s or more), and he dies where he lands. LB folds the arm and drops him. Four grabs stored, one back every 5 s.
+- The tendril and claw are drawn every frame as tubes along a curve from the wrist (`src/vfx/tube.gd`), with lit seams that pulse on a grab or throw.
+- Model: `nt5_mesh_arm/build.py` (10.7k triangles).
+
+**BW-6 Bulwark Fan Shield**
+- Seven boron-carbide leaves on a hub on the left forearm fan out into half a disc 0.4 m in radius (0.5 s; each leaf overshoots and latches). You hold it across your chest and look over the top edge.
+- Rounds from within 75° of the view are stopped (`Player.hit_interceptors`): no damage, sparks, a clank, the arm jolts; the round's energy in kJ comes out of the integrity (the charge). At zero it breaks: it folds and can't come up for 5 s. Integrity refills at 1.2 kJ/s after 3 s.
+- While it's up you move at 85 % and the R3 strike shoves ×1.6 (a shield bash). The rim seam goes from amber to red as it wears.
+- Model: `bw6_fan_shield/build.py` (24.7k triangles).
+
+**SD-3 Shrike** (owner, §3.4: "A pod on your shoulder opens and launches the drone. You fly it from its camera and detonate it.")
+- LB launches one of three: it leaves the pod, flies out in front of you unfolding (0.75 s), and the view cuts to its camera (84° field of view; the front rotors and the warhead frame the picture). Left stick flies (15 m/s), right stick looks, A/B climb and sink, **RT detonates**, **LB cuts the link**. Touching an enemy or hitting anything at 8 m/s or more sets it off.
+- The blast (`src/weapons/explosion.gd`): 6.5 m radius, 300 damage at the centre falling off to the edge, line of sight required, bodies thrown, limbs off close in at Maximum gore; it hurts the operative too.
+- The HUD shows link %, distance over range, battery (22 s), brackets with the distance on every enemy (red inside the blast radius). The picture breaks up beyond 60 % of the link range and the drone drops at 100 %. Your body stands where you left it (`BodyAppearance`, in your colours and hardware) and is still shot at: BODY UNDER FIRE flashes, and below 30 % health the link drops by itself.
+- New drones are printed one every 30 s. Model: `sd3_shrike_drone/build.py` (6.6k triangles, an unfold clip).
+
+**AD-2 Arc Projector**
+- An electrolaser on a mast over the right shoulder: finned capacitor body, quartz window, three tungsten electrodes. LB swings it up into the top right of the view (0.4 s) and it fires at whoever is nearest the crosshair within 16° and 22 m; LB again fires the second charge; it folds 2.2 s after the last one. The gun stays in your hands.
+- The arc does 130 damage to the first body, then jumps to the nearest body within 7 m (×0.7 each jump): two jumps with the base 60 kJ reserve, four with an FB-1. Bodies it doesn't kill stagger and lose their nerve; all of them arc and spasm (the GX-4's electrocution).
+- Each discharge takes 18 kJ from the power reserve (it's offline below that) and puts 3 kJ of heat into the body. Charges refill one per 10 s × spare power ÷ 300 W.
+- Model: `ad2_arc_projector/build.py` (9.3k triangles); the bolt is `src/vfx/arc_bolt.gd`.
+
+**KR-5 Ram Thrusters**
+- One press: thrown along the view at 27 m/s × √(125 kg ÷ mass) for 0.26 s (up to 22° up, 8° down), through anyone in the way (`Player.start_dash`). Each body gets the slide hit × 1.8: about 17 m/s from the Operator (lethal at 16), a shove from a light body. Speed lines, a 13° field-of-view punch, hit-stop on contact. Two burns stored, one back every 4.5 s.
+- No first-person model (they're on your back); on the body: two nacelles with bell nozzles and a gas bottle.
+
+**TC-4 Thermoptic Shroud**
+- LB raises it (0.5 s), LB drops it; 10 s of charge. While it's up enemies don't see the operative beyond 3 m × signature (`BodyModel.hidden_at`, checked in `Enemy._update_perception`); they still hear footsteps and remember where they last saw you. Firing shows you for 1.1 s and costs 1.2 s of charge; a hit shows you for 0.6 s.
+- Your own arms and gun turn to glass outlines; a lattice shimmers at the edge of the view.
+- It takes the skin slot (no HS-5) and traps 2.4 kW: ten seconds leaves the body near three quarters heat (which raises your signature once it's down); overheat and it fails.
+
+**On the body** (the loadout screen and the drone's view of you): each of the seven has baked hardware modelled on the operative (`raw_assets/augments/actives/body_hardware.py`): the three-tube pod, the stowed emitter head, the thruster nacelles, hexagonal emitter studs over the whole suit, the reel on the right wrist, the braid over the left forearm, the folded leaves along it.
+
+**Sounds:** 42 files synthesized by `raw_assets/audio/build_actives_sfx.py`.
+
+**Cloud captures:** `-- --demo=active:<part id>` with `--act=lash|grab|throw|fly|boom|arc|ram` (`src/core/debug/actives_demo.gd`).
 
 ### 3.4a Parts system and the operative (built 2026-11-05)
 
@@ -127,9 +191,9 @@ Owner (2026-11-08): "Each passive augment needs to make sense, have a high effor
 - **Signature now** = signature × (1 + stored heat fraction); enemies spot you at silhouette × signature.
 - **Power:** constant draw above supply drains the reserve; an empty reserve (brown-out) stops actives that draw power from starting. **Heat:** stored heat (30 kJ) fills when heat made exceeds cooling; full = overheated: no regen, a hot signature.
 - **Requirements:** a part can need stats (`StatRequirement`). If they're not met it stays installed (mass and capacity count) but is **offline**: no stats, power or heat; an offline active shows OFFLINE and the reason on the HUD and can't start. Requirements chain (taking one part offline can take others with it).
-- **Actives read stats:** RX-9 needs processing ×1.15; processing sets the operative's speed in slow motion (×0.65 of real time at ×1.20, faster above) and the charge (8 s at ×1.20). GX-4 needs structure ×1.25; bracing (structure × usable strength) scales its kick (×1 for the Operator, about half for the Juggernaut); power headroom sets how fast rounds recharge. FC-1 needs connectivity 1. Future drones: connectivity gates them and sets their range.
+- **Actives read stats** (the seven of 2026-11-10 are in §3.4b): RX-9 needs processing ×1.15; processing sets the operative's speed in slow motion (×0.65 of real time at ×1.20, faster above) and the charge (8 s at ×1.20). GX-4 needs structure ×1.25; bracing (structure × usable strength) scales its kick (×1 for the Operator, about half for the Juggernaut); power headroom sets how fast rounds recharge. FC-1 needs connectivity 1. Future drones: connectivity gates them and sets their range.
 
-**Body locations** (each holds one part unless noted): suit (fixed: the GS-2), cranial, eyes, inner ear, nervous system (2), skeleton, musculature, organs (2), torso armour, arms (2; the GX-4 takes one), hands, legs, spine, skin, blood.
+**Body locations** (each holds one part unless noted): suit (fixed: the GS-2), cranial, eyes, inner ear, nervous system (2), skeleton, musculature, organs (2), torso armour, arms (2; one part per arm among the GX-4, whip, mesh arm and shield), hands, legs, spine, back hardpoints (2; 2026-11-10), skin, blood.
 
 **Passive library** (37 passives; generated from the table in `tools/parts/gen_parts.py` into `data/body/parts/`, listed in `data/body/part_library.tres`). Each improves something and costs something (mass, power, heat, capacity, a requirement or a stat):
 
@@ -150,7 +214,7 @@ Owner (2026-11-08): "Each passive augment needs to make sense, have a high effor
 | Skin | HS-5 Heat Sinks (cooling +260 W; signature ×1.3); CM-1 Chromatophore Mesh (signature ×0.55, smaller silhouette; thinner); DS-2 Dermal Lattice (armour, health; holds heat) |
 | Blood | HN-1 Hemostatic Nanites (regen); OC-2 Respirocytes (speed, regen delay, cooling) |
 
-**Presets** (`data/body/presets/`, on the loadout screen): **Operator** (the default: TL-3, SA-2, EM-2, HS-5, RX-9, GX-4), **Ghost** (silent and quick; no Gauss arm), **Juggernaut** (CT-7, TN-9, HM-5, DL-1, GX-4: heavy hip fire, killing slides; no slow motion, no wall-running), **Marksman** (NL-3 + MR-1 feed the FC-1 and OB-5; light carbon frame, GX-4).
+**Presets** (`data/body/presets/`, on the loadout screen; 2026-11-10: three more built round the new actives: **Reaper** (whip + fan shield + ram thrusters + ram plating), **Handler** (Shrike drone + arc projector + RX-9 on the uplink, power cell and fuel bladder), **Wraith** (thermoptic shroud + mesh arm, quiet dampers, extra cooling)): **Operator** (the default: TL-3, SA-2, EM-2, HS-5, RX-9, GX-4), **Ghost** (silent and quick; no Gauss arm), **Juggernaut** (CT-7, TN-9, HM-5, DL-1, GX-4: heavy hip fire, killing slides; no slow motion, no wall-running), **Marksman** (NL-3 + MR-1 feed the FC-1 and OB-5; light carbon frame, GX-4).
 
 **Finished hardware** (Blender, baked 1024² texture sets; generators in `raw_assets/augments/passives/<id>/build.py`, sharing `_common.py`; each piece modelled on the operative's real surface and mounted on its bone). 20 of the 37 passives, every passive with hardware in the four presets, and the RX-9 active (2026-11-09: owner, "replace the placeholder assets, at least a decent amount of them"). Overview: `docs/previews/passives_overview.png`; per part: `docs/previews/<id>.png`. Parts that share a preset were built around each other (DL-1 clears CT-7's back plate and anchors through its spine channel; HM-5 leaves the back to them; RX-9 sits between NL-3's blades; the forearm is shared out: HS-5 outside, EM-2 front, TN-9 ulna edge, KS-2 inside, FC-1 inner wrist, TL-3 back of the wrist).
 
@@ -180,7 +244,16 @@ Owner (2026-11-08): "Each passive augment needs to make sense, have a high effor
 
 Of the other 17 passives, 9 still show neutral gunmetal or glow placeholders at their mount points (ER-2, TG-6, IR-3, NW-4, AB-1, SR-3, GP-1, LF-8, SB-2) and 8 are internal with nothing to show (CB-1, FT-1, HP-4, CH-2, FB-1, DS-2, HN-1, OC-2). Shared kit for new parts in `_common.py` (2026-11-09): `cyl`, `slab`, `prism`, `sweep`, `link_chain`, `cable`, `add_obstacle` (cast against another part so pieces clear it) and `run` (bake, export, preview sheet).
 
-**Loadout screen** (View button; Pause → Body status): rows for every body location and the presets. Up/down picks a row, left/right browses what fits there (the model and every number preview it, with green/red changes), A installs or applies, X removes, Y helmet, LT zooms on the upper body, the right stick turns the model, B closes and puts the loadout on the player (saved to `user://loadout.cfg`). The card shows mass, power, heat, capacity, every effect coloured by whether it helps, requirements met or not (with the current value) and how the part combines with others.
+**Loadout screen** (View button; Pause → Body status): rows for every body location, the presets, and (2026-11-10) an **Actives** row that lists all nine actives wherever they mount (A installs; A on an installed one moves it to the next D-pad direction; X removes). **LB** switches to the Colours page (§3.7). Up/down picks a row, left/right browses what fits there (the model and every number preview it, with green/red changes), A installs or applies, X removes, Y helmet, LT zooms on the upper body, the right stick turns the model, B closes and puts the loadout on the player (saved to `user://loadout.cfg`). The card shows mass, power, heat, capacity, every effect coloured by whether it helps, requirements met or not (with the current value) and how the part combines with others.
+
+### 3.7 Colours (built 2026-11-10)
+
+Owner (2026-11-10): "I also want a full part by part color customizer for my character."
+
+- **Colours page** on the loadout screen (LB). One row per suit piece: helmet, visor, undersuit, torso plates, arm plates, hand plates, leg plates, boots, trim and hardpoints, suit lights; then two rows per installed part with hardware: its paint and its lights. Left/right steps through a 27-colour palette, A opens sliders (hue, saturation, brightness, finish: as built / matte / satin / gloss / metal), X puts the piece back the way it was built. The model previews every change. Saved with the loadout (`user://loadout.cfg`).
+- **How it paints** (`src/body/body_colors.gd`, `src/body/suit_paint.gdshader`): the suit and the first-person arms are baked texture sets, so each has a **region map** beside it (`<name>_regions.png`, one byte per texel: which piece it is). `tools/colors/build_regions.py` makes them from what the bake already holds: the material from the ORM map (each source material has its own roughness and metallic), the body area from the mesh (which bone moves each triangle most). The shader looks the texel's piece up and replaces its colour, scaled by how light the texel was against the piece's own base colour, so grime, edge wear and the weave survive. Lights keep their brightness and take the new hue. A part's hardware is painted as one piece the same way.
+- **Where it shows:** the loadout screen, the first-person arms on every gun (arm plates, hand, undersuit, lights), the actives' first-person arms (their plates, weave and pads follow the suit by material name), and the operative seen from the Shrike.
+- Not yet: separate colours for left and right, patterns or decals, the guns.
 
 ---
 

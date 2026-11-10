@@ -127,6 +127,11 @@ func _ready() -> void:
 			var gauss: GaussDemo = GaussDemo.new()
 			gauss.room = self
 			add_child(gauss)
+		elif arg.begins_with("--demo=active:"):
+			var ad: ActivesDemo = ActivesDemo.new()
+			ad.room = self
+			ad.part_id = arg.trim_prefix("--demo=active:")
+			add_child(ad)
 		elif arg == "--demo=gore":
 			var gd: GoreDemo = GoreDemo.new()
 			gd.room = self

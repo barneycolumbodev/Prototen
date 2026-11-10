@@ -94,6 +94,8 @@ var stance: StringName = &"idle"
 var ragdolling: bool = false
 var frozen: bool = false
 var severed: Dictionary[StringName, bool] = {}
+## Held by the mesh arm (NT-5): the ragdoll never freezes while this is set.
+var hold_awake: bool = false
 
 var _model: Node3D
 var _tree: AnimationTree
@@ -300,13 +302,44 @@ func push_bone(zone: StringName, impulse: Vector3, point: Vector3) -> void:
 		pb.apply_impulse(impulse, point - pb.global_position)
 
 
+## The ragdoll's chest (what the mesh arm holds), or null.
+func chest_body() -> PhysicalBone3D:
+	return _bones.get(&"chest", _bones.get(&"spine"))
+
+
+## Pulls the ragdoll's chest toward `target`; the limbs trail behind.
+func drag_to(target: Vector3, rate: float, max_speed: float) -> void:
+	var pb: PhysicalBone3D = chest_body()
+	if pb == null or not ragdolling:
+		return
+	if frozen:
+		unfreeze()
+	pb.linear_velocity = ((target - pb.global_position) * rate).limit_length(max_speed)
+	pb.angular_velocity *= 0.9
+
+
+## Throws the whole ragdoll.
+func fling(velocity: Vector3) -> void:
+	if not ragdolling:
+		return
+	if frozen:
+		unfreeze()
+	for pb: PhysicalBone3D in _bones.values():
+		pb.linear_velocity = velocity
+
+
+func chest_velocity() -> Vector3:
+	var pb: PhysicalBone3D = chest_body()
+	return pb.linear_velocity if pb and ragdolling else Vector3.ZERO
+
+
 func is_simulating() -> bool:
 	return ragdolling and not frozen
 
 
 ## Stops simulating but keeps the pose (cheap from here on).
 func freeze() -> void:
-	if not ragdolling or frozen:
+	if not ragdolling or frozen or hold_awake:
 		return
 	# Local poses from what's shown (the simulated bones), parents first.
 	var inv: Transform3D = skeleton.global_transform.affine_inverse()

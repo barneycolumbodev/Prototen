@@ -1,0 +1,47 @@
+[gd_resource type="Resource" script_class="ThermopticShroudData" load_steps=9 format=3]
+
+[ext_resource type="Script" path="res://src/augments/active/cloak/thermoptic_shroud_data.gd" id="1"]
+[ext_resource type="Script" path="res://src/body/stat_modifier.gd" id="2"]
+[ext_resource type="Script" path="res://src/body/part_visual.gd" id="3"]
+[ext_resource type="Script" path="res://src/augments/active/cloak/thermoptic_shroud.gd" id="4"]
+[ext_resource type="Script" path="res://src/body/stat_requirement.gd" id="5"]
+[ext_resource type="PackedScene" path="res://assets/augments/actives_body/tc4_thermoptic_shroud/tc4_thermoptic_shroud.gltf" id="8"]
+
+[sub_resource type="Resource" id="req_0"]
+script = ExtResource("5")
+stat = &"heat_dissipation_w"
+at_least = 420.0
+reason = "it holds your heat in; without extra cooling it cooks you"
+
+[sub_resource type="Resource" id="vis_0"]
+script = ExtResource("3")
+socket = &"root"
+scene = ExtResource("8")
+model_space = true
+
+[resource]
+script = ExtResource("1")
+id = &"tc4_thermoptic_shroud"
+display_name = "TC-4 Thermoptic Shroud"
+description = "A skin of phased emitters that bends light round the body and holds its heat in. While it's up nobody sees you beyond three metres; they still hear you. Firing breaks it for a second and costs charge. Select it on the D-pad, LB raises or drops it."
+location = 10
+mass_kg = 1.5
+power_draw_w = 20.0
+heat_w = 10.0
+capacity = 3
+modifiers = Array[ExtResource("2")]([])
+requirements = Array[ExtResource("5")]([SubResource("req_0")])
+synergy = "Needs 420 W of cooling (HP-4 lungs or OC-2 blood; it takes the skin slot, so no HS-5 heat sinks). It traps 2.4 kW while it's up: a full ten seconds leaves the body at about three quarters heat (a hot signature afterwards); overheat and it fails. A low signature shortens the distance they see through it."
+visuals = Array[ExtResource("3")]([SubResource("vis_0")])
+behaviour = ExtResource("4")
+short_name = "TC-4"
+deploy_time = 0.5
+recover_time = 0.4
+cooldown_time = 0.8
+charge_max = 10.0
+drain_per_s = 1.0
+regen_per_s = 0.5
+regen_delay = 2.0
+min_to_start = 2.0
+active_power_w = 180.0
+active_heat_w = 2400.0

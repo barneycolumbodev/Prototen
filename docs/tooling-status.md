@@ -47,6 +47,12 @@ Checked 2026-11-01 in the first cloud session (CLAUDE.md §1 step 5, §10.4). Up
 - Final lightmap bake: 4096², 128 samples, 412 lights, about 11 minutes on 4 CPU cores. Re-exporting with `--nobake` reuses the lightmap (the unwrap is deterministic; checked).
 - Screenshots are still Compatibility/llvmpipe only (no Vulkan in the container), so the Mobile renderer's reflection probes (wet-street reflections) are unverified until the phone.
 
+## 2026-11-10: this session's container
+
+- The setup script had not run in this session's container: no Blender (binary or `bpy` module), no `mesa-vulkan-drivers`, no scipy. Installed by hand: `/opt/bpy-venv/bin/pip install bpy==5.2.3 numpy` (about a minute), `apt-get update && apt-get install -y mesa-vulkan-drivers libvulkan1`, `pip install scipy`. If a session starts with "Blender: bpy module (no binary)" but `tools/blender.sh` fails on `import bpy`, do the same.
+- With `mesa-vulkan-drivers` installed, `tools/screenshot.sh` renders with **the Mobile renderer on lavapipe** (the overlay says `mobile/vulkan llvmpipe`), about 4 fps. Without it Godot silently falls back to Compatibility. Features that only exist in Mobile (per-instance effects, the paint shader's arrays) should be checked this way.
+- `rm -rf` on a path built from shell variables is refused by the harness; scratch directories are created per run instead (`mkdir -p`), never cleaned from scripts.
+
 ## What the owner can fix in the environment settings (claude.ai/code)
 
 1. **Network access → Custom**, keep the defaults, add the hosts in CLAUDE.md §10.1 (at least `download.blender.org`, `extensions.blender.org`, `api.polyhaven.com`, `dl.polyhaven.org`, `ambientcg.com`).

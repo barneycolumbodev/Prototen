@@ -114,6 +114,18 @@ func report_contact(from: Enemy, where: Vector3) -> void:
 				e._enter(Enemy.State.ALERT)
 
 
+## One of them was snatched off his feet by the mesh arm: everyone who can
+## see it is shaken, and knows where the operative is.
+func on_ally_seized(taken: Enemy, by: Node) -> void:
+	_prune()
+	for e: Enemy in members:
+		if not is_instance_valid(e) or not e.alive or e == taken:
+			continue
+		if e.global_position.distance_to(taken.global_position) < 20.0:
+			e.morale -= 0.12
+			e._alerted_by(by)
+
+
 func on_death(dead: Enemy, hit: BallisticHit) -> void:
 	_prune()
 	var gory: bool = not dead.body.severed.is_empty() or (hit != null and hit.damage != null and hit.damage.has_flag(DamageInfo.Flags.HEADSHOT))

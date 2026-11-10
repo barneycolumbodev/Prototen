@@ -57,6 +57,7 @@ func _ready() -> void:
 
 
 func _exit_tree() -> void:
+	super._exit_tree()
 	# Never leave the world slowed or muffled (scene change, death, tests).
 	TimeControl.set_dilation(1.0, 1.0)
 	_set_lowpass(1.0)

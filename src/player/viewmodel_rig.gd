@@ -47,6 +47,7 @@ var _scoped: bool = false
 
 func _ready() -> void:
 	transform = config.weapon_transform()
+	add_to_group(&"suit_painted")
 	for scene: PackedScene in models:
 		var model: Node = scene.instantiate()
 		add_child(model)
@@ -109,6 +110,13 @@ func _ready() -> void:
 		glass.roughness = 0.05
 		glass.cull_mode = BaseMaterial3D.CULL_DISABLED
 		_lens.material_override = glass
+
+
+## The suit colours changed (BodyColors): repaint the arms. The guns have no
+## region maps, so they're left alone.
+func repaint(colors: BodyColors) -> void:
+	if colors:
+		colors.apply_to_model(self, false)
 
 
 func has_moving_slide() -> bool:

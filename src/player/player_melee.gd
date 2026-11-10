@@ -16,6 +16,8 @@ var cooldown: float = 0.0
 ## Counting down to the blow landing (-1: no strike in progress).
 var windup_left: float = -1.0
 var _scripted: bool = false
+## Multiplier on the shove from a running part (the fan shield: a shield bash).
+var push_bonus: float = 1.0
 
 
 func _ready() -> void:
@@ -33,7 +35,7 @@ func damage() -> float:
 
 func push_speed() -> float:
 	var b: BodyModel = player.body
-	return cfg.push * (b.mass_kg / 100.0) * b.usable_strength() * b.stat(&"impact")
+	return cfg.push * (b.mass_kg / 100.0) * b.usable_strength() * b.stat(&"impact") * push_bonus
 
 
 func recovery() -> float:

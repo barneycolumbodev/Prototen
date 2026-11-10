@@ -21,6 +21,8 @@ enum State { IDLE, DEPLOYING, ACTIVE, RECOVERING, COOLDOWN }
 var data: ActivePartData
 var body: BodyModel
 var player: Player
+## Its D-pad slot (1 = left, 2 = down, 3 = right), set by Augments.
+var slot: int = 0
 var state: State = State.IDLE
 var charge: float = 0.0
 ## 0..1: how far the effect is in (eases in on deploy, out on recover).
@@ -42,13 +44,46 @@ func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_PAUSABLE
 
 
+func _exit_tree() -> void:
+	if body:
+		body.remove_active_load(self)
+	if player and is_instance_valid(player) and hand() != &"":
+		player.release_hand(hand(), self)
+
+
 func is_running() -> bool:
 	return state == State.DEPLOYING or state == State.ACTIVE
 
 
 ## Name on the HUD row (the first word of the display name by default).
 func hud_name() -> String:
-	return data.display_name.get_slice(" ", 0)
+	return data.short_name if data.short_name != "" else data.display_name.get_slice(" ", 0)
+
+
+## The player can act (alive, not paused, input on): parts read their own
+## buttons (RT, LT, sticks) only while this is true.
+func can_input() -> bool:
+	return player != null and player.input_enabled and not player.look_blocked and not player.dead and not get_tree().paused
+
+
+## The level the operative is in: where a part puts things that live in the
+## world (a drone, a bolt, a flash of light).
+func world() -> Node:
+	if player and player.get_parent():
+		return player.get_parent()
+	return get_tree().current_scene
+
+
+func rumble(weak: float, strong: float, seconds: float) -> void:
+	for pad: int in Input.get_connected_joypads():
+		Input.start_joy_vibration(pad, weak, strong, seconds)
+
+
+## Which hand it needs while it runs (&"right", &"left"; &"" = none). Two
+## running parts can't share a hand, and the gun needs both: it's put away
+## while either hand is taken (Player.claim_hand).
+func hand() -> StringName:
+	return &""
 
 
 ## > 0: the HUD draws the charge as this many pips (one per use) instead of a bar.
@@ -87,6 +122,8 @@ func is_offline() -> bool:
 
 
 func can_start() -> bool:
+	if hand() != &"" and player and not player.hand_free(hand(), self):
+		return false
 	return state == State.IDLE and charge >= data.min_to_start and (player == null or not player.dead) and not is_offline()
 
 
@@ -159,7 +196,9 @@ func _enter(s: State) -> void:
 	match s:
 		State.DEPLOYING:
 			if body:
-				body.set_active_load(data.active_power_w, data.active_heat_w)
+				body.add_active_load(self, data.active_power_w, data.active_heat_w)
+			if hand() != &"" and player:
+				player.claim_hand(hand(), self)
 			_on_start()
 		State.ACTIVE:
 			blend = 1.0
@@ -168,10 +207,12 @@ func _enter(s: State) -> void:
 			if prev == State.DEPLOYING or prev == State.ACTIVE:
 				_since_stop = 0.0
 				if body:
-					body.set_active_load(0.0, 0.0)
+					body.remove_active_load(self)
 				_on_stop()
 			if s == State.COOLDOWN:
 				blend = 0.0
+				if hand() != &"" and player:
+					player.release_hand(hand(), self)
 	state_changed.emit(s)
 
 

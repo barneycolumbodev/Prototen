@@ -45,7 +45,10 @@ func _ready() -> void:
 ## --capture-parts=a,b installs parts first; --capture-preset=N applies a
 ## preset; --capture-browse=id puts the cursor on that part (its card and
 ## preview); --capture-yaw=deg turns the model; --capture-bare: helmet off;
-## --capture-zoom: the close-up.
+## --capture-zoom: the close-up; --capture-active=id: the Actives row on
+## that part; --capture-colors=channel:rrggbb[:finish],...: paint and show
+## the Colours page ("part+<id>" for a part's hardware);
+## --capture-color-row=N: the sliders open on row N.
 func _capture_setup() -> void:
 	var lib: PartLibrary = LoadoutStore.LIBRARY
 	for a: String in OS.get_cmdline_user_args():
@@ -67,6 +70,26 @@ func _capture_setup() -> void:
 				status.browse_to(p.id)
 		elif a.begins_with("--capture-yaw="):
 			status.set_yaw(deg_to_rad(a.get_slice("=", 1).to_float()))
+		elif a.begins_with("--capture-active="):
+			# The Actives row, on this part.
+			status.select_row(BodyStatus.ROW_ACTIVES)
+			status.browse_to(StringName(a.get_slice("=", 1)))
+		elif a.begins_with("--capture-colors="):
+			# channel:rrggbb[:finish],... painted on, then the Colours page.
+			for spec: String in a.get_slice("=", 1).split(","):
+				var bits: PackedStringArray = spec.split(":")
+				var ch: StringName = StringName(bits[0].replace("+", ":"))
+				status.working_colors.set_color(ch, Color.html(bits[1]))
+				if bits.size() > 2:
+					status.working_colors.set_finish(ch, bits[2].to_int())
+			status.colors_changed = true
+			status.set_page(BodyStatus.Page.COLOURS)
+		elif a.begins_with("--capture-color-row="):
+			status.color_row = a.get_slice("=", 1).to_int()
+			status.editing = true
+			status.set_page(BodyStatus.Page.COLOURS)
+			status.editing = true
+			status._refresh()
 		elif a == "--capture-bare":
 			status.toggle_helmet()
 		elif a == "--capture-zoom":
@@ -92,12 +115,14 @@ func rebuild() -> void:
 
 
 func _build_parts() -> void:
+	# D-pad slots follow the order the actives were installed in.
+	var at: int = 0
 	for a: ActivePartData in player.loadout.actives():
+		at += 1
+		if at > BodyLoadout.MAX_ACTIVES:
+			break
 		if a.behaviour == null:
 			push_warning("Augments: %s has no behaviour script" % a.id)
-			continue
-		if parts.has(a.slot):
-			push_warning("Augments: %s wants slot %d, which is taken" % [a.id, a.slot])
 			continue
 		var script: GDScript = a.behaviour as GDScript
 		var obj: Object = script.new() if script else null
@@ -108,7 +133,8 @@ func _build_parts() -> void:
 		node.name = String(a.id)
 		node.setup(a, player.body, player)
 		add_child(node)
-		parts[a.slot] = node
+		node.slot = at
+		parts[at] = node
 	for slot: int in [1, 2, 3]:
 		if parts.has(slot):
 			selected = slot

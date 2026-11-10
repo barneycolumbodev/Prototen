@@ -12,6 +12,9 @@ const PRESETS: Array[String] = [
 	"res://data/body/presets/ghost.tres",
 	"res://data/body/presets/juggernaut.tres",
 	"res://data/body/presets/marksman.tres",
+	"res://data/body/presets/reaper.tres",
+	"res://data/body/presets/handler.tres",
+	"res://data/body/presets/wraith.tres",
 ]
 
 static var path: String = "user://loadout.cfg"
@@ -54,8 +57,31 @@ static func save(lo: BodyLoadout) -> void:
 	if not enabled():
 		return
 	var cfg: ConfigFile = ConfigFile.new()
+	cfg.load(path)  # keep the colours section
 	cfg.set_value("loadout", "name", lo.display_name)
 	cfg.set_value("loadout", "parts", lo.ids())
 	var err: Error = cfg.save(path)
 	if err != OK:
 		push_warning("LoadoutStore: could not save (%s)" % error_string(err))
+
+
+## The colours picked on the loadout screen's Colours page (same file).
+static func load_colors() -> BodyColors:
+	if not enabled():
+		return BodyColors.new()
+	var cfg: ConfigFile = ConfigFile.new()
+	if cfg.load(path) != OK:
+		return BodyColors.new()
+	var saved: Dictionary = cfg.get_value("colors", "channels", {})
+	return BodyColors.from_dict(saved)
+
+
+static func save_colors(colors: BodyColors) -> void:
+	if not enabled():
+		return
+	var cfg: ConfigFile = ConfigFile.new()
+	cfg.load(path)
+	cfg.set_value("colors", "channels", colors.to_dict())
+	var err: Error = cfg.save(path)
+	if err != OK:
+		push_warning("LoadoutStore: could not save colours (%s)" % error_string(err))

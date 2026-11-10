@@ -345,3 +345,35 @@ Please try:
 - Device / renderer / settings:
 - Notes from the owner:
 - Follow-ups: the 9 remaining placeholders; first-person arms showing forearm and hand parts (EM-2, HS-5, TL-3, FC-1, DG-3, KS-2, TN-9); a second pass on whatever the owner flags.
+
+## 2026-11-10 — Seven active parts and the colour customizer (waiting for the owner)
+
+Owner: "it's time to instantiate the ability keys, the active augmentations. Mono filament razor whip, shoulder launcher suicide drone, ultra prehensile nanotech mesh arm thing that grabs and can throw enemies. I also want a full part by part color customizer for my character. I need at least 4 more active augmentations added in this pass... with animations and models and stuff."
+
+What changed (design §3.4b, §3.7):
+- **Seven new actives**, nine in all, any three on the D-pad (the order you install them: left, down, right). Each needs stats from the passives and changes with them:
+  - **MW-7 Monofilament Whip** (right arm; needs processing ×1.10): LB draws it. Hold LT and the right stick swings it; RT lashes across the crosshair. It cuts what it crosses.
+  - **NT-5 Prehensile Mesh Arm** (left arm; strength ×1.15, structure ×1.20): RT grabs the man under the crosshair and holds him in front of you; RT again throws him.
+  - **BW-6 Bulwark Fan Shield** (left arm; structure ×1.15): stops rounds from the front until its integrity is gone; R3 becomes a shield bash.
+  - **SD-3 Shrike Drone Pod** (back; connectivity 3): fly it from its camera, RT detonates. Range = connectivity × 40 m.
+  - **AD-2 Arc Projector** (back; 600 W supply): LB fires a chaining arc from a shoulder emitter; the gun stays up. 18 kJ of reserve per arc.
+  - **KR-5 Ram Thrusters** (back; structure ×1.30): a dash through people; the hit scales with mass, strength and impact.
+  - **TC-4 Thermoptic Shroud** (skin; 420 W cooling): invisible beyond 3 m; firing breaks it; it traps heat.
+- **Two parts at once by hand**: the whip or the Gauss arm in the right hand with the shield or the mesh arm on the left. The gun goes away while either hand is busy.
+- **Three new presets**: Reaper (whip, shield, ram), Handler (drone, arc, RX-9), Wraith (shroud, mesh arm).
+- **Colours page** (View, then LB): every suit piece and every installed part's hardware and lights; a palette plus hue / saturation / brightness / finish sliders. The first-person arms follow it.
+- Models: five first-person models with deploy clips (the whip arm, the braided mesh arm, the fan shield, the shoulder emitter, the drone) and baked hardware on the body for all seven. 42 new sounds.
+
+Cloud evidence: `tools/check.sh` passes, 258 tests (22 new: `tests/scene/test_actives.gd` plays each part in the test room: a lash cuts a man, the arm seizes, holds and throws one who dies where he lands, the shield stops a round from the front and not from behind and breaks, the drone kills with its warhead and the view comes back, the link drops out of range, the arc chains to a second man and takes 18 kJ, the ram goes through a man, the shroud hides and a shot breaks it, whip and shield run together; `tests/unit/test_actives_data.gd` covers slots, mounts, requirements, colours and the region maps). The pistol camera-kick test (frame-timing sensitive, noted on 2026-11-09) failed once while Blender bakes were using the CPU and passed on an idle machine. Captures with the Mobile renderer on the cloud's software Vulkan: `docs/previews/actives_ingame.png` (each part in the test room: lash, grab, throw, shield, drone view, detonation, arc, ram, shroud), `docs/previews/colours_ingame.png` (the Colours page, the painted operative seen from the drone, painted first-person arms), `docs/previews/actives_loadout.png` (the three new presets and the Actives row), `docs/previews/<id>_hero.png` (the first-person models' deploy clips), `docs/previews/<id>_body.png` (the hardware on the body). Not checked in the cloud: how any of it feels on a controller, sound levels, frame time on the phone (the drone view adds the operative's full body, about 35k triangles plus parts, while you fly).
+
+Please try (View → Presets has a build for each):
+1. **Reaper**: D-pad to the whip, LB. Hold LT and sweep the right stick through a group; then RT lashes without LT. Does steering it feel right, or should the stick move it faster or further? Is the filament easy enough to see?
+2. **Reaper**: shield up (LB on its slot) with the whip out. Walk into fire. Then R3 someone with the shield up, then the ram thrusters through a group.
+3. **Wraith**: raise the shroud, walk round a squad, grab one with the mesh arm (RT) and throw him at another (RT). Does the held body sit in a good place on screen?
+4. **Handler**: launch the Shrike. Is it flyable (speed, turning)? Is 22 s enough? Then the arc projector into a group.
+5. **Colours**: View → LB. Paint a few pieces. Do the plates take colour the way you expect? Anything that should be its own piece and isn't?
+6. Which of the seven is weakest? That one gets the next pass.
+
+- Device / renderer / settings:
+- Notes from the owner:
+- Follow-ups: left/right and pattern options for colours; forearm hardware on the first-person gun arms; enemies that react to the drone; RX-9 knocking living enemies into ragdolls; heat and barrel changes for the MG42 (M3).

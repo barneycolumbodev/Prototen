@@ -38,9 +38,9 @@ func test_default_loadout_is_the_base_suit_rx9_and_the_gauss_arm() -> void:
 	var actives: Array[ActivePartData] = lo.actives()
 	assert_eq(actives.size(), 2)
 	assert_eq(actives[0].id, &"rx9_reflex_overclock")
-	assert_eq(actives[0].slot, 1, "D-pad left")
+	assert_eq(lo.slot_of(&"rx9_reflex_overclock"), 1, "D-pad left")
 	assert_eq(actives[1].id, &"gx4_gauss_arm")
-	assert_eq(actives[1].slot, 2, "D-pad down")
+	assert_eq(lo.slot_of(&"gx4_gauss_arm"), 2, "D-pad down")
 
 
 func test_every_part_file_loads_with_known_stats() -> void:

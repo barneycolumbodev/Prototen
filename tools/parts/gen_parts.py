@@ -2,9 +2,10 @@
 """Generates the passive part library (docs/design.md §3.6) as Godot resources.
 
 Writes data/body/parts/<id>.tres for every passive below, data/body/part_library.tres (every part,
-passives and actives, in loadout-screen order) and the presets in data/body/presets/. The two actives
-(rx9_reflex_overclock, gx4_gauss_arm) are hand-edited .tres files; only their library entries are
-written here.
+passives and actives, in loadout-screen order) and the presets in data/body/presets/. The first two
+actives (rx9_reflex_overclock, gx4_gauss_arm) are hand-edited .tres files; only their library entries
+are written here. The seven actives of 2026-11-10 are written from the ACTIVE_DEFS table below (their
+behaviour-specific tuning is listed as extra lines; the defaults live in each *_data.gd).
 
 This table is the source of truth for the passives: change a number here and rerun
   python3 tools/parts/gen_parts.py
@@ -17,7 +18,7 @@ shape 1 box, 2 capsule, 3 cylinder) or a modelled scene (socket=None, scene=res 
 import os
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-HEAD, EYES, NERVOUS, SKELETON, MUSCLE, TORSO, ARMS, HANDS, LEGS, SPINE, SKIN, BLOOD, EARS, ORGANS, SUIT = range(15)
+HEAD, EYES, NERVOUS, SKELETON, MUSCLE, TORSO, ARMS, HANDS, LEGS, SPINE, SKIN, BLOOD, EARS, ORGANS, SUIT, BACK = range(16)
 BOX, CAPSULE, CYL = 1, 2, 3
 
 
@@ -239,9 +240,12 @@ part("oc2_respirocytes", "OC-2 Respirocyte Blood", BLOOD, 0.1, 10, 0, 2,
      "Synthetic oxygen-carrier cells and a coolant fraction in the blood. More endurance, and the blood itself carries heat away.")
 
 # ============================================================== actives (hand-edited files) and presets
-ACTIVES = ["rx9_reflex_overclock", "gx4_gauss_arm"]
-ORDER = [SUIT, HEAD, EYES, EARS, NERVOUS, SKELETON, MUSCLE, ORGANS, TORSO, ARMS, HANDS, LEGS, SPINE, SKIN, BLOOD]
-ACTIVE_LOC = {"rx9_reflex_overclock": NERVOUS, "gx4_gauss_arm": ARMS}
+ACTIVES = ["rx9_reflex_overclock", "gx4_gauss_arm", "mw7_monofilament_whip", "nt5_mesh_arm", "bw6_fan_shield", "sd3_shrike_drone",
+           "ad2_arc_projector", "kr5_ram_thrusters", "tc4_thermoptic_shroud"]
+ORDER = [SUIT, HEAD, EYES, EARS, NERVOUS, SKELETON, MUSCLE, ORGANS, TORSO, ARMS, HANDS, LEGS, SPINE, BACK, SKIN, BLOOD]
+ACTIVE_LOC = {"rx9_reflex_overclock": NERVOUS, "gx4_gauss_arm": ARMS, "mw7_monofilament_whip": ARMS, "nt5_mesh_arm": ARMS,
+              "bw6_fan_shield": ARMS, "sd3_shrike_drone": BACK, "ad2_arc_projector": BACK, "kr5_ram_thrusters": BACK,
+              "tc4_thermoptic_shroud": SKIN}
 
 PRESETS = {
     "loadout_default": ("Operator", "The all-rounder: titanium frame, fast muscle, cooling, the synaptic accelerator; RX-9 and the GX-4 arm.",
@@ -253,6 +257,18 @@ PRESETS = {
     "presets/juggernaut": ("Juggernaut", "Tungsten bones, hydraulic muscle, trauma plating and the dorsal frame: the MG42 from the hip, slides that break bodies. No slow motion, no wall-running.",
                            ["cs1_carapace", "ct7_trauma_plating", "tn9_tungsten_cores", "hm5_hydraulic_myomer", "dl1_dorsal_load_frame",
                             "gx4_gauss_arm", "ch2_cardiac_pump"]),
+    "presets/reaper": ("Reaper", "Close work: the monofilament whip in the right hand, the fan shield on the left arm, ram plating and the ram "
+                       "thrusters to get there. No guns while the whip or shield is out.",
+                       ["cs1_carapace", "tl3_titanium_skeleton", "sa2_synaptic_accelerator", "em2_myofibrils", "hs5_heat_sinks",
+                        "rp2_ram_plating", "kr5_ram_thrusters", "mw7_monofilament_whip", "bw6_fan_shield"]),
+    "presets/handler": ("Handler", "Fights from somewhere else: the cortical uplink flies the Shrike out to 120 m, the power cell and fuel "
+                        "bladder feed the arc projector (four links in the chain), RX-9 for when they find you.",
+                        ["cs1_carapace", "nl3_cortical_uplink", "sa2_synaptic_accelerator", "pc3_power_cell", "fb1_fuel_bladder",
+                         "rx9_reflex_overclock", "sd3_shrike_drone", "ad2_arc_projector"]),
+    "presets/wraith": ("Wraith", "Unseen until it has you: the thermoptic shroud on extra cooling, quiet dampers, and the mesh arm on a light "
+                       "carbon frame to pull men out of their squads.",
+                       ["cs1_carapace", "cb1_carbon_sheathing", "em2_myofibrils", "sa2_synaptic_accelerator", "hp4_hyperoxic_lungs",
+                        "oc2_respirocytes", "kd2_kinetic_dampers", "tc4_thermoptic_shroud", "nt5_mesh_arm"]),
     "presets/marksman": ("Marksman", "Linked: the cortical uplink and mesh relay feed the fire-control link and the ballistic eyes. Rifles and the Gauss arm on a light carbon frame.",
                          ["cs1_carapace", "nl3_cortical_uplink", "mr1_mesh_relay", "fc1_fire_control", "ob5_ocular_ballistics",
                           "vs1_vestibular_stabilizer", "sa2_synaptic_accelerator", "cb1_carbon_sheathing", "gx4_gauss_arm", "pc3_power_cell"]),
@@ -329,9 +345,159 @@ def write_list(path, script, script_class, fields, ids):
         fh.write("\n".join(out))
 
 
+# ============================================================== actives written from here (2026-11-10)
+def vm(eye, look):
+    return dict(eye=eye, look=look)
+
+
+A = []
+
+
+def active(id, name, short, loc, script, data_script, mass, power, heat, cap, desc, reqs, synergy, timing, charge, load,
+           mount="", scene=None, view=None, vis=(), extra=()):
+    A.append(dict(id=id, name=name, short=short, loc=loc, script=script, data_script=data_script, mass=mass, power=power, heat=heat,
+                  cap=cap, desc=desc, reqs=reqs, synergy=synergy, timing=timing, charge=charge, load=load, mount=mount, scene=scene,
+                  view=view, vis=list(vis), extra=list(extra)))
+
+
+active("mw7_monofilament_whip", "MW-7 Monofilament Whip", "MW-7", ARMS, "whip/whip.gd", "whip/whip_data.gd", 2.2, 10, 5, 2,
+       "A reel on the back of the right wrist pays out six and a half metres of monomolecular filament with a tungsten bead on the end. "
+       "Whatever it crosses at speed is cut: limbs, heads, bodies. Select it on the D-pad, LB to draw it or reel it in. Hold LT: the view "
+       "holds still and the right stick swings the whip. RT lashes across the crosshair.",
+       [("processing", 1.1, "the filament is steered by a guidance loop; without a co-processor it takes your own arm off")],
+       "Needs processing ×1.10 (SA-2). Melee speed sets how fast it swings and lashes; melee power how deep it bites. Takes the right arm: "
+       "not with the GX-4, and guns go away while it's out.",
+       (0.6, 0.4, 0.2), (1.0, 0.0, 1.0, 0.0, 0.0), (60, 40), mount="arm_right",
+       scene="res://assets/augments/mw7_monofilament_whip/mw7_monofilament_whip.gltf", view=vm((-0.42, 0.27, -0.3), (1.0, -0.06, -0.08)),
+       vis=[("forearm.R", BOX, (0.06, 0.07, 0.05), (0.0, 0.2, 0.05), "hardware"), ("forearm.R", CYL, (0.022, 0.05, 0.022), (0.0, 0.2, 0.075), "glow", (0, 0, 90))])
+active("nt5_mesh_arm", "NT-5 Prehensile Mesh Arm", "NT-5", ARMS, "mesh_arm/mesh_arm.gd", "mesh_arm/mesh_arm_data.gd", 5.5, 25, 15, 3,
+       "The left forearm is a braid of carbon-nanotube muscle mesh. Unbraided it pays out as an eighteen-metre tendril with a four-fingered "
+       "claw. Select it on the D-pad, LB to unbraid or fold it. RT shoots it at whoever is under the crosshair and hauls him in; he hangs in "
+       "front of you and takes the rounds meant for you. RT again throws him: he breaks whoever he hits and dies where he lands.",
+       [("strength", 1.15, "the braid pulls with whatever the shoulder gives it"), ("structure", 1.2, "a thrown man would take an organic shoulder with him")],
+       "Needs strength ×1.15 (EM-2, HM-5) and structure ×1.20. Throw speed = 17 m/s × usable strength ÷ 1.15 × √impact: the Juggernaut "
+       "throws a man through a wall. Takes the left arm: not with the BW-6 shield; guns go away while it's out, the GX-4 doesn't.",
+       (0.7, 0.45, 0.25), (4.0, 0.0, 0.2, 2.0, 1.0), (150, 120), mount="arm_left",
+       scene="res://assets/augments/nt5_mesh_arm/nt5_mesh_arm.gltf", view=vm((-0.42, 0.27, 0.3), (1.0, -0.06, 0.08)),
+       vis=[("forearm.L", CAPSULE, (0.048, 0.26, 0.048), (0.0, 0.13, 0.0), "hardware"), ("forearm.L", CYL, (0.052, 0.012, 0.052), (0.0, 0.02, 0.0), "glow")])
+active("bw6_fan_shield", "BW-6 Bulwark Fan Shield", "BW-6", ARMS, "shield/fan_shield.gd", "shield/fan_shield_data.gd", 8.0, 5, 0, 2,
+       "Seven boron-carbide leaves on a hub on the left forearm. They fan out into half a disc of shield in half a second. Rounds from the "
+       "front are stopped and their energy comes out of the shield's integrity; at zero it breaks and needs five seconds. Select it on the "
+       "D-pad, LB to raise or fold it. The R3 strike becomes a shield bash.",
+       [("structure", 1.15, "every round it stops goes through the forearm into the skeleton")],
+       "Needs structure ×1.15. Integrity = 14 kJ × structure ÷ 1.45. Takes the left arm: two-handed guns go away, so pair it with the GX-4 "
+       "or the whip in the right arm, or bash (R3: shove ×1.6, so mass, strength and impact).",
+       (0.5, 0.35, 0.3), (14.0, 0.0, 1.2, 3.0, 3.0), (0, 0), mount="arm_left",
+       scene="res://assets/augments/bw6_fan_shield/bw6_fan_shield.gltf", view=vm((0.03, 0.42, 0.44), (0.03, 0.42, -1.0)),
+       vis=[("forearm.L", BOX, (0.1, 0.38, 0.03), (-0.05, 0.2, 0.0), "plate"), ("forearm.L", CYL, (0.034, 0.05, 0.034), (-0.06, 0.14, 0.0), "hardware", (0, 0, 90))])
+active("sd3_shrike_drone", "SD-3 Shrike Drone Pod", "SD-3", BACK, "drone/shrike_drone.gd", "drone/shrike_drone_data.gd", 4.5, 20, 5, 3,
+       "A three-tube pod behind the left shoulder. Each tube holds a Shrike: a folding quadcopter with a shaped charge in its nose. Select it "
+       "on the D-pad, LB launches one and you see through its camera. Left stick flies, right stick looks, A and B climb and sink, RT "
+       "detonates, LB cuts the link. Fly it into anyone and it goes off. Your body stands where you left it.",
+       [("connectivity", 3.0, "flying it takes a full neural uplink")],
+       "Needs connectivity 3 (NL-3). Link range = connectivity × 40 m (120 m; 180 m with an MR-1 as well): the picture breaks up near the "
+       "limit and the drone drops beyond it. Processing sharpens its turning. New drones are printed one every 30 s.",
+       (0.75, 0.25, 0.6), (3.0, 0.0, 0.033, 2.0, 1.0), (120, 40),
+       scene="res://assets/augments/sd3_shrike_drone/sd3_shrike_drone.gltf",
+       vis=[("chest", BOX, (0.12, 0.2, 0.09), (0.13, 0.2, -0.16), "hardware"), ("chest", CYL, (0.03, 0.02, 0.03), (0.13, 0.31, -0.16), "glow")])
+active("ad2_arc_projector", "AD-2 Arc Projector", "AD-2", BACK, "arc/arc_projector.gd", "arc/arc_projector_data.gd", 5.0, 15, 10, 3,
+       "An electrolaser on a mast over the right shoulder. A UV laser ionizes a channel to whoever you're looking at and a capacitor bank "
+       "dumps down it; the arc jumps on to the next body in reach, and the next. The gun stays in your hands. Select it on the D-pad; LB "
+       "raises it and fires, LB again fires the second charge. Each discharge takes 18 kJ straight out of the power reserve.",
+       [("power_supply_w", 600.0, "the capacitor bank won't charge off less than 600 W")],
+       "Needs a 600 W supply (PC-3 power cell). Each arc costs 18 kJ of reserve: a 60 kJ reserve holds three. An FB-1 fuel bladder doubles "
+       "the reserve and adds two links to the chain. Spare power refills its charges faster.",
+       (0.4, 0.3, 0.3), (2.0, 0.0, 0.1, 1.5, 1.0), (0, 0),
+       scene="res://assets/augments/ad2_arc_projector/ad2_arc_projector.gltf", view=vm((-0.42, -0.13, -0.26), (1.0, -0.13, -0.26)),
+       vis=[("chest", BOX, (0.08, 0.05, 0.08), (-0.16, 0.3, -0.1), "hardware"), ("chest", CYL, (0.028, 0.14, 0.028), (-0.16, 0.37, -0.08), "plate", (90, 0, 0))])
+active("kr5_ram_thrusters", "KR-5 Ram Thrusters", "KR-5", BACK, "ram/ram_thrusters.gd", "ram/ram_thrusters_data.gd", 7.0, 10, 0, 2,
+       "Two cold-gas thrusters on the shoulder blades. One press throws you forward along your view at up to 27 m/s for a quarter of a "
+       "second, through anyone in the way. Two burns stored. Select it on the D-pad, LB fires.",
+       [("structure", 1.3, "the thrust goes through the spine")],
+       "Needs structure ×1.30 (TL-3, TN-9). The hit is the slide hit × 1.8: mass × usable strength × impact, so a heavy plated body kills "
+       "with it and a light one only shoves. Lighter bodies fly faster. Each burn costs 7 kJ of reserve and 4.5 kJ of heat.",
+       (0.05, 0.12, 0.15), (2.0, 0.0, 0.22, 0.8, 1.0), (0, 0),
+       vis=[("chest", CAPSULE, (0.045, 0.2, 0.045), (0.09, 0.14, -0.17), "hardware"), ("chest", CAPSULE, (0.045, 0.2, 0.045), (-0.09, 0.14, -0.17), "hardware"),
+            ("chest", CYL, (0.04, 0.012, 0.04), (0.09, 0.03, -0.17), "glow"), ("chest", CYL, (0.04, 0.012, 0.04), (-0.09, 0.03, -0.17), "glow")])
+active("tc4_thermoptic_shroud", "TC-4 Thermoptic Shroud", "TC-4", SKIN, "cloak/thermoptic_shroud.gd", "cloak/thermoptic_shroud_data.gd", 1.5, 20, 10, 3,
+       "A skin of phased emitters that bends light round the body and holds its heat in. While it's up nobody sees you beyond three metres; "
+       "they still hear you. Firing breaks it for a second and costs charge. Select it on the D-pad, LB raises or drops it.",
+       [("heat_dissipation_w", 420.0, "it holds your heat in; without extra cooling it cooks you")],
+       "Needs 420 W of cooling (HP-4 lungs or OC-2 blood; it takes the skin slot, so no HS-5 heat sinks). It traps 2.4 kW while it's up: a "
+       "full ten seconds leaves the body at about three quarters heat (a hot signature afterwards); overheat and it fails. A low signature "
+       "shortens the distance they see through it.",
+       (0.5, 0.4, 0.8), (10.0, 1.0, 0.5, 2.0, 2.0), (180, 2400),
+       vis=[("chest", CYL, (0.012, 0.004, 0.012), (0.09, 0.2, 0.125), "glow", (90, 0, 0)), ("chest", CYL, (0.012, 0.004, 0.012), (-0.09, 0.2, 0.125), "glow", (90, 0, 0)),
+            ("upper_arm.L", CYL, (0.01, 0.004, 0.01), (0.05, 0.12, 0.0), "glow", (0, 0, 90)), ("upper_arm.R", CYL, (0.01, 0.004, 0.01), (-0.05, 0.12, 0.0), "glow", (0, 0, 90)),
+            ("thigh.L", CYL, (0.01, 0.004, 0.01), (0.07, 0.2, 0.02), "glow", (0, 0, 90)), ("thigh.R", CYL, (0.01, 0.004, 0.01), (-0.07, 0.2, 0.02), "glow", (0, 0, 90))])
+
+
+def body_scene(pid):
+    """The part's hardware modelled on the operative, if it has been built."""
+    rel = f"assets/augments/actives_body/{pid}/{pid}.gltf"
+    return "res://" + rel if os.path.exists(os.path.join(ROOT, rel)) else None
+
+
+def write_active(p):
+    base = "res://src/augments/active/"
+    ext = [f'[ext_resource type="Script" path="{base}{p["data_script"]}" id="1"]',
+           '[ext_resource type="Script" path="res://src/body/stat_modifier.gd" id="2"]',
+           '[ext_resource type="Script" path="res://src/body/part_visual.gd" id="3"]',
+           f'[ext_resource type="Script" path="{base}{p["script"]}" id="4"]',
+           '[ext_resource type="Script" path="res://src/body/stat_requirement.gd" id="5"]']
+    subs, reqs, vis, tail = [], [], [], []
+    if p["scene"]:
+        ext.append(f'[ext_resource type="PackedScene" path="{p["scene"]}" id="6"]')
+        tail.append('scene = ExtResource("6")')
+    if p["view"]:
+        ext.append('[ext_resource type="Script" path="res://src/player/viewmodel_config.gd" id="7"]')
+        e, l = p["view"]["eye"], p["view"]["look"]
+        subs.append(f'[sub_resource type="Resource" id="view"]\nscript = ExtResource("7")\neye_position = Vector3({f(e[0])}, {f(e[1])}, {f(e[2])})\n'
+                    f'look_target = Vector3({f(l[0])}, {f(l[1])}, {f(l[2])})\n')
+        tail.append('viewmodel = SubResource("view")')
+    for i, (stat, least, why) in enumerate(p["reqs"]):
+        subs.append(f'[sub_resource type="Resource" id="req_{i}"]\nscript = ExtResource("5")\nstat = &"{stat}"\nat_least = {f(least)}\nreason = "{esc(why)}"\n')
+        reqs.append(f'SubResource("req_{i}")')
+    modelled = body_scene(p["id"])
+    if modelled:
+        ext.append(f'[ext_resource type="PackedScene" path="{modelled}" id="8"]')
+        subs.append('[sub_resource type="Resource" id="vis_0"]\nscript = ExtResource("3")\nsocket = &"root"\nscene = ExtResource("8")\nmodel_space = true\n')
+        vis.append('SubResource("vis_0")')
+    else:
+        for i, v in enumerate(p["vis"]):
+            sock, shape, size, off, finish = v[:5]
+            rot = v[5] if len(v) > 5 else (0, 0, 0)
+            subs.append(f'[sub_resource type="Resource" id="vis_{i}"]\nscript = ExtResource("3")\nsocket = &"{sock}"\nshape = {shape}\n'
+                        f'size = Vector3({f(size[0])}, {f(size[1])}, {f(size[2])})\noffset = Vector3({f(off[0])}, {f(off[1])}, {f(off[2])})\n'
+                        f'rotation_deg = Vector3({f(rot[0])}, {f(rot[1])}, {f(rot[2])})\nfinish = "{finish}"\n')
+            vis.append(f'SubResource("vis_{i}")')
+    cls = {"whip/whip_data.gd": "WhipData", "mesh_arm/mesh_arm_data.gd": "MeshArmData", "shield/fan_shield_data.gd": "FanShieldData",
+           "drone/shrike_drone_data.gd": "ShrikeDroneData", "arc/arc_projector_data.gd": "ArcProjectorData",
+           "ram/ram_thrusters_data.gd": "RamThrustersData", "cloak/thermoptic_shroud_data.gd": "ThermopticShroudData"}[p["data_script"]]
+    out = [f'[gd_resource type="Resource" script_class="{cls}" load_steps={len(ext) + len(subs) + 1} format=3]', ""] + ext + [""] + subs
+    dep, rec, cd = p["timing"]
+    cmax, drain, regen, delay, least = p["charge"]
+    out += ["[resource]", 'script = ExtResource("1")', f'id = &"{p["id"]}"', f'display_name = "{esc(p["name"])}"',
+            f'description = "{esc(p["desc"])}"', f'location = {p["loc"]}']
+    if p["mount"]:
+        out.append(f'mount = &"{p["mount"]}"')
+    out += [f'mass_kg = {f(p["mass"])}', f'power_draw_w = {f(p["power"])}', f'heat_w = {f(p["heat"])}', f'capacity = {p["cap"]}',
+            'modifiers = Array[ExtResource("2")]([])', f'requirements = Array[ExtResource("5")]([{", ".join(reqs)}])',
+            f'synergy = "{esc(p["synergy"])}"', f'visuals = Array[ExtResource("3")]([{", ".join(vis)}])',
+            'behaviour = ExtResource("4")', f'short_name = "{p["short"]}"',
+            f'deploy_time = {f(dep)}', f'recover_time = {f(rec)}', f'cooldown_time = {f(cd)}',
+            f'charge_max = {f(cmax)}', f'drain_per_s = {f(drain)}', f'regen_per_s = {f(regen)}', f'regen_delay = {f(delay)}',
+            f'min_to_start = {f(least)}', f'active_power_w = {f(p["load"][0])}', f'active_heat_w = {f(p["load"][1])}']
+    out += tail + p["extra"] + [""]
+    with open(os.path.join(ROOT, "data", "body", "parts", p["id"] + ".tres"), "w") as fh:
+        fh.write("\n".join(out))
+
+
 def main():
     for p in P:
         write_part(p)
+    for p in A:
+        write_active(p)
     locs = {p["id"]: p["loc"] for p in P}
     locs.update(ACTIVE_LOC)
     ordered = sorted(list(locs), key=lambda i: (ORDER.index(locs[i]), i in ACTIVES))

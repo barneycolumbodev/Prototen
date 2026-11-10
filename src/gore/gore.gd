@@ -120,6 +120,17 @@ func _ready() -> void:
 var gauss: GaussGore
 
 
+## Arcs crawl over a body and it spasms (the Gauss slug, the arc projector).
+func electrocute(body: EnemyBody) -> void:
+	if not enabled or body == null:
+		return
+	if gauss == null:
+		gauss = GaussGore.new()
+		gauss.name = "GaussGore"
+		add_child(gauss)
+	gauss.electrocute(body)
+
+
 func special_hit(hit: BallisticHit, body: EnemyBody) -> void:
 	match hit.weapon.gore_style:
 		&"gauss":
