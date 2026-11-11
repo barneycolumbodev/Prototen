@@ -345,6 +345,7 @@ func throw_gib(mesh: Mesh, xform: Transform3D, velocity: Vector3, spin: Vector3,
 	g.set_meta(&"radius", radius)
 	g.freeze = false
 	g.visible = true
+	g.collision_layer = Ballistics.LAYER_DEBRIS
 	g.global_transform = xform
 	g.linear_velocity = velocity
 	g.angular_velocity = spin
@@ -495,6 +496,7 @@ func clear() -> void:
 		if is_instance_valid(g):
 			g.visible = false
 			g.freeze = true
+			g.collision_layer = 0  # hidden gibs mustn't stop rounds (throw_gib turns it back on)
 
 
 func _process(delta: float) -> void:
