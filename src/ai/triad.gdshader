@@ -50,8 +50,16 @@ float vnoise(vec3 p) {
 			mix(hash3(i + vec3(0, 1, 1)), hash3(i + vec3(1, 1, 1)), f.x), f.y), f.z);
 }
 
+// Severed pieces (EnemyBody.SEGMENT_ORDER): bit i hides segment i + 1.
+// CUSTOM0.w holds each vertex's segment in the merged mesh (0 = the body).
+uniform int severed_mask = 0;
+
 void vertex() {
 	rest_pos = CUSTOM0.xyz;
+	int seg = int(CUSTOM0.w + 0.5);
+	if (seg > 0 && ((severed_mask >> (seg - 1)) & 1) != 0) {
+		VERTEX = vec3(0.0);  // collapsed: nothing to draw
+	}
 }
 
 void fragment() {

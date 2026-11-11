@@ -377,3 +377,24 @@ Please try (View → Presets has a build for each):
 - Device / renderer / settings:
 - Notes from the owner:
 - Follow-ups: left/right and pattern options for colours; forearm hardware on the first-person gun arms; enemies that react to the drone; RX-9 knocking living enemies into ragdolls; heat and barrel changes for the MG42 (M3).
+
+## 2026-11-11 — Movement overhaul, Soldier of Fortune gore, loadout grid (waiting for the owner)
+
+Owner: "an overhaul of movement... smooth and buttery... how much control the player has... It still feels a little bit jank"; "the gore system implemented in the detailed way in which it was supposed to... Soldier of Fortune, with decapitations, dismemberments, gibbing, but like based on ballistic impact and location"; "fix the menu... set it up as a menu where all the options are laid out and you can just click on the one you want... if it tells you, oh, you need this, you can just go look and click on it real quick."
+
+What changed:
+- **Movement** (design §5.7): the camera is drawn between physics ticks, so it moves evenly when the frame rate dips; turns keep their speed (they used to lose about 30 % through 90°); starts and stops ease; speed from a slide-hop, wall jump or dash carries after landing instead of being braked away; air steering without losing speed; tap A for a short hop, hold for full height; sprint holds while strafing forward; B just before landing slides on touchdown; mantles keep your speed; smoother wall-run entry; landing dip, sprint and slide FOV, slight strafe lean. Every value is on Pause → Tuning (Movement section) and copies out with "Copy values".
+- **Gore** (design §5.5, Maximum only): the body comes apart at the joint nearest where the round lands: head, arm at the upper arm, forearm, hand, leg above the knee, shin. What it takes depends on the energy the round leaves plus what it arrives with. A pistol round never takes a limb off by itself; a rail round takes any limb it passes through; buckshot does it up close, not at range; MG42 and M14 fire saw limbs off over a few rounds. Way past the threshold, the piece is destroyed instead of flying off. A Gauss slug to the torso, a drone blast up close, or a corpse under sustained fire bursts the whole body: head and limbs, ribs, spine, organs and gut fly, blood goes over everything near. Losing a leg puts him on the ground crawling; losing an arm makes him cower or run; stumps spurt.
+- **Loadout screen** (design §3.6): every part is a tile on one screen, grouped by body location, with presets and the nine actives at the top. D-pad or tap to select (the body and numbers preview it); A or a second tap installs or removes; X moves an active's D-pad slot. When a part needs a stat it doesn't have, the card names every part that supplies it (tap one to go there), those tiles get an amber outline, and **RB** jumps straight to the one that fixes it. The HUD's OFFLINE line names them too, and View opens on the offline part.
+
+Cloud evidence: `tools/check.sh` (see the commit for the count); new tests in `tests/unit/test_movement_config.gd`, `tests/scene/test_movement.gd`, `tests/scene/test_gore.gd`, `tests/scene/test_loadout.gd`. Captures: `docs/previews/loadout_grid.png`, `docs/previews/loadout_grid_fix.png` (phone resolution 1604×720), `docs/previews/gore_lineup*.png`, `docs/previews/gore_burst.png`, `docs/previews/gibs.png`. The gore captures used the Compatibility renderer: Vulkan wasn't available under Xvfb in this session. Not checked in the cloud: how movement feels on the controller, and frame time on the phone with several bursts in view (up to 32 gibs, one draw call each).
+
+Please try:
+1. **Movement** in Chinatown: sprint and snap 90° turns, slide-hop and keep running, wall-run and jump off, vault a ledge at a run. Smoother? Too slippery or too twitchy anywhere? If something's off, change it under Pause → Tuning → Movement and send the copied values.
+2. **Gore** in the range (gore on Maximum): rail carbine into an upper arm, a thigh and a neck; Saiga at arm's length to a forearm; MG42 on a corpse; the Gauss arm into a chest. Does what comes off match where you hit? Too much or too little?
+3. **Loadout**: View, take SA-2 out, select RX-9, press RB. Did it go straight to the fix? Can you read the tiles on the phone?
+4. Frame rate in the range after a few bursts.
+
+- Device / renderer / settings:
+- Notes from the owner:
+- Follow-ups: gore on the player's own melee and the whip (they use the same cuts already; tune blade_factor by feel); torso halves (a waist cut) if wanted; vertex-coloured gib pieces could get baked textures.

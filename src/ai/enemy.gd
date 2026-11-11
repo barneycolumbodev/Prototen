@@ -7,7 +7,11 @@ extends CharacterBody3D
 ## limp, crawl. Arms and hands: aim ruined, weapon dropped (and often a
 ## surrender). Gut: doubled over. Head and neck: kill. Pass-through wounds
 ## bleed. Plates (Enforcer) stop what Ballistics says they stop.
-## Gore at Maximum: heavy hits sever heads, forearms and shins.
+## Gore at Maximum (docs/design.md §5.5, GoreConfig): a hit takes the body
+## apart at the cut nearest where it landed, if it was violent enough
+## (energy left + a share of what arrived): heads, arms at the upper arm,
+## forearms, hands, legs above the knee, shins; destroyed outright when far
+## past it; sustained fire adds up. Enough into the torso bursts the body.
 ##
 ## Behaviour (combat mode): awareness from sight, gunfire and bodies; cover,
 ## peeking and bursts, a few shooters at a time (Squad tokens); near misses
@@ -23,12 +27,6 @@ enum Tactic { HOLD, MOVE, HIDE, PEEK, ADVANCE }
 const LEG_ZONES: Array[StringName] = [&"l_thigh", &"l_shin", &"l_foot", &"r_thigh", &"r_shin", &"r_foot"]
 const ARM_ZONES: Array[StringName] = [&"l_upper_arm", &"l_forearm", &"l_hand", &"r_upper_arm", &"r_forearm", &"r_hand"]
 const LOS_MASK: int = Ballistics.LAYER_WORLD
-## Severing (Maximum gore): energy at a zone in one shot (deposited + 15 % of
-## what arrived), or damage the zone has taken in total.
-const SEVER_LIMB_J: float = 700.0
-const SEVER_HEAD_J: float = 900.0
-const DESTROY_HEAD_J: float = 1600.0
-const SEVER_LIMB_DAMAGE: float = 85.0
 
 @export var config: EnemyConfig
 ## Firing-range target: reacts, never fires or walks away.
@@ -83,6 +81,12 @@ var _rounds_this_engagement: int = 0
 var _yaw: float = 0.0
 var _volley: int = -1
 var _volley_dep: Dictionary[StringName, float] = {}
+## Dismemberment (GoreConfig): violence at each cut this volley and in
+## total, and into the torso.
+var _cut_volley: Dictionary[StringName, float] = {}
+var _cut_total: Dictionary[StringName, float] = {}
+var _torso_volley: float = 0.0
+var _torso_total: float = 0.0
 var _bleeders: Array[Bleeder] = []
 var _drip_dist: float = 0.0
 var _last_pos: Vector3
@@ -188,6 +192,8 @@ func on_part_hit(part: HitboxPart, hit: BallisticHit) -> void:
 	if hit.volley_id != _volley:
 		_volley = hit.volley_id
 		_volley_dep.clear()
+		_cut_volley.clear()
+		_torso_volley = 0.0
 	var dep: float = hit.deposited()
 	_volley_dep[zone] = _volley_dep.get(zone, 0.0) + dep
 	var head: bool = zone == &"head" or zone == &"neck"
@@ -206,6 +212,7 @@ func on_part_hit(part: HitboxPart, hit: BallisticHit) -> void:
 	if not alive:
 		body.push_bone(zone, impulse * 1.2, hit.point)
 		_try_sever(zone, hit)
+		_try_burst(zone, hit)
 		return
 	var mult: float = config.zone_multipliers.get(zone, 1.0)
 	var dmg: float = hit.damage.amount * mult
@@ -218,6 +225,8 @@ func on_part_hit(part: HitboxPart, hit: BallisticHit) -> void:
 	suppression = minf(suppression + 0.45, 1.0)
 	morale -= 0.08 + clampf(dmg / 300.0, 0.0, 0.2)
 	if _try_sever(zone, hit) and not alive:
+		return
+	if _try_burst(zone, hit):
 		return
 	var kind: StringName = &"hit"
 	if health <= 0.0:
@@ -411,52 +420,89 @@ func _react(zone: StringName, dmg: float, hit: BallisticHit) -> void:
 		Sfx.play_at(&"enemy_pain", body.head_position(), -4.0, 0.12)
 
 
-## Maximum gore: cuts off a head, forearm or shin when the hit is violent enough.
+## Maximum gore: takes the body apart at the cut nearest the hit when the
+## volley is violent enough there, or enough has added up (GoreConfig).
+## Returns whether something came off.
 func _try_sever(zone: StringName, hit: BallisticHit) -> bool:
-	if not Gore.is_maximum():
+	if not Gore.is_maximum() or body.gibbed:
 		return false
-	var score: float = _volley_dep.get(zone, 0.0) + 0.15 * hit.energy_in
-	var total: float = zone_damage.get(zone, 0.0)
-	var part: StringName = &""
-	var destroy: bool = false
-	match zone:
-		&"head", &"neck":
-			if score > SEVER_HEAD_J:
-				part = &"head"
-				destroy = zone == &"head" and score > DESTROY_HEAD_J
-		&"l_forearm", &"l_hand", &"l_upper_arm":
-			if score > SEVER_LIMB_J * (1.6 if zone == &"l_upper_arm" else 1.0) or total > SEVER_LIMB_DAMAGE:
-				part = &"forearm_L"
-		&"r_forearm", &"r_hand", &"r_upper_arm":
-			if score > SEVER_LIMB_J * (1.6 if zone == &"r_upper_arm" else 1.0) or total > SEVER_LIMB_DAMAGE:
-				part = &"forearm_R"
-		&"l_shin", &"l_foot", &"l_thigh":
-			if score > SEVER_LIMB_J * (1.6 if zone == &"l_thigh" else 1.0) or total > SEVER_LIMB_DAMAGE * 1.2:
-				part = &"shin_L"
-		&"r_shin", &"r_foot", &"r_thigh":
-			if score > SEVER_LIMB_J * (1.6 if zone == &"r_thigh" else 1.0) or total > SEVER_LIMB_DAMAGE * 1.2:
-				part = &"shin_R"
-	if part == &"" or body.is_severed(part):
+	var cfg: GoreConfig = Gore.config
+	var type: DamageInfo.Type = hit.damage.type if hit.damage else DamageInfo.Type.BALLISTIC
+	var v: float = Dismemberment.violence(cfg, hit.deposited(), hit.energy_in, type)
+	var pick: Array = Dismemberment.nearest_cut(cfg, zone, hit.point, body.cut_points(), body.severed)
+	var seg: StringName = pick[0]
+	if seg == &"":
 		return false
-	var v: Vector3 = hit.direction * clampf(hit.damage.impulse * 0.6, 2.0, 9.0) + Vector3.UP * 1.5
-	if not body.sever(part, v, destroy):
+	var reach: float = pick[1]
+	var share: float = v * reach
+	_cut_volley[seg] = _cut_volley.get(seg, 0.0) + share
+	if Dismemberment.adds_up(cfg, seg, share):
+		_cut_total[seg] = _cut_total.get(seg, 0.0) + share
+	var volley: float = _cut_volley[seg]
+	var so_far: float = _cut_total.get(seg, 0.0)
+	var result: Dismemberment.Outcome = Dismemberment.outcome(cfg, seg, volley, so_far)
+	if result == Dismemberment.Outcome.NONE:
 		return false
-	_bleeders.append(Bleeder.new(part))
-	Sfx.play_at(&"gore_sever", hit.point, 0.0, 0.1)
-	if alive:
-		if part == &"head":
-			health = 0.0
-			die(hit, zone)
+	var destroy: bool = result == Dismemberment.Outcome.PULP or (seg == &"head" and zone == &"head" and volley >= cfg.head_destroy_j)
+	var speed: float = Dismemberment.fling_speed(cfg, volley)
+	var v_out: Vector3 = hit.direction * speed + Vector3.UP * minf(1.5 + speed * 0.15, 3.0)
+	return sever(seg, v_out, destroy, hit, zone)
+
+
+## Cuts `seg` off (and what's on it) and makes the man react. Also used by
+## blasts. Returns whether it came off.
+func sever(seg: StringName, velocity_out: Vector3, destroy: bool, hit: BallisticHit = null, zone: StringName = &"chest") -> bool:
+	var group: Array[StringName] = body.attached(seg)
+	if not body.sever(seg, velocity_out, destroy):
+		return false
+	_bleeders.append(Bleeder.new(seg))
+	Sfx.play_at(&"gore_sever", body.cut_point(seg), 0.0, 0.1)
+	if not alive:
+		return true
+	if seg == &"head":
+		health = 0.0
+		die(hit, zone)
+		if hit:
 			EventBus.target_hit.emit(&"kill", hit)
-		elif part.begins_with("shin"):
-			_enter(State.CRAWL)
-			morale = 0.0
-		else:
-			has_gun = has_gun and part != &"forearm_R"
-			morale = 0.0
-			_enter(State.COWER if _rng.randf() < 0.5 else State.FLEE)
-		bleed_dps = maxf(bleed_dps, 9.0)
+	elif seg.begins_with("thigh") or seg.begins_with("shin"):
+		_enter(State.CRAWL)
+		morale = 0.0
+	else:
+		has_gun = has_gun and not (&"hand_R" in group)
+		morale = 0.0
+		_enter(State.COWER if _rng.randf() < 0.5 else State.FLEE)
+	bleed_dps = maxf(bleed_dps, 14.0 if seg.begins_with("upper_arm") or seg.begins_with("thigh") else 9.0)
 	return true
+
+
+## Maximum gore: enough into the torso in one volley (or into a corpse over
+## time) blows the whole body apart. Returns whether it did.
+func _try_burst(zone: StringName, hit: BallisticHit) -> bool:
+	if not Gore.is_maximum() or body.gibbed or not zone in Dismemberment.TORSO:
+		return false
+	var cfg: GoreConfig = Gore.config
+	var type: DamageInfo.Type = hit.damage.type if hit.damage else DamageInfo.Type.BALLISTIC
+	var v: float = Dismemberment.violence(cfg, hit.deposited(), hit.energy_in, type)
+	_torso_volley += v
+	_torso_total += v
+	if _torso_volley < cfg.gib_volley_j and (alive or _torso_total < cfg.gib_corpse_j):
+		return false
+	burst(hit.direction * Dismemberment.fling_speed(cfg, _torso_volley), hit, zone)
+	return true
+
+
+## Blown apart (a huge hit, a blast up close, a corpse shot to pieces).
+func burst(push: Vector3, hit: BallisticHit = null, zone: StringName = &"chest") -> void:
+	if body.gibbed:
+		return
+	if alive:
+		health = 0.0
+		die(hit, zone)
+		if hit:
+			EventBus.target_hit.emit(&"kill", hit)
+	_bleeders.clear()
+	body.burst(push)
+	Sfx.play_at(&"gore_sever", body.global_position + Vector3.UP, 3.0, 0.1)
 
 
 ## `cause`: &"shot", &"bleed" (bled out) or &"burn" (burned to death).

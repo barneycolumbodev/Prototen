@@ -268,7 +268,7 @@ Each milestone ends with an APK on the owner's phone and an entry in `docs/playt
    2026-11-08 (owner): the passive system: ~35 core stats with relationships (load, structure cap, momentum, link range, heat), 37 passives with tradeoffs and requirements, four presets, a loadout screen, the R3 strike; four parts with finished hardware (design §3.6).
    2026-11-10 (owner): seven more actives with models, deploy animations and sounds (the monofilament whip, the Shrike drone, the mesh arm that grabs and throws, plus ram thrusters, a thermoptic shroud, a fan shield and an arc projector: nine in all, any three on the D-pad), and the part-by-part colour customizer (design §3.4b, §3.7).
    Started 2026-11-05 (owner): the parts system foundation, the operative's base body (the GS-2 graft suit; helmet on or off, with the owner's face; Y on the body-status screen) on a body-status screen, and the time slowdown (RX-9 on LB). See design §3.4, §3.4a. 2026-11-07: three actives on LB picked with the D-pad, and the second active, the GX-4 Gauss arm.
-4. **M3 – Heavy weapons.** MG42-style machine gun with heat and barrel changes (the gun itself, its handling and a flat carry penalty were pulled into M1 by the owner on 2026-11-01; heat and barrel changes stay here). Heavy armor parts, two more actives, dismemberment, machine-gunner and anti-augment enemies.
+4. **M3 – Heavy weapons.** MG42-style machine gun with heat and barrel changes (the gun itself, its handling and a flat carry penalty were pulled into M1 by the owner on 2026-11-01; heat and barrel changes stay here). Heavy armor parts, two more actives, dismemberment (pulled forward and built 2026-11-11, design §5.5), machine-gunner and anti-augment enemies.
    Done when sustained fire tears up a room and the phone holds its frame rate.
 5. **M4 – Look and sound.** Art direction applied to two or three test areas, lighting, an audio pass.
 
@@ -280,7 +280,7 @@ What comes after the prototype gets decided then.
 
 - Title.
 - Does the controller hold the phone? That decides whether gyro aiming is worth building.
-- How far gore goes at the maximum setting.
+- ~~How far gore goes at the maximum setting.~~ Owner, 2026-11-11: Soldier of Fortune style: decapitation, dismemberment and gibbing, driven by ballistic impact and hit location (design §5.5).
 - Real gun names (Five-seveN, MG42, SPAS-12) are fine in a prototype. Selling the game with them might need licenses, so decide before any release.
 - Budget for Meshy and ElevenLabs, if any.
 - Public or private repo.

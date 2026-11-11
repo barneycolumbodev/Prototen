@@ -132,6 +132,10 @@ func _ready() -> void:
 			ad.room = self
 			ad.part_id = arg.trim_prefix("--demo=active:")
 			add_child(ad)
+		elif arg == "--demo=gore-lineup":
+			var gl: GoreLineup = GoreLineup.new()
+			gl.room = self
+			add_child(gl)
 		elif arg == "--demo=gore":
 			var gd: GoreDemo = GoreDemo.new()
 			gd.room = self

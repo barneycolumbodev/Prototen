@@ -9,8 +9,11 @@ extends Node3D
 ##   oldest fades out. Exit sprays put a directional splat on the wall behind
 ##   the target after the blood's flight time; drips land on the floor.
 ## - Pools grow under bodies (≤ 8, MultiMesh).
-## - Gibs: severed parts and chunks as pooled rigid bodies (≤ 14), frozen
-##   after a few seconds; they bleed and splat where they land.
+## - Gibs: severed parts and chunks as pooled rigid bodies (≤ 28), frozen
+##   after a few seconds; they bleed and splat where they land. A burst body
+##   throws modelled pieces (ribs, spine, pelvis, organs, gut, meat;
+##   assets/gore/gibs.gltf), a destroyed head its skull cap and jaw.
+## Dismemberment rules and numbers: GoreConfig (data/gore/gore_default.tres).
 ## Wounds on bodies are painted by the enemy shader (src/ai/triad.gdshader),
 ## so they stick to the skin exactly; see EnemyBody.add_wound().
 ## Settings.gore_level: OFF (no blood), STANDARD, MAXIMUM (dismemberment,
@@ -21,7 +24,12 @@ enum Level { OFF, STANDARD, MAXIMUM }
 const MAX_SPLATS: int = 48
 const MAX_POOLS: int = 8
 const MAX_SPRAYS: int = 12
-const MAX_GIBS: int = 14
+## Raised from 14 (2026-11-11) for whole-body gibbing: one burst throws ~20
+## pieces. Each is one draw call until it's recycled; see the perf-budget
+## skill. When full, small chunks go before limbs and heads (`big`).
+const MAX_GIBS: int = 32
+## A gib this big (radius, m) is a limb or a head: kept over chunks.
+const BIG_GIB: float = 0.075
 const GIB_FREEZE_TIME: float = 4.0
 const SPLAT_FADE_TIME: float = 1.0
 const BLOOD_COLOR: Color = Color(0.42, 0.02, 0.02)
@@ -30,6 +38,14 @@ const SPLAT_TEX: Texture2D = preload("res://assets/gore/splat_atlas.png")
 const POOL_TEX: Texture2D = preload("res://assets/gore/pool.png")
 const DROP_TEX: Texture2D = preload("res://assets/gore/drop.png")
 const MIST_TEX: Texture2D = preload("res://assets/gore/mist.png")
+const GIBS_SCENE: PackedScene = preload("res://assets/gore/gibs.gltf")
+const TORSO_GIBS: Array[StringName] = [&"gib_ribs", &"gib_spine", &"gib_pelvis", &"gib_organ_a", &"gib_organ_b",
+		&"gib_gut", &"gib_meat_a", &"gib_meat_b", &"gib_meat_c", &"gib_ribs"]
+
+## Dismemberment and gibbing numbers.
+var config: GoreConfig = preload("res://data/gore/gore_default.tres")
+## Bodies blown apart (tests, overlay).
+var bursts: int = 0
 
 ## Tests switch effects off to stay deterministic.
 var enabled: bool = true
@@ -52,11 +68,13 @@ var _mists: Array[CPUParticles3D] = []
 var _mist_next: int = 0
 var _gibs: Array[RigidBody3D] = []
 var _gib_age: Dictionary[RigidBody3D, float] = {}
-var _gib_next: int = 0
 ## Splats waiting for the blood to arrive.
 var _pending: Array[Pending] = []
 var _drop_mat: StandardMaterial3D
 var _mist_mat: StandardMaterial3D
+## Modelled gib pieces by name, and their shared wet material.
+var _gib_lib: Dictionary[StringName, Mesh] = {}
+var _gib_mat: StandardMaterial3D
 
 
 class Pending:
@@ -298,7 +316,7 @@ func pool_under(at: Vector3, radius: float) -> void:
 ## Throws a gib: `mesh` posed at `xform`, with velocity, bleeding as it flies.
 ## Returns the body (or null when gore is off).
 func throw_gib(mesh: Mesh, xform: Transform3D, velocity: Vector3, spin: Vector3, radius: float,
-		material: Material = null) -> RigidBody3D:
+		material: Material = null, mesh_scale: float = 1.0) -> RigidBody3D:
 	if not is_on() or mesh == null:
 		return null
 	var g: RigidBody3D
@@ -306,13 +324,25 @@ func throw_gib(mesh: Mesh, xform: Transform3D, velocity: Vector3, spin: Vector3,
 		g = _new_gib()
 		_gibs.append(g)
 	else:
-		g = _gibs[_gib_next]
-		_gib_next = (_gib_next + 1) % MAX_GIBS
+		g = _oldest_gib(radius < BIG_GIB)
+		if g == null:
+			return null  # every slot holds a limb or a head: skip the chunk
+	_gib_serial += 1
+	g.set_meta(&"born", _gib_serial)
+	g.set_meta(&"big", radius >= BIG_GIB)
 	var mi: MeshInstance3D = g.get_node(^"Mesh") as MeshInstance3D
 	mi.mesh = mesh
 	mi.material_override = material
-	var shape: SphereShape3D = (g.get_node(^"Shape") as CollisionShape3D).shape as SphereShape3D
-	shape.radius = clampf(radius, 0.03, 0.2)
+	mi.scale = Vector3.ONE * mesh_scale
+	# A box the size of the piece, round its middle (gib meshes are centred
+	# on their own middle: EnemyBody.gib_mesh), so it lands and stops
+	# where it looks like it should instead of rolling on a ball.
+	var cs: CollisionShape3D = g.get_node(^"Shape") as CollisionShape3D
+	var box: BoxShape3D = cs.shape as BoxShape3D
+	var aabb: AABB = mesh.get_aabb()
+	box.size = (aabb.size * mesh_scale).max(Vector3.ONE * 0.04)
+	cs.position = aabb.get_center() * mesh_scale
+	g.set_meta(&"radius", radius)
 	g.freeze = false
 	g.visible = true
 	g.global_transform = xform
@@ -322,6 +352,112 @@ func throw_gib(mesh: Mesh, xform: Transform3D, velocity: Vector3, spin: Vector3,
 	g.set_meta(&"splatted", false)
 	_gib_age[g] = 0.0
 	return g
+
+
+var _gib_serial: int = 0
+
+
+## The gib to recycle: the oldest small one; the oldest of all only if a
+## limb or head is being thrown and every slot holds one. A chunk never
+## pushes out a limb.
+func _oldest_gib(small: bool) -> RigidBody3D:
+	var best: RigidBody3D = null
+	var best_any: RigidBody3D = null
+	var best_born: int = 0
+	var any_born: int = 0
+	for g: RigidBody3D in _gibs:
+		var born: int = g.get_meta(&"born", 0)
+		var big: bool = g.get_meta(&"big", false)
+		if best_any == null or born < any_born:
+			best_any = g
+			any_born = born
+		if not big and (best == null or born < best_born):
+			best = g
+			best_born = born
+	if best:
+		return best
+	return null if small else best_any
+
+
+## The modelled gib meshes (loaded once).
+func gib_piece(name: StringName) -> Mesh:
+	if _gib_lib.is_empty():
+		var root: Node = GIBS_SCENE.instantiate()
+		for n: Node in root.find_children("*", "MeshInstance3D", true, false):
+			var mi: MeshInstance3D = n as MeshInstance3D
+			_gib_lib[StringName(mi.name)] = mi.mesh
+		root.free()
+		_gib_mat = StandardMaterial3D.new()
+		_gib_mat.vertex_color_use_as_albedo = true
+		_gib_mat.roughness = 0.28
+		_gib_mat.metallic_specular = 0.6
+	return _gib_lib.get(name)
+
+
+func _gib_radius(m: Mesh) -> float:
+	return clampf(m.get_aabb().size.length() * 0.35, 0.03, 0.12)
+
+
+## A head blown apart: skull cap, jaw, chunks, a red cloud.
+func burst_head(at: Vector3, velocity: Vector3) -> void:
+	if not is_maximum():
+		return
+	var dir: Vector3 = velocity.normalized() if velocity.length() > 0.1 else Vector3.UP
+	for piece: StringName in [&"gib_skull", &"gib_jaw"]:
+		var m: Mesh = gib_piece(piece)
+		if m:
+			var v: Vector3 = (dir + Vector3(_rng.randf_range(-0.6, 0.6), _rng.randf_range(0.2, 0.9), _rng.randf_range(-0.6, 0.6))).normalized()
+			throw_gib(m, Transform3D(Basis.from_euler(Vector3(_rng.randf() * TAU, _rng.randf() * TAU, 0)), at),
+					v * maxf(velocity.length(), 4.0) * _rng.randf_range(0.6, 1.1), _spin(18.0), _gib_radius(m), _gib_mat)
+	burst_chunks(at, dir + Vector3.UP * 0.3, 5, 6.0)
+	mist(at, dir, 2.5)
+	spray(at, dir + Vector3.UP * 0.4, 2.2, 40)
+	_splat_ring(at, 1.6, 4)
+
+
+## A torso blown apart: ribs, spine, pelvis, organs, gut and meat flung out,
+## a big cloud, blood over everything near, a pool where it stood.
+func burst_torso(at: Vector3, velocity: Vector3) -> void:
+	if not is_on():
+		return
+	bursts += 1
+	var push: Vector3 = velocity.limit_length(8.0)
+	if is_maximum():
+		var n: int = mini(config.gib_torso_pieces, TORSO_GIBS.size())
+		for i: int in n:
+			var m: Mesh = gib_piece(TORSO_GIBS[i])
+			if m == null:
+				continue
+			var out: Vector3 = Vector3(_rng.randf_range(-1, 1), _rng.randf_range(0.1, 1.0), _rng.randf_range(-1, 1)).normalized()
+			var v: Vector3 = push * 0.5 + out * config.gib_speed * _rng.randf_range(0.5, 1.2)
+			var at_i: Vector3 = at + out * 0.12 + Vector3.DOWN * 0.1 * float(i % 3)
+			throw_gib(m, Transform3D(Basis.from_euler(Vector3(_rng.randf() * TAU, _rng.randf() * TAU, _rng.randf() * TAU)), at_i),
+					v, _spin(14.0), _gib_radius(m), _gib_mat)
+		burst_chunks(at, push.normalized() + Vector3.UP * 0.4, 4, config.gib_speed)
+	for i: int in 3:
+		var d: Vector3 = Vector3(_rng.randf_range(-1, 1), _rng.randf_range(0.0, 0.8), _rng.randf_range(-1, 1)).normalized()
+		spray(at, d, 2.4, 40)
+	mist(at, push.normalized() if push.length() > 0.1 else Vector3.UP, 1.7)
+	mist(at + Vector3.UP * 0.2, Vector3.UP, 1.2)
+	_splat_ring(at, 2.6, 8)
+	pool_under(at, 0.8)
+
+
+## Splats on whatever is around `at` within `radius` (walls, floor).
+func _splat_ring(at: Vector3, radius: float, count: int) -> void:
+	for i: int in count:
+		var a: float = TAU * float(i) / float(count) + _rng.randf() * 0.6
+		var d: Vector3 = Vector3(cos(a), _rng.randf_range(-0.9, 0.2), sin(a)).normalized()
+		var res: Dictionary = _ray(at, at + d * radius)
+		if res.is_empty():
+			continue
+		var p: Vector3 = res["position"]
+		var nrm: Vector3 = res["normal"]
+		_pending.append(Pending.new(at.distance_to(p) / 9.0, p, nrm, _rng.randf_range(0.3, 0.6), d))
+
+
+func _spin(k: float) -> Vector3:
+	return Vector3(_rng.randf_range(-k, k), _rng.randf_range(-k, k), _rng.randf_range(-k, k))
 
 
 ## Chunks of bone and flesh (a head destroyed by a heavy round).
@@ -335,8 +471,16 @@ func burst_chunks(at: Vector3, dir: Vector3, count: int, speed: float) -> void:
 		box.size = Vector3(sz, sz * _rng.randf_range(0.5, 1.0), sz * _rng.randf_range(0.6, 1.2))
 		var v: Vector3 = (dir.normalized() + Vector3(_rng.randf_range(-0.8, 0.8), _rng.randf_range(-0.2, 1.0), _rng.randf_range(-0.8, 0.8))).normalized()
 		var mat: StandardMaterial3D = _chunk_material(i % 3 == 0)
-		throw_gib(box, Transform3D(Basis.from_euler(Vector3(_rng.randf() * TAU, _rng.randf() * TAU, 0)), at),
-				v * speed * _rng.randf_range(0.4, 1.0), Vector3(_rng.randf_range(-20, 20), _rng.randf_range(-20, 20), 0), sz, mat)
+		var mesh: Mesh = box
+		var scale: float = 1.0
+		if i % 3 == 1 and gib_piece(&"gib_meat_b"):
+			# Every third a torn piece of meat, shrunk to the chunk's size.
+			var meat: Array[StringName] = [&"gib_meat_a", &"gib_meat_b", &"gib_meat_c"]
+			mesh = gib_piece(meat[i % 3 + (i / 3) % 2])
+			mat = _gib_mat
+			scale = sz / 0.05
+		throw_gib(mesh, Transform3D(Basis.from_euler(Vector3(_rng.randf() * TAU, _rng.randf() * TAU, 0)), at),
+				v * speed * _rng.randf_range(0.4, 1.0), Vector3(_rng.randf_range(-20, 20), _rng.randf_range(-20, 20), 0), sz, mat, scale)
 
 
 func clear() -> void:
@@ -395,10 +539,10 @@ func _age_gibs(delta: float) -> void:
 			g.set_meta(&"splatted", true)
 			var res: Dictionary = _ray(g.global_position + Vector3.UP * 0.2, g.global_position + Vector3.DOWN * 0.6)
 			if not res.is_empty():
-				var shape: SphereShape3D = (g.get_node(^"Shape") as CollisionShape3D).shape as SphereShape3D
+				var gib_r: float = g.get_meta(&"radius", 0.05)
 				var at: Vector3 = res["position"]
 				var nrm: Vector3 = res["normal"]
-				splat(at, nrm, 0.16 + 0.3 * shape.radius, g.linear_velocity)
+				splat(at, nrm, 0.16 + 0.3 * gib_r, g.linear_velocity)
 		if age > GIB_FREEZE_TIME and g.linear_velocity.length() < 0.6:
 			g.freeze = true
 
@@ -479,9 +623,17 @@ func _new_gib() -> RigidBody3D:
 	g.max_contacts_reported = 2
 	g.continuous_cd = true
 	g.set_meta(&"surface", &"flesh")
+	# Wet meat: grips, doesn't bounce, stops tumbling soon.
+	var pm: PhysicsMaterial = PhysicsMaterial.new()
+	pm.friction = 1.0
+	pm.bounce = 0.05
+	pm.rough = true
+	g.physics_material_override = pm
+	g.angular_damp = 1.5
+	g.linear_damp = 0.2
 	var cs: CollisionShape3D = CollisionShape3D.new()
 	cs.name = "Shape"
-	cs.shape = SphereShape3D.new()
+	cs.shape = BoxShape3D.new()
 	g.add_child(cs)
 	var mi: MeshInstance3D = MeshInstance3D.new()
 	mi.name = "Mesh"

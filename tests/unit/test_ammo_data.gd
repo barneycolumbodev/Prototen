@@ -106,3 +106,16 @@ func test_pellet_pattern_fills_the_cone_without_clumping() -> void:
 	for i: int in dirs.size():
 		for j: int in range(i + 1, dirs.size()):
 			assert_gt(rad_to_deg(dirs[i].angle_to(dirs[j])), 0.05)
+
+
+func test_dismemberment_thresholds() -> void:
+	var cfg: GoreConfig = load("res://data/gore/gore_default.tres")
+	assert_eq(Dismemberment.outcome(cfg, &"forearm_L", cfg.forearm_j - 1.0, 0.0), Dismemberment.Outcome.NONE)
+	assert_eq(Dismemberment.outcome(cfg, &"forearm_L", cfg.forearm_j, 0.0), Dismemberment.Outcome.SEVER)
+	assert_eq(Dismemberment.outcome(cfg, &"forearm_L", cfg.forearm_j * cfg.pulp_factor, 0.0), Dismemberment.Outcome.PULP)
+	assert_eq(Dismemberment.outcome(cfg, &"head", cfg.head_j * 10.0, 0.0), Dismemberment.Outcome.SEVER, "the head is destroyed by its own rule")
+	assert_eq(Dismemberment.outcome(cfg, &"hand_L", 10.0, cfg.hand_j * cfg.accumulate_factor), Dismemberment.Outcome.SEVER, "hits add up")
+	assert_false(Dismemberment.adds_up(cfg, &"thigh_L", cfg.thigh_j * cfg.min_share * 0.9), "scratches don't add up")
+	assert_gt(Dismemberment.violence(cfg, 100.0, 1000.0, DamageInfo.Type.BLADE), Dismemberment.violence(cfg, 100.0, 1000.0, DamageInfo.Type.BALLISTIC), "blades cut")
+	assert_almost_eq(cfg.falloff(0.0), 1.0, 0.001)
+	assert_almost_eq(cfg.falloff(cfg.reach_m), 0.0, 0.001)

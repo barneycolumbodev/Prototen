@@ -9,7 +9,20 @@ extends Node
 signal finished
 
 ## [weapon slot, ammo index (-1 = keep), target index, zone, rounds]
+## Slot -1: no gun, the target is blown apart (Enemy.burst, as by the Gauss
+## arm or a blast up close).
 const SEQUENCES: Dictionary[String, Array] = {
+	"dismember": [
+		[3, -1, 0, &"l_upper_arm", 1],     # rail carbine through the upper arm: the arm off
+		[3, -1, 1, &"r_thigh", 1],         # through the thigh: the leg off above the knee
+		[3, -1, 2, &"l_hand", 1],          # through the hand: the hand off at the wrist
+		[3, -1, 3, &"neck", 1],            # through the neck: the head comes off whole
+	],
+	"gib": [
+		[-1, -1, 0, &"chest", 1],          # blown apart
+		[3, -1, 2, &"head", 1],            # rail through the head: it comes apart
+		[1, -1, 3, &"r_shin", 6],          # MG42: chews the leg off below the knee
+	],
 	"mixed": [
 		[3, -1, 0, &"head", 1],            # rail carbine: the head comes apart
 		[4, -1, 3, &"chest", 2],           # M14/P: through and through, spray on the wall behind
@@ -75,6 +88,13 @@ func _physics_process(_delta: float) -> void:
 	var ammo: int = s[1]
 	var target: int = s[2]
 	var zone: StringName = s[3]
+	if slot < 0:
+		var e: Enemy = room.shooting_range.targets[target]
+		if e:
+			e.burst((e.global_position - room.player.global_position).normalized() * 4.0)
+		_step += 1
+		_wait = SETTLE_FRAMES
+		return
 	if _left == 0:
 		_left = s[4]
 		weapon.select_now(slot)

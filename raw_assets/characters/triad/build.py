@@ -12,7 +12,8 @@ Construction (all procedural, rebuildable):
   dense mesh for baking, LOW is decimated for the game.
 - Skin weights come from bone chains with joint blends, then smoothed over
   the mesh, so joints bend cleanly.
-- Severable parts for dismemberment (head, forearms, shins) are cut from the
+- Severable parts for dismemberment (head; upper arms, forearms, hands;
+  thighs, shins: a cut at every joint, nested) are cut from the
   same LOW mesh with the same UVs and weights, with flesh caps on both sides.
   The game shows the intact mesh until something is severed, then swaps to
   the parts. Caps sit inside closed volumes while attached.
@@ -51,6 +52,7 @@ ap.add_argument("--fast", action="store_true", help="no bake: flat material colo
 ap.add_argument("--samples", type=int, default=48)
 ap.add_argument("--guns", default="assets/weapons/enemy")
 ap.add_argument("--no-anim", action="store_true")
+ap.add_argument("--split-preview", default="", help="exploded view of the severable parts (PNG path, no .png)")
 args = ap.parse_args(argv)
 
 T0 = time.time()
@@ -1832,38 +1834,155 @@ def flat_textures(size):
 
 # ====================================================================== severable parts
 def cut_specs():
-    specs = [("head", V((0, 0.006, 1.525)), V((0, 0, 1)), V((0, 0.006, 1.62)), 0.17, 0.32)]
+    """Every place the body can come apart (2026-11-11: a cut at every joint).
+
+    (name, plane point, plane normal pointing away from the body, centre of the
+    bisect, bisect radius, reach along the normal, part radius, parent part,
+    bones the part may take faces from). Deepest parts first: a face goes to
+    the first part that claims it, so the hand is checked before the forearm,
+    the forearm before the upper arm. Every part's faces must also be weighted
+    mostly to its own limb chain, so a plane never grabs the flank or the
+    other leg.
+    """
+    specs = [("head", V((0, 0.006, 1.525)), V((0, 0, 1)), V((0, 0.006, 1.62)), 0.17, 0.32, 0.17, "body",
+              ("head", "neck"))]
     for s in ("L", "R"):
-        e, w, tip = J[f"elbow.{s}"], J[f"wrist.{s}"], J[f"tip.{s}"]
+        arm = (f"upper_arm.{s}", f"forearm.{s}", f"hand.{s}", f"fingers.{s}")
+        leg = (f"thigh.{s}", f"shin.{s}", f"foot.{s}")
+        sh, e, w, kn = J[f"shoulder.{s}"], J[f"elbow.{s}"], J[f"wrist.{s}"], J[f"knuckle.{s}"]
+        dw = (kn - w).normalized()
+        specs.append((f"hand_{s}", w - dw * 0.012, dw, w - dw * 0.012, 0.075, 0.24, 0.1, f"forearm_{s}", arm))
         d = (w - e).normalized()
-        specs.append((f"forearm_{s}", e + (w - e) * 0.35, d, e + (w - e) * 0.35, 0.12, 0.42))
+        c = e + (w - e) * 0.35
+        specs.append((f"forearm_{s}", c, d, c, 0.12, 0.42, 0.16, f"upper_arm_{s}", arm))
+        du = (e - sh).normalized()
+        c = sh + (e - sh) * 0.6  # not higher: the sleeve is fused to the flank above this
+        specs.append((f"upper_arm_{s}", c, du, c, 0.095, 0.3, 0.11, "body", arm))
         k, a = J[f"knee.{s}"], J[f"ankle.{s}"]
         d = (a - k).normalized()
-        specs.append((f"shin_{s}", k + (a - k) * 0.3, d, k + (a - k) * 0.3, 0.13, 0.55))
+        c = k + (a - k) * 0.3
+        specs.append((f"shin_{s}", c, d, c, 0.13, 0.55, 0.16, f"thigh_{s}", leg))
+        hp = J[f"hip.{s}"]
+        dt = (k - hp).normalized()
+        c = hp + (k - hp) * 0.65  # not higher: the trouser legs are fused above this
+        specs.append((f"thigh_{s}", c, dt, c, 0.12, 0.5, 0.14, "body", leg))
     return specs
 
 
+def _dominant_bones(bm, src):
+    """Face index -> the vertex group with the most total weight over its corners."""
+    dl = bm.verts.layers.deform.active
+    names = [vg.name for vg in src.vertex_groups]
+    out = {}
+    for f in bm.faces:
+        acc = {}
+        for v in f.verts:
+            for gi, wt in v[dl].items():
+                acc[gi] = acc.get(gi, 0.0) + wt
+        out[f.index] = names[max(acc, key=acc.get)] if acc else ""
+    return out
+
+
+def _cut_ring(bm, co, no, radius, prad):
+    """Faces the cut plane passes through that ring this limb: connected bands
+    of straddling faces near the plane point, every face within `prad` of the
+    limb's axis. The plane also crosses the torso or the other leg somewhere;
+    those bands aren't connected to the limb's and are left alone."""
+    def side(v):
+        return (v.co - co).dot(no)
+
+    def perp(p):
+        d = p - co
+        return (d - no * d.dot(no)).length
+    cand = set()
+    for f in bm.faces:
+        ds = [side(v) for v in f.verts]
+        if min(ds) < 0 < max(ds) and (f.calc_center_median() - co).length < radius * 1.6:
+            cand.add(f)
+    rings = []
+    left = set(cand)
+    while left:
+        f0 = left.pop()
+        band = [f0]
+        stack = [f0]
+        while stack:
+            f = stack.pop()
+            for e in f.edges:
+                for g in e.link_faces:
+                    if g in left:
+                        left.discard(g)
+                        band.append(g)
+                        stack.append(g)
+        rings.append(band)
+    keep = []
+    for band in rings:
+        mp = max(perp(v.co) for f in band for v in f.verts)
+        mn = min(perp(v.co) for f in band for v in f.verts)
+        if os.environ.get("CUT_DEBUG"):
+            log(f"  band {len(band)} faces perp {mn:.3f}-{mp:.3f} {'KEEP' if mp < prad else ''}")
+        if mp < prad:
+            keep += band
+    return keep
+
+
 def split_parts(src):
-    """Cuts the severable parts out of `src` (same UVs and weights) and caps every cut."""
+    """Cuts the severable parts out of `src` (same UVs and weights) and caps every cut.
+
+    Parts nest (hand < forearm < upper arm < body; shin < thigh < body): each
+    cut is capped on both sides, on the part it frees and on its parent.
+    """
     bm = bmesh.new()
     bm.from_mesh(src.data)
     specs = cut_specs()
     cut_edges = []
-    for name, co, no, centre, radius, reach in specs:
-        near = [f for f in bm.faces if (f.calc_center_median() - centre).length < radius]
-        verts = list({v for f in near for v in f.verts})
-        edges = list({e for f in near for e in f.edges})
-        res = bmesh.ops.bisect_plane(bm, geom=verts + edges + near, dist=1e-6, plane_co=co, plane_no=no)
+    for name, co, no, centre, radius, reach, prad, parent, bones in specs:
+        if os.environ.get("CUT_DEBUG"):
+            log(f"cut {name}")
+        ring = _cut_ring(bm, co, no, radius, prad)
+        verts = list({v for f in ring for v in f.verts})
+        edges = list({e for f in ring for e in f.edges})
+        res = bmesh.ops.bisect_plane(bm, geom=verts + edges + ring, dist=1e-6, plane_co=co, plane_no=no)
         cut_edges += [g for g in res["geom_cut"] if isinstance(g, bmesh.types.BMEdge)]
     bmesh.ops.split_edges(bm, edges=list(set(cut_edges)))
+    bm.faces.index_update()
+    dom = _dominant_bones(bm, src)
 
-    def part_of(c):
-        for name, co, no, centre, radius, reach in specs:
+    def part_of(f):
+        c = f.calc_center_median()
+        for name, co, no, centre, radius, reach, prad, parent, bones in specs:
+            if dom.get(f.index, "") not in bones:
+                continue
             along = (c - co).dot(no)
-            if along > 0 and along < reach and ((c - co) - no * along).length < (0.17 if name == "head" else 0.16):
+            if along > 0 and along < reach and ((c - co) - no * along).length < prad:
                 return name
         return "body"
-    owner = {f.index: part_of(f.calc_center_median()) for f in bm.faces}
+
+    # The cuts split the mesh into islands bounded by cut rings (and garment
+    # edges). Each island goes wholesale to the part most of its faces vote
+    # for, so no part ends in a ragged edge.
+    owner = {}
+    seen = set()
+    for f0 in bm.faces:
+        if f0.index in seen:
+            continue
+        island = []
+        stack = [f0]
+        seen.add(f0.index)
+        while stack:
+            f = stack.pop()
+            island.append(f)
+            for e in f.edges:
+                for g in e.link_faces:
+                    if g.index not in seen:
+                        seen.add(g.index)
+                        stack.append(g)
+        votes = {}
+        for f in island:
+            k = part_of(f)
+            votes[k] = votes.get(k, 0.0) + f.calc_area()
+        win = max(votes, key=votes.get)
+        for f in island:
+            owner[f.index] = win
     cap_mat = MATS.index("cap")
     me_parts = {}
     for part in ["body"] + [sp[0] for sp in specs]:
@@ -1872,16 +1991,18 @@ def split_parts(src):
         dead = [f for f in b2.faces if owner[f.index] != part]
         bmesh.ops.delete(b2, geom=dead, context="FACES")
         uvl = b2.loops.layers.uv.active
-        for name, co, no, centre, radius, reach in specs:
-            if part not in ("body", name):
+        for name, co, no, centre, radius, reach, prad, parent, bones in specs:
+            if part not in (parent, name):
                 continue
             edges = [e for e in b2.edges if e.is_boundary and all(abs((v.co - co).dot(no)) < 2e-4 for v in e.verts)
                      and (e.verts[0].co - centre).length < radius]
             if not edges:
+                log(f"WARNING: no cap edges for cut {name} on {part}")
                 continue
             out = bmesh.ops.holes_fill(b2, edges=edges, sides=0)
             faces = out["faces"]
             if not faces:
+                log(f"WARNING: cap fill failed for cut {name} on {part}")
                 continue
             ref = no.orthogonal().normalized()
             ref2 = no.cross(ref)
@@ -1894,9 +2015,9 @@ def split_parts(src):
                     d = loop.vert.co - c
                     loop[uvl].uv = (CAP_UV[0] + d.dot(ref) / rmax * CAP_UV[2] * 0.95,
                                     CAP_UV[1] + d.dot(ref2) / rmax * CAP_UV[2] * 0.95)
-            # The body's cap faces where the part was (+no); the part's cap faces the body (-no).
+            # The parent's cap faces where the part was (+no); the part's cap faces the parent (-no).
             for f in faces:
-                want = no if part == "body" else -no
+                want = no if part == parent else -no
                 f.normal_update()
                 if f.normal.dot(want) < 0:
                     f.normal_flip()
@@ -1916,6 +2037,35 @@ def split_parts(src):
         log(f"part {part}: {tris(ob)} tris")
     bm.free()
     return me_parts
+
+
+def preview_split(path):
+    """Exploded view: every part pushed out along its cut, rendered from the front and the side."""
+    specs = {sp[0]: sp for sp in cut_specs()}
+    saved = {}
+    for name, ob in PARTS.items():
+        if name == "body":
+            continue
+        off = V((0, 0, 0))
+        n = name
+        while n in specs:
+            off += specs[n][2] * 0.12
+            n = specs[n][7]
+        saved[name] = ob.location.copy()
+        ob.location = ob.location + off
+    LOW.hide_render = True
+    VEST.hide_render = True
+    setup_render(24, 700, 900)
+    tmp = []
+    for i, (loc, tgt) in enumerate((((0, -3.6, 1.0), (0, 0, 0.95)), ((3.2, -1.8, 1.2), (0, 0, 0.95)), ((0, 3.6, 1.0), (0, 0, 0.95)))):
+        camera(loc, tgt, 50)
+        tmp.append(render(f"{path}_{i}.png"))
+    sheet(tmp, 3, f"{path}.png")
+    for p in tmp:
+        os.remove(p)
+    for name, loc in saved.items():
+        PARTS[name].location = loc
+    LOW.hide_render = False
 
 
 # ====================================================================== export
@@ -2079,6 +2229,8 @@ def preview_poses(prefix, guns):
         g.hide_render = True
 
 
+if args.split_preview:
+    preview_split(args.split_preview)
 if args.preview:
     os.makedirs(os.path.dirname(args.preview) or ".", exist_ok=True)
     GUNS = import_guns()
