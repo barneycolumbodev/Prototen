@@ -1,15 +1,17 @@
-[gd_resource type="Resource" script_class="EnemyConfig" load_steps=4 format=3]
+[gd_resource type="Resource" script_class="EnemyConfig" load_steps=7 format=3]
 
 [ext_resource type="Script" path="res://src/ai/enemy_config.gd" id="1"]
 [ext_resource type="PackedScene" path="res://assets/weapons/enemy/type56.gltf" id="2"]
 [ext_resource type="Resource" path="res://data/enemies/weapons/type56.tres" id="3"]
+[ext_resource type="Script" path="res://src/ai/outfit.gd" id="o0"]
+[ext_resource type="Resource" path="res://data/enemies/outfits/street.tres" id="o1"]
+[ext_resource type="Resource" path="res://data/enemies/outfits/summer.tres" id="o2"]
 
 [resource]
 script = ExtResource("1")
+outfits = Array[ExtResource("o0")]([ExtResource("o1"), ExtResource("o2")])
 display_name = "Gunman"
 callsign = "GUNMAN"
-jacket_tint = Color(0.14, 0.14, 0.15, 1)
-trousers_tint = Color(0.2, 0.23, 0.29, 1)
 plate_carrier = false
 gun_scene = ExtResource("2")
 weapon = ExtResource("3")

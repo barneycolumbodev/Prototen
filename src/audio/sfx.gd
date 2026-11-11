@@ -197,6 +197,11 @@ func claim_death_voice() -> bool:
 	return true
 
 
+## Pitch for a sound in the world: follows slow motion, plus a random spread.
+func world_pitch(rand: float) -> float:
+	return _pitch(rand)
+
+
 func _pitch(rand: float) -> float:
 	return clampf(Engine.time_scale, 0.25, 1.0) * (1.0 + _rng.randf_range(-rand, rand))
 

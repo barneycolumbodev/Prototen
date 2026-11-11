@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="Garment" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/ai/garment.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+mesh = &"hair_slick"
+slot = 5
+colors = PackedColorArray(0.13, 0.12, 0.12, 1, 0.13, 0.12, 0.12, 1, 0.22, 0.16, 0.12, 1, 0.55, 0.55, 0.56, 1)
+trims = PackedColorArray()
+prints = PackedInt32Array()
+print_chance = 0
+print_colors = PackedColorArray()
+fits_under_hat = false
+sleeve = 0.0
+leg = 0.0
+inset = 0.0

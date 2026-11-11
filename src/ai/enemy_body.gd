@@ -1,8 +1,10 @@
 class_name EnemyBody
 extends Node3D
 ## The visible, hittable body of a triad enemy (assets/characters/triad):
-## - the skinned model with a per-enemy material (role tints, painted wounds,
-##   char), the gun in the right hand, the plate carrier for Enforcers;
+## - the skinned model dressed from the wardrobe (TriadLook: garments,
+##   colours, prints, tattoos, facial hair picked per man from his role's
+##   outfits), all merged into one mesh with one per-enemy material (painted
+##   wounds, char), the gun in the right hand, the plate carrier for Enforcers;
 ## - 19 damage zones on bones (docs/design.md §5.1) that forward hits to the
 ##   owner (`on_part_hit`), plus steel plates in the carrier;
 ## - the animation tree (stance clips, walk blend space, reload and stumble
@@ -10,21 +12,27 @@ extends Node3D
 ## - a ragdoll (PhysicalBoneSimulator3D) for death, frozen after a few seconds;
 ## - dismemberment (docs/design.md §5.5): a cut at every joint (neck, upper
 ##   arms, forearms, wrists, thighs, below the knees; pre-cut in the glTF with
-##   flesh caps). On the first cut the intact mesh is swapped for all the
-##   pieces merged into one mesh (one draw call); the shader hides severed
-##   pieces by a bitmask. A severed piece and everything still on it fly as
-##   one gib; a destroyed piece goes to chunks; burst() blows the whole body
-##   apart (Gore).
+##   flesh caps; every garment is pre-cut at the same places). On the first
+##   cut the intact mesh is swapped for all the pieces, body and clothes,
+##   merged into one mesh (one draw call); the shader hides severed pieces by
+##   a bitmask. A severed piece and everything still on it (sleeve, shoe,
+##   hair, cap) fly as one gib; a destroyed piece goes to chunks; burst()
+##   blows the whole body apart (Gore).
 ## Faces +Z; its left is +X.
 
 signal ragdoll_frozen
 
 const MODEL: PackedScene = preload("res://assets/characters/triad/triad.gltf")
+const WARDROBE: PackedScene = preload("res://assets/characters/triad/triad_wardrobe.gltf")
 const SHADER: Shader = preload("res://src/ai/triad.gdshader")
 const TEX_BASE: Texture2D = preload("res://assets/characters/triad/textures/triad_basecolor.png")
 const TEX_ORM: Texture2D = preload("res://assets/characters/triad/textures/triad_orm.png")
 const TEX_NORMAL: Texture2D = preload("res://assets/characters/triad/textures/triad_normal.png")
 const TEX_MASK: Texture2D = preload("res://assets/characters/triad/textures/triad_mask.png")
+const TEX_SKIN: Texture2D = preload("res://assets/characters/triad/textures/triad_skin.png")
+const TEX_PRINTS: Texture2D = preload("res://assets/characters/triad/textures/triad_prints.png")
+## Merged meshes kept for outfits not in use any more (spawning the same look again is free).
+const CACHE_MAX: int = 24
 const MAX_WOUNDS: int = 8
 
 ## zone -> [bone, shape ("sphere" r | "capsule" r,h | "box" size), offset in bone space]
@@ -97,9 +105,14 @@ const RUN_CLIP_SPEED: float = 4.6
 const FLEE_CLIP_SPEED: float = 5.2
 const CRAWL_CLIP_SPEED: float = 0.45
 
-static var _rest_meshes: Dictionary[StringName, ArrayMesh] = {}
-## The body and every segment merged (built once from the glTF parts).
-static var _merged: ArrayMesh
+## Source meshes with CUSTOM0 (rest position, segment + 16 * slot) and
+## CUSTOM1 (rest normal), by "name|segment|slot".
+static var _prepared: Dictionary[String, ArrayMesh] = {}
+## The wardrobe's meshes by node name (w_<id>, w_<id>__<part>), loaded once.
+static var _wardrobe: Dictionary[StringName, Mesh] = {}
+## Merged meshes by look: the intact man, and every piece for after a cut.
+static var _intact: Dictionary[String, ArrayMesh] = {}
+static var _split_cache: Dictionary[String, ArrayMesh] = {}
 ## Gib meshes: a segment with whatever is still on it, in the rest pose.
 static var _gib_meshes: Dictionary[String, ArrayMesh] = {}
 ## Where each gib mesh's middle was in the rest pose (it's stored centred).
@@ -108,6 +121,8 @@ static var _gib_centres: Dictionary[String, Vector3] = {}
 ## The enemy that owns this body (gets on_part_hit / on_part_burn).
 var owner_node: Node
 var config: EnemyConfig
+## What he wears (picked in setup from config.outfits, or given).
+var look: TriadLook
 var skeleton: Skeleton3D
 var pose: EnemyPose
 var hitboxes: Dictionary[StringName, HitboxPart] = {}
@@ -139,9 +154,18 @@ var _plates: Array[StaticBody3D] = []
 var _attach: Dictionary[StringName, BoneAttachment3D] = {}
 
 
-func setup(p_owner: Node, p_config: EnemyConfig) -> void:
+## `p_look`: what he wears; null picks one from the role's outfits (`seed` < 0: random).
+func setup(p_owner: Node, p_config: EnemyConfig, p_look: TriadLook = null, seed: int = -1) -> void:
 	owner_node = p_owner
 	config = p_config
+	look = p_look
+	if look == null:
+		var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+		if seed >= 0:
+			rng.seed = seed
+		else:
+			rng.randomize()
+		look = TriadLook.pick(config.outfits, rng)
 
 
 func _ready() -> void:
@@ -224,6 +248,11 @@ func bone_global(bone: StringName) -> Transform3D:
 	if parent >= 0:
 		return bone_global(skeleton.get_bone_name(parent)) * skeleton.get_bone_pose(i)
 	return skeleton.global_transform * skeleton.get_bone_global_pose(i)
+
+
+## Follows the head bone (animation, aim layer and ragdoll): where his voice comes from.
+func head_anchor() -> Node3D:
+	return _attach[&"head"]
 
 
 func head_position() -> Vector3:
@@ -491,7 +520,7 @@ func sever(segment: StringName, velocity: Vector3, destroy: bool = false) -> boo
 		var spin: Vector3 = Vector3(randf_range(-6, 6), randf_range(-6, 6), randf_range(-6, 6))
 		var mesh: ArrayMesh = gib_mesh(group)
 		# The mesh is centred on its middle: the body goes there.
-		var centre: Vector3 = _gib_centres[",".join(PackedStringArray(group))]
+		var centre: Vector3 = _gib_centres[look.key() + "|" + ",".join(PackedStringArray(group))]
 		Gore.throw_gib(mesh, xform * Transform3D(Basis(), centre), velocity, spin, radius, material)
 	if gun and (&"hand_R" in group):
 		drop_gun(velocity * 0.3)
@@ -594,7 +623,7 @@ func _split_mesh() -> void:
 	var body: MeshInstance3D = _meshes.get(&"part_body")
 	if body == null:
 		return
-	body.mesh = merged_mesh(_meshes)
+	body.mesh = split_mesh()
 	body.visible = true
 	_meshes[&"triad"].visible = false
 	for seg: StringName in SEGMENT_ORDER:
@@ -603,107 +632,143 @@ func _split_mesh() -> void:
 			mi.visible = false
 
 
-## The body and every segment in one skinned mesh; CUSTOM0.w holds each
-## vertex's segment (index + 1, 0 = the body) for the shader's mask.
-static func merged_mesh(meshes: Dictionary[StringName, MeshInstance3D]) -> ArrayMesh:
-	if _merged:
-		return _merged
-	var parts: Array[Mesh] = [meshes[&"part_body"].mesh]
-	var ids: Array[int] = [0]
-	for i: int in SEGMENT_ORDER.size():
-		var mi: MeshInstance3D = meshes.get(SEGMENTS[SEGMENT_ORDER[i]][0])
+## The man and everything he wears, intact (before any cut). One mesh.
+func intact_mesh() -> ArrayMesh:
+	var key: String = look.key()
+	if _intact.has(key):
+		return _intact[key]
+	var srcs: Array[Array] = [[&"triad", _meshes[&"triad"].mesh, 0, 0]]
+	for g: Garment in look.garments:
+		var name: StringName = StringName("w_" + String(g.mesh))
+		if _wardrobe.has(name):
+			srcs.append([name, _wardrobe[name], 0, int(g.slot)])
+	var m: ArrayMesh = _merge(srcs)
+	_store(_intact, key, m)
+	return m
+
+
+## Every piece of the body and of what he wears, merged; CUSTOM0.w tells
+## the shader each vertex's segment (index + 1, 0 = the body) for the mask.
+func split_mesh() -> ArrayMesh:
+	var key: String = look.key()
+	if _split_cache.has(key):
+		return _split_cache[key]
+	var srcs: Array[Array] = []
+	for i: int in SEGMENT_ORDER.size() + 1:
+		var part: String = "body" if i == 0 else String(SEGMENT_ORDER[i - 1])
+		var mi: MeshInstance3D = _meshes.get(StringName("part_" + part))
 		if mi:
-			parts.append(mi.mesh)
-			ids.append(i + 1)
-	_merged = _concat(parts, ids)
-	return _merged
+			srcs.append([StringName("part_" + part), mi.mesh, i, 0])
+		for g: Garment in look.garments:
+			var name: StringName = StringName("w_%s__%s" % [g.mesh, part])
+			if _wardrobe.has(name):
+				srcs.append([name, _wardrobe[name], i, int(g.slot)])
+	var m: ArrayMesh = _merge(srcs)
+	_store(_split_cache, key, m)
+	return m
 
 
-## A gib mesh for a group of segments (rest pose, one draw call).
+## A gib mesh for a group of segments and what he wears on them (rest pose, one draw call).
 func gib_mesh(group: Array[StringName]) -> ArrayMesh:
-	var key: String = ",".join(PackedStringArray(group))
+	var key: String = look.key() + "|" + ",".join(PackedStringArray(group))
 	if _gib_meshes.has(key):
 		return _gib_meshes[key]
-	var parts: Array[Mesh] = []
-	var ids: Array[int] = []
+	var srcs: Array[Array] = []
 	for seg: StringName in group:
 		var mi: MeshInstance3D = _meshes.get(SEGMENTS[seg][0])
 		if mi:
-			parts.append(mi.mesh)
-			ids.append(0)  # never masked: it's the flying piece
-	var whole: AABB = parts[0].get_aabb()
-	for p: Mesh in parts:
-		whole = whole.merge(p.get_aabb())
+			srcs.append([SEGMENTS[seg][0], mi.mesh, 0, 0])  # segment 0: never masked, it's the flying piece
+		for g: Garment in look.garments:
+			var name: StringName = StringName("w_%s__%s" % [g.mesh, seg])
+			if _wardrobe.has(name):
+				srcs.append([name, _wardrobe[name], 0, int(g.slot)])
+	var first: Mesh = srcs[0][1]
+	var whole: AABB = first.get_aabb()
+	for src: Array in srcs:
+		var sm: Mesh = src[1]
+		whole = whole.merge(sm.get_aabb())
 	var centre: Vector3 = whole.get_center()
-	var m: ArrayMesh = _concat(parts, ids, -centre)
-	_gib_meshes[key] = m
+	var m: ArrayMesh = _merge(srcs, -centre)
+	_store(_gib_meshes, key, m)
 	_gib_centres[key] = centre
 	return m
 
 
-## Concatenates single-surface meshes (same format) into one; CUSTOM0 =
-## rest position + id.
-static func _concat(parts: Array[Mesh], ids: Array[int], shift: Vector3 = Vector3.ZERO) -> ArrayMesh:
-	var verts: PackedVector3Array = PackedVector3Array()
-	var normals: PackedVector3Array = PackedVector3Array()
-	var tangents: PackedFloat32Array = PackedFloat32Array()
-	var uvs: PackedVector2Array = PackedVector2Array()
-	var bones: PackedInt32Array = PackedInt32Array()
-	var weights: PackedFloat32Array = PackedFloat32Array()
+static func _store(cache: Dictionary[String, ArrayMesh], key: String, m: ArrayMesh) -> void:
+	if cache.size() >= CACHE_MAX:
+		cache.erase(cache.keys()[0])
+	cache[key] = m
+
+
+## Merges [name, mesh, segment, slot] sources into one skinned mesh
+## (SurfaceTool, native). `shift` moves the vertices, not their rest positions.
+static func _merge(srcs: Array[Array], shift: Vector3 = Vector3.ZERO) -> ArrayMesh:
+	var st: SurfaceTool = SurfaceTool.new()
+	var fmt: int = 0
+	for src: Array in srcs:
+		var nm: StringName = src[0]
+		var sm: Mesh = src[1]
+		var seg: int = src[2]
+		var slot: int = src[3]
+		var p: ArrayMesh = prepared(nm, sm, seg, slot)
+		if fmt == 0:
+			fmt = p.surface_get_format(0)
+			if fmt & Mesh.ARRAY_FLAG_USE_8_BONE_WEIGHTS:
+				st.set_skin_weight_count(SurfaceTool.SKIN_8_WEIGHTS)
+		st.append_from(p, 0, Transform3D(Basis(), shift))
+	return st.commit(null, fmt)
+
+
+## `mesh` with every vertex's rest position, segment and slot in CUSTOM0 and
+## its rest normal in CUSTOM1 (the shader paints wounds and prints in rest
+## space). Built once per source mesh, segment and slot, and shared.
+static func prepared(name: StringName, mesh: Mesh, seg: int, slot: int) -> ArrayMesh:
+	var key: String = "%s|%d|%d" % [name, seg, slot]
+	if _prepared.has(key):
+		return _prepared[key]
+	var arrays: Array = mesh.surface_get_arrays(0)
+	var verts: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+	var normals: PackedVector3Array = arrays[Mesh.ARRAY_NORMAL]
 	var custom: PackedFloat32Array = PackedFloat32Array()
-	var index: PackedInt32Array = PackedInt32Array()
-	var eight: bool = false
-	var has_tangents: bool = true
-	var has_bones: bool = true
-	for k: int in parts.size():
-		var arr: Array = parts[k].surface_get_arrays(0)
-		var v: PackedVector3Array = arr[Mesh.ARRAY_VERTEX]
-		var base: int = verts.size()
-		for p: Vector3 in v:
-			verts.append(p + shift)
-		var nrm: PackedVector3Array = arr[Mesh.ARRAY_NORMAL]
-		normals.append_array(nrm)
-		var tan: PackedFloat32Array = arr[Mesh.ARRAY_TANGENT] if arr[Mesh.ARRAY_TANGENT] is PackedFloat32Array else PackedFloat32Array()
-		if tan.size() == v.size() * 4:
-			tangents.append_array(tan)
-		else:
-			has_tangents = false
-		var uv: PackedVector2Array = arr[Mesh.ARRAY_TEX_UV]
-		uvs.append_array(uv)
-		if arr[Mesh.ARRAY_BONES] is PackedInt32Array:
-			var b: PackedInt32Array = arr[Mesh.ARRAY_BONES]
-			var w: PackedFloat32Array = arr[Mesh.ARRAY_WEIGHTS]
-			eight = b.size() == v.size() * 8
-			bones.append_array(b)
-			weights.append_array(w)
-		else:
-			has_bones = false
-		for i: int in v.size():
-			custom.append(v[i].x)
-			custom.append(v[i].y)
-			custom.append(v[i].z)
-			custom.append(float(ids[k]))
-		var idx: PackedInt32Array = arr[Mesh.ARRAY_INDEX]
-		for i: int in idx.size():
-			index.append(idx[i] + base)
-	var out: Array = []
-	out.resize(Mesh.ARRAY_MAX)
-	out[Mesh.ARRAY_VERTEX] = verts
-	out[Mesh.ARRAY_NORMAL] = normals
-	if has_tangents:
-		out[Mesh.ARRAY_TANGENT] = tangents
-	out[Mesh.ARRAY_TEX_UV] = uvs
-	if has_bones:
-		out[Mesh.ARRAY_BONES] = bones
-		out[Mesh.ARRAY_WEIGHTS] = weights
-	out[Mesh.ARRAY_CUSTOM0] = custom
-	out[Mesh.ARRAY_INDEX] = index
-	var flags: int = Mesh.ARRAY_CUSTOM_RGBA_FLOAT << Mesh.ARRAY_FORMAT_CUSTOM0_SHIFT
-	if eight:
+	custom.resize(verts.size() * 4)
+	var rest_n: PackedFloat32Array = PackedFloat32Array()
+	rest_n.resize(verts.size() * 3)
+	var code: float = float(seg + 16 * slot)
+	for i: int in verts.size():
+		custom[i * 4] = verts[i].x
+		custom[i * 4 + 1] = verts[i].y
+		custom[i * 4 + 2] = verts[i].z
+		custom[i * 4 + 3] = code
+		rest_n[i * 3] = normals[i].x
+		rest_n[i * 3 + 1] = normals[i].y
+		rest_n[i * 3 + 2] = normals[i].z
+	arrays[Mesh.ARRAY_CUSTOM0] = custom
+	arrays[Mesh.ARRAY_CUSTOM1] = rest_n
+	var flags: int = (Mesh.ARRAY_CUSTOM_RGBA_FLOAT << Mesh.ARRAY_FORMAT_CUSTOM0_SHIFT) \
+			| (Mesh.ARRAY_CUSTOM_RGB_FLOAT << Mesh.ARRAY_FORMAT_CUSTOM1_SHIFT)
+	var bones: PackedInt32Array = arrays[Mesh.ARRAY_BONES] if arrays[Mesh.ARRAY_BONES] is PackedInt32Array else PackedInt32Array()
+	if bones.size() == verts.size() * 8:
 		flags |= Mesh.ARRAY_FLAG_USE_8_BONE_WEIGHTS
-	var m: ArrayMesh = ArrayMesh.new()
-	m.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, out, [], {}, flags)
-	return m
+	var out: ArrayMesh = ArrayMesh.new()
+	out.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays, [], {}, flags)
+	_prepared[key] = out
+	return out
+
+
+## A wardrobe mesh by node name (w_<id> intact, w_<id>__<part> a piece), or null.
+static func wardrobe_mesh(name: StringName) -> Mesh:
+	_load_wardrobe()
+	return _wardrobe.get(name)
+
+
+## The wardrobe glTF's meshes by node name (loaded once; the scene is freed).
+static func _load_wardrobe() -> void:
+	if not _wardrobe.is_empty():
+		return
+	var root: Node = WARDROBE.instantiate()
+	for mi: Node in root.find_children("*", "MeshInstance3D", true, false):
+		_wardrobe[StringName(mi.name)] = (mi as MeshInstance3D).mesh
+	root.free()
 
 
 # ------------------------------------------------------------------ gun
@@ -740,56 +805,34 @@ func drop_gun(velocity: Vector3) -> RigidBody3D:
 # ------------------------------------------------------------------ build
 
 func _setup_meshes() -> void:
+	_load_wardrobe()
 	material = ShaderMaterial.new()
 	material.shader = SHADER
 	material.set_shader_parameter(&"base_tex", TEX_BASE)
 	material.set_shader_parameter(&"orm_tex", TEX_ORM)
 	material.set_shader_parameter(&"normal_tex", TEX_NORMAL)
 	material.set_shader_parameter(&"mask_tex", TEX_MASK)
-	material.set_shader_parameter(&"jacket_tint", config.jacket_tint)
-	material.set_shader_parameter(&"trousers_tint", config.trousers_tint)
-	material.set_shader_parameter(&"skin_tint", config.skin_tint)
+	material.set_shader_parameter(&"skin_tex", TEX_SKIN)
+	material.set_shader_parameter(&"prints_tex", TEX_PRINTS)
 	material.set_shader_parameter(&"wound_count", 0)
 	material.set_shader_parameter(&"severed_mask", 0)
 	material.set_shader_parameter(&"rim_color", config.rim_color)
 	material.set_shader_parameter(&"rim_strength", config.rim_strength)
+	material.set_shader_parameter(&"fill_light", config.fill_light)
 	var empty_w: PackedVector4Array = PackedVector4Array()
 	empty_w.resize(MAX_WOUNDS)
 	material.set_shader_parameter(&"wounds", empty_w)
+	look.apply(material)
 	for child: Node in skeleton.get_children():
 		var mi: MeshInstance3D = child as MeshInstance3D
 		if mi == null:
 			continue
-		mi.mesh = rest_mesh(StringName(mi.name), mi.mesh)
 		mi.material_override = material
 		_meshes[StringName(mi.name)] = mi
 		mi.visible = mi.name == "triad" or (mi.name == "vest" and config.plate_carrier)
-
-
-## A copy of `mesh` with every vertex's rest position in CUSTOM0 (the shader
-## paints wounds in rest space). Built once per mesh and shared.
-static func rest_mesh(key: StringName, mesh: Mesh) -> ArrayMesh:
-	if _rest_meshes.has(key):
-		return _rest_meshes[key]
-	var out: ArrayMesh = ArrayMesh.new()
-	for s: int in mesh.get_surface_count():
-		var arrays: Array = mesh.surface_get_arrays(s)
-		var verts: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
-		var custom: PackedFloat32Array = PackedFloat32Array()
-		custom.resize(verts.size() * 4)
-		for i: int in verts.size():
-			custom[i * 4] = verts[i].x
-			custom[i * 4 + 1] = verts[i].y
-			custom[i * 4 + 2] = verts[i].z
-			custom[i * 4 + 3] = 0.0  # segment id: none (see merged_mesh)
-		arrays[Mesh.ARRAY_CUSTOM0] = custom
-		var flags: int = Mesh.ARRAY_CUSTOM_RGBA_FLOAT << Mesh.ARRAY_FORMAT_CUSTOM0_SHIFT
-		var bones: PackedInt32Array = arrays[Mesh.ARRAY_BONES] if arrays[Mesh.ARRAY_BONES] is PackedInt32Array else PackedInt32Array()
-		if bones.size() == verts.size() * 8:
-			flags |= Mesh.ARRAY_FLAG_USE_8_BONE_WEIGHTS
-		out.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays, [], {}, flags)
-	_rest_meshes[key] = out
-	return out
+		if mi.name == "vest":
+			mi.mesh = prepared(&"vest", mi.mesh, 0, 0)
+	_meshes[&"triad"].mesh = intact_mesh()
 
 
 func _push_wounds() -> void:

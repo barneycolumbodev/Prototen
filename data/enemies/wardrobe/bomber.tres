@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="Garment" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/ai/garment.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+mesh = &"bomber"
+slot = 2
+colors = PackedColorArray(0.36, 0.38, 0.2, 1, 0.78, 0.1, 0.08, 1, 0.92, 0.42, 0.08, 1, 0.45, 0.66, 0.86, 1, 0.76, 0.68, 0.5, 1, 0.12, 0.26, 0.72, 1, 0.92, 0.91, 0.88, 1, 0.07, 0.07, 0.08, 1)
+trims = PackedColorArray(0.07, 0.07, 0.08, 1, 0.07, 0.07, 0.08, 1, 0.2, 0.2, 0.22, 1, 0.92, 0.42, 0.08, 1)
+prints = PackedInt32Array(1)
+print_chance = 0.15
+print_colors = PackedColorArray(0.3, 0.33, 0.2, 1, 0.33, 0.24, 0.15, 1, 0.07, 0.07, 0.08, 1)
+fits_under_hat = true
+sleeve = 0.553
+leg = 0.0
+inset = 0.012

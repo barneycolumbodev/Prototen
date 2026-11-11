@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="Garment" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/ai/garment.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+mesh = &"slacks"
+slot = 3
+colors = PackedColorArray(0.07, 0.07, 0.08, 1, 0.2, 0.2, 0.22, 1, 0.08, 0.1, 0.25, 1, 0.86, 0.8, 0.66, 1, 0.55, 0.38, 0.22, 1)
+trims = PackedColorArray()
+prints = PackedInt32Array()
+print_chance = 0
+print_colors = PackedColorArray()
+fits_under_hat = true
+sleeve = 0.0
+leg = 0.819
+inset = 0.005
