@@ -92,7 +92,7 @@ Starting budgets. These are guesses: measure them on the phone in M0 and replace
 | Triangles on screen | ≤ 250k |
 | Active enemies | ≤ 12 |
 | Ragdolls simulating | ≤ 3, frozen after about 2.5 s |
-| Blood decals | ≤ 48, oldest fade out |
+| Blood stains | ≤ 48 large + 144 single drops and runs, oldest fade out; ≤ 320 drops in the air (one draw call) |
 | Live particles | ≤ 1,500 |
 | Dynamic lights | ≤ 4; only one casts shadows |
 | RAM | ≤ 1.2 GB |

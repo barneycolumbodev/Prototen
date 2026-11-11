@@ -144,6 +144,45 @@ func test_a_pistol_round_takes_nothing_off() -> void:
 		assert_true(e.body.severed.is_empty(), "one 5.7 mm round to the %s severs nothing" % zone)
 
 
+func test_a_few_pistol_rounds_take_the_hand() -> void:
+	var e: Enemy = _target(1)
+	var shots: int = 0
+	while e.body.severed.is_empty() and shots < 5:
+		var at: Vector3 = e.body.hitboxes[&"l_hand"].global_position
+		await _shoot(pistol, at, at + Vector3(0, 0.1, 4.0))
+		shots += 1
+	assert_true(e.body.is_severed(&"hand_L"), "the hand is off after %d pistol rounds" % shots)
+	assert_gt(shots, 1, "but not from the first")
+	assert_false(e.body.is_severed(&"upper_arm_L"), "only the hand")
+
+
+func test_a_rifle_round_takes_the_arm_it_goes_through() -> void:
+	var e: Enemy = _target(2)
+	var at: Vector3 = _along(e, &"upper_arm_L", 0.15)
+	await _shoot(m14, at, at + Vector3(-0.15, 0.05, 6.0))
+	assert_true(e.body.is_severed(&"upper_arm_L"), "a 7.62 round through the upper arm takes the arm")
+	assert_true(e.body.is_severed(&"hand_L"), "the forearm and hand with it")
+
+
+func test_a_rifle_round_to_the_head_breaks_it() -> void:
+	var e: Enemy = _target(0)
+	var gibs: int = Gore.gib_count()
+	var at: Vector3 = e.body.hitboxes[&"head"].global_position
+	await _shoot(m14, at, at + Vector3(0, 0.1, 6.0))
+	assert_true(e.dead)
+	assert_true(e.body.is_severed(&"head"), "the head is gone")
+	assert_gt(Gore.gib_count(), gibs + 2, "in pieces: skull cap, jaw, chunks")
+	assert_false(e.body.is_severed(&"upper_arm_L"), "nothing else")
+
+
+func test_buckshot_to_the_head_takes_it_off() -> void:
+	var e: Enemy = _target(1)
+	var at: Vector3 = e.body.hitboxes[&"head"].global_position
+	await _shell(saiga, at, at + Vector3(0, 0.05, 3.0))
+	assert_true(e.dead)
+	assert_true(e.body.is_severed(&"head"), "a shell to the head from 3 m takes it")
+
+
 func test_buckshot_point_blank_takes_the_forearm_off() -> void:
 	var e: Enemy = _target(1)
 	var at: Vector3 = _along(e, &"forearm_R", 0.3)
@@ -152,24 +191,39 @@ func test_buckshot_point_blank_takes_the_forearm_off() -> void:
 			"nine pellets together take the arm off at the forearm")
 
 
-func test_buckshot_at_range_does_not() -> void:
-	var e: Enemy = _target(1)
-	var at: Vector3 = _along(e, &"forearm_R", 0.3)
-	await _shell(saiga, at, at + Vector3(0, 0.3, 9.0))
-	assert_true(e.body.severed.is_empty(), "spread out at 9 m, the pellets don't")
+func test_buckshot_takes_a_leg_up_close_but_not_at_range() -> void:
+	var near: Enemy = _target(1)
+	var at: Vector3 = _along(near, &"thigh_R", 0.1)
+	await _shell(saiga, at, at + Vector3(0, 0.1, 2.0))
+	assert_true(near.body.is_severed(&"thigh_R") or near.body.is_severed(&"shin_R"), "the pattern is still together at 2 m")
+	var far: Enemy = _target(2)
+	at = _along(far, &"thigh_R", 0.1)
+	await _shell(saiga, at, at + Vector3(0, 0.3, 22.0))
+	assert_false(far.body.is_severed(&"thigh_R"), "spread out and slowed at 22 m, the pellets don't")
+	assert_false(far.body.is_severed(&"thigh_L"))
 
 
-func test_sustained_fire_saws_a_limb_off() -> void:
+func test_pistol_fire_saws_a_shin_off() -> void:
 	var e: Enemy = _target(1)
 	e.die(null, &"chest")
 	await wait_physics_frames(2)
 	var shots: int = 0
 	while not e.body.is_severed(&"shin_L") and not e.body.is_severed(&"thigh_L") and shots < 12:
 		var at: Vector3 = _along(e, &"shin_L", 0.15)
-		await _shoot(m14, at, at + Vector3(0, 2.0, 5.0))
+		await _shoot(pistol, at, at + Vector3(0, 2.0, 5.0))
 		shots += 1
-	assert_true(e.body.is_severed(&"shin_L") or e.body.is_severed(&"thigh_L"), "the leg comes off after %d rifle rounds" % shots)
-	assert_gt(shots, 1, "but not from the first")
+	assert_true(e.body.is_severed(&"shin_L") or e.body.is_severed(&"thigh_L"), "the leg comes off after %d pistol rounds" % shots)
+	assert_gt(shots, 2, "it takes several")
+
+
+func test_a_tougher_setting_keeps_limbs_on() -> void:
+	var before: float = Gore.config.toughness
+	Gore.config.toughness = 3.0
+	var e: Enemy = _target(2)
+	var at: Vector3 = _along(e, &"upper_arm_L", 0.15)
+	await _shoot(m14, at, at + Vector3(-0.15, 0.05, 6.0))
+	Gore.config.toughness = before
+	assert_true(e.body.severed.is_empty(), "at toughness ×3 one rifle round takes nothing")
 
 
 func test_the_gauss_slug_bursts_a_man() -> void:
