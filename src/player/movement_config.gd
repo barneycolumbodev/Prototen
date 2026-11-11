@@ -8,9 +8,63 @@ extends Resource
 @export var sprint_speed: float = 11.0
 @export var crouch_speed: float = 3.2
 @export_group("Acceleration (m/s²)")
+## Most the ground speed can change per second, speeding up and slowing down.
 @export var ground_accel: float = 70.0
 @export var ground_decel: float = 55.0
 @export var air_accel: float = 18.0
+@export_group("Feel (2026-11-11 overhaul)")
+## How quickly speed closes on the target (1/s): the gap shrinks at this
+## rate, capped by ground_accel/decel, so starts and stops ease out instead
+## of snapping. Higher = snappier.
+@export var ground_response: float = 14.0
+@export var stop_response: float = 16.0
+## Turning while moving swings the velocity round at this rate (rad/s)
+## without losing speed ("carving"). Past reverse_angle_deg you plant and
+## push off the other way instead.
+@export var ground_turn_rate: float = 13.0
+@export_range(90.0, 180.0) var reverse_angle_deg: float = 125.0
+## Speed above the current target (out of a slide, a wall jump, a dash, a
+## fall) bleeds off this slowly (m/s²) while you keep pushing; let go of the
+## stick and normal braking applies.
+@export var overspeed_friction: float = 7.0
+## In the air: the stick swings the velocity round (rad/s) without slowing
+## you; pulling back brakes at air_accel.
+@export var air_turn_rate: float = 3.2
+## Gravity × this while rising with A held, rising after letting go of A
+## (short hop), near the top of the arc (hang), and falling.
+@export var rise_gravity_scale: float = 1.0
+@export var jump_release_gravity_scale: float = 2.3
+@export var apex_gravity_scale: float = 0.7
+@export var apex_band: float = 1.6
+@export var fall_gravity_scale: float = 1.15
+@export var max_fall_speed: float = 38.0
+## Sprint holds while the stick is within this angle of forward and tilted
+## at least sprint_hold_tilt (strafing at a run doesn't drop it).
+@export_range(20.0, 90.0) var sprint_cone_deg: float = 70.0
+@export_range(0.1, 1.0) var sprint_hold_tilt: float = 0.4
+## B pressed this long before landing at speed starts a slide on touchdown.
+@export var slide_buffer: float = 0.2
+## Downhill pulls a slide along (× gravity × slope).
+@export var slide_slope_accel: float = 0.6
+## Wall-run entry: the velocity swings onto the wall over this long (s).
+@export var wallrun_entry_time: float = 0.12
+## A mantle keeps this share of the speed you came in with (at least 3 m/s).
+@export_range(0.0, 1.0) var mantle_keep_speed: float = 0.85
+@export_group("Camera feel")
+## The camera is drawn where the body is between physics ticks, so motion
+## stays smooth whatever the frame rate.
+@export var camera_interpolation: bool = true
+## Camera dip on landing (m per m/s of fall speed, max), and its spring.
+@export var land_dip_per_mps: float = 0.009
+@export var land_dip_max: float = 0.14
+@export var land_spring_hz: float = 5.0
+@export var land_spring_damping: float = 0.65
+## Field of view added (°) at a full sprint and in a slide.
+@export var sprint_fov_deg: float = 4.0
+@export var slide_fov_deg: float = 7.0
+@export var fov_smooth: float = 7.0
+## Roll (°) into a strafe at full speed.
+@export var strafe_roll_deg: float = 1.1
 @export_group("Jump")
 @export var gravity: float = 22.0
 @export var jump_velocity: float = 8.0
@@ -96,6 +150,81 @@ extends Resource
 @export var stand_eye_height: float = 1.65
 @export var crouch_eye_height: float = 0.95
 @export var crouch_transition_speed: float = 10.0
+
+
+## One tick of ground movement (horizontal velocity `h`, m/s). `wish`:
+## stick direction in the world (length 0..1); `top`: the speed for this
+## state (walk, sprint, crouch) at full tilt; `agility` scales every rate.
+## Speed and direction are handled apart: speed eases toward the target,
+## direction swings round at ground_turn_rate, so turns keep their speed.
+func ground_step(h: Vector3, wish: Vector3, top: float, agility: float, delta: float) -> Vector3:
+	var speed: float = h.length()
+	var tilt: float = minf(wish.length(), 1.0)
+	var target: float = top * tilt
+	if tilt < 0.02:
+		return h.normalized() * _ease_speed(speed, 0.0, top, false, agility, delta) if speed > 0.0001 else Vector3.ZERO
+	var want: Vector3 = wish / wish.length()
+	if speed < 0.4:
+		# From (nearly) standing: push off straight along the stick.
+		return approach(h, want * target, ground_accel * agility, ground_decel * agility, delta)
+	var dir: Vector3 = h / speed
+	var ang: float = dir.signed_angle_to(want, Vector3.UP)
+	if absf(ang) > deg_to_rad(reverse_angle_deg):
+		# Reversing: plant and push off the other way.
+		return approach(h, want * target, ground_accel * agility, ground_decel * agility * 1.15, delta)
+	var turn: float = ground_turn_rate * agility * delta
+	dir = dir.rotated(Vector3.UP, clampf(ang, -turn, turn))
+	return dir * _ease_speed(speed, target, top, true, agility, delta)
+
+
+## Eases `speed` toward `target`: the gap closes at *_response per second,
+## never faster than ground_accel/decel. Above `top` (momentum from a slide,
+## a jump) it bleeds at overspeed_friction while `pushing`.
+func _ease_speed(speed: float, target: float, top: float, pushing: bool, agility: float, delta: float) -> float:
+	if speed < target:
+		var rate: float = minf(ground_accel * agility, (target - speed) * ground_response + 2.0)
+		return minf(speed + rate * delta, target)
+	if pushing and speed > top + 0.05:
+		return maxf(speed - overspeed_friction * delta, maxf(target, top))
+	var down: float = minf(ground_decel * agility, (speed - target) * stop_response + 2.5)
+	return maxf(speed - down * delta, target)
+
+
+## One tick of air control: the stick swings the velocity round without
+## slowing it, adds speed up to `top`, and pulling back brakes.
+func air_step(h: Vector3, wish: Vector3, top: float, agility: float, delta: float) -> Vector3:
+	var tilt: float = minf(wish.length(), 1.0)
+	if tilt < 0.02:
+		return h
+	var want: Vector3 = wish / wish.length()
+	var speed: float = h.length()
+	if speed < 0.5:
+		return approach(h, want * top * tilt, air_accel * agility, air_accel * agility, delta)
+	var dir: Vector3 = h / speed
+	var ang: float = dir.signed_angle_to(want, Vector3.UP)
+	if absf(ang) > deg_to_rad(150.0):
+		return dir * maxf(speed - air_accel * agility * tilt * delta, 0.0)
+	var turn: float = air_turn_rate * agility * tilt * delta
+	dir = dir.rotated(Vector3.UP, clampf(ang, -turn, turn))
+	if speed < top * tilt:
+		speed = minf(speed + air_accel * agility * tilt * delta, top * tilt)
+	return dir * speed
+
+
+## Gravity multiplier for this moment of a jump (`vy` up speed).
+func gravity_scale(vy: float, jump_held: bool) -> float:
+	if absf(vy) < apex_band:
+		return apex_gravity_scale
+	if vy > 0.0:
+		return rise_gravity_scale if jump_held else jump_release_gravity_scale
+	return fall_gravity_scale
+
+
+## Whether a sprint carries on with the stick at `stick` (y < 0 = forward).
+func sprint_holds(stick: Vector2) -> bool:
+	if stick.length() < sprint_hold_tilt or stick.y > 0.0:
+		return false
+	return rad_to_deg(atan2(absf(stick.x), -stick.y)) <= sprint_cone_deg
 
 
 ## Moves horizontal velocity toward `target`. Uses `accel` when speeding up

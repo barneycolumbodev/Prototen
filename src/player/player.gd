@@ -110,6 +110,22 @@ var _last_yaw: float = 0.0
 var _step_offset: float = 0.0
 var _full_tilt_time: float = 0.0
 var _last_pitch: float = 0.0
+## Where the body was at the last two physics ticks: the camera is drawn
+## between them (MovementConfig.camera_interpolation).
+var _tick_prev: Vector3 = Vector3.ZERO
+var _tick_now: Vector3 = Vector3.ZERO
+## Camera offset this frame from interpolation (m, world; tests read it).
+var camera_lag: Vector3 = Vector3.ZERO
+## B pressed in the air: slide on touchdown if fast enough.
+var _slide_buffer: float = 0.0
+var _jump_held: bool = false
+var _land_spring: Spring
+var _move_fov: float = 0.0
+var _strafe_roll: float = 0.0
+## Wall-run entry: velocity swings onto the wall over a moment.
+var _wall_entry_left: float = 0.0
+var _wall_entry_speed: float = 0.0
+var _mantle_exit_speed: float = 0.0
 
 @onready var _head: Node3D = $Head
 @onready var _camera: Camera3D = $Head/Camera3D
@@ -151,6 +167,9 @@ func _ready() -> void:
 	Settings.changed.connect(_on_settings_changed)
 	_on_settings_changed()
 	_repaint.call_deferred()
+	_land_spring = Spring.new(movement.land_spring_hz, movement.land_spring_damping)
+	_tick_prev = global_position
+	_tick_now = global_position
 
 
 ## New colours from the loadout screen: repaint the arms and part models.
@@ -287,6 +306,7 @@ func respawn() -> void:
 	suppression = 0.0
 	global_position = spawn_point
 	velocity = Vector3.ZERO
+	reset_camera_smoothing()
 	respawned.emit()
 
 
@@ -307,6 +327,13 @@ func stop_sprint() -> void:
 ## Camera recoil offset on top of the view, degrees: x = up, y = right, z = roll.
 func set_camera_recoil(deg: Vector3) -> void:
 	_camera.rotation = Vector3(deg_to_rad(deg.x), -deg_to_rad(deg.y), deg_to_rad(deg.z))
+
+
+## The camera jumps with the body (after a teleport: spawn, respawn).
+func reset_camera_smoothing() -> void:
+	_tick_prev = global_position
+	_tick_now = global_position
+	camera_lag = Vector3.ZERO
 
 
 ## Sets the view directly (radians). Used by the benchmark and spawn points.
@@ -340,7 +367,15 @@ func _process(delta: float) -> void:
 			rate = aim_assist.apply(self, rate, look_dt)
 		set_view(yaw - deg_to_rad(rate.x) * look_dt, pitch - deg_to_rad(rate.y) * look_dt)
 	_update_crouch_pose(delta)
-	_camera.fov = Settings.vertical_fov * fov_scale * fov_extra_scale + fov_add_deg + fov_punch_deg
+	var real_dt: float = TimeControl.real_delta(delta)
+	var h_speed: float = Vector2(velocity.x, velocity.z).length()
+	var fov_target: float = 0.0
+	if move_state == MoveState.SLIDE:
+		fov_target = movement.slide_fov_deg
+	elif _sprinting or (not is_on_floor() and h_speed > movement.walk_speed):
+		fov_target = movement.sprint_fov_deg * clampf((h_speed - movement.walk_speed) / maxf(movement.sprint_speed - movement.walk_speed, 0.1), 0.0, 1.0)
+	_move_fov = lerpf(_move_fov, fov_target * fov_scale, 1.0 - exp(-movement.fov_smooth * real_dt))
+	_camera.fov = Settings.vertical_fov * fov_scale * fov_extra_scale + fov_add_deg + fov_punch_deg + _move_fov
 	if delta > 0.0:
 		var measured: Vector2 = Vector2(-angle_difference(_last_yaw, yaw), angle_difference(_last_pitch, pitch)) / delta
 		look_velocity = look_velocity.lerp(Vector2(rad_to_deg(measured.x), rad_to_deg(measured.y)), clampf(delta * 20.0, 0.0, 1.0))
@@ -351,6 +386,14 @@ func _process(delta: float) -> void:
 func _physics_process(delta: float) -> void:
 	# Time dilation: the player runs faster than the world (TimeControl).
 	delta *= TimeControl.player_boost()
+	_tick_prev = _tick_now
+	_physics_body(delta)
+	_tick_now = global_position
+	if _tick_prev.distance_to(_tick_now) > 3.0:
+		_tick_prev = _tick_now  # a teleport, not motion
+
+
+func _physics_body(delta: float) -> void:
 	_since_hit += delta
 	suppression = maxf(0.0, suppression - delta * 0.5)
 	if dead:
@@ -370,6 +413,8 @@ func _physics_process(delta: float) -> void:
 	var b_pressed: bool = input_enabled and Input.is_action_just_pressed(&"slide")
 	var b_held: bool = input_enabled and Input.is_action_pressed(&"slide")
 	_jump_buffer = cfg.jump_buffer if input_enabled and Input.is_action_just_pressed(&"jump") else _jump_buffer - delta
+	_jump_held = input_enabled and Input.is_action_pressed(&"jump")
+	_slide_buffer = cfg.slide_buffer if b_pressed and not is_on_floor() else _slide_buffer - delta
 	_slide_cd -= delta
 	_wall_cd -= delta
 	var wish: Vector3 = global_basis * Vector3(stick.x, 0.0, stick.y)
@@ -399,11 +444,13 @@ func _physics_process(delta: float) -> void:
 		_full_tilt_time += delta
 	if cfg.auto_sprint and _full_tilt_time >= cfg.auto_sprint_delay and not sprint_blocked and is_on_floor():
 		_sprinting = true
-	if forward_push < cfg.sprint_min_forward:
+	if not cfg.sprint_holds(stick):
 		_sprinting = false
 	var horizontal: Vector3 = Vector3(velocity.x, 0.0, velocity.z)
-	# Slide: B at speed on the ground.
-	if b_pressed and is_on_floor() and horizontal.length() >= cfg.slide_min_speed * 0.9 and _slide_cd <= 0.0:
+	# Slide: B at speed on the ground (or B just before touching down).
+	var slide_now: bool = b_pressed or (_slide_buffer > 0.0 and b_held)
+	if slide_now and is_on_floor() and horizontal.length() >= cfg.slide_min_speed * 0.9 and _slide_cd <= 0.0:
+		_slide_buffer = 0.0
 		_start_slide(horizontal)
 		return
 	_crouching = b_held
@@ -417,14 +464,14 @@ func _physics_process(delta: float) -> void:
 	speed *= move_scale * aug_move_scale * speed_factor()
 	var agility: float = body.stat(&"agility")
 	if is_on_floor():
-		horizontal = MovementConfig.approach(horizontal, wish * speed, cfg.ground_accel * agility, cfg.ground_decel * agility, delta)
+		horizontal = cfg.ground_step(horizontal, wish, speed, agility, delta)
 	else:
-		horizontal = MovementConfig.approach(horizontal, wish * speed, cfg.air_accel * agility, cfg.air_accel * 0.25 * agility, delta)
+		horizontal = cfg.air_step(horizontal, wish, maxf(speed, cfg.walk_speed * move_scale * aug_move_scale * speed_factor()), agility, delta)
 
 	_coyote = cfg.coyote_time if is_on_floor() else _coyote - delta
 	var vy: float = velocity.y
 	if not is_on_floor():
-		vy -= cfg.gravity * delta
+		vy = maxf(vy - cfg.gravity * cfg.gravity_scale(vy, _jump_held) * delta, -cfg.max_fall_speed)
 	# A at a ledge climbs it (from the ground or in the air).
 	if _jump_buffer > 0.0 and forward_push > 0.2 and _try_mantle():
 		_jump_buffer = 0.0
@@ -439,10 +486,15 @@ func _physics_process(delta: float) -> void:
 	if is_on_floor():
 		_last_wall_normal = Vector3.ZERO
 	if is_on_floor() and not was_on_floor and vy < -1.0:
-		landed.emit(-vy)
+		_on_landed(-vy)
 	# Airborne next to a wall, pushing forward at speed: run along it.
 	if not is_on_floor() and forward_push > 0.5 and _wall_cd <= 0.0 and horizontal.length() >= cfg.wallrun_min_speed and wallrun_time() > 0.05:
 		_try_wallrun(horizontal)
+
+
+func _on_landed(fall_speed: float) -> void:
+	landed.emit(fall_speed)
+	_land_spring.kick(Vector3(0.0, -minf(fall_speed * movement.land_dip_per_mps, movement.land_dip_max), 0.0))
 
 
 ## A thruster dash: straight along _dash_vel; living enemies in the way are
@@ -481,7 +533,8 @@ func _move_with_steps(delta: float, was_on_floor: bool) -> void:
 	_slide_move()
 	var after: Vector3 = global_position
 	var moved: Vector3 = Vector3(after.x - before.origin.x, 0.0, after.z - before.origin.z)
-	if was_on_floor and velocity.y <= 0.5 and want.length() > 0.001 and is_on_wall() and moved.length() < want.length() * 0.7:
+	# On the ground, or coming down onto a lip (landing on a curb shouldn't snag).
+	if (was_on_floor or keep.y <= 0.0) and velocity.y <= 0.5 and want.length() > 0.001 and is_on_wall() and moved.length() < want.length() * 0.7:
 		var stepped: Vector3 = _step_up(before, want)
 		if stepped != Vector3.INF:
 			_step_offset -= stepped.y - before.origin.y
@@ -552,6 +605,11 @@ func _slide(delta: float, wish: Vector3, b_pressed: bool, b_held: bool, stick: V
 	_crouching = true
 	var h: Vector3 = Vector3(velocity.x, 0.0, velocity.z)
 	var speed: float = maxf(0.0, h.length() - cfg.slide_friction / maxf(body.stat(&"slide"), 0.1) * delta)
+	if is_on_floor() and h.length() > 0.1:
+		# Downhill pulls the slide along; uphill slows it.
+		var n: Vector3 = get_floor_normal()
+		var downhill: Vector3 = Vector3(n.x, 0.0, n.z)
+		speed = maxf(0.0, speed + downhill.dot(h.normalized()) * cfg.gravity * cfg.slide_slope_accel * delta)
 	var dir: Vector3 = h.normalized() if h.length() > 0.01 else -global_basis.z
 	# A little steering with the stick.
 	if wish.length() > 0.2:
@@ -703,8 +761,11 @@ func _try_wallrun(horizontal: Vector3) -> void:
 	var t: Vector3 = _wall_normal.cross(Vector3.UP)
 	if t.dot(horizontal) < 0.0:
 		t = -t
-	var speed: float = maxf(horizontal.length(), movement.wallrun_speed)
-	velocity = t * speed + Vector3.UP * maxf(velocity.y, 1.5)
+	_wall_entry_speed = maxf(horizontal.length(), movement.wallrun_speed)
+	_wall_entry_left = movement.wallrun_entry_time
+	# Swing onto the wall over a moment (see _wallrun) instead of snapping.
+	velocity = velocity.lerp(t * _wall_entry_speed, 0.35)
+	velocity.y = maxf(velocity.y, 1.5)
 
 
 func _wallrun(delta: float, forward_push: float) -> void:
@@ -735,8 +796,13 @@ func _wallrun(delta: float, forward_push: float) -> void:
 	var g: float = cfg.gravity * lerpf(cfg.wallrun_gravity_scale, 1.0, k * k)
 	var vy: float = velocity.y - g * delta
 	var speed: float = maxf(h2.length(), cfg.wallrun_speed * move_scale)
+	var along: Vector3 = t * speed
+	if _wall_entry_left > 0.0:
+		_wall_entry_left -= delta
+		var k2: float = clampf(delta / maxf(_wall_entry_left + delta, 0.001), 0.0, 1.0)
+		along = h2.lerp(t * maxf(_wall_entry_speed, speed), k2)
 	# Hug the wall a little so small gaps don't drop you.
-	velocity = t * speed - _wall_normal * 0.8 + Vector3.UP * vy
+	velocity = along - _wall_normal * 0.8 + Vector3.UP * vy
 	_slide_move()
 
 
@@ -788,6 +854,7 @@ func _try_mantle() -> bool:
 	_mantle_from = global_position
 	_mantle_to = top_at + Vector3.UP * 0.02
 	_mantle_t = 0.0
+	_mantle_exit_speed = maxf(Vector2(velocity.x, velocity.z).length() * cfg.mantle_keep_speed, 3.0)
 	_sprinting = false
 	velocity = Vector3.ZERO
 	Sfx.play_ui(&"mantle", -6.0, 0.05)
@@ -797,7 +864,8 @@ func _try_mantle() -> bool:
 func _mantle(delta: float) -> void:
 	var cfg: MovementConfig = movement
 	var height: float = maxf(_mantle_to.y - _mantle_from.y, 0.1)
-	_mantle_t = minf(_mantle_t + delta * body.stat(&"agility") / (cfg.mantle_time * (0.7 + 0.3 * height / cfg.mantle_max_height)), 1.0)
+	var vault: float = clampf(_mantle_exit_speed / maxf(cfg.sprint_speed, 0.1), 0.6, 1.25)
+	_mantle_t = minf(_mantle_t + delta * body.stat(&"agility") * vault / (cfg.mantle_time * (0.7 + 0.3 * height / cfg.mantle_max_height)), 1.0)
 	# Up first, then over the edge.
 	var up: float = clampf(_mantle_t / 0.65, 0.0, 1.0)
 	var over: float = clampf((_mantle_t - 0.45) / 0.55, 0.0, 1.0)
@@ -809,7 +877,10 @@ func _mantle(delta: float) -> void:
 	if _mantle_t >= 1.0:
 		move_state = MoveState.NORMAL
 		var fwd: Vector3 = -global_basis.z
-		velocity = Vector3(fwd.x, 0.0, fwd.z) * 3.0
+		fwd = Vector3(fwd.x, 0.0, fwd.z).normalized()
+		# Come over the top still moving: a vault at a run, a climb from a stand.
+		velocity = fwd * _mantle_exit_speed
+		_sprinting = _mantle_exit_speed > cfg.walk_speed
 
 
 func _apply_view() -> void:
@@ -826,14 +897,29 @@ func _update_crouch_pose(delta: float) -> void:
 		roll = deg_to_rad(cfg.slide_tilt_deg)
 	elif move_state == MoveState.WALLRUN:
 		roll = deg_to_rad(cfg.wallrun_tilt_deg) * wall_side
-	_roll = lerpf(_roll, roll, clampf(delta * 8.0, 0.0, 1.0))
-	_head.rotation.z = _roll
+	# A slight lean into a strafe.
+	var side: float = velocity.dot(global_basis.x) / maxf(cfg.sprint_speed, 0.1)
+	var strafe: float = -deg_to_rad(cfg.strafe_roll_deg) * clampf(side, -1.0, 1.0) if move_state == MoveState.NORMAL and is_on_floor() else 0.0
+	_strafe_roll = lerpf(_strafe_roll, strafe, 1.0 - exp(-6.0 * delta))
+	_roll = lerpf(_roll, roll, 1.0 - exp(-9.0 * delta))
+	_head.rotation.z = _roll + _strafe_roll
 	_crouch_blend = move_toward(_crouch_blend, target, cfg.crouch_transition_speed * delta)
+	# Eased in and out (smoothstep), so the camera doesn't drop at a constant rate.
+	var ease_c: float = _crouch_blend * _crouch_blend * (3.0 - 2.0 * _crouch_blend)
 	var height: float = lerpf(cfg.stand_height, cfg.crouch_height, _crouch_blend)
 	_capsule.height = height
 	_collision.position.y = height * 0.5
 	_step_offset = lerpf(_step_offset, 0.0, 1.0 - exp(-cfg.step_smooth * delta))
-	_head.position.y = lerpf(cfg.stand_eye_height, cfg.crouch_eye_height, _crouch_blend) + _step_offset
+	_land_spring.step(delta)
+	# Draw the camera between the last two physics ticks.
+	camera_lag = Vector3.ZERO
+	if cfg.camera_interpolation and not dead:
+		var f: float = clampf(Engine.get_physics_interpolation_fraction(), 0.0, 1.0)
+		camera_lag = _tick_prev.lerp(_tick_now, f) - global_position
+		if camera_lag.length() > 1.0:
+			camera_lag = Vector3.ZERO
+	var local_lag: Vector3 = global_basis.inverse() * camera_lag
+	_head.position = Vector3(local_lag.x, lerpf(cfg.stand_eye_height, cfg.crouch_eye_height, ease_c) + _step_offset + _land_spring.value.y + local_lag.y, local_lag.z)
 
 
 func _on_settings_changed() -> void:

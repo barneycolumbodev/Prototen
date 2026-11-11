@@ -374,6 +374,24 @@ Weapon and arm motion is procedural: springs for sway, bob, recoil, landing, tur
 
 ---
 
+### 5.7 Movement feel (2026-11-11)
+
+Owner (2026-11-11): movement "still feels a little bit jank"; it should be smooth and buttery, with a lot of control over the character, not limited to what a real human can do. What changed (`src/player/player.gd`, `MovementConfig.ground_step / air_step / gravity_scale`, values in `data/player/movement_default.tres` and on the phone under Pause → Tuning → Movement):
+
+- **Camera between physics ticks.** Physics runs at 60 Hz. When the phone drops frames, the body moved in uneven steps per frame (one tick, then two). The camera is now drawn between the last two ticks, so it moves the same distance every frame. Only the player's camera does this: project-wide interpolation would touch gibs, ragdolls and teleports.
+- **Turns keep their speed.** Speed and direction are handled separately. The stick swings the velocity round at 13 rad/s (a 90° turn takes about 0.12 s) instead of blending through a slower diagonal; the old blend lost about 30 % of a sprint through a 90° turn. Past 125° you plant and push off the other way.
+- **Starts and stops ease out.** Speed closes on the target at a rate proportional to the gap (capped by the old acceleration), so there's no hard snap.
+- **Momentum carries.** Speed above the current target (slide-hop, wall jump, dash, mantle at a run) bleeds at 7 m/s² while you keep pushing, instead of being braked away the moment you land (it was 55 m/s²). Let go of the stick to stop.
+- **Air control.** The stick steers in the air without slowing you; pulling back brakes.
+- **Jump arc.** Tap A for a short hop, hold for full height; a little hang at the top; falls a touch faster than it rises.
+- **Sprint holds** while the stick is within 70° of forward (strafing at a run no longer drops it).
+- **Slide:** press B just before landing to slide on touchdown; downhill pulls a slide along.
+- **Wall-run entry** swings onto the wall over 0.12 s instead of snapping. **Mantles** keep 85 % of the speed you came in with and go faster at a run (a vault).
+- **Curbs while landing:** stepping up a lip now works while coming down onto it, not only from the ground.
+- **Camera:** a landing dip on a spring, eased crouch, a few degrees of field of view at a sprint and in a slide, and a slight lean into strafes.
+
+Evidence in the cloud is indirect (`tests/unit/test_movement_config.gd`, `tests/scene/test_movement.gd`): no speed lost through a 90° turn, a slide-hop keeps most of its speed 0.3 s after landing, a tapped jump is lower than a held one, and at 40 fps the camera moves an even distance every frame while the body doesn't. Whether it feels better is the owner's call on the phone.
+
 ## 6. Art direction
 
 Decided: see "Visuals" in §2. No anime or cel shading.

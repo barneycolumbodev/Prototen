@@ -189,3 +189,102 @@ func test_full_tilt_sprints_without_l3() -> void:
 	await wait_physics_frames(30)
 	assert_true(player.is_sprinting(), "auto-sprint")
 	assert_gt(_speed(), player.movement.walk_speed + 1.0)
+
+
+func test_a_slide_hop_keeps_its_speed_after_landing() -> void:
+	await _sprint()
+	Input.action_press(&"slide")
+	await wait_physics_frames(4)
+	Input.action_release(&"slide")
+	Input.action_press(&"jump")
+	await wait_physics_frames(2)
+	Input.action_release(&"jump")
+	var t: int = 0
+	while not player.is_on_floor() and t < 120:
+		await wait_physics_frames(1)
+		t += 1
+	var landed_at: float = _speed()
+	assert_gt(landed_at, player.movement.sprint_speed, "faster than a sprint when it lands (%.1f)" % landed_at)
+	await wait_physics_frames(18)
+	assert_gt(_speed(), landed_at * 0.8, "most of it is still there 0.3 s later (%.1f of %.1f)" % [_speed(), landed_at])
+
+
+func test_a_tap_of_a_jumps_lower_than_holding_it() -> void:
+	var heights: Array[float] = []
+	for hold: int in [2, 40]:
+		player.global_position = player.spawn_point
+		player.velocity = Vector3.ZERO
+		await wait_physics_frames(10)
+		var y0: float = player.global_position.y
+		var top: float = y0
+		Input.action_press(&"jump")
+		for i: int in 60:
+			if i == hold:
+				Input.action_release(&"jump")
+			await wait_physics_frames(1)
+			top = maxf(top, player.global_position.y)
+		Input.action_release(&"jump")
+		heights.append(top - y0)
+	assert_lt(heights[0], heights[1] * 0.8, "short hop %.2f m vs full jump %.2f m" % [heights[0], heights[1]])
+
+
+func test_the_camera_moves_smoothly_between_physics_ticks() -> void:
+	# Frames that don't line up with the 60 Hz physics ticks (40 fps here, as
+	# on a phone that drops frames: one tick some frames, two others). The
+	# body only moves on ticks; the camera is drawn between them, so its
+	# speed per frame stays even.
+	var fps: int = Engine.max_fps
+	Engine.max_fps = 40
+	Input.action_press(&"move_forward", 1.0)
+	await wait_physics_frames(20)
+	var probe: FrameProbe = FrameProbe.new()
+	probe.player = player
+	add_child_autofree(probe)
+	var frames: int = 0
+	while frames < 120 and probe.cam_steps.size() < 30:
+		await get_tree().process_frame
+		frames += 1
+	var cam_steps: Array[float] = probe.cam_steps
+	var body_steps: Array[float] = probe.body_steps
+	var spread: Callable = func(a: Array[float]) -> float:
+		var m: float = 0.0
+		for v: float in a:
+			m += v
+		m /= maxf(a.size(), 1)
+		var var_sum: float = 0.0
+		for v: float in a:
+			var_sum += (v - m) * (v - m)
+		return sqrt(var_sum / maxf(a.size(), 1)) / maxf(m, 0.001)
+	Engine.max_fps = fps
+	var cam_cv: float = spread.call(cam_steps)
+	var body_cv: float = spread.call(body_steps)
+	gut.p("camera speed spread %.2f, body %.2f over %d frames" % [cam_cv, body_cv, cam_steps.size()])
+	if body_cv < 0.15:
+		pass_test("frames lined up with ticks in this run (body spread %.2f): nothing to smooth" % body_cv)
+		return
+	assert_lt(cam_cv, body_cv * 0.5, "the camera's motion per frame is far more even than the body's")
+	Input.action_release(&"move_forward")
+
+
+## Samples the camera after every other node's _process (what gets drawn).
+class FrameProbe:
+	extends Node
+	var player: Player
+	var cam_steps: Array[float] = []
+	var body_steps: Array[float] = []
+	var _last_cam: Vector3 = Vector3.INF
+	var _last_body: Vector3
+
+	func _ready() -> void:
+		process_priority = 10000
+
+	func _process(dt: float) -> void:
+		var c: Vector3 = player.camera().global_position
+		var b: Vector3 = player.global_position
+		# Only the regular 40 fps frames (the odd stretched or squeezed one
+		# while the frame cap settles would swamp the measure).
+		if _last_cam != Vector3.INF and absf(dt - 0.025) < 0.004:
+			cam_steps.append(Vector2(c.x - _last_cam.x, c.z - _last_cam.z).length() / dt)
+			body_steps.append(Vector2(b.x - _last_body.x, b.z - _last_body.z).length() / dt)
+		_last_cam = c
+		_last_body = b
