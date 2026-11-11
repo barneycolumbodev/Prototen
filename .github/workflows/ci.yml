@@ -2,9 +2,11 @@
 # publish it to the rolling "dev-latest" release.
 name: CI
 
+# Builds when something lands on the repository's default branch (a merged
+# pull request), whatever that branch is called, and on manual dispatch.
+# Pushes to other branches start a run that skips straight away.
 on:
   push:
-    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -19,6 +21,7 @@ env:
 
 jobs:
   build:
+    if: github.event_name == 'workflow_dispatch' || github.ref_name == github.event.repository.default_branch
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
