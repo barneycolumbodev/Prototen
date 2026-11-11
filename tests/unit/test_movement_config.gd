@@ -110,3 +110,14 @@ func test_sprint_holds_while_strafing_forward() -> void:
 	assert_true(cfg.sprint_holds(Vector2(0.6, -0.6)), "45 degrees off forward keeps the sprint")
 	assert_false(cfg.sprint_holds(Vector2(1.0, 0.0)), "straight sideways ends it")
 	assert_false(cfg.sprint_holds(Vector2(0.0, -0.2)), "barely tilted ends it")
+
+
+func test_aiming_out_of_a_sprint_slows_at_once() -> void:
+	# Below a sprint, a lower target (aiming, crouching) brakes normally:
+	# only momentum above a sprint coasts.
+	var cfg: MovementConfig = load("res://data/player/movement_default.tres")
+	var h: Vector3 = Vector3(0, 0, -cfg.sprint_speed)
+	var aim_top: float = cfg.walk_speed * 0.5
+	for i: int in 15:  # 0.25 s
+		h = cfg.ground_step(h, Vector3(0, 0, -1), aim_top, 1.0, 1.0 / 60.0, cfg.sprint_speed)
+	assert_almost_eq(h.length(), aim_top, 0.05, "at aiming speed within 0.25 s (%.2f)" % h.length())

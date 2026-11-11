@@ -110,11 +110,10 @@ func test_the_cut_nearest_the_hit_is_the_one_that_goes() -> void:
 	var wrist: Array = Dismemberment.nearest_cut(cfg, &"l_hand", cuts[&"hand_L"], cuts, none)
 	var wrist_seg: StringName = wrist[0]
 	assert_eq(wrist_seg, &"hand_L")
-	# A limb's cut 30 cm from the hit is out of reach.
-	var far_cuts: Dictionary[StringName, Vector3] = {&"upper_arm_L": Vector3(0.3, 0, 0)}
-	var mid_chest: Array = Dismemberment.nearest_cut(cfg, &"chest", Vector3.ZERO, far_cuts, none)
+	# Torso hits take no limb, even with an arm across the chest (they go toward a burst).
+	var mid_chest: Array = Dismemberment.nearest_cut(cfg, &"chest", cuts[&"upper_arm_L"], cuts, none)
 	var mid_chest_seg: StringName = mid_chest[0]
-	assert_eq(mid_chest_seg, &"", "the middle of the chest has no limb in reach")
+	assert_eq(mid_chest_seg, &"", "a chest hit takes no limb")
 
 
 func test_a_rail_round_through_the_upper_arm_takes_the_arm() -> void:
@@ -137,8 +136,10 @@ func test_a_rail_round_through_the_thigh_takes_the_leg_and_he_crawls() -> void:
 
 
 func test_a_pistol_round_takes_nothing_off() -> void:
+	var i: int = 0
 	for zone: StringName in [&"l_hand", &"l_forearm", &"head"]:
-		var e: Enemy = _target(1)
+		var e: Enemy = _target(i)  # a fresh man each time (the head shot kills)
+		i += 1
 		await _shoot(pistol, e.body.hitboxes[zone].global_position)
 		assert_true(e.body.severed.is_empty(), "one 5.7 mm round to the %s severs nothing" % zone)
 

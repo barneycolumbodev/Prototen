@@ -386,11 +386,12 @@ func _process(delta: float) -> void:
 func _physics_process(delta: float) -> void:
 	# Time dilation: the player runs faster than the world (TimeControl).
 	delta *= TimeControl.player_boost()
-	_tick_prev = _tick_now
+	# Moved since the last tick by something other than a tick (a spawn,
+	# a respawn, a test or a cutscene putting the body somewhere): the
+	# camera goes straight there instead of gliding.
+	_tick_prev = _tick_now if global_position.is_equal_approx(_tick_now) else global_position
 	_physics_body(delta)
 	_tick_now = global_position
-	if _tick_prev.distance_to(_tick_now) > 3.0:
-		_tick_prev = _tick_now  # a teleport, not motion
 
 
 func _physics_body(delta: float) -> void:
@@ -464,7 +465,10 @@ func _physics_body(delta: float) -> void:
 	speed *= move_scale * aug_move_scale * speed_factor()
 	var agility: float = body.stat(&"agility")
 	if is_on_floor():
-		horizontal = cfg.ground_step(horizontal, wish, speed, agility, delta)
+		# Momentum above a full sprint carries; anything slower (aiming,
+		# crouching, the shield) brakes normally.
+		var carry: float = cfg.sprint_speed * sprint_scale * aug_move_scale * speed_factor()
+		horizontal = cfg.ground_step(horizontal, wish, speed, agility, delta, carry)
 	else:
 		horizontal = cfg.air_step(horizontal, wish, maxf(speed, cfg.walk_speed * move_scale * aug_move_scale * speed_factor()), agility, delta)
 
@@ -916,8 +920,8 @@ func _update_crouch_pose(delta: float) -> void:
 	if cfg.camera_interpolation and not dead:
 		var f: float = clampf(Engine.get_physics_interpolation_fraction(), 0.0, 1.0)
 		camera_lag = _tick_prev.lerp(_tick_now, f) - global_position
-		if camera_lag.length() > 1.0:
-			camera_lag = Vector3.ZERO
+		if camera_lag.length() > 1.0 or not global_position.is_equal_approx(_tick_now):
+			camera_lag = Vector3.ZERO  # teleported this frame
 	var local_lag: Vector3 = global_basis.inverse() * camera_lag
 	_head.position = Vector3(local_lag.x, lerpf(cfg.stand_eye_height, cfg.crouch_eye_height, ease_c) + _step_offset + _land_spring.value.y + local_lag.y, local_lag.z)
 

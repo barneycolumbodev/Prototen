@@ -173,3 +173,65 @@ func test_presets_apply_from_their_tiles() -> void:
 	st.select_preset(2)
 	st.activate()
 	assert_eq(st.working.ids(), LoadoutStore.presets()[2].ids())
+
+
+func _press(action: StringName) -> void:
+	var ev: InputEventAction = InputEventAction.new()
+	ev.action = action
+	ev.pressed = true
+	Input.parse_input_event(ev)
+	await wait_frames(2)
+	ev = ev.duplicate() as InputEventAction
+	ev.pressed = false
+	Input.parse_input_event(ev)
+	await wait_frames(2)
+
+
+## A tap through the viewport's GUI picking (headless has no window, so the
+## events go straight into the viewport).
+func _tap(b: Button) -> void:
+	# Into window coordinates (headless stretches the root by an odd factor).
+	var at: Vector2 = b.get_viewport().get_final_transform() * b.get_global_rect().get_center()
+	var mm: InputEventMouseMotion = InputEventMouseMotion.new()
+	mm.position = at
+	mm.global_position = at
+	b.get_viewport().push_input(mm)
+	for down: bool in [true, false]:
+		var ev: InputEventMouseButton = InputEventMouseButton.new()
+		ev.button_index = MOUSE_BUTTON_LEFT
+		ev.button_mask = MOUSE_BUTTON_MASK_LEFT if down else 0
+		ev.pressed = down
+		ev.position = at
+		ev.global_position = at
+		b.get_viewport().push_input(ev)
+		await wait_frames(2)
+
+
+func test_the_dpad_walks_the_grid_and_a_installs() -> void:
+	var st: BodyStatus = player.augments.status
+	st.open()
+	await wait_frames(2)
+	st.select_part(&"nw4_nanoweave")
+	await wait_frames(1)
+	await _press(&"ui_right")
+	assert_ne(st.selected, &"nw4_nanoweave", "D-pad right moves to the next tile")
+	var right_of: StringName = st.selected
+	assert_eq(LoadoutStore.LIBRARY.find(right_of).location, PartData.Location.TORSO, "along the same row")
+	await _press(&"ui_down")
+	assert_eq(LoadoutStore.LIBRARY.find(st.selected).location, PartData.Location.ARMS, "down goes to the next location")
+	var id: StringName = st.selected
+	var had: bool = st.working.has_part(id)
+	await _press(&"ui_accept")
+	assert_ne(st.working.has_part(id), had, "A installs or removes the part under the cursor")
+
+
+func test_a_tap_selects_and_a_second_tap_installs() -> void:
+	var st: BodyStatus = player.augments.status
+	st.open()
+	await wait_frames(2)
+	var b: Button = st._tiles[&"ct7_trauma_plating"]
+	await _tap(b)
+	assert_eq(st.selected, &"ct7_trauma_plating", "the first tap selects it")
+	assert_false(st.working.has_part(&"ct7_trauma_plating"), "and only previews it")
+	await _tap(b)
+	assert_true(st.working.has_part(&"ct7_trauma_plating"), "the second tap installs it")

@@ -637,6 +637,8 @@ func _new_gib() -> RigidBody3D:
 	g.add_child(cs)
 	var mi: MeshInstance3D = MeshInstance3D.new()
 	mi.name = "Mesh"
+	# No shadows: up to 32 gibs would add a shadow pass draw each.
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	g.add_child(mi)
 	g.top_level = true
 	add_child(g)

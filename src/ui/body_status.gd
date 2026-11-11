@@ -92,6 +92,9 @@ var _button_bar: HBoxContainer
 var _jump_button: Button
 ## A tile selected by this very tap (touch): the tap selects, the next one acts.
 var _tap_selected: String = ""
+## When the cursor last moved to a tile (process frame): a press in the same
+## frame is the press that selected it.
+var _focus_frame: int = -1
 var _styles: Dictionary[String, StyleBoxFlat] = {}
 var _building: bool = false
 
@@ -304,6 +307,7 @@ func _make_tile(key: String) -> Button:
 	b.add_theme_stylebox_override("focus", _styles["focus"])
 	b.focus_entered.connect(_on_tile_focus.bind(key))
 	b.pressed.connect(_on_tile_pressed.bind(key))
+	b.gui_input.connect(_on_tile_input.bind(key))
 	if key.begins_with("preset:"):
 		var pi: int = key.get_slice(":", 1).to_int()
 		b.text = _presets[pi].display_name
@@ -532,13 +536,27 @@ func selected_part() -> PartData:
 func _on_tile_focus(key: String) -> void:
 	if _building:
 		return
-	if Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
-		_tap_selected = key
+	_focus_frame = Engine.get_process_frames()
 	if key.begins_with("preset:"):
 		select_preset(key.get_slice(":", 1).to_int())
 	else:
 		select_part(StringName(key))
 	Sfx.play_ui(&"wheel_tick", -12.0, 0.02)
+
+
+## A finger or mouse coming down on a tile that this same press just moved
+## the cursor to: it only selects (the press is let through to the button,
+## and _on_tile_pressed ignores it).
+func _on_tile_input(event: InputEvent, key: String) -> void:
+	var down: bool = false
+	var mb: InputEventMouseButton = event as InputEventMouseButton
+	if mb and mb.pressed and mb.button_index == MOUSE_BUTTON_LEFT:
+		down = true
+	var touch: InputEventScreenTouch = event as InputEventScreenTouch
+	if touch and touch.pressed:
+		down = true
+	if down and _focus_frame == Engine.get_process_frames():
+		_tap_selected = key
 
 
 func _on_tile_pressed(key: String) -> void:

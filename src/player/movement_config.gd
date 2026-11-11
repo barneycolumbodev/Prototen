@@ -157,12 +157,16 @@ extends Resource
 ## state (walk, sprint, crouch) at full tilt; `agility` scales every rate.
 ## Speed and direction are handled apart: speed eases toward the target,
 ## direction swings round at ground_turn_rate, so turns keep their speed.
-func ground_step(h: Vector3, wish: Vector3, top: float, agility: float, delta: float) -> Vector3:
+## `carry`: the speed momentum bleeds down to gently (a sprint); below it,
+## normal braking takes speed down to the target (aiming, crouching).
+func ground_step(h: Vector3, wish: Vector3, top: float, agility: float, delta: float, carry: float = -1.0) -> Vector3:
+	if carry < 0.0:
+		carry = top
 	var speed: float = h.length()
 	var tilt: float = minf(wish.length(), 1.0)
 	var target: float = top * tilt
 	if tilt < 0.02:
-		return h.normalized() * _ease_speed(speed, 0.0, top, false, agility, delta) if speed > 0.0001 else Vector3.ZERO
+		return h.normalized() * _ease_speed(speed, 0.0, carry, false, agility, delta) if speed > 0.0001 else Vector3.ZERO
 	var want: Vector3 = wish / wish.length()
 	if speed < 0.4:
 		# From (nearly) standing: push off straight along the stick.
@@ -174,18 +178,19 @@ func ground_step(h: Vector3, wish: Vector3, top: float, agility: float, delta: f
 		return approach(h, want * target, ground_accel * agility, ground_decel * agility * 1.15, delta)
 	var turn: float = ground_turn_rate * agility * delta
 	dir = dir.rotated(Vector3.UP, clampf(ang, -turn, turn))
-	return dir * _ease_speed(speed, target, top, true, agility, delta)
+	return dir * _ease_speed(speed, target, maxf(carry, top), true, agility, delta)
 
 
 ## Eases `speed` toward `target`: the gap closes at *_response per second,
-## never faster than ground_accel/decel. Above `top` (momentum from a slide,
-## a jump) it bleeds at overspeed_friction while `pushing`.
-func _ease_speed(speed: float, target: float, top: float, pushing: bool, agility: float, delta: float) -> float:
+## never faster than ground_accel/decel. Above `carry` (momentum from a
+## slide, a jump: faster than a sprint) it bleeds at overspeed_friction while
+## `pushing`; from `carry` down to the target, normal braking.
+func _ease_speed(speed: float, target: float, carry: float, pushing: bool, agility: float, delta: float) -> float:
 	if speed < target:
 		var rate: float = minf(ground_accel * agility, (target - speed) * ground_response + 2.0)
 		return minf(speed + rate * delta, target)
-	if pushing and speed > top + 0.05:
-		return maxf(speed - overspeed_friction * delta, maxf(target, top))
+	if pushing and speed > carry + 0.05:
+		return maxf(speed - overspeed_friction * delta, maxf(target, carry))
 	var down: float = minf(ground_decel * agility, (speed - target) * stop_response + 2.5)
 	return maxf(speed - down * delta, target)
 

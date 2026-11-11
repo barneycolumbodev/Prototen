@@ -58,3 +58,8 @@ Checked 2026-11-01 in the first cloud session (CLAUDE.md §1 step 5, §10.4). Up
 1. **Network access → Custom**, keep the defaults, add the hosts in CLAUDE.md §10.1 (at least `download.blender.org`, `extensions.blender.org`, `api.polyhaven.com`, `dl.polyhaven.org`, `ambientcg.com`).
 2. **Setup script**: paste `tools/setup_env.sh`.
 3. **Repository secrets** (GitHub → Settings → Secrets → Actions) for a stable APK signature: `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEYSTORE_ALIAS`. Without them CI signs with the committed debug key `tools/android/graft-debug.keystore` (alias and password `graftdebug`), so builds install over each other. Setting the secrets changes the signature once: uninstall the old APK that one time. The committed key is for debug builds only, never a release.
+
+## 2026-11-11
+
+- After a container restart, `/opt/bpy-venv` existed without `bpy` (the setup script's fallback install had failed silently), and `mesa-vulkan-drivers` was missing (screenshots fell back to the Compatibility renderer). Fixed in the session with `/opt/bpy-venv/bin/pip install bpy==5.2.3 pillow numpy` and `apt-get install -y mesa-vulkan-drivers`. The triad generator's preview sheets need Pillow; `tools/setup_env.sh` now installs it with the bpy fallback.
+- Headless GUT has a 0×0 window and stretches the root viewport, so synthetic mouse events must go through `Viewport.push_input` in window coordinates (`get_final_transform() * canvas position`); see `tests/scene/test_loadout.gd`.

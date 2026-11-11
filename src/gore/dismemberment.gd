@@ -24,9 +24,9 @@ const ZONE_CUTS: Dictionary[StringName, Array] = {
 	&"r_shin": [&"shin_R", &"thigh_R"],
 	&"l_foot": [&"shin_L"],
 	&"r_foot": [&"shin_R"],
-	&"chest": [&"upper_arm_L", &"upper_arm_R"],
+	&"chest": [],
 	&"stomach": [],
-	&"pelvis": [&"thigh_L", &"thigh_R"],
+	&"pelvis": [],
 }
 const TORSO: Array[StringName] = [&"chest", &"stomach", &"pelvis"]
 
