@@ -8,8 +8,13 @@ extends Node3D
 ## - the animation tree (stance clips, walk blend space, reload and stumble
 ##   one-shots) and the procedural aim/flinch layer (EnemyPose);
 ## - a ragdoll (PhysicalBoneSimulator3D) for death, frozen after a few seconds;
-## - dismemberment: swaps to pre-cut parts with flesh caps and throws the
-##   severed part as a gib (Gore).
+## - dismemberment (docs/design.md §5.5): a cut at every joint (neck, upper
+##   arms, forearms, wrists, thighs, below the knees; pre-cut in the glTF with
+##   flesh caps). On the first cut the intact mesh is swapped for all the
+##   pieces merged into one mesh (one draw call); the shader hides severed
+##   pieces by a bitmask. A severed piece and everything still on it fly as
+##   one gib; a destroyed piece goes to chunks; burst() blows the whole body
+##   apart (Gore).
 ## Faces +Z; its left is +X.
 
 signal ragdoll_frozen
@@ -59,14 +64,26 @@ const RAGDOLL: Dictionary[StringName, Array] = {
 	&"shin.R": [0.06, 0.42, "hinge", 2.0, -140.0, 4.0],
 }
 
-## Severable parts: part -> [mesh node, bone the gib follows, zones it takes].
-const PARTS: Dictionary[StringName, Array] = {
-	&"head": [&"part_head", &"head", [&"head", &"neck"]],
-	&"forearm_L": [&"part_forearm_L", &"forearm.L", [&"l_forearm", &"l_hand"]],
-	&"forearm_R": [&"part_forearm_R", &"forearm.R", [&"r_forearm", &"r_hand"]],
-	&"shin_L": [&"part_shin_L", &"shin.L", [&"l_shin", &"l_foot"]],
-	&"shin_R": [&"part_shin_R", &"shin.R", [&"r_shin", &"r_foot"]],
+## Severable segments: name -> [mesh node, bone the gib follows, parent
+## segment (&"" = the body), cut: bone and child bone it lies between and
+## how far along, zones it takes, ragdoll bones it takes]. The cut positions
+## match raw_assets/characters/triad/build.py cut_specs().
+const SEGMENTS: Dictionary[StringName, Array] = {
+	&"head": [&"part_head", &"head", &"", &"neck", &"head", 0.57, [&"head", &"neck"], [&"head"]],
+	&"upper_arm_L": [&"part_upper_arm_L", &"upper_arm.L", &"", &"upper_arm.L", &"forearm.L", 0.6, [&"l_forearm", &"l_hand"], [&"forearm.L"]],
+	&"forearm_L": [&"part_forearm_L", &"forearm.L", &"upper_arm_L", &"forearm.L", &"hand.L", 0.35, [&"l_forearm", &"l_hand"], [&"forearm.L"]],
+	&"hand_L": [&"part_hand_L", &"hand.L", &"forearm_L", &"hand.L", &"fingers.L", -0.13, [&"l_hand"], []],
+	&"upper_arm_R": [&"part_upper_arm_R", &"upper_arm.R", &"", &"upper_arm.R", &"forearm.R", 0.6, [&"r_forearm", &"r_hand"], [&"forearm.R"]],
+	&"forearm_R": [&"part_forearm_R", &"forearm.R", &"upper_arm_R", &"forearm.R", &"hand.R", 0.35, [&"r_forearm", &"r_hand"], [&"forearm.R"]],
+	&"hand_R": [&"part_hand_R", &"hand.R", &"forearm_R", &"hand.R", &"fingers.R", -0.13, [&"r_hand"], []],
+	&"thigh_L": [&"part_thigh_L", &"thigh.L", &"", &"thigh.L", &"shin.L", 0.65, [&"l_shin", &"l_foot"], [&"shin.L"]],
+	&"shin_L": [&"part_shin_L", &"shin.L", &"thigh_L", &"shin.L", &"foot.L", 0.3, [&"l_shin", &"l_foot"], [&"shin.L"]],
+	&"thigh_R": [&"part_thigh_R", &"thigh.R", &"", &"thigh.R", &"shin.R", 0.65, [&"r_shin", &"r_foot"], [&"shin.R"]],
+	&"shin_R": [&"part_shin_R", &"shin.R", &"thigh_R", &"shin.R", &"foot.R", 0.3, [&"r_shin", &"r_foot"], [&"shin.R"]],
 }
+## Bit order of the segments in the merged mesh (CUSTOM0.w = index + 1).
+const SEGMENT_ORDER: Array[StringName] = [&"head", &"upper_arm_L", &"forearm_L", &"hand_L", &"upper_arm_R", &"forearm_R",
+		&"hand_R", &"thigh_L", &"shin_L", &"thigh_R", &"shin_R"]
 
 const STANCES: Array[StringName] = [&"loco", &"run", &"idle", &"cover", &"crouch_aim", &"blind_fire",
 		&"gut", &"crawl", &"surrender", &"flee", &"cower"]
@@ -81,6 +98,12 @@ const FLEE_CLIP_SPEED: float = 5.2
 const CRAWL_CLIP_SPEED: float = 0.45
 
 static var _rest_meshes: Dictionary[StringName, ArrayMesh] = {}
+## The body and every segment merged (built once from the glTF parts).
+static var _merged: ArrayMesh
+## Gib meshes: a segment with whatever is still on it, in the rest pose.
+static var _gib_meshes: Dictionary[String, ArrayMesh] = {}
+## Where each gib mesh's middle was in the rest pose (it's stored centred).
+static var _gib_centres: Dictionary[String, Vector3] = {}
 
 ## The enemy that owns this body (gets on_part_hit / on_part_burn).
 var owner_node: Node
@@ -94,6 +117,9 @@ var stance: StringName = &"idle"
 var ragdolling: bool = false
 var frozen: bool = false
 var severed: Dictionary[StringName, bool] = {}
+## Blown apart (burst): nothing left to show or hit.
+var gibbed: bool = false
+var _severed_mask: int = 0
 ## Held by the mesh arm (NT-5): the ragdoll never freezes while this is set.
 var hold_awake: bool = false
 
@@ -293,7 +319,7 @@ func ragdoll(impulse: Vector3, point: Vector3, zone: StringName) -> void:
 
 ## Pushes the ragdoll (a corpse being shot). Wakes it if it was frozen.
 func push_bone(zone: StringName, impulse: Vector3, point: Vector3) -> void:
-	if not ragdolling:
+	if not ragdolling or gibbed:
 		return
 	if frozen:
 		unfreeze()
@@ -425,58 +451,259 @@ func _nearest_body(zone: StringName, point: Vector3) -> PhysicalBone3D:
 
 # ------------------------------------------------------------------ dismemberment
 
-## Cuts `part` off. `destroy` = blown apart (head shots from heavy rounds):
-## no gib, chunks instead. Returns false if already gone.
-func sever(part: StringName, velocity: Vector3, destroy: bool) -> bool:
-	if severed.has(part) or not PARTS.has(part):
+## Cuts `segment` off with everything still on it (an arm off at the upper
+## arm takes the forearm and hand). `destroy`: blown to pieces (chunks and
+## mist, no limb). Returns false if it was already gone.
+func sever(segment: StringName, velocity: Vector3, destroy: bool = false) -> bool:
+	if gibbed or severed.has(segment) or not SEGMENTS.has(segment):
 		return false
-	severed[part] = true
-	if not _split:
-		_split = true
-		_meshes[&"triad"].visible = false
-		for p: StringName in [&"part_body", &"part_head", &"part_forearm_L", &"part_forearm_R", &"part_shin_L", &"part_shin_R"]:
-			_meshes[p].visible = true
-	var spec: Array = PARTS[part]
-	var mesh_name: StringName = spec[0]
-	var mi: MeshInstance3D = _meshes[mesh_name]
-	mi.visible = false
-	for z: StringName in spec[2]:
-		if hitboxes.has(z):
-			hitboxes[z].collision_layer = 0
+	_split_mesh()
+	var group: Array[StringName] = attached(segment)
+	var spec: Array = SEGMENTS[segment]
 	var bone: StringName = spec[1]
 	var bi: int = skeleton.find_bone(bone)
 	var shown: Transform3D = bone_global(bone)
 	var xform: Transform3D = shown * skeleton.get_bone_global_rest(bi).affine_inverse()
-	var at: Vector3 = shown.origin
+	var at: Vector3 = cut_point(segment)
+	for seg: StringName in group:
+		severed[seg] = true
+		_severed_mask |= 1 << SEGMENT_ORDER.find(seg)
+		var sp: Array = SEGMENTS[seg]
+		for z: StringName in sp[6]:
+			if hitboxes.has(z):
+				hitboxes[z].collision_layer = 0
+		for rb: StringName in sp[7]:
+			if _bones.has(rb):
+				_bones[rb].collision_layer = 0
+				_bones[rb].collision_mask = 0
+	material.set_shader_parameter(&"severed_mask", _severed_mask)
+	var mid: Vector3 = (at + _segment_end(group)) * 0.5
 	if destroy:
-		Gore.burst_chunks(at + Vector3.UP * 0.08, velocity.normalized() + Vector3.UP * 0.3, 10, 6.0)
-		Gore.mist(at + Vector3.UP * 0.08, velocity.normalized(), 2.5)
-		Gore.spray(at + Vector3.UP * 0.08, velocity.normalized() + Vector3.UP * 0.4, 2.2, 40)
+		var n: int = 3 + 2 * group.size()
+		if segment == &"head":
+			Gore.burst_head(at + Vector3.UP * 0.08, velocity)
+		else:
+			Gore.burst_chunks(mid, velocity.normalized() + Vector3.UP * 0.3, n, velocity.length() * 0.8 + 2.0)
+			Gore.mist(mid, velocity.normalized(), 1.6)
+			Gore.spray(mid, velocity.normalized() + Vector3.UP * 0.3, 1.8, 26)
 	else:
-		var radius: float = 0.11 if part == &"head" else 0.06
-		Gore.throw_gib(mi.mesh, xform, velocity, Vector3(randf_range(-8, 8), randf_range(-8, 8), randf_range(-8, 8)), radius, material)
-	if part == &"forearm_R" and gun:
+		var radius: float = 0.11 if segment == &"head" else (0.05 + 0.03 * group.size())
+		var spin: Vector3 = Vector3(randf_range(-6, 6), randf_range(-6, 6), randf_range(-6, 6))
+		var mesh: ArrayMesh = gib_mesh(group)
+		# The mesh is centred on its middle: the body goes there.
+		var centre: Vector3 = _gib_centres[",".join(PackedStringArray(group))]
+		Gore.throw_gib(mesh, xform * Transform3D(Basis(), centre), velocity, spin, radius, material)
+	if gun and (&"hand_R" in group):
 		drop_gun(velocity * 0.3)
 	return true
 
 
-func is_severed(part: StringName) -> bool:
-	return severed.has(part)
+## `segment` and the segments still on it, outermost last.
+func attached(segment: StringName) -> Array[StringName]:
+	var out: Array[StringName] = [segment]
+	var i: int = 0
+	while i < out.size():
+		for seg: StringName in SEGMENT_ORDER:
+			var sp: Array = SEGMENTS[seg]
+			if sp[2] == out[i] and not severed.has(seg):
+				out.append(seg)
+		i += 1
+	return out
 
 
-## Where the stump of `part` is and which way it points (for bleeding).
-func stump(part: StringName) -> Transform3D:
-	var spec: Array = PARTS[part]
-	var bone: StringName = spec[1]
-	var t: Transform3D = bone_global(bone)
-	if part == &"head":
-		# The head bone's parent (neck) is what bleeds.
-		t = bone_global(&"neck")
-		t.origin = t * Vector3(0, 0.06, 0)
-		return t
-	t.origin = t * Vector3(0, 0.09, 0)
-	t.basis = Basis(t.basis.x, -t.basis.y, -t.basis.z)
-	return t
+func is_severed(segment: StringName) -> bool:
+	return severed.has(segment)
+
+
+## Where the cut for `segment` is right now (world).
+func cut_point(segment: StringName) -> Vector3:
+	var sp: Array = SEGMENTS[segment]
+	var from_bone: StringName = sp[3]
+	var to_bone: StringName = sp[4]
+	var t: float = sp[5]
+	return bone_global(from_bone).origin.lerp(bone_global(to_bone).origin, t)
+
+
+## Every cut that's still there, segment -> where it is (world).
+func cut_points() -> Dictionary[StringName, Vector3]:
+	var out: Dictionary[StringName, Vector3] = {}
+	for seg: StringName in SEGMENT_ORDER:
+		if not severed.has(seg):
+			out[seg] = cut_point(seg)
+	return out
+
+
+## The far end of a group of segments (the hand of an arm, the foot of a leg).
+func _segment_end(group: Array[StringName]) -> Vector3:
+	var last: Array = SEGMENTS[group[-1]]
+	var end_bone: StringName = last[4]
+	return bone_global(end_bone).origin
+
+
+## Where the stump of `segment` is, its Y axis pointing out of the body (for bleeding).
+func stump(segment: StringName) -> Transform3D:
+	var sp: Array = SEGMENTS[segment]
+	var from_bone: StringName = sp[3]
+	var to_bone: StringName = sp[4]
+	var t: float = sp[5]
+	var a: Vector3 = bone_global(from_bone).origin
+	var b: Vector3 = bone_global(to_bone).origin
+	var y: Vector3 = (b - a).normalized() if b.distance_to(a) > 0.001 else Vector3.UP
+	var x: Vector3 = y.cross(Vector3.FORWARD if absf(y.z) < 0.9 else Vector3.RIGHT).normalized()
+	return Transform3D(Basis(x, y, x.cross(y)), a.lerp(b, t))
+
+
+## Blows the whole body apart: every limb and the head fly off (some in
+## pieces), the torso bursts into ribs, spine, organs and meat, blood
+## everywhere. `velocity`: the push of what did it.
+func burst(velocity: Vector3) -> void:
+	if gibbed:
+		return
+	var centre: Vector3 = chest_position()
+	var speed: float = Gore.config.gib_speed
+	for seg: StringName in [&"head", &"upper_arm_L", &"upper_arm_R", &"thigh_L", &"thigh_R"]:
+		if severed.has(seg):
+			continue
+		var out: Vector3 = (cut_point(seg) - centre).normalized()
+		var v: Vector3 = velocity * 0.6 + (out + Vector3.UP * 0.4).normalized() * speed * randf_range(0.6, 1.2)
+		sever(seg, v, seg != &"head" and randf() < 0.25)
+	gibbed = true
+	if gun:
+		drop_gun(velocity * 0.4 + Vector3.UP * 3.0)
+	for h: HitboxPart in hitboxes.values():
+		h.collision_layer = 0
+	for pl: StaticBody3D in _plates:
+		pl.collision_layer = 0
+	if ragdolling and not frozen:
+		_sim.physical_bones_stop_simulation()
+		_sim.active = false
+		frozen = true
+		remove_from_group(&"ragdolls_active")
+		RagdollBudget.stopped(self)
+	_model.visible = false
+	Gore.burst_torso(centre, velocity)
+
+
+# ------------------------------------------------------------------ split mesh
+
+## First cut: the intact mesh goes, the merged pieces come in.
+func _split_mesh() -> void:
+	if _split:
+		return
+	_split = true
+	var body: MeshInstance3D = _meshes.get(&"part_body")
+	if body == null:
+		return
+	body.mesh = merged_mesh(_meshes)
+	body.visible = true
+	_meshes[&"triad"].visible = false
+	for seg: StringName in SEGMENT_ORDER:
+		var mi: MeshInstance3D = _meshes.get(SEGMENTS[seg][0])
+		if mi:
+			mi.visible = false
+
+
+## The body and every segment in one skinned mesh; CUSTOM0.w holds each
+## vertex's segment (index + 1, 0 = the body) for the shader's mask.
+static func merged_mesh(meshes: Dictionary[StringName, MeshInstance3D]) -> ArrayMesh:
+	if _merged:
+		return _merged
+	var parts: Array[Mesh] = [meshes[&"part_body"].mesh]
+	var ids: Array[int] = [0]
+	for i: int in SEGMENT_ORDER.size():
+		var mi: MeshInstance3D = meshes.get(SEGMENTS[SEGMENT_ORDER[i]][0])
+		if mi:
+			parts.append(mi.mesh)
+			ids.append(i + 1)
+	_merged = _concat(parts, ids)
+	return _merged
+
+
+## A gib mesh for a group of segments (rest pose, one draw call).
+func gib_mesh(group: Array[StringName]) -> ArrayMesh:
+	var key: String = ",".join(PackedStringArray(group))
+	if _gib_meshes.has(key):
+		return _gib_meshes[key]
+	var parts: Array[Mesh] = []
+	var ids: Array[int] = []
+	for seg: StringName in group:
+		var mi: MeshInstance3D = _meshes.get(SEGMENTS[seg][0])
+		if mi:
+			parts.append(mi.mesh)
+			ids.append(0)  # never masked: it's the flying piece
+	var whole: AABB = parts[0].get_aabb()
+	for p: Mesh in parts:
+		whole = whole.merge(p.get_aabb())
+	var centre: Vector3 = whole.get_center()
+	var m: ArrayMesh = _concat(parts, ids, -centre)
+	_gib_meshes[key] = m
+	_gib_centres[key] = centre
+	return m
+
+
+## Concatenates single-surface meshes (same format) into one; CUSTOM0 =
+## rest position + id.
+static func _concat(parts: Array[Mesh], ids: Array[int], shift: Vector3 = Vector3.ZERO) -> ArrayMesh:
+	var verts: PackedVector3Array = PackedVector3Array()
+	var normals: PackedVector3Array = PackedVector3Array()
+	var tangents: PackedFloat32Array = PackedFloat32Array()
+	var uvs: PackedVector2Array = PackedVector2Array()
+	var bones: PackedInt32Array = PackedInt32Array()
+	var weights: PackedFloat32Array = PackedFloat32Array()
+	var custom: PackedFloat32Array = PackedFloat32Array()
+	var index: PackedInt32Array = PackedInt32Array()
+	var eight: bool = false
+	var has_tangents: bool = true
+	var has_bones: bool = true
+	for k: int in parts.size():
+		var arr: Array = parts[k].surface_get_arrays(0)
+		var v: PackedVector3Array = arr[Mesh.ARRAY_VERTEX]
+		var base: int = verts.size()
+		for p: Vector3 in v:
+			verts.append(p + shift)
+		var nrm: PackedVector3Array = arr[Mesh.ARRAY_NORMAL]
+		normals.append_array(nrm)
+		var tan: PackedFloat32Array = arr[Mesh.ARRAY_TANGENT] if arr[Mesh.ARRAY_TANGENT] is PackedFloat32Array else PackedFloat32Array()
+		if tan.size() == v.size() * 4:
+			tangents.append_array(tan)
+		else:
+			has_tangents = false
+		var uv: PackedVector2Array = arr[Mesh.ARRAY_TEX_UV]
+		uvs.append_array(uv)
+		if arr[Mesh.ARRAY_BONES] is PackedInt32Array:
+			var b: PackedInt32Array = arr[Mesh.ARRAY_BONES]
+			var w: PackedFloat32Array = arr[Mesh.ARRAY_WEIGHTS]
+			eight = b.size() == v.size() * 8
+			bones.append_array(b)
+			weights.append_array(w)
+		else:
+			has_bones = false
+		for i: int in v.size():
+			custom.append(v[i].x)
+			custom.append(v[i].y)
+			custom.append(v[i].z)
+			custom.append(float(ids[k]))
+		var idx: PackedInt32Array = arr[Mesh.ARRAY_INDEX]
+		for i: int in idx.size():
+			index.append(idx[i] + base)
+	var out: Array = []
+	out.resize(Mesh.ARRAY_MAX)
+	out[Mesh.ARRAY_VERTEX] = verts
+	out[Mesh.ARRAY_NORMAL] = normals
+	if has_tangents:
+		out[Mesh.ARRAY_TANGENT] = tangents
+	out[Mesh.ARRAY_TEX_UV] = uvs
+	if has_bones:
+		out[Mesh.ARRAY_BONES] = bones
+		out[Mesh.ARRAY_WEIGHTS] = weights
+	out[Mesh.ARRAY_CUSTOM0] = custom
+	out[Mesh.ARRAY_INDEX] = index
+	var flags: int = Mesh.ARRAY_CUSTOM_RGBA_FLOAT << Mesh.ARRAY_FORMAT_CUSTOM0_SHIFT
+	if eight:
+		flags |= Mesh.ARRAY_FLAG_USE_8_BONE_WEIGHTS
+	var m: ArrayMesh = ArrayMesh.new()
+	m.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, out, [], {}, flags)
+	return m
 
 
 # ------------------------------------------------------------------ gun
@@ -523,6 +750,7 @@ func _setup_meshes() -> void:
 	material.set_shader_parameter(&"trousers_tint", config.trousers_tint)
 	material.set_shader_parameter(&"skin_tint", config.skin_tint)
 	material.set_shader_parameter(&"wound_count", 0)
+	material.set_shader_parameter(&"severed_mask", 0)
 	material.set_shader_parameter(&"rim_color", config.rim_color)
 	material.set_shader_parameter(&"rim_strength", config.rim_strength)
 	var empty_w: PackedVector4Array = PackedVector4Array()
@@ -548,13 +776,14 @@ static func rest_mesh(key: StringName, mesh: Mesh) -> ArrayMesh:
 		var arrays: Array = mesh.surface_get_arrays(s)
 		var verts: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
 		var custom: PackedFloat32Array = PackedFloat32Array()
-		custom.resize(verts.size() * 3)
+		custom.resize(verts.size() * 4)
 		for i: int in verts.size():
-			custom[i * 3] = verts[i].x
-			custom[i * 3 + 1] = verts[i].y
-			custom[i * 3 + 2] = verts[i].z
+			custom[i * 4] = verts[i].x
+			custom[i * 4 + 1] = verts[i].y
+			custom[i * 4 + 2] = verts[i].z
+			custom[i * 4 + 3] = 0.0  # segment id: none (see merged_mesh)
 		arrays[Mesh.ARRAY_CUSTOM0] = custom
-		var flags: int = Mesh.ARRAY_CUSTOM_RGB_FLOAT << Mesh.ARRAY_FORMAT_CUSTOM0_SHIFT
+		var flags: int = Mesh.ARRAY_CUSTOM_RGBA_FLOAT << Mesh.ARRAY_FORMAT_CUSTOM0_SHIFT
 		var bones: PackedInt32Array = arrays[Mesh.ARRAY_BONES] if arrays[Mesh.ARRAY_BONES] is PackedInt32Array else PackedInt32Array()
 		if bones.size() == verts.size() * 8:
 			flags |= Mesh.ARRAY_FLAG_USE_8_BONE_WEIGHTS

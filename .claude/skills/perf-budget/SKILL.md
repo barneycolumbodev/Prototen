@@ -16,6 +16,7 @@ Target: Moto G 5G (2025) — Dimensity 6300, Mali-G57 MC2, 4 GB RAM, 720×1604 a
 | Active enemies | ≤ 12 |
 | Ragdolls simulating | ≤ 3, frozen after ~2.5 s |
 | Blood decals | ≤ 48, oldest fade out |
+| Gibs | ≤ 32 rigid bodies, one draw call each, frozen when still; chunks recycled before limbs (2026-11-11, for whole-body gibbing; not yet measured on the phone) |
 | Live particles | ≤ 1,500 |
 | Dynamic lights | ≤ 4; only one casts shadows |
 | RAM | ≤ 1.2 GB |

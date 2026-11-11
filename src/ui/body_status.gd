@@ -2,17 +2,21 @@ class_name BodyStatus
 extends CanvasLayer
 ## Body status and loadout (View button, CLAUDE.md §9.4; also Pause → Body
 ## status; docs/design.md §3.6). Left: the operative on a turntable, wearing
-## whatever is being previewed. Middle: every place in the body that takes
-## a part, and the presets. Right: the part under the cursor (what it does,
-## what it costs, what it needs, how it combines) and the whole stat sheet
-## with the change the preview would make.
+## whatever is being previewed. Middle: every part laid out at once (owner,
+## 2026-11-11: "all the options laid out and you can just click on the one
+## you want"): the presets, the nine actives, then the passives row by row
+## under their body location. Right: the selected part's card (what it does,
+## what it costs, what it needs and which parts supply that) and the whole
+## stat sheet with the change it would make.
 ##
-## Controls: up/down picks a row; left/right browses the parts that fit
-## there (the body and the numbers preview each one); A installs it (or
-## applies the preset); X takes the part out; Y helmet on/off; View or B
-## closes and puts the new loadout on the player (saved for next time).
-## The Actives row lists every active part; A on an installed active moves
-## it to the next D-pad direction. Pauses the game.
+## Controls: the D-pad or the stick moves over the tiles (the body and every
+## number preview the one under the cursor); A installs it, or takes it out
+## if it's in (a preset: applies it); X moves an installed active to the next
+## D-pad direction; RB jumps to a part that supplies what the selected part
+## (or an offline one) is missing; Y helmet; LT zoom; RS turns the model; B or
+## View closes and puts the loadout on the player (saved for next time).
+## Touch: tap a tile to select it, tap it again (or the button under the
+## card) to install or remove; tap a part named in the card to go to it.
 ##
 ## LB switches to the Colours page (docs/design.md §3.7): one row per suit
 ## piece and per installed part with hardware. Left/right steps through the
@@ -20,16 +24,15 @@ extends CanvasLayer
 ## puts the piece back the way it was built.
 
 const STUDIO_SKY: Shader = preload("res://src/ui/studio_sky.gdshader")
-## Rows, top to bottom (each location once per slot it has).
+## Passive rows, top to bottom.
 const ORDER: Array[int] = [
-	PartData.Location.SUIT, PartData.Location.HEAD, PartData.Location.EYES, PartData.Location.EARS,
+	PartData.Location.HEAD, PartData.Location.EYES, PartData.Location.EARS,
 	PartData.Location.NERVOUS, PartData.Location.SKELETON, PartData.Location.MUSCLE, PartData.Location.ORGANS,
 	PartData.Location.TORSO, PartData.Location.ARMS, PartData.Location.HANDS, PartData.Location.LEGS,
 	PartData.Location.SPINE, PartData.Location.BACK, PartData.Location.SKIN, PartData.Location.BLOOD,
 ]
-## Row ids that aren't body locations.
-const ROW_PRESETS: int = -1
-const ROW_ACTIVES: int = -2
+## Tiles per row in the grid.
+const COLUMNS: int = 4
 enum Page { LOADOUT, COLOURS }
 const SLIDERS: Array[String] = ["Hue", "Saturation", "Brightness", "Finish"]
 const C_GOOD: String = "#5cdcc6"
@@ -37,19 +40,21 @@ const C_BAD: String = "#e0705a"
 const C_DIM: String = "#7d8b8b"
 const C_NAME: String = "#ffd28a"
 const C_OFF: String = "#9a9fa3"
+const C_ACTIVE: String = "#ffb054"
+const C_FIX: String = "#ffd040"
 
 var player: Player
 var appearance: BodyAppearance
 var library: PartLibrary = LoadoutStore.LIBRARY
 ## The loadout being built (applied to the player on close).
 var working: BodyLoadout
-## What the cursor would make of it, and its numbers.
+## What the selection would make of it, and its numbers.
 var preview: BodyLoadout
 var preview_body: BodyModel
 var working_body: BodyModel
-## Row under the cursor (0 = presets) and the candidate browsed there.
-var row: int = 1
-var candidate: int = 0
+## The tile under the cursor: a part id, or a preset (selected_preset >= 0).
+var selected: StringName = &""
+var selected_preset: int = -1
 var changed: bool = false
 ## Which page is showing, and the Colours page's state.
 var page: Page = Page.LOADOUT
@@ -62,7 +67,6 @@ var slider: int = 0
 var _channels: Array[StringName] = []
 var _channel_labels: Array[String] = []
 
-var _rows: Array[Vector2i] = []  # (location, slot index); (-1, 0) = presets
 var _presets: Array[BodyLoadout] = []
 var _viewport: SubViewport
 var _pivot: Node3D
@@ -72,20 +76,35 @@ var zoom: float = 0.0
 var _zoom_held: bool = false
 ## Right stick turns the model; the turntable resumes when it's let go.
 var _manual_turn: float = 0.0
+## Colours page text (the loadout page uses the grid).
 var _list: RichTextLabel
+var _list_box: MarginContainer
 var _text: RichTextLabel
+var _grid_page: Control
+var _scroll: ScrollContainer
+var _header: RichTextLabel
+var _tiles: Dictionary[StringName, Button] = {}
+var _preset_tiles: Array[Button] = []
+## Parts that would fix what the selection is missing (outlined in the grid).
+var fix_ids: Array[StringName] = []
+var _act_button: Button
+var _button_bar: HBoxContainer
+var _jump_button: Button
+## A tile selected by this very tap (touch): the tap selects, the next one acts.
+var _tap_selected: String = ""
+## When the cursor last moved to a tile (process frame): a press in the same
+## frame is the press that selected it.
+var _focus_frame: int = -1
+var _styles: Dictionary[String, StyleBoxFlat] = {}
+var _building: bool = false
 
 
 func _ready() -> void:
 	layer = 105  # above the debug overlay
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	visible = false
-	_rows.append(Vector2i(ROW_PRESETS, 0))
-	_rows.append(Vector2i(ROW_ACTIVES, 0))
-	for loc: int in ORDER:
-		for i: int in PartData.slots_for(loc):
-			_rows.append(Vector2i(loc, i))
 	_presets = LoadoutStore.presets()
+	_make_styles()
 	var bg: ColorRect = ColorRect.new()
 	bg.color = Color(0.02, 0.025, 0.03, 0.95)
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -97,17 +116,47 @@ func _ready() -> void:
 	var svc: SubViewportContainer = SubViewportContainer.new()
 	svc.stretch = true
 	svc.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	svc.size_flags_stretch_ratio = 0.62
+	svc.size_flags_stretch_ratio = 0.45
+	svc.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	row_box.add_child(svc)
 	_viewport = SubViewport.new()
 	_viewport.own_world_3d = true
 	_viewport.transparent_bg = true
 	_viewport.render_target_update_mode = SubViewport.UPDATE_WHEN_VISIBLE
 	svc.add_child(_viewport)
+	# Middle: the grid (loadout) or the colour list.
+	var middle: Control = Control.new()
+	middle.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	middle.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	middle.size_flags_stretch_ratio = 1.3
+	row_box.add_child(middle)
+	_grid_page = _build_grid()
+	_grid_page.set_anchors_preset(Control.PRESET_FULL_RECT)
+	middle.add_child(_grid_page)
 	_list = _label(14)
-	row_box.add_child(_margin(_list, 0.62))
+	_list_box = _margin(_list, 1.0)
+	_list_box.set_anchors_preset(Control.PRESET_FULL_RECT)
+	middle.add_child(_list_box)
+	# Right: the card and the stat sheet, with touch buttons under it.
+	var right: VBoxContainer = VBoxContainer.new()
+	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	right.size_flags_stretch_ratio = 0.85
+	row_box.add_child(right)
 	_text = _label(12)
-	row_box.add_child(_margin(_text, 1.0))
+	_text.meta_clicked.connect(_on_meta)
+	right.add_child(_margin(_text, 1.0))
+	var buttons: HBoxContainer = HBoxContainer.new()
+	buttons.add_theme_constant_override("separation", 6)
+	right.add_child(buttons)
+	_button_bar = buttons
+	_act_button = _bar_button("A  Install", activate)
+	buttons.add_child(_act_button)
+	_jump_button = _bar_button("RB  Go to fix", func() -> void: jump_to_fix())
+	buttons.add_child(_jump_button)
+	buttons.add_child(_bar_button("B  Done", close))
+	var pad: Control = Control.new()
+	pad.custom_minimum_size = Vector2(0, 6)
+	right.add_child(pad)
 
 
 func _label(size: int) -> RichTextLabel:
@@ -125,12 +174,150 @@ func _label(size: int) -> RichTextLabel:
 func _margin(c: Control, ratio: float) -> MarginContainer:
 	var m: MarginContainer = MarginContainer.new()
 	m.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	m.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	m.size_flags_stretch_ratio = ratio
-	m.add_theme_constant_override("margin_top", 18)
-	m.add_theme_constant_override("margin_bottom", 10)
+	m.add_theme_constant_override("margin_top", 14)
+	m.add_theme_constant_override("margin_bottom", 4)
 	m.add_theme_constant_override("margin_right", 14)
 	m.add_child(c)
 	return m
+
+
+func _bar_button(text: String, cb: Callable) -> Button:
+	var b: Button = Button.new()
+	b.text = text
+	b.focus_mode = Control.FOCUS_NONE
+	b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	b.custom_minimum_size = Vector2(0, 40)
+	b.add_theme_font_size_override("font_size", 13)
+	b.add_theme_stylebox_override("normal", _styles["bar"])
+	b.add_theme_stylebox_override("hover", _styles["bar"])
+	b.add_theme_stylebox_override("pressed", _styles["installed"])
+	b.pressed.connect(cb)
+	return b
+
+
+func _make_styles() -> void:
+	var spec: Dictionary[String, Array] = {
+		# fill, border, border width
+		"empty": [Color(0.07, 0.08, 0.085), Color(0.16, 0.18, 0.19), 1],
+		"installed": [Color(0.07, 0.24, 0.22), Color(0.36, 0.86, 0.78), 1],
+		"offline": [Color(0.24, 0.08, 0.06), Color(0.88, 0.44, 0.35), 1],
+		"fix": [Color(0.2, 0.17, 0.04), Color(1.0, 0.82, 0.25), 2],
+		"focus": [Color(0, 0, 0, 0), Color(1, 1, 1, 0.95), 2],
+		"bar": [Color(0.09, 0.11, 0.12), Color(0.3, 0.36, 0.37), 1],
+		"locked": [Color(0.05, 0.05, 0.055), Color(0.12, 0.12, 0.13), 1],
+	}
+	for k: String in spec:
+		var sb: StyleBoxFlat = StyleBoxFlat.new()
+		var fill: Color = spec[k][0]
+		var edge: Color = spec[k][1]
+		var width: int = spec[k][2]
+		sb.bg_color = fill
+		sb.border_color = edge
+		sb.set_border_width_all(width)
+		sb.set_corner_radius_all(3)
+		sb.content_margin_left = 6
+		sb.content_margin_right = 4
+		sb.content_margin_top = 2
+		sb.content_margin_bottom = 2
+		if k == "focus":
+			sb.expand_margin_left = 1
+			sb.expand_margin_right = 1
+			sb.expand_margin_top = 1
+			sb.expand_margin_bottom = 1
+		_styles[k] = sb
+
+
+## The tile grid: header, presets, actives, then a row per body location.
+func _build_grid() -> Control:
+	var outer: MarginContainer = MarginContainer.new()
+	outer.add_theme_constant_override("margin_top", 10)
+	outer.add_theme_constant_override("margin_bottom", 6)
+	var v: VBoxContainer = VBoxContainer.new()
+	v.add_theme_constant_override("separation", 4)
+	outer.add_child(v)
+	_header = _label(13)
+	_header.fit_content = true
+	_header.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+	v.add_child(_header)
+	_scroll = ScrollContainer.new()
+	_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	_scroll.follow_focus = true
+	v.add_child(_scroll)
+	var rows: VBoxContainer = VBoxContainer.new()
+	rows.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	rows.add_theme_constant_override("separation", 3)
+	_scroll.add_child(rows)
+	# Presets.
+	var preset_ids: Array[String] = []
+	for i: int in _presets.size():
+		preset_ids.append("preset:%d" % i)
+	_add_rows(rows, "Presets", preset_ids, C_NAME)
+	# Actives (any three, on the D-pad).
+	var act_ids: Array[String] = []
+	for a: ActivePartData in library.actives():
+		act_ids.append(String(a.id))
+	_add_rows(rows, "Actives  LB", act_ids, C_ACTIVE)
+	for loc: int in ORDER:
+		var ids: Array[String] = []
+		for p: PartData in library.at(loc):
+			if not p.is_active() and not p.fixed:
+				ids.append(String(p.id))
+		if not ids.is_empty():
+			_add_rows(rows, PartData.location_name(loc), ids, C_DIM)
+	return outer
+
+
+func _add_rows(parent: VBoxContainer, title: String, ids: Array[String], color: String) -> void:
+	var i: int = 0
+	while i < ids.size():
+		var h: HBoxContainer = HBoxContainer.new()
+		h.add_theme_constant_override("separation", 4)
+		parent.add_child(h)
+		var lab: Label = Label.new()
+		lab.text = title if i == 0 else ""
+		lab.custom_minimum_size = Vector2(104, 0)
+		lab.clip_text = true
+		lab.add_theme_font_size_override("font_size", 12)
+		lab.add_theme_color_override("font_color", Color.html(color))
+		lab.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		h.add_child(lab)
+		for c: int in COLUMNS:
+			if i + c < ids.size():
+				h.add_child(_make_tile(ids[i + c]))
+			else:
+				var gap: Control = Control.new()
+				gap.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+				gap.mouse_filter = Control.MOUSE_FILTER_IGNORE
+				h.add_child(gap)
+		i += COLUMNS
+
+
+func _make_tile(key: String) -> Button:
+	var b: Button = Button.new()
+	b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	b.custom_minimum_size = Vector2(60, 28)
+	b.clip_text = true
+	b.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	b.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	b.focus_mode = Control.FOCUS_ALL
+	b.add_theme_font_size_override("font_size", 12)
+	b.add_theme_stylebox_override("focus", _styles["focus"])
+	b.focus_entered.connect(_on_tile_focus.bind(key))
+	b.pressed.connect(_on_tile_pressed.bind(key))
+	b.gui_input.connect(_on_tile_input.bind(key))
+	if key.begins_with("preset:"):
+		var pi: int = key.get_slice(":", 1).to_int()
+		b.text = _presets[pi].display_name
+		_preset_tiles.append(b)
+	else:
+		var p: PartData = library.find(StringName(key))
+		b.text = p.display_name
+		b.tooltip_text = PartData.location_name(p.location)
+		_tiles[StringName(key)] = b
+	return b
 
 
 func _build_stage() -> void:
@@ -200,12 +387,22 @@ func open() -> void:
 	colors_changed = false
 	editing = false
 	changed = false
-	row = clampi(row, 0, _rows.size() - 1)
-	_reset_candidate()
-	_refresh()
-	_pivot.rotation.y = 0.35
+	page = Page.LOADOUT
+	# Start where the trouble is: an offline part (the HUD said it needs
+	# something), else the first active installed, else where we were.
+	var wb: BodyModel = BodyModel.new(player.body_config, working)
+	var start: StringName = selected
+	for p: PartData in working.parts:
+		if wb.offline.has(p.id):
+			start = p.id
+			break
+	if start == &"" or not _tiles.has(start):
+		var acts: Array[ActivePartData] = working.actives()
+		start = acts[0].id if not acts.is_empty() else library.actives()[0].id
 	visible = true
 	get_tree().paused = true
+	select_part(start)
+	_pivot.rotation.y = 0.35
 
 
 ## Holds the close-up (cloud captures; LT does it in play).
@@ -288,19 +485,12 @@ func _input(event: InputEvent) -> void:
 		toggle_helmet()
 	elif event.is_action_pressed(&"ui_cancel") or event.is_action_pressed(&"pause"):
 		close()
-	elif event.is_action_pressed(&"ui_up", true):
-		move_row(-1)
-	elif event.is_action_pressed(&"ui_down", true):
-		move_row(1)
-	elif event.is_action_pressed(&"ui_left", true):
-		browse(-1)
-	elif event.is_action_pressed(&"ui_right", true):
-		browse(1)
-	elif event.is_action_pressed(&"ui_accept"):
-		accept()
+	elif event.is_action_pressed(&"menu_jump"):
+		jump_to_fix()
 	elif event.is_action_pressed(&"reload"):
-		remove_here()
+		secondary()
 	else:
+		# The D-pad, the stick and A go to the tiles (focus and press).
 		handled = false
 	if handled:
 		get_viewport().set_input_as_handled()
@@ -308,151 +498,133 @@ func _input(event: InputEvent) -> void:
 
 # ------------------------------------------------------------------ editing
 
-## Puts the cursor on a location's row (slot index for two-slot places).
-func select_row(loc: int, slot: int = 0) -> void:
-	var i: int = _rows.find(Vector2i(loc, slot))
-	if i >= 0:
-		row = i
-		_reset_candidate()
-		_refresh()
-
-
-## Browses to a part by id in the current row. Returns whether it's there.
-func browse_to(id: StringName) -> bool:
-	var opts: Array[PartData] = options()
-	for i: int in opts.size():
-		if opts[i] and opts[i].id == id:
-			candidate = i
-			_refresh()
-			return true
-	return false
-
-
-func row_location() -> int:
-	return _rows[row].x
-
-
-## The part installed in the cursor's row, or null. On the Actives row:
-## the browsed active, if it's installed.
-func installed_here() -> PartData:
-	var r: Vector2i = _rows[row]
-	if r.x == ROW_ACTIVES:
-		var acts: Array[ActivePartData] = library.actives()
-		if candidate >= 0 and candidate < acts.size() and working.has_part(acts[candidate].id):
-			return acts[candidate]
-		return null
-	if r.x < 0:
-		return null
-	var here: Array[PartData] = working.parts_at(r.x)
-	return here[r.y] if r.y < here.size() else null
-
-
-## What can go in the cursor's row: null (empty) and every part for that
-## location that isn't already in its other slot.
-func options() -> Array[PartData]:
-	var out: Array[PartData] = []
-	var r: Vector2i = _rows[row]
-	if r.x == ROW_ACTIVES:
-		for a: ActivePartData in library.actives():
-			out.append(a)
-		return out
-	if r.x < 0:
-		return out
-	var mine: PartData = installed_here()
-	if mine == null or not mine.fixed:
-		out.append(null)
-	for p: PartData in library.at(r.x):
-		if p == mine or not working.has_part(p.id):
-			out.append(p)
-	return out
-
-
-func candidate_part() -> PartData:
-	var opts: Array[PartData] = options()
-	return opts[candidate] if candidate >= 0 and candidate < opts.size() else null
-
-
-func move_row(step: int) -> void:
-	row = wrapi(row + step, 0, _rows.size())
-	_reset_candidate()
+## Puts the cursor on a part's tile (the body and the numbers preview it).
+## Returns whether the part is on the screen.
+func select_part(id: StringName) -> bool:
+	if not _tiles.has(id):
+		return false
+	selected = id
+	selected_preset = -1
+	var b: Button = _tiles[id]
+	if visible and b.is_inside_tree() and not b.has_focus():
+		_building = true
+		b.grab_focus()
+		_building = false
 	_refresh()
+	return true
+
+
+## Puts the cursor on a preset.
+func select_preset(i: int) -> void:
+	if i < 0 or i >= _presets.size():
+		return
+	selected_preset = i
+	selected = &""
+	var b: Button = _preset_tiles[i]
+	if visible and b.is_inside_tree() and not b.has_focus():
+		_building = true
+		b.grab_focus()
+		_building = false
+	_refresh()
+
+
+## The part under the cursor (null on a preset).
+func selected_part() -> PartData:
+	return library.find(selected) if selected != &"" else null
+
+
+func _on_tile_focus(key: String) -> void:
+	if _building:
+		return
+	_focus_frame = Engine.get_process_frames()
+	if key.begins_with("preset:"):
+		select_preset(key.get_slice(":", 1).to_int())
+	else:
+		select_part(StringName(key))
 	Sfx.play_ui(&"wheel_tick", -12.0, 0.02)
 
 
-func browse(step: int) -> void:
-	if _rows[row].x == ROW_PRESETS:
-		candidate = wrapi(candidate + step, 0, maxi(_presets.size(), 1))
-	else:
-		candidate = wrapi(candidate + step, 0, maxi(options().size(), 1))
-	_refresh()
-	Sfx.play_ui(&"wheel_tick", -10.0, 0.04)
+## A finger or mouse coming down on a tile that this same press just moved
+## the cursor to: it only selects (the press is let through to the button,
+## and _on_tile_pressed ignores it).
+func _on_tile_input(event: InputEvent, key: String) -> void:
+	var down: bool = false
+	var mb: InputEventMouseButton = event as InputEventMouseButton
+	if mb and mb.pressed and mb.button_index == MOUSE_BUTTON_LEFT:
+		down = true
+	var touch: InputEventScreenTouch = event as InputEventScreenTouch
+	if touch and touch.pressed:
+		down = true
+	if down and _focus_frame == Engine.get_process_frames():
+		_tap_selected = key
 
 
-## A: install the browsed part (or apply the browsed preset).
-func accept() -> void:
-	var keep: int = -1
-	if _rows[row].x == ROW_PRESETS:
-		if candidate < _presets.size():
-			working = _presets[candidate].copy()
-			changed = true
-	else:
-		var c: PartData = candidate_part()
-		var mine: PartData = installed_here()
-		if c == mine:
-			# Already in: an active moves to the next D-pad direction.
-			if c == null or not c.is_active() or working.actives().size() < 2:
-				return
-			working.cycle_slot(c.id)
-			working.display_name = "Custom"
-			changed = true
-			Sfx.play_ui(&"wheel_tick", -6.0)
-			_refresh()
-			return
-		if _rows[row].x == ROW_ACTIVES:
-			keep = candidate
-		elif mine:
-			working.remove(mine.id)
-		if c:
-			working.install(c)
-		working.display_name = "Custom"
+func _on_tile_pressed(key: String) -> void:
+	if _tap_selected == key:
+		# This tap only selected it; the next one acts.
+		_tap_selected = ""
+		return
+	_tap_selected = ""
+	activate()
+
+
+func _on_meta(meta: Variant) -> void:
+	var id: StringName = StringName(str(meta))
+	if select_part(id):
+		Sfx.play_ui(&"wheel_tick", -8.0, 0.02)
+
+
+## A: install the selected part, or take it out if it's in; on a preset,
+## apply the preset.
+func activate() -> void:
+	if selected_preset >= 0:
+		working = _presets[selected_preset].copy()
 		changed = true
-	Sfx.play_ui(&"draw", -6.0)
-	_reset_candidate()
-	if keep >= 0:
-		candidate = keep
-	_refresh()
-
-
-## X: take the part in this row out.
-func remove_here() -> void:
-	var mine: PartData = installed_here()
-	if mine and working.remove(mine.id):
-		working.display_name = "Custom"
-		changed = true
-		Sfx.play_ui(&"holster", -6.0)
-		if _rows[row].x != ROW_ACTIVES:
-			_reset_candidate()
+		Sfx.play_ui(&"draw", -6.0)
 		_refresh()
+		return
+	var p: PartData = selected_part()
+	if p == null or p.fixed:
+		return
+	if working.has_part(p.id):
+		working.remove(p.id)
+		Sfx.play_ui(&"holster", -6.0)
+	else:
+		working.install(p)
+		Sfx.play_ui(&"draw", -6.0)
+	working.display_name = "Custom"
+	changed = true
+	_refresh()
 
 
-func _reset_candidate() -> void:
-	if working == null:
-		candidate = 0
+## X: an installed active moves to the next D-pad direction; any other
+## installed part comes out.
+func secondary() -> void:
+	var p: PartData = selected_part()
+	if p == null or not working.has_part(p.id):
 		return
-	if _rows[row].x == ROW_ACTIVES:
-		# Start on an active that's installed, so the preview is the body as it is.
-		candidate = 0
-		var acts: Array[ActivePartData] = library.actives()
-		for i: int in acts.size():
-			if working.has_part(acts[i].id):
-				candidate = i
-				break
+	if p.is_active() and working.actives().size() >= 2:
+		working.cycle_slot(p.id)
+		Sfx.play_ui(&"wheel_tick", -6.0)
+	elif not p.fixed:
+		working.remove(p.id)
+		Sfx.play_ui(&"holster", -6.0)
+	else:
 		return
-	if _rows[row].x < 0:
-		candidate = 0
-		return
-	var opts: Array[PartData] = options()
-	candidate = maxi(opts.find(installed_here()), 0)
+	working.display_name = "Custom"
+	changed = true
+	_refresh()
+
+
+## Takes the selected part out (tests and X).
+func remove_selected() -> bool:
+	var p: PartData = selected_part()
+	if p and working.remove(p.id):
+		working.display_name = "Custom"
+		changed = true
+		_refresh()
+		return true
+	return false
 
 
 ## Loadout or Colours.
@@ -461,22 +633,111 @@ func set_page(p: Page) -> void:
 	editing = false
 	Sfx.play_ui(&"wheel_tick", -8.0, 0.02)
 	_refresh()
+	if page == Page.LOADOUT:
+		if selected_preset >= 0:
+			select_preset(selected_preset)
+		elif selected != &"":
+			select_part(selected)
 
 
-## The loadout with the browsed candidate swapped in.
+# ------------------------------------------------------------------ what fixes it
+
+## Parts in `lib` that raise (or, for an upper limit, lower) `stat`,
+## strongest first.
+static func providers(lib: PartLibrary, req: StatRequirement) -> Array[PartData]:
+	var want_up: bool = req.at_least > -INF
+	var scored: Array[Array] = []
+	var base: float = Stats.default_base(req.stat)
+	for p: PartData in lib.parts:
+		if p == null or p.fixed:
+			continue
+		for m: StatModifier in p.modifiers:
+			if m.stat != req.stat:
+				continue
+			var gain: float = (base + m.add) * m.mul - base
+			if (gain > 0.0001 and want_up) or (gain < -0.0001 and not want_up):
+				scored.append([absf(gain), p])
+	scored.sort_custom(func(a: Array, b: Array) -> bool: return a[0] > b[0])
+	var out: Array[PartData] = []
+	for e: Array in scored:
+		out.append(e[1])
+	return out
+
+
+## Short hint for the HUD: which parts supply what `p` is missing on body
+## `b` ("fit SA-2 or TG-6"). Empty if nothing is missing.
+static func fix_hint(lib: PartLibrary, p: PartData, b: BodyModel) -> String:
+	var names: PackedStringArray = PackedStringArray()
+	for r: StatRequirement in p.requirements:
+		if r == null or r.met(b.stat(r.stat)):
+			continue
+		for q: PartData in providers(lib, r):
+			var code: String = q.display_name.get_slice(" ", 0)
+			if not names.has(code) and names.size() < 3:
+				names.append(code)
+	return "" if names.is_empty() else "fit " + " or ".join(names)
+
+
+## The part RB goes to: one that supplies what the selection is missing
+## (else what an offline part is missing). One that fixes it on its own
+## first, then the strongest; one that's already in (but offline) last.
+func fix_target() -> StringName:
+	var p: PartData = selected_part()
+	var body: BodyModel = preview_body if preview_body else working_body
+	var who: PartData = null
+	if p and body and body.unmet(p) != "":
+		who = p
+	elif working_body:
+		for q: PartData in working.parts:
+			if working_body.offline.has(q.id):
+				who = q
+				break
+	if who == null:
+		return &""
+	var fallback: StringName = &""
+	for r: StatRequirement in who.requirements:
+		if r == null or r.met(body.stat(r.stat)):
+			continue
+		var first: StringName = &""
+		for q: PartData in providers(library, r):
+			if working.has_part(q.id):
+				if fallback == &"":
+					fallback = q.id
+				continue
+			if first == &"":
+				first = q.id
+			var lo: BodyLoadout = working.copy()
+			if not working.has_part(who.id):
+				lo.install(who)
+			lo.install(q)
+			var tb: BodyModel = BodyModel.new(player.body_config, lo)
+			if r.met(tb.stat(r.stat)):
+				return q.id
+		if first != &"":
+			return first
+	return fallback
+
+
+## RB: go to the part that fixes it. Returns where it went (&"" = nowhere).
+func jump_to_fix() -> StringName:
+	var to: StringName = fix_target()
+	if to != &"":
+		select_part(to)
+		Sfx.play_ui(&"wheel_tick", -6.0, 0.02)
+	return to
+
+
+## The loadout with the selection on it: a preset as it is; a part that
+## isn't in yet, installed (what it would replace comes out).
 func _make_preview() -> BodyLoadout:
 	if page == Page.COLOURS:
 		return working.copy()
-	if _rows[row].x == ROW_PRESETS:
-		return _presets[candidate].copy() if candidate < _presets.size() else working.copy()
+	if selected_preset >= 0:
+		return _presets[selected_preset].copy()
 	var lo: BodyLoadout = working.copy()
-	var c: PartData = candidate_part()
-	var mine: PartData = installed_here()
-	if c != mine:
-		if mine and _rows[row].x != ROW_ACTIVES:
-			lo.remove(mine.id)
-		if c:
-			lo.install(c)
+	var p: PartData = selected_part()
+	if p and not working.has_part(p.id):
+		lo.install(p)
 	return lo
 
 
@@ -491,84 +752,107 @@ func _refresh() -> void:
 		appearance.loadout = preview
 		appearance.colors = working_colors
 		appearance.rebuild()
+	_grid_page.visible = page == Page.LOADOUT
+	_list_box.visible = page == Page.COLOURS
+	_button_bar.visible = page == Page.LOADOUT
 	if page == Page.COLOURS:
 		_build_channels()
 		_list.text = _colour_list_text()
 		_text.text = _colour_card()
 		return
-	_list.text = _list_text()
+	_update_fix_ids()
+	_paint_tiles()
+	_header.text = _header_text()
 	_text.text = describe(preview_body, working_body, _card())
+	var p: PartData = selected_part()
+	if selected_preset >= 0:
+		_act_button.text = "A  Apply preset"
+	elif p and working.has_part(p.id):
+		_act_button.text = "A  Remove" if not p.fixed else "Built in"
+	else:
+		_act_button.text = "A  Install"
+	_jump_button.disabled = fix_ids.is_empty()
+
+
+func _update_fix_ids() -> void:
+	fix_ids.clear()
+	var p: PartData = selected_part()
+	if p == null or preview_body == null or preview_body.unmet(p) == "":
+		return
+	for r: StatRequirement in p.requirements:
+		if r and not r.met(preview_body.stat(r.stat)):
+			for q: PartData in providers(library, r):
+				if not fix_ids.has(q.id):
+					fix_ids.append(q.id)
+
+
+## Colours and badges: installed (teal), installed but offline (red), a part
+## that would fix the selection (amber outline); actives show their D-pad
+## direction.
+func _paint_tiles() -> void:
+	for id: StringName in _tiles:
+		var b: Button = _tiles[id]
+		var p: PartData = library.find(id)
+		var inn: bool = working.has_part(id)
+		var style: String = "empty"
+		if fix_ids.has(id):
+			style = "fix"
+		elif inn and working_body.offline.has(id):
+			style = "offline"
+		elif inn:
+			style = "installed"
+		for st: String in ["normal", "hover", "pressed", "disabled"]:
+			b.add_theme_stylebox_override(st, _styles[style])
+		var label: String = p.display_name
+		if p.is_active() and inn:
+			label = "%s %s" % [Augments.SLOT_ARROWS[working.slot_of(id) - 1], label]
+		elif inn:
+			label = "+ " + label
+		b.text = label
+		var col: Color = Color.html("#ffffff") if inn else Color.html("#aeb6b7")
+		if p.is_active() and not inn:
+			col = Color.html(C_ACTIVE)
+		if style == "fix":
+			col = Color.html(C_FIX)
+		for c: String in ["font_color", "font_hover_color", "font_focus_color", "font_pressed_color"]:
+			b.add_theme_color_override(c, col)
+	for i: int in _preset_tiles.size():
+		var b: Button = _preset_tiles[i]
+		var same: bool = _presets[i].ids() == working.ids()
+		for st: String in ["normal", "hover", "pressed"]:
+			b.add_theme_stylebox_override(st, _styles["installed" if same else "bar"])
+		b.add_theme_color_override("font_color", Color.html(C_NAME))
+		b.add_theme_color_override("font_focus_color", Color.html(C_NAME))
+
+
+func _header_text() -> String:
+	var acts: PackedStringArray = PackedStringArray()
+	for a: ActivePartData in working.actives():
+		var off: bool = working_body.offline.has(a.id)
+		acts.append("[color=%s]%s %s[/color]" % [C_BAD if off else C_ACTIVE, Augments.SLOT_ARROWS[working.slot_of(a.id) - 1], a.display_name.get_slice(" ", 0)])
+	var off_n: int = working_body.offline.size()
+	var warn: String = "   [color=%s]%d offline: RB finds the fix[/color]" % [C_BAD, off_n] if off_n > 0 else ""
+	return "[b]LOADOUT[/b]  [color=%s]%s[/color]   [color=%s]capacity %d / %d · %.0f kg[/color]   %s%s\n[color=%s]D-pad: move   A: install / remove   X: active's D-pad slot   RB: go to fix   LB: colours   Y: helmet   B: done[/color]" % [
+		C_NAME, working.display_name, C_DIM, working_body.capacity_used, working_body.capacity_total(), working_body.mass_kg,
+		"  ".join(acts), warn, C_DIM]
 
 
 # ------------------------------------------------------------------ text
 
-func _list_text() -> String:
-	var lines: PackedStringArray = PackedStringArray()
-	lines.append("[b]LOADOUT[/b]  [color=%s]%s[/color]" % [C_NAME, working.display_name])
-	lines.append("[color=%s]Capacity %d / %d   %.0f kg[/color]" % [C_DIM, working_body.capacity_used, working_body.capacity_total(), working_body.mass_kg])
-	lines.append("")
-	var last_loc: int = -2
-	for i: int in _rows.size():
-		var r: Vector2i = _rows[i]
-		var sel: bool = i == row
-		var name: String
-		var label: String
-		if r.x == ROW_PRESETS:
-			label = "Presets"
-			name = _presets[candidate].display_name if sel and candidate < _presets.size() else "%d builds" % _presets.size()
-		elif r.x == ROW_ACTIVES:
-			label = "Actives"
-			var a: PartData = candidate_part() if sel else null
-			if a:
-				var s_at: int = working.slot_of(a.id)
-				name = "[color=%s]%s[/color] [color=%s]%s[/color]" % ["#ffffff", a.display_name, C_GOOD if s_at > 0 else C_DIM,
-					"[%s]" % Augments.SLOT_ARROWS[s_at - 1] if s_at > 0 else "not installed"]
-			else:
-				name = "%d / %d installed" % [working.actives().size(), BodyLoadout.MAX_ACTIVES]
-		else:
-			label = PartData.location_name(r.x) if r.x != last_loc else ""
-			var here: Array[PartData] = working.parts_at(r.x)
-			var p: PartData = here[r.y] if r.y < here.size() else null
-			if sel:
-				p = candidate_part()
-			if p == null:
-				name = "[color=%s]empty[/color]" % C_DIM
-			else:
-				var col: String = C_OFF if working_body.offline.has(p.id) else (C_NAME if not sel else "#ffffff")
-				name = "[color=%s]%s[/color]" % [col, p.display_name]
-				var s_of: int = (preview if sel else working).slot_of(p.id)
-				if p.is_active() and s_of > 0:
-					name += " [color=%s][%s][/color]" % [C_DIM, Augments.SLOT_ARROWS[s_of - 1]]
-		last_loc = r.x
-		var arrow: String = "[color=%s]< [/color]" % C_GOOD if sel else "  "
-		var tail: String = "[color=%s] >[/color]" % C_GOOD if sel else ""
-		var line: String = "[color=%s]%-14s[/color] %s%s%s" % [C_DIM, label, arrow, name, tail]
-		if sel:
-			line = "[bgcolor=#1d3a36]" + line + "[/bgcolor]"
-		lines.append(line)
-	lines.append("")
-	lines.append("[color=%s]Up/down: place   Left/right: browse   A: install (an installed active: next D-pad slot)   X: remove[/color]" % C_DIM)
-	lines.append("[color=%s]LB: colours   Y: helmet   LT: zoom   RS: turn   B: done[/color]" % C_DIM)
-	return "\n".join(lines)
-
-
 ## The card for the part (or preset) under the cursor.
 func _card() -> String:
 	var lines: PackedStringArray = PackedStringArray()
-	if _rows[row].x == ROW_PRESETS:
-		if candidate < _presets.size():
-			var lo: BodyLoadout = _presets[candidate]
-			lines.append("[b][color=%s]PRESET: %s[/color][/b]   [color=%s]%d / %d   A: apply[/color]" % [C_NAME, lo.display_name, C_DIM, candidate + 1, _presets.size()])
-			lines.append(lo.description)
+	if selected_preset >= 0:
+		var lo: BodyLoadout = _presets[selected_preset]
+		lines.append("[b][color=%s]PRESET: %s[/color][/b]   [color=%s]A: apply[/color]" % [C_NAME, lo.display_name, C_DIM])
+		lines.append(lo.description)
 		return "\n".join(lines)
-	var c: PartData = candidate_part()
-	var opts: Array[PartData] = options()
-	var where: String = "%s   %d / %d" % [PartData.location_name(c.location if c else _rows[row].x), candidate + 1, opts.size()]
+	var c: PartData = selected_part()
 	if c == null:
-		lines.append("[b]EMPTY[/b]   [color=%s]%s[/color]" % [C_DIM, where])
-		return "\n".join(lines)
+		return ""
+	var inn: bool = working.has_part(c.id)
 	var state: String = ""
-	if c == installed_here():
+	if inn:
 		state = "  [color=%s]INSTALLED[/color]" % C_GOOD
 	if preview_body.offline.has(c.id):
 		state += "  [color=%s]OFFLINE[/color]" % C_BAD
@@ -577,7 +861,15 @@ func _card() -> String:
 		var s_c: int = preview.slot_of(c.id)
 		kind = "ACTIVE (LB, %s)" % Augments.SLOT_NAMES[s_c - 1] if s_c > 0 else "ACTIVE"
 	lines.append("[b][color=%s]%s[/color][/b]%s" % [C_NAME, c.display_name, state])
-	lines.append("[color=%s]%s · %s · %.1f kg · %+.0f W · %+.0f W heat · capacity %d[/color]" % [C_DIM, where, kind, c.mass_kg, c.power_draw_w, c.heat_w, c.capacity])
+	lines.append("[color=%s]%s · %s · %.1f kg · %+.0f W · %+.0f W heat · capacity %d[/color]" % [C_DIM, PartData.location_name(c.location), kind, c.mass_kg, c.power_draw_w, c.heat_w, c.capacity])
+	if not inn:
+		var lo: BodyLoadout = working.copy()
+		var out: Array[PartData] = lo.install(c)
+		if not out.is_empty():
+			var names: PackedStringArray = PackedStringArray()
+			for q: PartData in out:
+				names.append(q.display_name)
+			lines.append("[color=%s]Installing it takes out: %s[/color]" % [C_BAD, ", ".join(names)])
 	lines.append(c.description)
 	var effects: PackedStringArray = PackedStringArray()
 	for m: StatModifier in c.modifiers:
@@ -588,6 +880,13 @@ func _card() -> String:
 	for r: StatRequirement in c.requirements:
 		var ok: bool = r.met(preview_body.stat(r.stat))
 		lines.append("[color=%s]%s Needs %s (now %s): %s[/color]" % [C_GOOD if ok else C_BAD, "OK" if ok else "NO", r.describe(), Stats.format(r.stat, preview_body.stat(r.stat)), r.reason])
+		if not ok:
+			var links: PackedStringArray = PackedStringArray()
+			for q: PartData in providers(library, r):
+				var tag: String = " (in)" if working.has_part(q.id) else ""
+				links.append("[url=%s][color=%s]%s[/color][/url] [color=%s]%s%s[/color]" % [q.id, C_FIX, q.display_name, C_DIM, PartData.location_name(q.location), tag])
+			if not links.is_empty():
+				lines.append("   From: " + " · ".join(links) + "   [color=%s]RB: go there[/color]" % C_DIM)
 	if c.synergy != "":
 		lines.append("[color=%s]%s[/color]" % ["#9ec7ff", c.synergy])
 	return "\n".join(lines)

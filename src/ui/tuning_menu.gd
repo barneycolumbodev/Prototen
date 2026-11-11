@@ -57,7 +57,29 @@ const ASSIST_PARAMS: Array = [
 	["Aim assist", "pull_deg_s", 0.0, 20.0, 0.5, "Pull when aimed (°/s)"],
 ]
 
+## Movement feel (data/player/movement_default.tres; 2026-11-11 overhaul).
+const MOVE_PARAMS: Array = [
+	["Movement", "walk_speed", 3.0, 10.0, 0.1, "Walk speed (m/s)"],
+	["Movement", "sprint_speed", 6.0, 16.0, 0.1, "Sprint speed (m/s)"],
+	["Movement", "ground_response", 4.0, 30.0, 0.5, "Speed-up/brake snap"],
+	["Movement", "ground_turn_rate", 4.0, 30.0, 0.5, "Turn carve (rad/s)"],
+	["Movement", "overspeed_friction", 0.0, 30.0, 0.5, "Momentum bleed (m/s²)"],
+	["Movement", "air_turn_rate", 0.0, 8.0, 0.1, "Air steering (rad/s)"],
+	["Movement", "air_accel", 0.0, 40.0, 0.5, "Air accel (m/s²)"],
+	["Movement", "jump_velocity", 5.0, 12.0, 0.1, "Jump speed (m/s)"],
+	["Movement", "jump_release_gravity_scale", 1.0, 4.0, 0.05, "Short-hop cut"],
+	["Movement", "apex_gravity_scale", 0.3, 1.0, 0.05, "Hang at top"],
+	["Movement", "fall_gravity_scale", 0.8, 2.0, 0.05, "Fall weight"],
+	["Movement", "slide_friction", 1.0, 12.0, 0.1, "Slide friction"],
+	["Movement", "slide_boost", 0.0, 8.0, 0.1, "Slide boost (m/s)"],
+	["Movement", "wallrun_time", 0.5, 3.0, 0.05, "Wall-run time (s)"],
+	["Movement", "land_dip_per_mps", 0.0, 0.03, 0.001, "Landing dip"],
+	["Movement", "sprint_fov_deg", 0.0, 12.0, 0.5, "Sprint FOV (°)"],
+	["Movement", "strafe_roll_deg", 0.0, 4.0, 0.1, "Strafe lean (°)"],
+]
+
 var _root: Control
+var _move: MovementConfig
 var _list: VBoxContainer
 var _readout: TextEdit
 var _first_focus: Control
@@ -84,6 +106,7 @@ func open() -> void:
 		return
 	_weapon = player.weapon()
 	_assist = player.aim_assist.config if player.aim_assist else null
+	_move = player.movement
 	_build()
 	_root.visible = true
 	DebugOverlay.visible = false
@@ -134,6 +157,10 @@ func save() -> void:
 		for p: Array in ASSIST_PARAMS:
 			var prop: String = p[1]
 			cfg.set_value("aim_assist", prop, _assist.get(prop))
+	if _move:
+		for p: Array in MOVE_PARAMS:
+			var prop: String = p[1]
+			cfg.set_value("movement", prop, _move.get(prop))
 	cfg.save(SAVE_PATH)
 
 
@@ -152,6 +179,19 @@ static func load_saved_all(weapon: PlayerWeapon, assist: AimAssistConfig) -> voi
 	for slot: PlayerWeapon.Slot in weapon.slots:
 		load_saved(slot.data, null)
 	load_saved(null, assist)
+	var player: Player = weapon.get_parent() as Player
+	if player:
+		load_saved_movement(player.movement)
+
+
+## Applies saved movement tuning (the player's MovementConfig).
+static func load_saved_movement(move: MovementConfig) -> void:
+	var cfg: ConfigFile = ConfigFile.new()
+	if move == null or cfg.load(SAVE_PATH) != OK or not cfg.has_section("movement"):
+		return
+	for prop: String in cfg.get_section_keys("movement"):
+		if prop in move:
+			move.set(prop, cfg.get_value("movement", prop))
 
 
 ## Applies saved tuning to one gun and/or the aim assist. The section saved
@@ -187,6 +227,11 @@ func values_text() -> String:
 		for p: Array in ASSIST_PARAMS:
 			var prop: String = p[1]
 			lines.append("%s = %s" % [prop, var_to_str(_assist.get(prop))])
+	if _move:
+		lines.append("# movement (data/player/movement_default.tres)")
+		for p: Array in MOVE_PARAMS:
+			var prop: String = p[1]
+			lines.append("%s = %s" % [prop, var_to_str(_move.get(prop))])
 	return "\n".join(lines)
 
 
@@ -217,7 +262,7 @@ func _build() -> void:
 	_first_focus = null
 
 	var title: Label = Label.new()
-	title.text = "GUN TUNING — %s" % _weapon.data.display_name
+	title.text = "TUNING — %s and movement" % _weapon.data.display_name
 	title.add_theme_font_size_override("font_size", 22)
 	_list.add_child(title)
 	_button("Back (B)", back)
@@ -232,7 +277,7 @@ func _build() -> void:
 			stats.reset())
 	_button("Restore defaults", _on_defaults)
 	var section: String = ""
-	for p: Array in WEAPON_PARAMS + (ASSIST_PARAMS if _assist else []):
+	for p: Array in WEAPON_PARAMS + (ASSIST_PARAMS if _assist else []) + (MOVE_PARAMS if _move else []):
 		if not shows(p, _weapon.data):
 			continue
 		var sec: String = p[0]
@@ -243,7 +288,7 @@ func _build() -> void:
 			head.add_theme_color_override("font_color", Color(1.0, 0.75, 0.4))
 			head.add_theme_font_size_override("font_size", 15)
 			_list.add_child(head)
-		var target: Resource = _assist if sec == "Aim assist" else _weapon.data
+		var target: Resource = _assist if sec == "Aim assist" else (_move as Resource if sec == "Movement" else _weapon.data)
 		var prop: String = p[1]
 		var lo: float = p[2]
 		var hi: float = p[3]
@@ -336,6 +381,12 @@ func _on_defaults() -> void:
 			for p: Array in ASSIST_PARAMS:
 				var prop: String = p[1]
 				_assist.set(prop, fresh_assist.get(prop))
+	if _move:
+		var fresh_move: MovementConfig = ResourceLoader.load(_move.resource_path, "", ResourceLoader.CACHE_MODE_IGNORE) as MovementConfig
+		if fresh_move:
+			for p: Array in MOVE_PARAMS:
+				var prop: String = p[1]
+				_move.set(prop, fresh_move.get(prop))
 	_weapon.apply_tuning()
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(SAVE_PATH))
 	_build()

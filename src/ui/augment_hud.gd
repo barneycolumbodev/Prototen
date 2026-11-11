@@ -46,6 +46,9 @@ class View:
 				# Requirements not met (or a brown-out): grey, with the reason.
 				col = Color(0.5, 0.52, 0.54)
 				label += "  OFFLINE: " + why
+				var hint: String = BodyStatus.fix_hint(LoadoutStore.LIBRARY, p.data, p.body) if p.body else ""
+				if hint != "":
+					label += " (%s; View)" % hint
 			draw_string(font, Vector2(x0, y - 3), label, HORIZONTAL_ALIGNMENT_LEFT, -1, 13, Color(col, alpha))
 			if why != "":
 				i += 1

@@ -152,7 +152,8 @@ func _process(delta: float) -> void:
 		if s.left <= 0.0:
 			continue
 		s.left -= delta
-		if s.left <= 0.0 or not is_instance_valid(s.body):
+		# A body blown apart has nothing left for the arcs to crawl over.
+		if s.left <= 0.0 or not is_instance_valid(s.body) or s.body.gibbed:
 			s.left = 0.0
 			s.mesh.clear_surfaces()
 			s.node.visible = false

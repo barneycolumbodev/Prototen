@@ -2,9 +2,9 @@ class_name Explosion
 extends RefCounted
 ## A blast (the SD-3 drone's warhead). Everything alive within `radius`
 ## with a clear line to the centre is hit through its chest hitbox with
-## falloff, thrown away from the blast and, at Maximum gore, torn apart
-## close in. The operative is hurt too if he's inside it. Fire, smoke,
-## sparks, debris, a flash of light, a scorch of noise the squads hear.
+## falloff, thrown away from the blast and, at Maximum gore, torn apart:
+## limbs off by how close they are, the whole body burst up close. The
+## operative is hurt too if he's inside it. Fire, smoke, sparks, debris, a flash of light, a scorch of noise the squads hear.
 
 const FLASH_TIME: float = 0.22
 
@@ -31,14 +31,8 @@ static func detonate(world: Node3D, at: Vector3, radius: float, damage: float, s
 		AugHit.strike(part, weapon, shooter, chest - dir * 0.1, dir, damage * f, 10.0 + 30.0 * f, 600.0 + 3000.0 * f, DamageInfo.Type.EXPLOSIVE, false)
 		if not e.alive:
 			kills += 1
-			if Gore.is_maximum() and f > 0.5:
-				# Close in: limbs come off.
-				var parts: Array[StringName] = [&"forearm_L", &"forearm_R", &"shin_L", &"shin_R", &"head"]
-				parts.shuffle()
-				for i: int in (3 if f > 0.8 else 1):
-					e.body.sever(parts[i], dir * (5.0 + 6.0 * f) + Vector3(randf_range(-2, 2), randf_range(1, 4), randf_range(-2, 2)), false)
-				Gore.burst_chunks(chest, dir, 4, 7.0)
-				Gore.mist(chest, dir, 2.0)
+		if Gore.is_maximum():
+			_tear(e, at, radius, f, dir)
 	var p: Player = tree.get_first_node_in_group(&"player") as Player
 	if p and not p.dead:
 		var eye: Vector3 = p.camera().global_position
@@ -48,6 +42,25 @@ static func detonate(world: Node3D, at: Vector3, radius: float, damage: float, s
 	effects(world, at, radius)
 	EventBus.shot_fired.emit(shooter, at, Vector3.UP)
 	return kills
+
+
+## Maximum gore: the blast tears at each limb by how close its cut is (the
+## side facing it goes first); up close the body bursts (GoreConfig).
+static func _tear(e: Enemy, at: Vector3, radius: float, f: float, dir: Vector3) -> void:
+	var cfg: GoreConfig = Gore.config
+	if f >= cfg.blast_gib_f:
+		e.burst(dir * cfg.gib_speed * f)
+		return
+	for seg: StringName in e.body.cut_points().keys():
+		if e.body.is_severed(seg):
+			continue  # went with its parent this blast
+		var cut: Vector3 = e.body.cut_point(seg)
+		var fc: float = 1.0 - pow(clampf(cut.distance_to(at) / radius, 0.0, 1.0), 1.5)
+		if fc < cfg.blast_sever_f:
+			continue
+		var out: Vector3 = (cut - at).normalized() if cut.distance_to(at) > 0.05 else dir
+		var v: Vector3 = (out + Vector3.UP * 0.4).normalized() * cfg.gib_speed * fc
+		e.sever(seg, v, fc > cfg.blast_sever_f + (1.0 - cfg.blast_sever_f) * 0.6)
 
 
 static func _clear(space: PhysicsDirectSpaceState3D, from: Vector3, to: Vector3) -> bool:

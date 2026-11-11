@@ -44,7 +44,7 @@ func _ready() -> void:
 ## Cloud captures of the loadout screen: --capture-body opens it;
 ## --capture-parts=a,b installs parts first; --capture-preset=N applies a
 ## preset; --capture-browse=id puts the cursor on that part (its card and
-## preview); --capture-yaw=deg turns the model; --capture-bare: helmet off;
+## preview); --capture-jump: RB (go to the fix); --capture-yaw=deg turns the model; --capture-bare: helmet off;
 ## --capture-zoom: the close-up; --capture-active=id: the Actives row on
 ## that part; --capture-colors=channel:rrggbb[:finish],...: paint and show
 ## the Colours page ("part+<id>" for a part's hardware);
@@ -66,14 +66,12 @@ func _capture_setup() -> void:
 		if a.begins_with("--capture-browse="):
 			var p: PartData = lib.find(StringName(a.get_slice("=", 1)))
 			if p:
-				status.select_row(p.location)
-				status.browse_to(p.id)
+				status.select_part(p.id)
 		elif a.begins_with("--capture-yaw="):
 			status.set_yaw(deg_to_rad(a.get_slice("=", 1).to_float()))
 		elif a.begins_with("--capture-active="):
-			# The Actives row, on this part.
-			status.select_row(BodyStatus.ROW_ACTIVES)
-			status.browse_to(StringName(a.get_slice("=", 1)))
+			# The cursor on this active.
+			status.select_part(StringName(a.get_slice("=", 1)))
 		elif a.begins_with("--capture-colors="):
 			# channel:rrggbb[:finish],... painted on, then the Colours page.
 			for spec: String in a.get_slice("=", 1).split(","):
@@ -94,6 +92,8 @@ func _capture_setup() -> void:
 			status.toggle_helmet()
 		elif a == "--capture-zoom":
 			status.set_zoom(true)
+		elif a == "--capture-jump":
+			status.jump_to_fix()
 
 
 ## The loadout changed (loadout screen): rebuild the active parts. A part

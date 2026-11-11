@@ -51,4 +51,15 @@ GUT tests for zone lookup, armor/penetration maths and pool caps. Screenshots of
 - Keep the AnimationTree active while ragdolling: with it off, nothing marks the skeleton dirty and the simulator's pose never reaches the mesh.
 - PhysicalBone3D `bone_name` and `joint_constraints/*` are dynamic properties: use `set()`.
 - Wounds: rest-pose position in CUSTOM0 (EnemyBody.rest_mesh), wound points converted to rest space via the zone's bone; 8 per body, merged when full.
-- Severed parts are pre-cut meshes in the glTF (`part_*`); the intact mesh is swapped for them on the first cut. Gibs reuse the part mesh unskinned, posed by the bone.
+- (Superseded 2026-11-11, below.) Severed parts were five pre-cut meshes swapped in on the first cut; gibs reused the part mesh unskinned, posed by the bone.
+
+## As built (2026-11-11: dismemberment and gibbing)
+
+- Model and numbers: `src/gore/gore_config.gd` (doc comment), `data/gore/gore_default.tres`, `src/gore/dismemberment.gd` (pure: violence, nearest cut, outcome). Design §5.5.
+- Segments: `EnemyBody.SEGMENTS` / `SEGMENT_ORDER` (must match `cut_specs()` in `raw_assets/characters/triad/build.py`). `sever(seg)` takes `attached(seg)` (the subtree still on it).
+- Split body = one merged mesh (`merged_mesh`, CUSTOM0.w = segment id) and the shader's `severed_mask` collapses severed vertices. Every enemy mesh's CUSTOM0 is RGBA float now (rest xyz + id).
+- Gib meshes are merged per subtree and stored **centred on their middle** (`_gib_centres`); the body is placed at the centre. Gib collision is a box from the mesh AABB. Never put a gib body at the model origin.
+- Gib pool: `Gore.MAX_GIBS` 32; `big` gibs (limbs, heads) are recycled last; chunks skip when only big gibs are left.
+- Rebuilding the triad cuts: `--fast --no-anim --split-preview <png prefix>` renders an exploded view in ~25 s; check it before the full bake (~2 min). Cuts use connected bands of faces the plane crosses within the limb's radius, and islands vote on their part, so a plane never slices the torso or the other leg.
+- glTF vertex colours from Blender: export with `export_vertex_color="NAME"` and the attribute name, or COLOR_0 comes out white.
+- Captures: `--demo=gore-lineup` (five men, one round each), `--lineup-at=<frames>` pauses the tree that soon after for a mid-air shot.

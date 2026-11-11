@@ -56,7 +56,8 @@ static func defaults() -> Array[Binding]:
 		_button(&"sprint", JOY_BUTTON_LEFT_STICK, [KEY_SHIFT]),
 		_button(&"melee", JOY_BUTTON_RIGHT_STICK, [KEY_V]),
 		# Owner, 2026-11-07: up to three actives, all fired with LB; D-pad
-		# left / down / right picks which one LB uses. RB is free for now.
+		# left / down / right picks which one LB uses. RB is free in play
+		# (the loadout screen uses it: menu_jump).
 		_button(&"active_use", JOY_BUTTON_LEFT_SHOULDER, [KEY_Q]),
 		_button(&"active_select_1", JOY_BUTTON_DPAD_LEFT, [KEY_4]),
 		_button(&"active_select_2", JOY_BUTTON_DPAD_DOWN, [KEY_5]),
@@ -71,6 +72,9 @@ static func defaults() -> Array[Binding]:
 		_button(&"pause", JOY_BUTTON_START, [KEY_ESCAPE]),
 		_button(&"body_status", JOY_BUTTON_BACK, [KEY_TAB]),
 		_button(&"toggle_overlay", JOY_BUTTON_INVALID, [KEY_F3]),
+		# Menus only (2026-11-11): RB on the loadout screen goes to the part
+		# that supplies what the selected one needs.
+		_button(&"menu_jump", JOY_BUTTON_RIGHT_SHOULDER, [KEY_G]),
 	]
 
 

@@ -72,7 +72,9 @@ func test_lb_transforms_the_arm_and_stows_the_gun() -> void:
 
 
 func test_the_round_goes_through_two_men() -> void:
-	Settings.gore_level = 2
+	# Standard gore: at Maximum the slug bursts both men instead (2026-11-11,
+	# tests/scene/test_gore.gd), leaving nothing for the arcs to crawl over.
+	Settings.gore_level = 1
 	await _deploy()
 	var cam: Camera3D = player.camera()
 	var fwd: Vector3 = -cam.global_basis.z
