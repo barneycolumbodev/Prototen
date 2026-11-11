@@ -112,10 +112,20 @@ func test_dismemberment_thresholds() -> void:
 	var cfg: GoreConfig = load("res://data/gore/gore_default.tres")
 	assert_eq(Dismemberment.outcome(cfg, &"forearm_L", cfg.forearm_j - 1.0, 0.0), Dismemberment.Outcome.NONE)
 	assert_eq(Dismemberment.outcome(cfg, &"forearm_L", cfg.forearm_j, 0.0), Dismemberment.Outcome.SEVER)
-	assert_eq(Dismemberment.outcome(cfg, &"forearm_L", cfg.forearm_j * cfg.pulp_factor, 0.0), Dismemberment.Outcome.PULP)
-	assert_eq(Dismemberment.outcome(cfg, &"head", cfg.head_j * 10.0, 0.0), Dismemberment.Outcome.SEVER, "the head is destroyed by its own rule")
+	var pulp: float = cfg.forearm_j * cfg.pulp_factor
+	assert_eq(Dismemberment.outcome(cfg, &"forearm_L", pulp, 0.0, pulp), Dismemberment.Outcome.PULP, "that much left in it destroys it")
+	assert_eq(Dismemberment.outcome(cfg, &"forearm_L", pulp, 0.0, cfg.forearm_j), Dismemberment.Outcome.SEVER,
+			"a round that carries its energy on through cuts it off whole")
+	assert_eq(Dismemberment.outcome(cfg, &"head", cfg.head_j * 10.0, 0.0), Dismemberment.Outcome.SEVER, "a neck hit takes the head off whole")
+	assert_eq(Dismemberment.outcome(cfg, &"head", cfg.head_destroy_j, 0.0, 0.0, true), Dismemberment.Outcome.PULP, "a hit on the head breaks it")
+	assert_eq(Dismemberment.outcome(cfg, &"head", cfg.head_j, 0.0, 0.0, true), Dismemberment.Outcome.SEVER, "a lighter one knocks it off")
 	assert_eq(Dismemberment.outcome(cfg, &"hand_L", 10.0, cfg.hand_j * cfg.accumulate_factor), Dismemberment.Outcome.SEVER, "hits add up")
 	assert_false(Dismemberment.adds_up(cfg, &"thigh_L", cfg.thigh_j * cfg.min_share * 0.9), "scratches don't add up")
 	assert_gt(Dismemberment.violence(cfg, 100.0, 1000.0, DamageInfo.Type.BLADE), Dismemberment.violence(cfg, 100.0, 1000.0, DamageInfo.Type.BALLISTIC), "blades cut")
 	assert_almost_eq(cfg.falloff(0.0), 1.0, 0.001)
 	assert_almost_eq(cfg.falloff(cfg.reach_m), 0.0, 0.001)
+	# Toughness scales every threshold (Pause → Tuning → Gore).
+	var tough: GoreConfig = cfg.duplicate() as GoreConfig
+	tough.toughness = 2.0
+	assert_eq(Dismemberment.outcome(tough, &"forearm_L", cfg.forearm_j, 0.0), Dismemberment.Outcome.NONE)
+	assert_eq(Dismemberment.outcome(tough, &"forearm_L", cfg.forearm_j * 2.0, 0.0), Dismemberment.Outcome.SEVER)

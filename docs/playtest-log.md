@@ -398,3 +398,39 @@ Please try:
 - Device / renderer / settings:
 - Notes from the owner:
 - Follow-ups: the burst's red mist is strong on the Mobile renderer, so say if it's too much; gore on the player's own melee and the whip (they use the same cuts already; tune blade_factor by feel); torso halves (a waist cut) if wanted; vertex-coloured gib pieces could get baked textures.
+
+## 2026-11-11 — Gore second pass: pieces come off with every gun, blood as drops (waiting for the owner)
+
+Owner, after playing the first gore pass: "The recent gore additions don't seem to have taken effect in the gameplay, they do cower or crawl away sometimes, but no heads, arms, or anything else is coming off, also the blood is very simple and not simulate accurately, rather but obnoxious light red clouds."
+
+What was wrong:
+- **Nothing came off** because the thresholds were set so only the rail carbine and the Gauss slug could reach them. A rifle round going through a man only loses ~300 J in him, and the first pass counted little more than that. The cowering and crawling you saw came from wounds, not from cuts.
+- **The blood** was flat, unlit particle sprites plus big soft "mist" sprites, which the Mobile renderer drew as pale red clouds.
+
+What changed (design §5.5):
+- **Dismemberment retuned**, measured by shooting every gun at every body part at 3 m and 8 m:
+
+  | Gun | What it takes |
+  |---|---|
+  | Five-seveN | Nothing in one round. 2–3 rounds take a hand, a forearm or a shin; about 4 an arm |
+  | Saiga buckshot | At 3 m one shell takes the head, an arm or a leg. At 8 m a hand or the head |
+  | M14 / MG42 | One round through a limb takes it (arm at the upper arm, leg above the knee in two). One to the head breaks it apart |
+  | RC-6 rail carbine | Any limb or head in one round |
+  | GX-4 slug | Bursts the whole body (still the only one-shot burst) |
+
+  A neck hit takes the head off whole; a hit on the head itself breaks it into skull, jaw and chunks.
+- **Blood is drops, not clouds.** Each drop flies on its own path under gravity and air drag (fine spray stops in half a metre and sinks; heavy drops arc across the room), lit by the scene and streaked when fast. Where they come down they leave stains that match how they hit: round drops falling straight, long drops with tails at an angle, spatter where the gout from an exit wound hits the wall behind, runs down walls, smears behind a crawling man. Stains start wet red and dry dark. A cut-off limb's stump pumps a stream in heartbeats that weakens and stops. Slow motion slows all of it.
+- **Two new sliders**, Pause → Tuning → Gore: *Body toughness* (higher = harder to take apart) and *Blood amount*. "Copy values" includes them.
+- CI fix carried over from PR #15, which wasn't merged: the camera-kick test no longer fails on a slow runner (it had failed again in this run).
+
+Cloud evidence: `tools/check.sh` passes, 311 tests (new: `tests/scene/test_blood.gd`, `tests/unit/test_blood_drops.gd`, and 6 more in `tests/scene/test_gore.gd`). Captures with the Mobile renderer on software Vulkan: `docs/previews/gore_burst.png`, `gore_lineup_left.png`, `gore_lineup_close.png` (0.27 s after six men are shot with the M14, MG42, pistol, buckshot, M14 to the head and the Gauss arm), `gore_lineup.png`, `blood_wall.png`, `blood_floor.png` (after it all lands), `blood_stains.png` (the stain shapes). Not checked in the cloud: how the blood reads at night in Chinatown on the phone, and frame time with a lot of blood in the air (up to 320 drops in one draw call; stains add one more).
+
+Please try (gore on Maximum):
+1. In Chinatown, shoot arms, legs and heads with the Five-seveN and the M14. Do they come off often enough now, or too often? Move *Body toughness* until it feels right and send the copied values.
+2. Shotgun to the head and to a leg up close.
+3. Look at the walls and floor after a fight. Does the blood look like blood, and is there too much or too little? (*Blood amount*.)
+4. Frame rate during a big fight with a lot of blood about.
+
+- Device / renderer / settings:
+- Notes from the owner:
+- Follow-ups: the pale grey puffs in the captures are concrete dust from rounds hitting the wall behind (impact effects, not blood); say if those read as clouds too. Gore on the player's melee and the whip still uses the same cuts (tune blade_factor by feel).

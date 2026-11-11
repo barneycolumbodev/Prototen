@@ -78,6 +78,12 @@ const MOVE_PARAMS: Array = [
 	["Movement", "strafe_roll_deg", 0.0, 4.0, 0.1, "Strafe lean (°)"],
 ]
 
+## Dismemberment and blood (data/gore/gore_default.tres; 2026-11-11).
+const GORE_PARAMS: Array = [
+	["Gore", "toughness", 0.3, 3.0, 0.05, "Body toughness (× cut thresholds)"],
+	["Gore", "blood_amount", 0.3, 2.5, 0.05, "Blood amount"],
+]
+
 var _root: Control
 var _move: MovementConfig
 var _list: VBoxContainer
@@ -161,6 +167,9 @@ func save() -> void:
 		for p: Array in MOVE_PARAMS:
 			var prop: String = p[1]
 			cfg.set_value("movement", prop, _move.get(prop))
+	for p: Array in GORE_PARAMS:
+		var prop: String = p[1]
+		cfg.set_value("gore", prop, Gore.config.get(prop))
 	cfg.save(SAVE_PATH)
 
 
@@ -182,6 +191,17 @@ static func load_saved_all(weapon: PlayerWeapon, assist: AimAssistConfig) -> voi
 	var player: Player = weapon.get_parent() as Player
 	if player:
 		load_saved_movement(player.movement)
+	load_saved_gore()
+
+
+## Applies saved gore tuning (Gore.config).
+static func load_saved_gore() -> void:
+	var cfg: ConfigFile = ConfigFile.new()
+	if cfg.load(SAVE_PATH) != OK or not cfg.has_section("gore"):
+		return
+	for prop: String in cfg.get_section_keys("gore"):
+		if prop in Gore.config:
+			Gore.config.set(prop, cfg.get_value("gore", prop))
 
 
 ## Applies saved movement tuning (the player's MovementConfig).
@@ -232,6 +252,10 @@ func values_text() -> String:
 		for p: Array in MOVE_PARAMS:
 			var prop: String = p[1]
 			lines.append("%s = %s" % [prop, var_to_str(_move.get(prop))])
+	lines.append("# gore (data/gore/gore_default.tres)")
+	for p: Array in GORE_PARAMS:
+		var prop: String = p[1]
+		lines.append("%s = %s" % [prop, var_to_str(Gore.config.get(prop))])
 	return "\n".join(lines)
 
 
@@ -262,7 +286,7 @@ func _build() -> void:
 	_first_focus = null
 
 	var title: Label = Label.new()
-	title.text = "TUNING — %s and movement" % _weapon.data.display_name
+	title.text = "TUNING — %s, movement and gore" % _weapon.data.display_name
 	title.add_theme_font_size_override("font_size", 22)
 	_list.add_child(title)
 	_button("Back (B)", back)
@@ -277,7 +301,7 @@ func _build() -> void:
 			stats.reset())
 	_button("Restore defaults", _on_defaults)
 	var section: String = ""
-	for p: Array in WEAPON_PARAMS + (ASSIST_PARAMS if _assist else []) + (MOVE_PARAMS if _move else []):
+	for p: Array in WEAPON_PARAMS + (ASSIST_PARAMS if _assist else []) + (MOVE_PARAMS if _move else []) + GORE_PARAMS:
 		if not shows(p, _weapon.data):
 			continue
 		var sec: String = p[0]
@@ -288,7 +312,14 @@ func _build() -> void:
 			head.add_theme_color_override("font_color", Color(1.0, 0.75, 0.4))
 			head.add_theme_font_size_override("font_size", 15)
 			_list.add_child(head)
-		var target: Resource = _assist if sec == "Aim assist" else (_move as Resource if sec == "Movement" else _weapon.data)
+		var target: Resource = _weapon.data
+		match sec:
+			"Aim assist":
+				target = _assist
+			"Movement":
+				target = _move
+			"Gore":
+				target = Gore.config
 		var prop: String = p[1]
 		var lo: float = p[2]
 		var hi: float = p[3]
@@ -387,6 +418,11 @@ func _on_defaults() -> void:
 			for p: Array in MOVE_PARAMS:
 				var prop: String = p[1]
 				_move.set(prop, fresh_move.get(prop))
+	var fresh_gore: GoreConfig = ResourceLoader.load(Gore.config.resource_path, "", ResourceLoader.CACHE_MODE_IGNORE) as GoreConfig
+	if fresh_gore:
+		for p: Array in GORE_PARAMS:
+			var prop: String = p[1]
+			Gore.config.set(prop, fresh_gore.get(prop))
 	_weapon.apply_tuning()
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(SAVE_PATH))
 	_build()

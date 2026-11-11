@@ -84,11 +84,13 @@ var _volley_dep: Dictionary[StringName, float] = {}
 ## Dismemberment (GoreConfig): violence at each cut this volley and in
 ## total, and into the torso.
 var _cut_volley: Dictionary[StringName, float] = {}
+var _cut_left: Dictionary[StringName, float] = {}
 var _cut_total: Dictionary[StringName, float] = {}
 var _torso_volley: float = 0.0
 var _torso_total: float = 0.0
 var _bleeders: Array[Bleeder] = []
 var _drip_dist: float = 0.0
+var _last_drip: Vector3
 var _last_pos: Vector3
 var _flash: MeshInstance3D
 var _flash_time: float = 0.0
@@ -109,15 +111,23 @@ var _thrown_time: float = 0.0
 var _thrown_hit: Array[Node] = []
 
 
-## A stump spurting blood after a limb or the head came off.
+## A stump bleeding after a limb or the head came off. A cut artery pumps
+## in beats: a stream with each beat of the heart, weaker each time as the
+## pressure falls; once the heart has stopped (or the pressure is gone) it
+## only drips. `strength`: how big the artery is.
 class Bleeder:
 	extends RefCounted
 	var part: StringName
-	var left: float = 3.5
-	var next: float = 0.0
+	var age: float = 0.0
+	var strength: float = 1.0
+	## Drops owed (fractions carry over between frames).
+	var owed: float = 0.0
+	var count: int = 0
 
 	func _init(p: StringName) -> void:
 		part = p
+		var n: String = String(p)
+		strength = 1.0 if n == "head" or n.begins_with("upper_arm") or n.begins_with("thigh") else (0.5 if n.begins_with("hand") else 0.75)
 
 
 func _ready() -> void:
@@ -193,6 +203,7 @@ func on_part_hit(part: HitboxPart, hit: BallisticHit) -> void:
 		_volley = hit.volley_id
 		_volley_dep.clear()
 		_cut_volley.clear()
+		_cut_left.clear()
 		_torso_volley = 0.0
 	var dep: float = hit.deposited()
 	_volley_dep[zone] = _volley_dep.get(zone, 0.0) + dep
@@ -436,14 +447,16 @@ func _try_sever(zone: StringName, hit: BallisticHit) -> bool:
 	var reach: float = pick[1]
 	var share: float = v * reach
 	_cut_volley[seg] = _cut_volley.get(seg, 0.0) + share
+	# What the round left in the piece (not what it carried on through).
+	_cut_left[seg] = _cut_left.get(seg, 0.0) + Dismemberment.violence(cfg, hit.deposited(), 0.0, type) * reach
 	if Dismemberment.adds_up(cfg, seg, share):
 		_cut_total[seg] = _cut_total.get(seg, 0.0) + share
 	var volley: float = _cut_volley[seg]
 	var so_far: float = _cut_total.get(seg, 0.0)
-	var result: Dismemberment.Outcome = Dismemberment.outcome(cfg, seg, volley, so_far)
+	var result: Dismemberment.Outcome = Dismemberment.outcome(cfg, seg, volley, so_far, _cut_left[seg], zone == &"head")
 	if result == Dismemberment.Outcome.NONE:
 		return false
-	var destroy: bool = result == Dismemberment.Outcome.PULP or (seg == &"head" and zone == &"head" and volley >= cfg.head_destroy_j)
+	var destroy: bool = result == Dismemberment.Outcome.PULP
 	var speed: float = Dismemberment.fling_speed(cfg, volley)
 	var v_out: Vector3 = hit.direction * speed + Vector3.UP * minf(1.5 + speed * 0.15, 3.0)
 	return sever(seg, v_out, destroy, hit, zone)
@@ -485,7 +498,7 @@ func _try_burst(zone: StringName, hit: BallisticHit) -> bool:
 	var v: float = Dismemberment.violence(cfg, hit.deposited(), hit.energy_in, type)
 	_torso_volley += v
 	_torso_total += v
-	if _torso_volley < cfg.gib_volley_j and (alive or _torso_total < cfg.gib_corpse_j):
+	if _torso_volley < cfg.gib_volley_j * cfg.toughness and (alive or _torso_total < cfg.gib_corpse_j * cfg.toughness):
 		return false
 	burst(hit.direction * Dismemberment.fling_speed(cfg, _torso_volley), hit, zone)
 	return true
@@ -624,7 +637,13 @@ func _physics_process(delta: float) -> void:
 		_drip_dist += global_position.distance_to(_last_pos)
 		if _drip_dist > 0.7:
 			_drip_dist = 0.0
-			Gore.splat(global_position + Vector3.UP * 0.01, Vector3.UP, 0.08 + 0.02 * bleed_dps)
+			if state == State.CRAWL:
+				# Dragging himself along: wiped across the ground behind him.
+				var back: Vector3 = _last_drip - global_position
+				Gore.smear(global_position + Vector3.UP * 0.01, Vector3.UP, back, 0.75, 0.3)
+			else:
+				Gore.drip(body.chest_position() + Vector3.DOWN * 0.25, 0.01 + 0.0012 * bleed_dps)
+			_last_drip = global_position
 		if health <= 0.0:
 			die(last_hit, &"stomach", &"bleed")
 			if last_hit:
@@ -1095,19 +1114,41 @@ func _update_burn(delta: float) -> void:
 		_enter(State.FLEE)
 
 
+## Beats per second of a man bleeding out, how fast the pressure falls
+## (alive / heart stopped), and how long a stump goes on.
+const BLEED_HEART_HZ: float = 2.3
+const BLEED_PRESSURE_TIME: float = 2.2
+const BLEED_PRESSURE_TIME_DEAD: float = 0.55
+const BLEED_TIME: float = 5.0
+
+
 func _update_bleeders(delta: float) -> void:
 	if _bleeders.is_empty():
 		return
 	var still: Array[Bleeder] = []
+	var floor_y: float = global_position.y
 	for b: Bleeder in _bleeders:
-		b.left -= delta
-		b.next -= delta
-		if b.next <= 0.0:
-			b.next = 0.12
-			var t: Transform3D = body.stump(b.part)
-			var k: float = clampf(b.left / 3.5, 0.2, 1.0)
-			Gore.spray(t.origin, t.basis.y, 1.2 * k, roundi(5 * k))
-		if b.left > 0.0:
+		b.age += delta
+		var t: Transform3D = body.stump(b.part)
+		var pressure: float = b.strength * exp(-b.age / (BLEED_PRESSURE_TIME if alive else BLEED_PRESSURE_TIME_DEAD))
+		# Systole: the first third of each beat pushes; between beats it only runs.
+		var beat: float = fposmod(b.age * BLEED_HEART_HZ, 1.0)
+		var push: float = sin(beat / 0.35 * PI) if beat < 0.35 else 0.0
+		var flow: float = pressure * push
+		if flow > 0.04:
+			b.owed += delta * (20.0 + 150.0 * flow) * Gore.config.blood_amount
+			var n: int = floori(b.owed)
+			if n > 0:
+				b.owed -= float(n)
+				b.count += n
+				# One in six is traced: they mark where the stream comes down.
+				Gore.spurt(t.origin, t.basis.y, 1.0 + 3.8 * flow, n, 1 if b.count % 6 < n else 0, velocity, floor_y)
+		elif b.age < BLEED_TIME:
+			b.owed += delta * 2.5 * b.strength * Gore.config.blood_amount
+			if b.owed >= 1.0:
+				b.owed -= 1.0
+				Gore.drip(t.origin, 0.012)
+		if b.age < BLEED_TIME:
 			still.append(b)
 	_bleeders = still
 

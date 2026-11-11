@@ -42,6 +42,9 @@ static func violence(cfg: GoreConfig, deposited: float, energy_in: float, type: 
 ## now (world). Severed segments are skipped. [&"", 0] if none is in reach.
 static func nearest_cut(cfg: GoreConfig, zone: StringName, point: Vector3, cuts: Dictionary[StringName, Vector3],
 		severed: Dictionary[StringName, bool]) -> Array:
+	if zone == &"head":
+		# The head itself was hit: all of it lands on the head.
+		return [&"", 0.0] if severed.has(&"head") or not cuts.has(&"head") else [&"head", 1.0]
 	var best: StringName = &""
 	var best_share: float = 0.0
 	for seg: StringName in ZONE_CUTS.get(zone, []):
@@ -55,10 +58,18 @@ static func nearest_cut(cfg: GoreConfig, zone: StringName, point: Vector3, cuts:
 
 
 ## What a volley does to a segment: `volley` = violence at the cut this
-## volley, `total` = what has added up there so far (this volley included).
-static func outcome(cfg: GoreConfig, segment: StringName, volley: float, total: float) -> Outcome:
+## volley, `total` = what has added up there so far (this volley included),
+## `left_in` = the energy this volley left in the piece (× its type), which
+## is what destroys it rather than cutting it off. `on_head`: the hit landed
+## on the head itself (not the neck), which breaks it instead.
+static func outcome(cfg: GoreConfig, segment: StringName, volley: float, total: float, left_in: float = 0.0,
+		on_head: bool = false) -> Outcome:
 	var t: float = cfg.threshold(segment)
-	if volley >= t * cfg.pulp_factor and segment != &"head":
+	if segment == &"head":
+		var d: float = cfg.head_destroy_j * cfg.toughness
+		if on_head and (volley >= d or total >= d * cfg.accumulate_factor):
+			return Outcome.PULP
+	elif left_in >= t * cfg.pulp_factor:
 		return Outcome.PULP
 	if volley >= t or total >= t * cfg.accumulate_factor:
 		return Outcome.SEVER

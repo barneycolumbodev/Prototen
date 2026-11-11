@@ -5,10 +5,10 @@ extends Node3D
 ## electronic weapon"). Owned by Gore (Gore.special_hit), pooled and capped.
 ##
 ## - Corkscrew: the slug drags a twisting wake through the body. Blood
-##   droplets and a red mist leave along a double helix that starts at the
+##   drops and a fine spray leave along a double helix that starts at the
 ##   entry wound, runs through the exit and a metre and a half beyond,
-##   spinning outward (CPUParticles3D with directed emission points, so it
-##   holds up in slow motion).
+##   spinning outward (Gore.drops: each one flies, falls and stains, and
+##   they run on game time, so they hold up in slow motion).
 ## - Electrocution: the coil discharge rides the slug. Blue arcs crawl
 ##   between the body's joints for a second and a half, sparks spit from the
 ##   wounds, smoke curls off them, and the corpse spasms (small impulses to
@@ -26,9 +26,6 @@ const ZONES: Array[StringName] = [&"head", &"neck", &"chest", &"stomach", &"pelv
 		&"l_forearm", &"r_forearm", &"l_hand", &"r_hand", &"l_thigh", &"r_thigh", &"l_shin", &"r_shin"]
 const SPASM_ZONES: Array[StringName] = [&"chest", &"head", &"l_forearm", &"r_forearm", &"l_shin", &"r_shin", &"pelvis"]
 
-var blood: Array[CPUParticles3D] = []
-var mists: Array[CPUParticles3D] = []
-var _next: int = 0
 var _shocks: Array[Shock] = []
 var _shock_next: int = 0
 var _arc_mat: StandardMaterial3D
@@ -86,41 +83,36 @@ func hit(hit: BallisticHit, body: EnemyBody) -> void:
 	Sfx.play_at(&"gx4_zap", exit, -2.0, 0.1)
 
 
-## Blood and mist leaving along a double helix from `entry` through `exit`.
+## Blood leaving along a double helix from `entry` through `exit`: drops
+## launched from points on the helix, spinning round the slug's axis,
+## outward and on along the shot (Gore.drops, so they fall, land and stain
+## like any other blood), with a finer spray between them.
 func corkscrew(entry: Vector3, exit: Vector3, dir: Vector3) -> void:
-	if blood.is_empty():
-		_build_emitters()
 	corkscrews_fired += 1
-	var e: CPUParticles3D = blood[_next]
-	var m: CPUParticles3D = mists[_next]
-	_next = (_next + 1) % blood.size()
 	var through: float = maxf(entry.distance_to(exit), 0.15)
 	var length: float = through + 1.5
 	var up: Vector3 = Vector3.UP if absf(dir.y) < 0.95 else Vector3.RIGHT
 	var basis: Basis = Basis.looking_at(-dir, up)  # local +Z = along the shot
 	var phase: float = _rng.randf() * TAU
-	var pts: PackedVector3Array = PackedVector3Array()
-	var nrm: PackedVector3Array = PackedVector3Array()
 	var turns_per_m: float = 2.2
-	var count: int = 26
+	var count: int = roundi(26.0 * clampf(Gore.config.blood_amount, 0.3, 1.5))
+	var floor_y: float = Gore._floor_y(entry)
+	var drops: BloodDrops = Gore.drops
 	for strand: int in 2:
 		for i: int in count:
-			var z: float = length * float(i) / (count - 1)
+			var z: float = length * float(i) / float(count - 1)
 			var a: float = phase + strand * PI + z * turns_per_m * TAU
 			var radial: Vector3 = Vector3(cos(a), sin(a), 0.0)
 			var tangent: Vector3 = Vector3(-sin(a), cos(a), 0.0)
 			var r: float = lerpf(0.025, 0.16, clampf(z / length, 0.0, 1.0))
-			pts.append(radial * r + Vector3(0, 0, z))
+			var at: Vector3 = entry + basis * (radial * r + Vector3(0, 0, z))
 			# Spin round the axis, outward, and on along the shot (slower further out).
-			nrm.append((tangent * 1.0 + radial * 0.45 + Vector3(0, 0, lerpf(1.1, 0.4, z / length))).normalized())
-	for p: CPUParticles3D in [e, m]:
-		p.global_transform = Transform3D(basis, entry)
-		p.emission_points = pts
-		p.emission_normals = nrm
-	e.amount = pts.size()
-	e.restart()
-	m.amount = clampi(pts.size() / 3, 8, 18)
-	m.restart()
+			var v: Vector3 = basis * (tangent * 1.0 + radial * 0.45 + Vector3(0, 0, lerpf(1.1, 0.4, z / length))).normalized()
+			var size: float = _rng.randf_range(0.008, 0.022)
+			drops.emit(at, v * _rng.randf_range(3.5, 7.5), size, BloodDrops.drag_for(size, 1.6), i % 5 == 2, floor_y)
+			if i % 3 == 0:
+				var fine: float = _rng.randf_range(0.003, 0.006)
+				drops.emit(at, v * _rng.randf_range(1.5, 4.0), fine, BloodDrops.drag_for(fine, 3.2), false, floor_y, 0.9)
 	Gore.splat(exit + dir * 0.05, -dir, 0.1)
 
 
@@ -225,56 +217,3 @@ func _spasm(s: Shock) -> void:
 	s.body.push_bone(zone, imp, _zone_pos(s.body, zone))
 	if _rng.randf() < 0.35:
 		Fx._emit(&"sparks", _zone_pos(s.body, zone), Vector3.UP, Color(0.6, 0.8, 1.0, 1.0), 6, 0.8)
-
-
-func _build_emitters() -> void:
-	var drop: StandardMaterial3D = Gore._drop_mat
-	var mist: StandardMaterial3D = Gore._mist_mat
-	var fade: Gradient = Gradient.new()
-	fade.set_color(0, Color(1, 1, 1, 1))
-	fade.set_color(1, Color(1, 1, 1, 0))
-	var grow: Curve = Curve.new()
-	grow.add_point(Vector2(0, 0.4))
-	grow.add_point(Vector2(1, 1.0))
-	for i: int in MAX_CORKSCREWS:
-		var e: CPUParticles3D = _emitter(drop)
-		e.color = Gore.BLOOD_COLOR
-		e.color_ramp = fade
-		e.lifetime = 0.85
-		e.initial_velocity_min = 3.5
-		e.initial_velocity_max = 7.5
-		e.scale_amount_min = 0.018
-		e.scale_amount_max = 0.05
-		e.gravity = Vector3(0, -9.8, 0)
-		e.damping_min = 1.0
-		e.damping_max = 2.5
-		blood.append(e)
-		var m: CPUParticles3D = _emitter(mist)
-		m.color = Color(0.42, 0.03, 0.03, 0.5)
-		m.color_ramp = fade
-		m.scale_amount_curve = grow
-		m.lifetime = 1.1
-		m.initial_velocity_min = 0.6
-		m.initial_velocity_max = 1.6
-		m.scale_amount_min = 0.12
-		m.scale_amount_max = 0.3
-		m.gravity = Vector3(0, -0.5, 0)
-		m.damping_min = 2.0
-		m.damping_max = 3.5
-		mists.append(m)
-
-
-func _emitter(mat: Material) -> CPUParticles3D:
-	var e: CPUParticles3D = CPUParticles3D.new()
-	e.emitting = false
-	e.one_shot = true
-	e.explosiveness = 1.0
-	e.local_coords = false
-	e.emission_shape = CPUParticles3D.EMISSION_SHAPE_DIRECTED_POINTS
-	e.spread = 4.0
-	var q: QuadMesh = QuadMesh.new()
-	q.size = Vector2.ONE
-	e.mesh = q
-	e.material_override = mat
-	add_child(e)
-	return e

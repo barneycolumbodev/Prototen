@@ -15,7 +15,7 @@ Target: Moto G 5G (2025) — Dimensity 6300, Mali-G57 MC2, 4 GB RAM, 720×1604 a
 | Triangles on screen | ≤ 250k |
 | Active enemies | ≤ 12 |
 | Ragdolls simulating | ≤ 3, frozen after ~2.5 s |
-| Blood decals | ≤ 48, oldest fade out |
+| Blood stains | ≤ 48 large + 144 single drops and runs, oldest fade out; ≤ 320 drops in the air (one draw call, ≤ 110 trace rays a frame) |
 | Gibs | ≤ 32 rigid bodies, one draw call each, frozen when still; chunks recycled before limbs (2026-11-11, for whole-body gibbing; not yet measured on the phone) |
 | Live particles | ≤ 1,500 |
 | Dynamic lights | ≤ 4; only one casts shadows |
