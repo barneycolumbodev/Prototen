@@ -25,13 +25,12 @@ func test_install_trauma_plating_from_the_screen() -> void:
 	var st: BodyStatus = player.augments.status
 	var mass: float = player.body.mass_kg
 	st.open()
-	st.select_row(PartData.Location.TORSO)
-	assert_true(st.browse_to(&"ct7_trauma_plating"))
+	assert_true(st.select_part(&"ct7_trauma_plating"), "every part has a tile")
 	assert_gt(st.preview_body.mass_kg, mass + 17.0, "the preview carries the plates")
 	assert_eq(player.body.mass_kg, mass, "nothing changes until it's installed")
 	var shown: int = st.appearance.mounted.size()
 	assert_gt(shown, 0, "the preview body wears hardware")
-	st.accept()
+	st.activate()
 	st.close()
 	await wait_frames(1)
 	assert_true(player.loadout.has_part(&"ct7_trauma_plating"))
@@ -43,12 +42,10 @@ func test_install_trauma_plating_from_the_screen() -> void:
 func test_removing_the_accelerator_takes_rx9_offline() -> void:
 	var st: BodyStatus = player.augments.status
 	st.open()
-	st.select_row(PartData.Location.NERVOUS, 0)
-	var first: PartData = st.installed_here()
-	if first == null or first.id != &"sa2_synaptic_accelerator":
-		st.select_row(PartData.Location.NERVOUS, 1)
-	assert_eq(st.installed_here().id, &"sa2_synaptic_accelerator")
-	st.remove_here()
+	assert_true(st.select_part(&"sa2_synaptic_accelerator"))
+	assert_true(st.working.has_part(&"sa2_synaptic_accelerator"))
+	st.activate()  # A on an installed part takes it out
+	assert_false(st.working.has_part(&"sa2_synaptic_accelerator"))
 	st.close()
 	await wait_frames(2)
 	var rx9: ActivePart = player.augments.find(&"rx9_reflex_overclock")
@@ -121,3 +118,58 @@ func test_noise_and_signature_reach_enemies() -> void:
 	assert_lt(ghost.detection_scale(), 0.75, "chromatophore skin")
 	assert_lt(ghost.stat(&"noise"), 0.6, "dampers")
 	assert_gt(jug.stat(&"profile"), 1.3, "plates and the frame")
+
+
+func test_every_part_is_on_the_grid() -> void:
+	var st: BodyStatus = player.augments.status
+	st.open()
+	var shown: int = 0
+	for p: PartData in LoadoutStore.LIBRARY.parts:
+		if p.fixed:
+			continue
+		assert_true(st.select_part(p.id), "%s has a tile" % p.id)
+		shown += 1
+	assert_eq(st._preset_tiles.size(), LoadoutStore.presets().size(), "a tile per preset")
+	assert_gt(shown, 40)
+
+
+func test_a_missing_requirement_names_its_parts_and_rb_goes_there() -> void:
+	var st: BodyStatus = player.augments.status
+	st.open()
+	st.select_part(&"sa2_synaptic_accelerator")
+	st.activate()  # out: RX-9 goes offline
+	assert_true(st.working_body.offline.has(&"rx9_reflex_overclock"))
+	st.select_part(&"rx9_reflex_overclock")
+	assert_true(st.fix_ids.has(&"sa2_synaptic_accelerator"), "SA-2 supplies processing: its tile is outlined")
+	assert_string_contains(st._text.text, "SA-2 Synaptic Accelerator", "the card names the part that fixes it")
+	var to: StringName = st.jump_to_fix()
+	assert_ne(to, &"", "RB goes somewhere")
+	assert_eq(st.selected, to)
+	st.activate()
+	assert_false(st.working_body.offline.has(&"rx9_reflex_overclock"), "installing the part RB found brings RX-9 back")
+	# The HUD's offline line names the fix too.
+	var lo: BodyLoadout = player.loadout.copy()
+	lo.remove(&"sa2_synaptic_accelerator")
+	var b: BodyModel = BodyModel.new(player.body_config, lo)
+	assert_string_contains(BodyStatus.fix_hint(LoadoutStore.LIBRARY, LoadoutStore.LIBRARY.find(&"rx9_reflex_overclock"), b), "SA-2")
+
+
+func test_x_moves_an_active_to_the_next_dpad_slot() -> void:
+	var st: BodyStatus = player.augments.status
+	st.open()
+	var acts: Array[ActivePartData] = st.working.actives()
+	if acts.size() < 2:
+		pass_test("needs two actives")
+		return
+	var id: StringName = acts[0].id
+	st.select_part(id)
+	st.secondary()
+	assert_eq(st.working.slot_of(id), 2, "D-left -> D-down")
+
+
+func test_presets_apply_from_their_tiles() -> void:
+	var st: BodyStatus = player.augments.status
+	st.open()
+	st.select_preset(2)
+	st.activate()
+	assert_eq(st.working.ids(), LoadoutStore.presets()[2].ids())

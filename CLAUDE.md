@@ -161,7 +161,7 @@ Put an empty `.gdignore` file in `raw_assets/`, `tools/` and `docs/` so Godot do
 | X | Reload (hold to interact) |
 | Y | Tap: previous weapon. Hold: weapon wheel (owner, 2026-11-02; the MG barrel change needs another input in M3) |
 | D-pad | Left / down / right: select active part 1 / 2 / 3 for LB, in the order they were installed (default: RX-9 / GX-4 arm / empty; 2026-11-10: any three of nine). Up: shell type on guns that take several (Saiga-12K) (owner, 2026-11-07) |
-| Menu / View | Pause / body status and loadout (built 2026-11-05; loadout 2026-11-08; LB there: colours, 2026-11-10) |
+| Menu / View | Pause / body status and loadout (built 2026-11-05; loadout 2026-11-08; LB there: colours, 2026-11-10; 2026-11-11: every part on one grid, A installs or removes, RB jumps to the part that supplies a missing requirement) |
 
 Aiming: response-curve presets, acceleration on full tilt, radial deadzones, aim assist in layers (slowdown near targets, slight pull while aiming down sights). Gyro aiming from the phone if the controller holds it.
 

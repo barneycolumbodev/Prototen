@@ -22,9 +22,10 @@ DRIVER=vulkan
 
 [ -d .godot ] || timeout 600 "$GODOT" --headless --import >/dev/null 2>&1
 
-args=(--rendering-method "$METHOD" --rendering-driver "$DRIVER" --resolution 1280x720 --audio-driver Dummy)
+RES="${SHOT_RES:-1280x720}"
+args=(--rendering-method "$METHOD" --rendering-driver "$DRIVER" --resolution "$RES" --audio-driver Dummy)
 [ -n "$SCENE" ] && args+=("$SCENE")
-timeout "${SHOT_TIMEOUT:-180}" xvfb-run -a -s "-screen 0 1280x720x24" \
+timeout "${SHOT_TIMEOUT:-180}" xvfb-run -a -s "-screen 0 ${RES}x24" \
   "$GODOT" "${args[@]}" -- --capture-dir="$OUT" ${CAPTURE_ARGS:-} 2>&1 \
   | grep -E "capture|ERROR|SCRIPT" | grep -v "^$" | head -40
 ls -1 "$OUT"/*.png 2>/dev/null
