@@ -247,8 +247,8 @@ The official Blender Lab MCP server (v1.0.3, needs Blender 5.1 or newer) works t
 
 ## 11. CI (GitHub Actions)
 
-- Runs on pushes to `main` and on manual dispatch.
-- Steps: download and cache Godot 4.7.2 and its export templates; import; run GUT and stop on failure; export a debug APK (arm64) signed with a keystore from repository secrets, or, without them, the fixed debug key in `tools/android/` (never a new key per run: Android then rejects every update); publish it to a rolling `dev-latest` GitHub Release that the workflow creates.
+- Builds an APK for every pull request (when opened and on every push to it), every merge into the default branch (currently `ccr-9bb9a33f-fkn5sb`, not `main`; the workflow reads the name at run time) and manual dispatch. Owner, 2026-11-11: "the apk needs to be built with every single pr. Period."
+- Steps: download and cache Godot 4.7.2 and its export templates; import; run GUT (a failure turns the run red but never stops the APK); export a debug APK (arm64) signed with a keystore from repository secrets, or, without them, the fixed debug key in `tools/android/` (never a new key per run: Android then rejects every update); publish it to a rolling `dev-latest` GitHub Release that the workflow creates.
 - Run an explicit import before exporting. Headless exports have dropped resources in past Godot versions.
 - Claude checks runs with REST commands (`gh run list`, `gh api repos/{owner}/{repo}/actions/runs`). GraphQL commands such as `gh pr` don't work through the proxy.
 - Keep the release keystore in GitHub Secrets, and the owner keeps an offline backup.
