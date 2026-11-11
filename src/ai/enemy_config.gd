@@ -9,18 +9,22 @@ extends Resource
 @export var callsign: String = "GUNMAN"
 
 @export_group("Look")
-@export var jacket_tint: Color = Color(0.07, 0.072, 0.078)
-@export var trousers_tint: Color = Color(0.16, 0.16, 0.15)
-@export var skin_tint: Color = Color(1, 1, 1)
+## What men in this role wear (data/enemies/outfits/*.tres): one outfit is
+## picked per man, then garments, colours, prints, tattoos (TriadLook).
+@export var outfits: Array[Outfit] = []
 @export var plate_carrier: bool = false
 ## Whole-body scale (model, hitboxes, capsule). Owner, 2026-11-05: enemies read
-## too small on the phone screen; 1.08 makes a 1.75 m man about 1.89 m.
-@export_range(0.8, 1.3) var body_scale: float = 1.08
+## too small on the phone screen; 1.08 made a 1.75 m man about 1.89 m.
+## 2026-11-11 ("they are quite small"): 1.12, about 1.96 m.
+@export_range(0.8, 1.3) var body_scale: float = 1.12
 ## Rim light that outlines the body against a dark background, stronger with
 ## distance (owner: "they need to stand out against the environment, think
 ## Halo CE"). 0 = off. Fades out when he dies.
 @export var rim_color: Color = Color(0.62, 0.72, 0.85)
-@export_range(0.0, 2.0) var rim_strength: float = 0.8
+@export_range(0.0, 2.0) var rim_strength: float = 1.0
+## Soft light from the viewer on his front (2026-11-11: "really hard to see"),
+## a little more with distance, so a man in a dark street still reads. 0 = off.
+@export_range(0.0, 1.0) var fill_light: float = 0.45
 ## Third-person gun model (assets/weapons/enemy/*.gltf) and its ballistics.
 @export var gun_scene: PackedScene
 @export var weapon: WeaponData

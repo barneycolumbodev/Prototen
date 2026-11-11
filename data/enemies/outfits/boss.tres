@@ -1,0 +1,36 @@
+[gd_resource type="Resource" script_class="Outfit" load_steps=18 format=3]
+
+[ext_resource type="Script" path="res://src/ai/outfit.gd" id="1"]
+[ext_resource type="Script" path="res://src/ai/garment.gd" id="2"]
+[ext_resource type="Resource" path="res://data/enemies/wardrobe/shirt.tres" id="3"]
+[ext_resource type="Resource" path="res://data/enemies/wardrobe/shirt_open.tres" id="4"]
+[ext_resource type="Resource" path="res://data/enemies/wardrobe/leather.tres" id="5"]
+[ext_resource type="Resource" path="res://data/enemies/wardrobe/singlet.tres" id="6"]
+[ext_resource type="Resource" path="res://data/enemies/wardrobe/tee.tres" id="7"]
+[ext_resource type="Resource" path="res://data/enemies/wardrobe/slacks.tres" id="8"]
+[ext_resource type="Resource" path="res://data/enemies/wardrobe/jeans.tres" id="9"]
+[ext_resource type="Resource" path="res://data/enemies/wardrobe/boots.tres" id="10"]
+[ext_resource type="Resource" path="res://data/enemies/wardrobe/sneakers.tres" id="11"]
+[ext_resource type="Resource" path="res://data/enemies/wardrobe/hair_slick.tres" id="12"]
+[ext_resource type="Resource" path="res://data/enemies/wardrobe/hair_fade.tres" id="13"]
+[ext_resource type="Resource" path="res://data/enemies/wardrobe/hair_buzz.tres" id="14"]
+[ext_resource type="Resource" path="res://data/enemies/wardrobe/glasses.tres" id="15"]
+[ext_resource type="Resource" path="res://data/enemies/wardrobe/chain.tres" id="16"]
+[ext_resource type="Resource" path="res://data/enemies/wardrobe/watch.tres" id="17"]
+
+[resource]
+script = ExtResource("1")
+display_name = "Boss"
+weight = 1.0
+tops = Array[ExtResource("2")]([ExtResource("3"), ExtResource("4"), ExtResource("5"), ExtResource("4")])
+inners = Array[ExtResource("2")]([ExtResource("6"), ExtResource("7")])
+bottoms = Array[ExtResource("2")]([ExtResource("8"), ExtResource("8"), ExtResource("9")])
+shoes = Array[ExtResource("2")]([ExtResource("10"), ExtResource("11")])
+hair = Array[ExtResource("2")]([ExtResource("12"), ExtResource("13"), ExtResource("14")])
+bald_chance = 0.1
+hats = Array[ExtResource("2")]([])
+hat_chance = 0.0
+accessories = Array[ExtResource("2")]([ExtResource("15"), ExtResource("16"), ExtResource("17")])
+accessory_chance = 0.65
+tattoo_chance = 0.7
+bare_chest_chance = 0.35

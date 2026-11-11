@@ -1,15 +1,16 @@
-[gd_resource type="Resource" script_class="EnemyConfig" load_steps=4 format=3]
+[gd_resource type="Resource" script_class="EnemyConfig" load_steps=6 format=3]
 
 [ext_resource type="Script" path="res://src/ai/enemy_config.gd" id="1"]
 [ext_resource type="PackedScene" path="res://assets/weapons/enemy/pump.gltf" id="2"]
 [ext_resource type="Resource" path="res://data/enemies/weapons/pump.tres" id="3"]
+[ext_resource type="Script" path="res://src/ai/outfit.gd" id="o0"]
+[ext_resource type="Resource" path="res://data/enemies/outfits/muscle.tres" id="o1"]
 
 [resource]
 script = ExtResource("1")
+outfits = Array[ExtResource("o0")]([ExtResource("o1")])
 display_name = "Enforcer"
 callsign = "ENFORCER"
-jacket_tint = Color(0.25, 0.27, 0.15, 1)
-trousers_tint = Color(0.09, 0.09, 0.09, 1)
 plate_carrier = true
 gun_scene = ExtResource("2")
 weapon = ExtResource("3")

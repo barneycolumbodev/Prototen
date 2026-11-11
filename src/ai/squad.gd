@@ -5,7 +5,7 @@ extends Node
 ## - Contact reports spread: one sees the augment, all know where he was.
 ## - Deaths hit the morale of everyone who saw them; losing the Red Pole hits
 ##   everyone; a living Red Pole steadies those near him.
-## - Callouts with a cooldown, shown as subtitles (EventBus.callout).
+## - Callouts with a cooldown, spoken (Enemy.speak) and shown as subtitles.
 ## - Cover: points next to low cover, scored by whether they hide a man from
 ##   the player and how far he has to run.
 
@@ -138,10 +138,9 @@ func on_death(dead: Enemy, hit: BallisticHit) -> void:
 	var near: Enemy = _nearest_alive(dead.global_position)
 	if near:
 		if officer:
-			callout(near, "They got the Red Pole!", true)
+			callout(near, &"officer_down", true)
 		else:
-			var lines: Array[String] = ["Man down!", "They got Ah-Keung!", "He's dead! He's dead!", "Brother down!"]
-			callout(near, lines[randi() % lines.size()])
+			callout(near, &"man_down")
 	for k: Variant in _claimed.keys():
 		if _claimed[k] == dead:
 			_claimed.erase(k)
@@ -155,12 +154,24 @@ func officer_near(e: Enemy) -> bool:
 	return false
 
 
-func callout(from: Enemy, text: String, force: bool = false) -> void:
+## `from` says a line for `situation` (VoiceLines), unless someone spoke
+## less than CALLOUT_GAP ago (`force` ignores that).
+func callout(from: Enemy, situation: StringName, force: bool = false) -> void:
 	var now: float = Time.get_ticks_msec() * 0.001
 	if not force and now - _last_callout < CALLOUT_GAP:
 		return
-	_last_callout = now
-	EventBus.callout.emit(from.config.callsign, text, from.global_position)
+	if from.speak(situation) != "":
+		_last_callout = now
+
+
+## Someone broke and ran: a Red Pole nearby shouts at them to hold.
+func rally(runner: Enemy) -> void:
+	_prune()
+	for o: Enemy in members:
+		if is_instance_valid(o) and o.alive and o.config.officer and o != runner \
+				and o.global_position.distance_to(runner.global_position) < 15.0:
+			callout(o, &"rally")
+			return
 
 
 # ------------------------------------------------------------------ cover

@@ -434,3 +434,26 @@ Please try (gore on Maximum):
 - Device / renderer / settings:
 - Notes from the owner:
 - Follow-ups: the pale grey puffs in the captures are concrete dust from rounds hitting the wall behind (impact effects, not blood); say if those read as clouds too. Gore on the player's melee and the whip still uses the same cuts (tune blade_factor by feel).
+
+## 2026-11-11 — Triad wardrobe, tattoos and spoken callouts (waiting for the owner)
+
+Owner: "The enemies are really hard to see and they lack a lot of detail, they also are quite small and don't stand out against the environment. Without fucking up the gore system you just implemented, fix it so that the triad members actually look good. They need tattoos. They also need clothes they can wear that are randomly selected from a bank, also I can't hear the actual voices of them in the game."
+
+What changed (design §5.6, §6):
+- **New triad body**, muscled and sculpted (the old one was a blobby man in one jacket), and a **wardrobe bank of 24 items**: singlet, tee, camp shirt (buttoned or open), bomber, hoodie, track top, leather jacket; cargos, jeans, track pants, shorts, slacks; sneakers, boots; four haircuts or bald; cap, beanie; sunglasses, chain, watch. Each man draws an outfit for his role (Gunmen: street or summer clothes; Enforcers: hoodies and track tops under the plate carrier; the Red Pole: printed shirts, leather, gold), then colours, sometimes a print (Hawaiian, camo, check, cloud brocade), skin tone and stubble or a goatee. Of 60 Gunmen, 57 come out in different clothes before colours are counted.
+- **Tattoos**: dragon and koi sleeves, tiger stripes, 忠義 and other characters on forearms, chest, ribs, neck and knuckles, in three sets; each man shows a random mix of them on whatever skin his clothes leave bare.
+- **Easier to see**: 1.12 scale (about 1.96 m, was 1.08), a soft fill light on their fronts so they don't sink into the dark streets, a stronger distance rim (1.0, was 0.8), and mostly light and bright clothes (black is rare on tops now).
+- **Gore is unchanged** and every garment comes apart with the body: an arm comes off in its sleeve, a head with its hair, cap and glasses, a shin with its shoe. A man is still one draw call before and after cuts. All 20 gore tests pass.
+- **They talk.** Every callout is now spoken as well as subtitled, in six different voices (a voice per man): contact, reloading, man down, the Red Pole down, pinned by fire, lost him, push him, fleeing, the Red Pole yelling at runners, surrender, cowering, gut shot, legs gone, an arm gone, burning, grabbed by the mesh arm. Their voices come from their own heads and gunfire can't cut them off anymore. That was also why death screams got lost: every impact sound used to steal from the same 16 sound slots.
+
+Cloud evidence: `tools/check.sh` passes, 324 tests; new tests `tests/scene/test_wardrobe.gd` (bank, looks, one mesh, a severed arm takes its sleeve), `tests/scene/test_enemy_voice.gd` (spoken with subtitle, from the head, not cut off by 40 impacts, squad spacing), `tests/unit/test_voice_lines.gd` (all 276 clips load). Every clip was transcribed by Whisper in the session: 275 of 276 come back as written. Captures (Mobile renderer, software Vulkan): `docs/previews/triad_wardrobe*.png` (eight men in the range, front, back, close, from 11 m), `docs/previews/triad_face.png` (a face up close), `docs/previews/triad_chinatown.png` (three men at 9, 17 and 28 m from the player start in the fish market), `docs/previews/triad_tattoos.png`, `docs/previews/triad_poses.png`, `docs/previews/triad_split.png` (the pieces, clothes included), `docs/previews/gore_lineup*.png` (redone with the new men). Not checked in the cloud: how the voices sound through the phone's speaker or headphones, and frame time with 12 dressed men in view (each man is now about 13k triangles instead of 10k; the overlay is in the captures).
+
+Please try:
+1. Chinatown: can you pick the men out of the street now at 20–30 m? Too bright, too gaudy, or still too dark?
+2. Get close to a few. Do the clothes, faces and tattoos look good? Anything that looks wrong (a sleeve poking through, a bald patch, a floating cap)?
+3. Listen in a fight: do you hear the callouts over the guns? Do the voices sound like angry men or like a computer? Too loud, too quiet, too chatty?
+4. Gore on Maximum: shoot arms and legs off. Do the sleeves, trouser legs and shoes go with them?
+
+- Device / renderer / settings:
+- Notes from the owner:
+- Follow-ups: Cantonese callouts would need a Cantonese voice model (not available in the session); a few more garments (vests, tank tops with prints, suit jackets) and face shapes are easy to add to the bank.

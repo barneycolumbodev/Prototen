@@ -62,9 +62,17 @@ func _along(e: Enemy, seg: StringName, t: float) -> Vector3:
 func test_the_split_body_is_one_mesh() -> void:
 	var e: Enemy = _target()
 	var expected: int = 0
-	for n: StringName in [&"part_body"] + EnemyBody.SEGMENT_ORDER.map(func(s: StringName) -> StringName: return EnemyBody.SEGMENTS[s][0]):
-		var mi: MeshInstance3D = e.body.skeleton.get_node(NodePath(String(n))) as MeshInstance3D
+	var clothes: int = 0
+	for part: StringName in [&"body"] + EnemyBody.SEGMENT_ORDER:
+		var mi: MeshInstance3D = e.body.skeleton.get_node(NodePath("part_" + String(part))) as MeshInstance3D
 		expected += (mi.mesh as ArrayMesh).surface_get_array_len(0)
+		# Everything he wears is cut at the same places and comes along in the same mesh.
+		for g: Garment in e.body.look.garments:
+			var w: Mesh = EnemyBody.wardrobe_mesh(StringName("w_%s__%s" % [g.mesh, part]))
+			if w:
+				expected += (w as ArrayMesh).surface_get_array_len(0)
+				clothes += 1
+	assert_gt(clothes, 3, "his clothes are in pieces too")
 	e.body.sever(&"hand_L", Vector3.UP)
 	await wait_frames(1)
 	var shown: Array[String] = []

@@ -31,6 +31,8 @@ const LOS_MASK: int = Ballistics.LAYER_WORLD
 @export var config: EnemyConfig
 ## Firing-range target: reacts, never fires or walks away.
 @export var passive: bool = false
+## Seed for what he wears (TriadLook); < 0: random.
+@export var look_seed: int = -1
 
 var squad: Squad
 var body: EnemyBody
@@ -109,6 +111,14 @@ var _thrown_by: Node
 var _thrown_speed: float = 0.0
 var _thrown_time: float = 0.0
 var _thrown_hit: Array[Node] = []
+## Which of the triad voices speaks for him (VoiceLines.VOICES), picked at spawn.
+var voice: StringName = &""
+## His voice: callouts, pain and dying sounds, from his head. Every enemy has
+## his own, so impacts and gunfire never steal it (they share Sfx's pool).
+var mouth: AudioStreamPlayer3D
+## Said "where'd he go" since he last saw the operative.
+var _said_lost: bool = false
+const MOUTH_UNIT_SIZE: float = 10.0
 
 
 ## A stump bleeding after a limb or the head came off. A cut artery pumps
@@ -153,7 +163,7 @@ func _ready() -> void:
 	add_child(cs)
 	body = EnemyBody.new()
 	body.name = "Body"
-	body.setup(self, config)
+	body.setup(self, config, null, look_seed)
 	add_child(body)
 	nav = NavigationAgent3D.new()
 	nav.path_desired_distance = 0.6
@@ -164,6 +174,7 @@ func _ready() -> void:
 	_yaw = rotation.y
 	_last_pos = global_position
 	_build_flash()
+	_build_mouth()
 	body.set_stance(&"idle")
 	if not passive:
 		EventBus.shot_fired.connect(_on_shot_heard)
@@ -268,7 +279,7 @@ func knock_back(push: Vector3, from: Node, damage: float, morale_loss: float) ->
 	Sfx.play_at(&"body_fall", body.chest_position(), -6.0, 0.1)
 	if _pain_cooldown <= 0.0:
 		_pain_cooldown = 1.5
-		Sfx.play_at(&"enemy_pain", body.head_position(), -3.0, 0.12)
+		vocal(&"enemy_pain", -3.0)
 	if health <= 0.0:
 		# Broken by the impact: he goes flying the way he was shoved.
 		velocity = Vector3(push.x, maxf(push.y, 2.0), push.z).limit_length(9.0)
@@ -296,7 +307,10 @@ func seize(by: Node) -> bool:
 	body.ragdoll(Vector3.ZERO, body.chest_position(), &"chest")
 	morale = 0.0
 	_pain_cooldown = 0.9
-	Sfx.play_at(&"death_scream", body.head_position(), -3.0, 0.12)
+	if _rng.randf() < 0.65:
+		speak(&"grabbed")
+	else:
+		vocal(&"death_scream", -3.0)
 	if squad:
 		squad.on_ally_seized(self, by)
 	return true
@@ -366,8 +380,10 @@ func on_part_burn(part: HitboxPart, hit: BallisticHit) -> void:
 		return
 	if burn_left <= 0.0:
 		Fx.burn_at(part, hit.point, hit.normal, hit.weapon.burn_time, true)
-		if Sfx.claim_death_voice():
-			Sfx.play_at(&"death_scream", body.head_position(), -2.0, 0.1)
+		if _rng.randf() < 0.6:
+			speak(&"burning")
+		elif Sfx.claim_death_voice():
+			vocal(&"death_scream", -2.0)
 	burn_left = maxf(burn_left, hit.weapon.burn_time)
 	burn_dps = maxf(burn_dps, hit.weapon.burn_dps)
 	last_hit = hit
@@ -383,8 +399,11 @@ func on_near_miss(shooter: Node, weapon: WeaponData, distance: float, _point: Ve
 	if not alive or shooter == self or (shooter != null and shooter.is_in_group(&"triad")):
 		return
 	var k: float = (1.0 - distance / Ballistics.NEAR_MISS_RADIUS) * clampf(weapon.muzzle_energy() / 1500.0, 0.3, 2.0)
+	var before: float = suppression
 	suppression = minf(suppression + k * 0.35 * (1.0 - config.suppression_resist), 1.0)
 	_alerted_by(shooter)
+	if before < 0.55 and suppression >= 0.55 and state == State.COMBAT:
+		_callout(&"pinned")
 
 
 func _alerted_by(shooter: Node) -> void:
@@ -404,7 +423,7 @@ func _react(zone: StringName, dmg: float, hit: BallisticHit) -> void:
 	if zone in LEG_ZONES:
 		if leg_hits >= 2 or (leg_hits == 1 and health < config.health * 0.45):
 			_enter(State.CRAWL)
-			_callout(["My legs!", "I can't walk!"])
+			_callout(&"legs")
 			return
 		if leg_hits == 1:
 			limping = true
@@ -428,7 +447,7 @@ func _react(zone: StringName, dmg: float, hit: BallisticHit) -> void:
 		body.play_stumble()
 	if _pain_cooldown <= 0.0:
 		_pain_cooldown = 2.0
-		Sfx.play_at(&"enemy_pain", body.head_position(), -4.0, 0.12)
+		vocal(&"enemy_pain", -4.0)
 
 
 ## Maximum gore: takes the body apart at the cut nearest the hit when the
@@ -480,10 +499,12 @@ func sever(seg: StringName, velocity_out: Vector3, destroy: bool, hit: Ballistic
 	elif seg.begins_with("thigh") or seg.begins_with("shin"):
 		_enter(State.CRAWL)
 		morale = 0.0
+		speak(&"legs")
 	else:
 		has_gun = has_gun and not (&"hand_R" in group)
 		morale = 0.0
 		_enter(State.COWER if _rng.randf() < 0.5 else State.FLEE)
+		speak(&"limb_off")
 	bleed_dps = maxf(bleed_dps, 14.0 if seg.begins_with("upper_arm") or seg.begins_with("thigh") else 9.0)
 	return true
 
@@ -544,7 +565,9 @@ func die(hit: BallisticHit, zone: StringName, cause: StringName = &"shot") -> vo
 	Sfx.play_at(&"body_fall", global_position + Vector3.UP * 0.5, -2.0, 0.1)
 	var cry: StringName = death_cry(zone, cause == &"shot" and hit != null, state_before_death, cause == &"burn" or is_burning(), _rng.randf())
 	if cry != &"" and Sfx.claim_death_voice():
-		Sfx.play_at(cry, point + Vector3.UP * 0.2, -1.0, 0.08)
+		vocal(cry, -1.0, 0.08)
+	elif cry == &"" and mouth:
+		mouth.stop()  # a head shot cuts him off mid-word
 	if squad:
 		squad.on_death(self, hit)
 	EventBus.killed.emit(self, hit.damage if hit else null)
@@ -620,7 +643,7 @@ func _physics_process(delta: float) -> void:
 			_update_thrown(delta)
 		elif _pain_cooldown <= 0.0:
 			_pain_cooldown = _rng.randf_range(1.2, 2.4)
-			Sfx.play_at(&"enemy_pain", body.head_position(), -2.0, 0.15)
+			vocal(&"enemy_pain", -2.0, 0.15)
 		_pain_cooldown -= delta
 		return
 	_state_time += delta
@@ -628,7 +651,7 @@ func _physics_process(delta: float) -> void:
 	if state == State.CRAWL and _pain_cooldown <= 0.0:
 		# Crawling wounded moan as they drag themselves away.
 		_pain_cooldown = _rng.randf_range(3.5, 6.5)
-		Sfx.play_at(&"death_groan", body.head_position(), -9.0, 0.12)
+		vocal(&"death_groan", -9.0)
 	_update_flash(delta)
 	_update_burn(delta)
 	_update_bleeders(delta)
@@ -748,11 +771,13 @@ func _enter(s: State) -> void:
 		State.COMBAT:
 			_tactic_time = 0.0
 			if prev == State.IDLE or prev == State.ALERT:
-				_callout(["Augment!", "Contact!", "It's him, the augment!", "There! Shoot!"])
+				_callout(&"contact")
 		State.FLEE:
 			_release_token()
 			body.set_stance(&"flee")
-			_callout(["Run!", "Fall back!", "He's a machine!", "Get out of here!"])
+			_callout(&"flee")
+			if squad:
+				squad.rally(self)
 			_pick_flee_point()
 		State.SURRENDER:
 			_release_token()
@@ -761,11 +786,11 @@ func _enter(s: State) -> void:
 				body.drop_gun(global_basis.z * 1.5 + Vector3.UP)
 			body.set_stance(&"surrender")
 			remove_from_group(&"enemies")
-			_callout(["Don't shoot!", "I give up!", "Please! Enough!"])
+			_callout(&"surrender", true)
 		State.COWER:
 			_release_token()
 			body.set_stance(&"cower")
-			_callout(["No, no, no...", "Help me!"])
+			_callout(&"cower")
 		State.BLIND:
 			body.set_stance(&"blind_fire")
 		State.CRAWL:
@@ -779,7 +804,7 @@ func _enter(s: State) -> void:
 		State.GUT:
 			_release_token()
 			body.set_stance(&"gut")
-			_callout(["I'm hit!", "Argh, my gut!", "Medic! I'm hit!"])
+			_callout(&"gut", true)
 		State.DEAD:
 			pass
 		_:
@@ -834,9 +859,16 @@ func _decide_combat() -> void:
 	if _unseen_for > 4.0 and last_known != Vector3.INF:
 		tactic = Tactic.MOVE
 		_go(last_known)
+		if not _said_lost:
+			_said_lost = true
+			_callout(&"lost")
 		return
+	if sees_player:
+		_said_lost = false
 	if config.aggressive:
 		if d > 7.0 or not sees_player:
+			if tactic != Tactic.ADVANCE and _rng.randf() < 0.35:
+				_callout(&"advance")
 			tactic = Tactic.ADVANCE
 			_go(p.global_position + (global_position - p.global_position).normalized() * 4.5)
 		else:
@@ -1012,7 +1044,7 @@ func _start_reload() -> void:
 	body.play_reload()
 	Sfx.play_at(&"enemy_reload", body.chest_position(), -6.0)
 	if _rng.randf() < 0.5:
-		_callout(["Reloading!", "Cover me, reloading!", "Changing mag!"])
+		_callout(&"reload")
 	_release_token()
 
 
@@ -1195,8 +1227,53 @@ func _build_flash() -> void:
 	add_child(_flash)
 
 
-func _callout(lines: Array) -> void:
-	if squad == null or lines.is_empty():
+## A callout for `situation` (VoiceLines.LINES). Through the squad, which
+## keeps them from talking over each other unless `force`.
+func _callout(situation: StringName, force: bool = false) -> void:
+	if squad:
+		squad.callout(self, situation, force)
+	else:
+		speak(situation)
+
+
+## Says one of the lines for `situation` (`index` < 0: a random one) in his
+## voice, from his head, with the subtitle. Returns the line, or "" if he
+## can't speak (dead, or no such line).
+func speak(situation: StringName, index: int = -1) -> String:
+	var lines: Array = VoiceLines.LINES.get(situation, [])
+	if lines.is_empty() or not alive:
+		return ""
+	var i: int = index if index >= 0 and index < lines.size() else _rng.randi() % lines.size()
+	var text: String = lines[i]
+	var stream: AudioStream = load(VoiceLines.path(voice, situation, i)) as AudioStream if voice != &"" else null
+	if stream and mouth:
+		mouth.stream = stream
+		mouth.volume_db = 3.0
+		mouth.pitch_scale = Sfx.world_pitch(0.02)
+		mouth.play()
+	EventBus.callout.emit(config.callsign, text, global_position)
+	return text
+
+
+## A wordless sound from his mouth (pain, dying): one of Sfx's banks.
+func vocal(bank: StringName, volume_db: float = 0.0, pitch_rand: float = 0.12) -> void:
+	var streams: Array = Sfx.bank(bank)
+	if streams.is_empty() or mouth == null:
 		return
-	var line: String = lines[_rng.randi() % lines.size()]
-	squad.callout(self, line)
+	mouth.stream = streams[_rng.randi() % streams.size()]
+	mouth.volume_db = volume_db
+	mouth.pitch_scale = Sfx.world_pitch(pitch_rand)
+	mouth.play()
+
+
+func _build_mouth() -> void:
+	if voice == &"":
+		voice = VoiceLines.VOICES[_rng.randi() % VoiceLines.VOICES.size()]
+	mouth = AudioStreamPlayer3D.new()
+	mouth.name = "Mouth"
+	mouth.bus = &"SFX"
+	mouth.unit_size = MOUTH_UNIT_SIZE
+	mouth.max_distance = 90.0
+	mouth.attenuation_filter_cutoff_hz = 12000.0
+	body.head_anchor().add_child(mouth)
+	mouth.position = Vector3(0, 0.06, 0.08)

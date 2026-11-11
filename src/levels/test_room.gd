@@ -136,6 +136,10 @@ func _ready() -> void:
 			var gl: GoreLineup = GoreLineup.new()
 			gl.room = self
 			add_child(gl)
+		elif arg == "--demo=wardrobe":
+			var wl: WardrobeLineup = WardrobeLineup.new()
+			wl.room = self
+			add_child(wl)
 		elif arg == "--demo=gore":
 			var gd: GoreDemo = GoreDemo.new()
 			gd.room = self
