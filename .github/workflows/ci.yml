@@ -1,17 +1,27 @@
 # CI (CLAUDE.md §11): import, run GUT, export a signed debug APK (arm64),
 # publish it to the rolling "dev-latest" release.
+#
+# Every push to any branch builds, and so does every pull request (opened,
+# reopened, or pushed to). Owner: "the apk needs to be built with every single
+# pr. Period." (2026-11-11) and "I need a damn apk built with GitHub actions
+# every time" (2026-11-12). Failing tests turn the run red but never stop the
+# APK. dev-latest always holds the newest build; its title names the time and
+# commit, its notes the branch and whether the tests passed.
 name: CI
 
 on:
   push:
-    branches: [main]
+    branches: ["**"]
+  pull_request:
+    types: [opened, reopened, synchronize, ready_for_review]
   workflow_dispatch:
 
 permissions:
   contents: write
 
+# One dev-latest: a newer build cancels an older one still running.
 concurrency:
-  group: ci-${{ github.ref }}
+  group: dev-latest
   cancel-in-progress: true
 
 env:
@@ -23,6 +33,9 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+        with:
+          # A pull request builds its branch as it is, not GitHub's trial merge.
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
       - name: Cache Godot and export templates
         id: cache-godot
@@ -58,6 +71,9 @@ jobs:
         run: timeout 600 godot --headless --import
 
       - name: Validate scripts and run GUT
+        id: tests
+        # A failing test is reported (the run goes red at the end) but never stops the APK.
+        continue-on-error: true
         run: tools/check.sh
 
       - name: Configure Android SDK and signing
@@ -141,14 +157,27 @@ jobs:
       - name: Publish to dev-latest release
         env:
           GH_TOKEN: ${{ github.token }}
+          BUILD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          BUILD_BRANCH: ${{ github.head_ref || github.ref_name }}
         run: |
           set -euo pipefail
-          short="${GITHUB_SHA::7}"
-          notes="Debug build of ${GITHUB_REF_NAME} @ ${short}, CI run #${{ github.run_number }} (${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}).
+          short="${BUILD_SHA::7}"
+          when="$(date -u '+%Y-%m-%d %H:%M UTC')"
+          subject="$(git log -1 --format=%s "$BUILD_SHA")"
+          tests="${{ steps.tests.outcome == 'success' && 'All tests passed.' || 'WARNING: some tests failed (see the run).' }}"
+          notes="Built ${when} from branch ${BUILD_BRANCH} @ ${short}: ${subject}
+          ${tests}
+          CI run #${{ github.run_number }} (${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}).
           Install graft-debug.apk on the phone. Needs a controller.
           Size: $((APK_BYTES / 1000000)) MB (${APK_BYTES} bytes). If the downloaded file is smaller, the download was cut off: download it again."
           gh release delete dev-latest --cleanup-tag --yes 2>/dev/null || true
           sleep 3
           gh release create dev-latest build/graft-debug.apk \
-            --prerelease --target "$GITHUB_SHA" \
-            --title "dev-latest (${short})" --notes "$notes"
+            --prerelease --target "$BUILD_SHA" \
+            --title "GRAFT ${when} (${short})" --notes "$notes"
+
+      - name: Report failing tests
+        if: steps.tests.outcome != 'success'
+        run: |
+          echo "::error::Tests failed. The APK was still built and published; see 'Validate scripts and run GUT' above."
+          exit 1

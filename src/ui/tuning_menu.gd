@@ -31,6 +31,7 @@ const WEAPON_PARAMS: Array = [
 	["Accuracy", "mechanical_moa", 0.0, 10.0, 0.25, "Precision aimed (MOA)"],
 	["Accuracy", "hip_spread_deg", 0.0, 4.0, 0.05, "Hip spread (°)"],
 	["Accuracy", "move_spread_deg", 0.0, 4.0, 0.05, "Moving spread (°)"],
+	["Accuracy", "air_spread_deg", 0.0, 6.0, 0.05, "In-the-air spread (°)"],
 	["Accuracy", "bloom_per_shot_deg", 0.0, 2.0, 0.05, "Bloom per shot (°)"],
 	["Fire", "fire_interval", 0.05, 0.3, 0.005, "Fastest follow-up (s)"],
 	["Fire", "fire_buffer", 0.0, 0.3, 0.01, "Trigger buffer (s)"],
@@ -48,6 +49,9 @@ const WEAPON_PARAMS: Array = [
 	["Railgun", "heat_cool_per_s", 0.0, 2.0, 0.05, "Cooling per second"],
 	["Railgun", "vent_time", 0.3, 4.0, 0.1, "Vent time (s)"],
 	["Railgun", "beam_trail_time", 0.0, 2.0, 0.05, "Trail lingers (s)"],
+	["Laser", "aim_follows_gun", 0.0, 1.0, 0.05, "Dot follows gun sway"],
+	["Laser", "laser_dot_deg", 0.1, 2.0, 0.05, "Dot size (°)"],
+	["Laser", "laser_beam_energy", 0.0, 2.0, 0.05, "Beam brightness"],
 	["Feedback", "hitstop_headshot", 0.0, 0.15, 0.005, "Hit-stop headshot (s)"],
 	["Feedback", "hitstop_kill", 0.0, 0.15, 0.005, "Hit-stop kill (s)"],
 ]
@@ -175,7 +179,11 @@ func save() -> void:
 
 ## Railgun sliders only appear for railguns.
 static func shows(param: Array, data: WeaponData) -> bool:
-	return param[0] != "Railgun" or data.is_rail()
+	if param[0] == "Railgun":
+		return data.is_rail()
+	if param[0] == "Laser":
+		return data.laser_range > 0.0
+	return true
 
 
 ## Save-file section for a gun ("weapon_pistol_57", "weapon_mg42").

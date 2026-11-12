@@ -140,9 +140,20 @@ func lock_slide() -> void:
 	_slide_locked = true
 
 
+func slide_locked() -> bool:
+	return _slide_locked
+
+
 func release_slide() -> void:
 	_slide_locked = false
 	_slide_time = data.slide_cycle_time * 0.25
+
+
+## The gun's turn away from its rest placement that the aim line follows
+## (sway and poses, degrees, weapon space). Not the recoil kick: that is the
+## viewmodel's exaggerated flip, the real recoil is the camera kick.
+func aim_rotation_deg() -> Vector3:
+	return sway.value + pose_rot.value
 
 
 func compose(hip: Transform3D, ads_xform: Transform3D, ads: float) -> Transform3D:

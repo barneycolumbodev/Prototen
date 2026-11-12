@@ -31,7 +31,11 @@ Every third-party file in the repository, with its source and license (CLAUDE.md
 | M14/P battle rifle (model, 4K baked textures, slide/magazine/stock parts) | `assets/weapons/m14p/` | `raw_assets/weapons/m14p/build.py` (Blender/bpy, procedural materials, high→low bake). |
 | First-person arms holding the M14/P | `assets/characters/fp_arms_m14p/` | `raw_assets/characters/fp_arms_m14p/build.py`. |
 | M14/P sounds (9: shots, tail, reload beats, dry fire) | `assets/audio/sfx/m14_*` | Synthesized by `raw_assets/audio/build_m14_sfx.py` (numpy/scipy). |
-| Weapon wheel icons (5) | `assets/ui/weapon_icons/` | Rendered from the game models by `raw_assets/ui/weapon_icons/build.py`. |
+| MP5 with red-dot sight, suppressor and green laser (model, 4K baked textures, bolt/cocking handle/magazine/stock/lens/reticle/laser parts) | `assets/weapons/mp5/` | `raw_assets/weapons/mp5/build.py` (Blender/bpy, procedural materials, high→low bake). |
+| First-person arms holding the MP5 | `assets/characters/fp_arms_mp5/` | `raw_assets/characters/fp_arms_mp5/build.py`. |
+| MP5 sounds (11: shots, tail, reload beats, HK slap, dry fire) | `assets/audio/sfx/mp5_*` | Synthesized by `raw_assets/audio/build_mp5_sfx.py` (numpy/scipy). |
+| Laser beam and dot shaders | `src/vfx/laser_beam.gdshader`, `src/vfx/laser_dot.gdshader` | Written for this project. |
+| Weapon wheel icons (6) | `assets/ui/weapon_icons/` | Rendered from the game models by `raw_assets/ui/weapon_icons/build.py`. |
 | Weapon wheel sounds (2) | `assets/audio/sfx/wheel_*` | Synthesized by `raw_assets/audio/build_ui_sfx.py`. |
 | Triad enemy (rebuilt 2026-11-11): rigged body, a 24-item wardrobe (clothes, hair, hats, jewellery) as shells over it, one 4K atlas with painted skin, face, cloth and three tattoo sets, 17 animation clips, severable parts of the body and of every garment | `assets/characters/triad/` (`triad.gltf`, `triad_wardrobe.gltf`, `textures/`) | `raw_assets/characters/triad/build.py` with `body.py`, `wardrobe.py`, `paint.py`, `tattoos.py`, `common.py` (Blender/bpy metaballs, voxel remesh, garment shells cut along scalar fields, numpy painting from baked position maps, PIL-drawn tattoo designs; IK-posed clips). No MakeHuman/MPFB or Quaternius assets: their sites aren't reachable from the session. |
 | Clothing prints (Hawaiian hibiscus, camo, check, cloud brocade), tileable | `assets/characters/triad/textures/triad_prints.png` | `raw_assets/characters/triad/build_prints.py` (numpy, PIL, scipy). |
