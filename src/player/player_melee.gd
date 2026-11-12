@@ -18,10 +18,29 @@ var windup_left: float = -1.0
 var _scripted: bool = false
 ## Multiplier on the shove from a running part (the fan shield: a shield bash).
 var push_bonus: float = 1.0
+## The first-person knife that plays the strike (null in bare tests without a camera).
+var knife: KnifeViewmodel
 
 
 func _ready() -> void:
 	player = get_parent() as Player
+	_make_knife.call_deferred()
+
+
+func _make_knife() -> void:
+	if player and cfg.knife_scene and player.camera() and cfg.knife_times.size() >= 2:
+		knife = KnifeViewmodel.make(player, cfg)
+		add_child(knife)
+
+
+func _process(delta: float) -> void:
+	if knife:
+		knife.tick(delta * TimeControl.player_boost())
+
+
+## 0..1: how far the gun is lowered out of the knife's way.
+func gun_away() -> float:
+	return knife.gun_away() if knife else 0.0
 
 
 ## Tests and demos: strike as if R3 was pressed.
@@ -71,9 +90,11 @@ func _start() -> void:
 	cooldown = windup_left + recovery()
 	player.stop_sprint()
 	var w: PlayerWeapon = player.weapon()
-	if w and w.motion:
-		w.motion.jolt(cfg.viewmodel_jolt, cfg.viewmodel_jolt_rot_deg)
-	Sfx.play_ui(&"slide", -10.0, 0.1)
+	if w and w.cam_recoil:
+		w.cam_recoil.kick(cfg.windup_kick_deg)
+	if knife:
+		knife.play(player.body.stat(&"melee_speed"))
+	Sfx.play_ui(&"mw7_swish", -7.0, 0.12)
 
 
 ## The living enemy the blow would land on, or null.
@@ -119,7 +140,13 @@ func _land() -> void:
 	var hit_at: Vector3 = e.global_position + Vector3.UP * 1.3
 	e.knock_back(dir * push + Vector3.UP * push * 0.3, player, 9999.0 if lethal else dmg, cfg.morale_loss)
 	Sfx.play_at(&"impact_flesh", hit_at, 2.0, 0.08)
-	Gore.spray(hit_at, dir, clampf(push / 8.0, 0.4, 2.0), 6 if lethal else 3)
+	Sfx.play_at(&"mw7_cut", hit_at, 0.0, 0.1)
+	if knife:
+		knife.cut(lethal)
+	# The blood leaves along the slash: right to left across the view, a little down.
+	var across: Vector3 = (-cam.global_basis.x - cam.global_basis.y * 0.35 + dir * 0.6).normalized()
+	Gore.spray(hit_at, across, clampf(push / 8.0, 0.5, 2.0), 8 if lethal else 5)
+	Gore.mist(hit_at, across, 1.0 if lethal else 0.6)
 	TimeControl.hitstop(cfg.hitstop_time * (1.6 if lethal else 1.0), cfg.hitstop_scale)
 	for pad: int in Input.get_connected_joypads():
 		Input.start_joy_vibration(pad, cfg.rumble.x, cfg.rumble.y, cfg.rumble.z)

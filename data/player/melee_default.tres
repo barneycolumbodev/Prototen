@@ -1,12 +1,13 @@
-[gd_resource type="Resource" script_class="MeleeConfig" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="MeleeConfig" load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://src/player/melee_config.gd" id="1"]
+[ext_resource type="PackedScene" path="res://assets/weapons/knife/knife_fp.gltf" id="2"]
 
 [resource]
 script = ExtResource("1")
 reach = 2.1
 cone_deg = 55.0
-windup = 0.07
+windup = 0.11
 recovery = 0.42
 damage = 55.0
 push = 7.0
@@ -16,6 +17,18 @@ lunge_speed = 5.0
 hitstop_time = 0.07
 hitstop_scale = 0.08
 rumble = Vector3(0.8, 1, 0.18)
-camera_kick_deg = Vector3(-2.2, 1.4, 3.5)
-viewmodel_jolt = Vector3(-0.06, -0.03, -0.12)
-viewmodel_jolt_rot_deg = Vector3(-12, 18, 28)
+camera_kick_deg = Vector3(-1.6, 2.2, 4.5)
+windup_kick_deg = Vector3(0.7, -0.8, -1.6)
+knife_scene = ExtResource("2")
+knife_times = PackedFloat32Array(0, 0.07, 0.11, 0.16, 0.28, 0.44)
+knife_pos = PackedVector3Array(0.3, -0.4, -0.34, 0.26, -0.02, -0.44, 0, -0.12, -0.52, -0.22, -0.2, -0.46, -0.19, -0.22, -0.44, 0, -0.62, -0.34)
+knife_forearm = PackedVector3Array(0.3, -0.7, 0.65, 0.5, -0.55, 0.67, 0.35, -0.45, 0.82, 0.5, -0.35, 0.8, 0.5, -0.4, 0.77, 0.35, -0.6, 0.72)
+knife_edge = PackedVector3Array(-0.85, 0.2, 0.1, -0.75, -0.6, 0, -0.6, -0.8, 0, -0.25, -0.96, 0.1, -0.2, -0.97, 0.1, -0.6, -0.7, 0)
+gun_away_in = 0.06
+gun_return_at = 0.26
+gun_away_offset = Vector3(0.06, -0.3, 0.08)
+gun_away_rot_deg = Vector3(-40, -10, -25)
+trail_time = 0.05
+trail_min_speed = 3.0
+trail_color = Color(0.75, 0.86, 1, 0.3)
+trail_blood_color = Color(0.6, 0.03, 0.03, 0.55)

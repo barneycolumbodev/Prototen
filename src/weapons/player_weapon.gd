@@ -640,6 +640,12 @@ func _process(delta: float) -> void:
 	var s: Slot = slots[current]
 	s.motion.update(delta, a, _player.look_velocity, _move_fraction(), _player.is_on_floor(), pose)
 	s.rig.transform = s.motion.compose(s.hip_xform, s.optic_xform if optic else s.ads_xform, a)
+	var away: float = _player.melee.gun_away() if _player.melee else 0.0
+	if away > 0.0:
+		# Dropped out of the knife's way (PlayerMelee / KnifeViewmodel).
+		var mc: MeleeConfig = _player.melee.cfg
+		s.rig.transform.basis = Basis.from_euler(mc.gun_away_rot_deg * (PI / 180.0) * away) * s.rig.transform.basis
+		s.rig.transform.origin += mc.gun_away_offset * away
 	s.rig.set_slide(s.motion.slide * data.slide_travel)
 	s.rig.set_magazine_out(_mag_offset(), data.magazine_travel)
 	s.rig.set_aimed(a)
