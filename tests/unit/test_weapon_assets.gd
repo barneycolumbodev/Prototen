@@ -54,6 +54,7 @@ func test_textures_are_vram_compressed() -> void:
 			"res://assets/weapons/rail_carbine/textures/rail_carbine",
 			"res://assets/characters/fp_arms_rail/textures/fp_arms_rail",
 			"res://assets/weapons/m14p/textures/m14p", "res://assets/characters/fp_arms_m14p/textures/fp_arms_m14p",
+			"res://assets/weapons/mp5/textures/mp5",
 			"res://assets/characters/operative/textures/operative", "res://assets/characters/operative/textures/operative_head"]:
 		for name: String in ["basecolor", "orm", "normal", "emission"]:
 			if prefix.ends_with("operative_head") and name == "emission":
@@ -138,6 +139,23 @@ func test_m14p_parts_budget_and_baked_material() -> void:
 	var tris: int = _tris(gun)
 	gun.free()
 	assert_between(tris, 4000, 18000, "first-person M14/P (%d tris)" % tris)
+
+
+func test_mp5_parts_budget_and_baked_material() -> void:
+	var gun: Node = (load("res://assets/weapons/mp5/mp5.gltf") as PackedScene).instantiate()
+	# Body plus the parts the game drives: bolt, cocking handle, magazine, stock, red-dot glass and dot, laser window.
+	for part: String in ["body", "slide", "charging_handle", "magazine", "stock", "lens", "reticle", "laser"]:
+		assert_true(gun.find_child(part, true, false) != null, "has a %s node" % part)
+	var body: MeshInstance3D = gun.find_child("body", true, false) as MeshInstance3D
+	var mat: StandardMaterial3D = body.mesh.surface_get_material(0) as StandardMaterial3D
+	assert_not_null(mat.albedo_texture)
+	assert_not_null(mat.normal_texture)
+	assert_not_null(mat.roughness_texture)
+	assert_not_null(mat.metallic_texture, "enamelled steel vs polymer comes from the metal map")
+	assert_not_null(mat.emission_texture, "laser window and status lamp")
+	var tris: int = _tris(gun)
+	gun.free()
+	assert_between(tris, 8000, 25000, "first-person MP5 (%d tris)" % tris)
 
 
 func test_m14p_arms_budget() -> void:
