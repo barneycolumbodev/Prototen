@@ -31,6 +31,7 @@ GUNS = {
     "rail_carbine": "assets/weapons/rail_carbine/rail_carbine.gltf",
     "m14p": "assets/weapons/m14p/m14p.gltf",
     "mp5": "assets/weapons/mp5/mp5.gltf",
+    "glock22": "assets/weapons/glock22/glock22.gltf",
 }
 # Parts left out of the icon (shown only in some states in game).
 HIDE = {"lens", "reticle"}
