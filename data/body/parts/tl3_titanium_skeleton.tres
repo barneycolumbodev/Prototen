@@ -1,0 +1,58 @@
+[gd_resource type="Resource" script_class="PartData" load_steps=12 format=3]
+
+[ext_resource type="Script" path="res://src/body/part_data.gd" id="1"]
+[ext_resource type="Script" path="res://src/body/stat_modifier.gd" id="2"]
+[ext_resource type="Script" path="res://src/body/part_visual.gd" id="3"]
+[ext_resource type="Script" path="res://src/body/stat_requirement.gd" id="4"]
+[ext_resource type="PackedScene" path="res://assets/augments/passives/tl3_titanium_skeleton/tl3_titanium_skeleton.gltf" id="5"]
+
+[sub_resource type="Resource" id="mod_0"]
+script = ExtResource("2")
+stat = &"structure"
+add = 0.45
+mul = 1.0
+
+[sub_resource type="Resource" id="mod_1"]
+script = ExtResource("2")
+stat = &"carry_kg"
+add = 25.0
+mul = 1.0
+
+[sub_resource type="Resource" id="mod_2"]
+script = ExtResource("2")
+stat = &"recoil"
+add = 0.0
+mul = 0.9
+
+[sub_resource type="Resource" id="mod_3"]
+script = ExtResource("2")
+stat = &"max_health"
+add = 20.0
+mul = 1.0
+
+[sub_resource type="Resource" id="mod_4"]
+script = ExtResource("2")
+stat = &"damage_per_kj"
+add = 0.0
+mul = 0.95
+
+[sub_resource type="Resource" id="vis_0"]
+script = ExtResource("3")
+socket = &"root"
+scene = ExtResource("5")
+model_space = true
+
+[resource]
+script = ExtResource("1")
+id = &"tl3_titanium_skeleton"
+display_name = "TL-3 Titanium-Lattice Skeleton"
+description = "Long bones laced with a printed titanium lattice; anchor bolts show at the wrists and knuckles. The frame for heavy muscle and heavy guns."
+location = 3
+mass_kg = 9.0
+power_draw_w = 0.0
+heat_w = 0.0
+capacity = 2
+modifiers = Array[ExtResource("2")]([SubResource("mod_0"), SubResource("mod_1"), SubResource("mod_2"), SubResource("mod_3"), SubResource("mod_4")])
+requirements = Array[ExtResource("4")]([])
+synergy = "Structure ×1.45: meets the GX-4 Gauss arm's requirement, lifts the strength cap to ×1.89 and steadies heavy weapons."
+visuals = Array[ExtResource("3")]([SubResource("vis_0")])

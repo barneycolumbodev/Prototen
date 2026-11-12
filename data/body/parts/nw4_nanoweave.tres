@@ -1,0 +1,36 @@
+[gd_resource type="Resource" script_class="PartData" load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://src/body/part_data.gd" id="1"]
+[ext_resource type="Script" path="res://src/body/stat_modifier.gd" id="2"]
+[ext_resource type="Script" path="res://src/body/part_visual.gd" id="3"]
+[ext_resource type="Script" path="res://src/body/stat_requirement.gd" id="4"]
+
+[sub_resource type="Resource" id="mod_0"]
+script = ExtResource("2")
+stat = &"damage_per_kj"
+add = 0.0
+mul = 0.85
+
+[sub_resource type="Resource" id="vis_0"]
+script = ExtResource("3")
+socket = &"chest"
+shape = 1
+size = Vector3(0.3, 0.005, 0.2)
+offset = Vector3(0.0, 0.14, 0.0)
+rotation_deg = Vector3(90.0, 0.0, 0.0)
+finish = "plate"
+
+[resource]
+script = ExtResource("1")
+id = &"nw4_nanoweave"
+display_name = "NW-4 Nanoweave Fiber Vest"
+description = "A close-fitting vest of shear-thickening nanoweave under the plates. Stops pistol rounds cold; light and silent."
+location = 5
+mass_kg = 4.0
+power_draw_w = 0.0
+heat_w = 0.0
+capacity = 1
+modifiers = Array[ExtResource("2")]([SubResource("mod_0")])
+requirements = Array[ExtResource("4")]([])
+synergy = ""
+visuals = Array[ExtResource("3")]([SubResource("vis_0")])

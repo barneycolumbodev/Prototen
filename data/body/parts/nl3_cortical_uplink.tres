@@ -1,0 +1,46 @@
+[gd_resource type="Resource" script_class="PartData" load_steps=10 format=3]
+
+[ext_resource type="Script" path="res://src/body/part_data.gd" id="1"]
+[ext_resource type="Script" path="res://src/body/stat_modifier.gd" id="2"]
+[ext_resource type="Script" path="res://src/body/part_visual.gd" id="3"]
+[ext_resource type="Script" path="res://src/body/stat_requirement.gd" id="4"]
+[ext_resource type="PackedScene" path="res://assets/augments/passives/nl3_cortical_uplink/nl3_cortical_uplink.gltf" id="5"]
+
+[sub_resource type="Resource" id="mod_0"]
+script = ExtResource("2")
+stat = &"connectivity"
+add = 3.0
+mul = 1.0
+
+[sub_resource type="Resource" id="mod_1"]
+script = ExtResource("2")
+stat = &"perception"
+add = 0.0
+mul = 1.05
+
+[sub_resource type="Resource" id="mod_2"]
+script = ExtResource("2")
+stat = &"signature"
+add = 0.0
+mul = 1.12
+
+[sub_resource type="Resource" id="vis_0"]
+script = ExtResource("3")
+socket = &"root"
+scene = ExtResource("5")
+model_space = true
+
+[resource]
+script = ExtResource("1")
+id = &"nl3_cortical_uplink"
+display_name = "NL-3 Cortical Uplink"
+description = "A skull-mounted transceiver module at the base of the skull: a phased antenna array in two blades and a fibre trunk into the cervical spine. Your brain talks to drones, turrets and smart weapons directly."
+location = 0
+mass_kg = 0.6
+power_draw_w = 25.0
+heat_w = 20.0
+capacity = 2
+modifiers = Array[ExtResource("2")]([SubResource("mod_0"), SubResource("mod_1"), SubResource("mod_2")])
+requirements = Array[ExtResource("4")]([])
+synergy = "Connectivity 3: required by remote-controlled hardware (drones); link range 40 m per point (120 m). Links the FC-1 to the gun."
+visuals = Array[ExtResource("3")]([SubResource("vis_0")])

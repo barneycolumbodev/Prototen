@@ -55,12 +55,16 @@ static func defaults() -> Array[Binding]:
 		_axis(&"fire", JOY_AXIS_TRIGGER_RIGHT, 1.0, [], TRIGGER_DEADZONE, MOUSE_BUTTON_LEFT),
 		_button(&"sprint", JOY_BUTTON_LEFT_STICK, [KEY_SHIFT]),
 		_button(&"melee", JOY_BUTTON_RIGHT_STICK, [KEY_V]),
-		_button(&"active_1", JOY_BUTTON_LEFT_SHOULDER, [KEY_Q]),
-		_button(&"active_2", JOY_BUTTON_RIGHT_SHOULDER, [KEY_E]),
-		_button(&"active_3", JOY_BUTTON_DPAD_UP, [KEY_F]),
-		_button(&"item_prev", JOY_BUTTON_DPAD_LEFT, [KEY_Z]),
-		_button(&"item_next", JOY_BUTTON_DPAD_RIGHT, [KEY_X]),
-		_button(&"item_use", JOY_BUTTON_DPAD_DOWN, [KEY_G]),
+		# Owner, 2026-11-07: up to three actives, all fired with LB; D-pad
+		# left / down / right picks which one LB uses. RB is free in play
+		# (the loadout screen uses it: menu_jump).
+		_button(&"active_use", JOY_BUTTON_LEFT_SHOULDER, [KEY_Q]),
+		_button(&"active_select_1", JOY_BUTTON_DPAD_LEFT, [KEY_4]),
+		_button(&"active_select_2", JOY_BUTTON_DPAD_DOWN, [KEY_5]),
+		_button(&"active_select_3", JOY_BUTTON_DPAD_RIGHT, [KEY_6]),
+		# Shell type on guns that take several (Saiga): D-pad up cycles.
+		_button(&"item_next", JOY_BUTTON_DPAD_UP, [KEY_X]),
+		_button(&"item_prev", JOY_BUTTON_INVALID, [KEY_Z]),
 		_button(&"jump", JOY_BUTTON_A, [KEY_SPACE]),
 		_button(&"slide", JOY_BUTTON_B, [KEY_C, KEY_CTRL]),
 		_button(&"reload", JOY_BUTTON_X, [KEY_R]),
@@ -68,6 +72,9 @@ static func defaults() -> Array[Binding]:
 		_button(&"pause", JOY_BUTTON_START, [KEY_ESCAPE]),
 		_button(&"body_status", JOY_BUTTON_BACK, [KEY_TAB]),
 		_button(&"toggle_overlay", JOY_BUTTON_INVALID, [KEY_F3]),
+		# Menus only (2026-11-11): RB on the loadout screen goes to the part
+		# that supplies what the selected one needs.
+		_button(&"menu_jump", JOY_BUTTON_RIGHT_SHOULDER, [KEY_G]),
 	]
 
 

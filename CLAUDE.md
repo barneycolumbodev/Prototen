@@ -39,7 +39,7 @@ Commit after each step.
 
 ## 2. The game
 
-- **Player and enemies.** You are augmented. For now, enemies are ordinary unaugmented soldiers who come in waves. The difference between you and them should show everywhere: speed, strength, durability, perception, what you can carry, and how they react to you. It's a power fantasy, but fights should still take skill.
+- **Player and enemies.** You are augmented. For now, enemies are ordinary unaugmented humans: triad members (owner, 2026-11-03), in waves in the test range and on a rolling clock on the Chinatown docks map (8 at the start, 3 more whenever fewer than 4 are fighting, out of sight; owner, 2026-11-04). Each is dressed at random from a wardrobe bank, with tattoos, and speaks his callouts (owner, 2026-11-11; design §5.6). The difference between you and them should show everywhere: speed, strength, durability, perception, what you can carry, and how they react to you. It's a power fantasy, but fights should still take skill.
 - **Simulation.** Simulate as much as an immersive sim would (bodies, damage, ballistics, enemy behavior), but keep combat fast. Every system has to work at full speed, without menus or pauses.
 - **Gunplay.** The goal is the best gunplay in any mobile shooter. References: Call of Duty for gun handling, Doom for speed and aggression, Halo for readable weapons and enemies, F.E.A.R. and Trepang2 for slow motion and hit reactions, S.T.A.L.K.E.R. for weapon weight, Soldier of Fortune for locational damage and gore.
 - **Tone.** Warhammer 40,000's hardware and industrial scale without its supernatural side. Deus Ex's augmentation. Halo's military hardware. Soldier of Fortune's grounded, violent military action.
@@ -50,7 +50,7 @@ Commit after each step.
 
 ## 3–6. Game design
 
-Augmentation (§3), test loadouts (§4), combat simulation (§5) and art direction (§6) live in [`docs/design.md`](docs/design.md).
+Augmentation (§3; the actives in §3.4 and §3.4b, the passive library in §3.6, colours in §3.7), test loadouts (§4), combat simulation (§5), art direction (§6) and maps (§7) live in [`docs/design.md`](docs/design.md).
 
 ---
 
@@ -92,7 +92,7 @@ Starting budgets. These are guesses: measure them on the phone in M0 and replace
 | Triangles on screen | ≤ 250k |
 | Active enemies | ≤ 12 |
 | Ragdolls simulating | ≤ 3, frozen after about 2.5 s |
-| Blood decals | ≤ 48, oldest fade out |
+| Blood stains | ≤ 48 large + 144 single drops and runs, oldest fade out; ≤ 320 drops in the air (one draw call) |
 | Live particles | ≤ 1,500 |
 | Dynamic lights | ≤ 4; only one casts shadows |
 | RAM | ≤ 1.2 GB |
@@ -153,15 +153,15 @@ Put an empty `.gdignore` file in `raw_assets/`, `tools/` and `docs/` so Godot do
 | Input | Action |
 |---|---|
 | Left stick / L3 | Move / sprint |
-| Right stick / R3 | Look / melee |
+| Right stick / R3 | Look / melee strike (built 2026-11-08) |
 | LT (hold) / RT | Aim down sights / fire |
-| LB / RB | Active parts 1 and 2 |
+| LB | The selected active part (tap on / tap off). RB: free (owner, 2026-11-07). While a part is out, RT and LT are its own (whip: LT + right stick steers, RT lashes; mesh arm: RT grabs, RT throws; drone: sticks fly, A/B climb/sink, RT detonates) |
 | A | Jump (wall-run on contact) |
-| B | Slide / crouch |
+| B | Slide (a tap runs it out) / crouch |
 | X | Reload (hold to interact) |
-| Y | Switch weapon (hold to change MG barrel) |
-| D-pad | Active part 3, items; left/right pick the shell type on guns that take several (Saiga-12K) |
-| Menu / View | Pause / body status |
+| Y | Tap: previous weapon. Hold: weapon wheel (owner, 2026-11-02; the MG barrel change needs another input in M3) |
+| D-pad | Left / down / right: select active part 1 / 2 / 3 for LB, in the order they were installed (default: RX-9 / GX-4 arm / empty; 2026-11-10: any three of nine). Up: shell type on guns that take several (Saiga-12K) (owner, 2026-11-07) |
+| Menu / View | Pause / body status and loadout (built 2026-11-05; loadout 2026-11-08; LB there: colours, 2026-11-10; 2026-11-11: every part on one grid, A installs or removes, RB jumps to the part that supplies a missing requirement) |
 
 Aiming: response-curve presets, acceleration on full tilt, radial deadzones, aim assist in layers (slowdown near targets, slight pull while aiming down sights). Gyro aiming from the phone if the controller holds it.
 
@@ -248,7 +248,7 @@ The official Blender Lab MCP server (v1.0.3, needs Blender 5.1 or newer) works t
 ## 11. CI (GitHub Actions)
 
 - Runs on pushes to `main` and on manual dispatch.
-- Steps: download and cache Godot 4.7.2 and its export templates; import; run GUT and stop on failure; export a debug APK (arm64) signed with a keystore from repository secrets; publish it to a rolling `dev-latest` GitHub Release that the workflow creates.
+- Steps: download and cache Godot 4.7.2 and its export templates; import; run GUT and stop on failure; export a debug APK (arm64) signed with a keystore from repository secrets, or, without them, the fixed debug key in `tools/android/` (never a new key per run: Android then rejects every update); publish it to a rolling `dev-latest` GitHub Release that the workflow creates.
 - Run an explicit import before exporting. Headless exports have dropped resources in past Godot versions.
 - Claude checks runs with REST commands (`gh run list`, `gh api repos/{owner}/{repo}/actions/runs`). GraphQL commands such as `gh pr` don't work through the proxy.
 - Keep the release keystore in GitHub Secrets, and the owner keeps an offline backup.
@@ -262,10 +262,13 @@ Each milestone ends with an APK on the owner's phone and an entry in `docs/playt
 1. **M0 – Foundation.** Repo, tools and CI producing an APK. A test room, controller movement and camera, the debug overlay, and the renderer comparison.
    Done when the APK installs from Releases, the test room runs at 60 fps on the Moto G, and cloud screenshots work.
 2. **M1 – Pistol.** Built in slices, core gunplay first (owner decision 2026-11-01; see `docs/m1-gunplay-plan.md`). Suppressed Five-seveN with the full feedback list (§5.3). Saiga-12K with buck, slugs and Dragon's Breath (owner, 2026-11-02; design §4.3). Sprint, slide, wall-run, mantle. Locational damage, penetration, gore and ragdolls. Three enemy roles with awareness, suppression and morale. Wave mode. First finished assets: the Five-seveN, first-person arms, one enemy.
-   Done when the owner wants to keep playing the wave mode.
+   Done when the owner wants to keep playing the wave mode. Status 2026-11-04: all slices built (M1a gunplay, M1b movement, M1c triad enemies, gore, ragdolls, AI, waves); waiting for the owner's playtest. Owner, 2026-11-04: M1 is more or less complete; next, polish and atmosphere, starting with the Chinatown docks map with rolling spawns (design §7, now the main scene; the test range is under Pause → Map).
 3. **M2 – Parts system.** Loadout screen. Power, heat, mass and capacity. At least 8 passives with visible changes. The drone, whip and time slowdown.
    Done when three different loadouts play noticeably differently.
-4. **M3 – Heavy weapons.** MG42-style machine gun with heat and barrel changes (the gun itself, its handling and a flat carry penalty were pulled into M1 by the owner on 2026-11-01; heat and barrel changes stay here). Heavy armor parts, two more actives, dismemberment, machine-gunner and anti-augment enemies.
+   2026-11-08 (owner): the passive system: ~35 core stats with relationships (load, structure cap, momentum, link range, heat), 37 passives with tradeoffs and requirements, four presets, a loadout screen, the R3 strike; four parts with finished hardware (design §3.6).
+   2026-11-10 (owner): seven more actives with models, deploy animations and sounds (the monofilament whip, the Shrike drone, the mesh arm that grabs and throws, plus ram thrusters, a thermoptic shroud, a fan shield and an arc projector: nine in all, any three on the D-pad), and the part-by-part colour customizer (design §3.4b, §3.7).
+   Started 2026-11-05 (owner): the parts system foundation, the operative's base body (the GS-2 graft suit; helmet on or off, with the owner's face; Y on the body-status screen) on a body-status screen, and the time slowdown (RX-9 on LB). See design §3.4, §3.4a. 2026-11-07: three actives on LB picked with the D-pad, and the second active, the GX-4 Gauss arm.
+4. **M3 – Heavy weapons.** MG42-style machine gun with heat and barrel changes (the gun itself, its handling and a flat carry penalty were pulled into M1 by the owner on 2026-11-01; heat and barrel changes stay here). Heavy armor parts, two more actives, dismemberment (pulled forward and built 2026-11-11, design §5.5), machine-gunner and anti-augment enemies.
    Done when sustained fire tears up a room and the phone holds its frame rate.
 5. **M4 – Look and sound.** Art direction applied to two or three test areas, lighting, an audio pass.
 
@@ -277,7 +280,7 @@ What comes after the prototype gets decided then.
 
 - Title.
 - Does the controller hold the phone? That decides whether gyro aiming is worth building.
-- How far gore goes at the maximum setting.
+- ~~How far gore goes at the maximum setting.~~ Owner, 2026-11-11: Soldier of Fortune style: decapitation, dismemberment and gibbing, driven by ballistic impact and hit location (design §5.5).
 - Real gun names (Five-seveN, MG42, SPAS-12) are fine in a prototype. Selling the game with them might need licenses, so decide before any release.
 - Budget for Meshy and ElevenLabs, if any.
 - Public or private repo.

@@ -1,0 +1,57 @@
+[gd_resource type="Resource" script_class="TimeDilationData" load_steps=9 format=3]
+
+[ext_resource type="Script" path="res://src/augments/active/time_dilation/time_dilation_data.gd" id="1"]
+[ext_resource type="Script" path="res://src/body/stat_modifier.gd" id="2"]
+[ext_resource type="Script" path="res://src/body/part_visual.gd" id="3"]
+[ext_resource type="Script" path="res://src/augments/active/time_dilation/time_dilation.gd" id="4"]
+[ext_resource type="PackedScene" path="res://assets/augments/rx9_reflex_overclock/rx9_reflex_overclock.gltf" id="6"]
+[ext_resource type="Script" path="res://src/body/stat_requirement.gd" id="5"]
+
+[sub_resource type="Resource" id="vis_0"]
+script = ExtResource("3")
+socket = &"root"
+scene = ExtResource("6")
+model_space = true
+
+[sub_resource type="Resource" id="req_0"]
+script = ExtResource("5")
+stat = &"processing"
+at_least = 1.15
+reason = "overclocking an unassisted brain causes seizures"
+
+[resource]
+script = ExtResource("1")
+id = &"rx9_reflex_overclock"
+display_name = "RX-9 Reflex Overclock"
+description = "Neural co-processor at the base of the skull. Overclocks perception and motor control: the world seems to crawl while you keep moving. Select it with D-pad left; LB engages it, LB again releases it. Runs on its own charge, which refills over time."
+location = 2
+mass_kg = 0.4
+power_draw_w = 20.0
+heat_w = 10.0
+capacity = 2
+modifiers = Array[ExtResource("2")]([])
+requirements = Array[ExtResource("5")]([SubResource("req_0")])
+synergy = "Needs processing ×1.15 (SA-2). Processing sets how fast you move while the world is slowed (×0.65 of real time at ×1.20, faster above) and how long the charge lasts."
+visuals = Array[ExtResource("3")]([SubResource("vis_0")])
+behaviour = ExtResource("4")
+short_name = "RX-9"
+deploy_time = 0.18
+recover_time = 0.3
+cooldown_time = 0.5
+charge_max = 8.0
+drain_per_s = 1.0
+regen_per_s = 0.45
+regen_delay = 2.0
+min_to_start = 1.5
+active_power_w = 240.0
+active_heat_w = 300.0
+world_scale = 0.3
+player_scale = 0.65
+impact_boost = 1.8
+saturation = 0.55
+lowpass_hz = 2400.0
+fov_kick_deg = 3.0
+tint = Color(0.45, 0.85, 0.95, 0.16)
+processing_ref = 1.2
+processing_speed_share = 0.5
+max_player_scale = 0.9

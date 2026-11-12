@@ -1,0 +1,46 @@
+[gd_resource type="Resource" script_class="PartData" load_steps=10 format=3]
+
+[ext_resource type="Script" path="res://src/body/part_data.gd" id="1"]
+[ext_resource type="Script" path="res://src/body/stat_modifier.gd" id="2"]
+[ext_resource type="Script" path="res://src/body/part_visual.gd" id="3"]
+[ext_resource type="Script" path="res://src/body/stat_requirement.gd" id="4"]
+[ext_resource type="PackedScene" path="res://assets/augments/passives/vs1_vestibular_stabilizer/vs1_vestibular_stabilizer.gltf" id="5"]
+
+[sub_resource type="Resource" id="mod_0"]
+script = ExtResource("2")
+stat = &"stability"
+add = 0.0
+mul = 1.6
+
+[sub_resource type="Resource" id="mod_1"]
+script = ExtResource("2")
+stat = &"wallrun"
+add = 0.0
+mul = 1.15
+
+[sub_resource type="Resource" id="mod_2"]
+script = ExtResource("2")
+stat = &"agility"
+add = 0.0
+mul = 1.03
+
+[sub_resource type="Resource" id="vis_0"]
+script = ExtResource("3")
+socket = &"root"
+scene = ExtResource("5")
+model_space = true
+
+[resource]
+script = ExtResource("1")
+id = &"vs1_vestibular_stabilizer"
+display_name = "VS-1 Vestibular Stabilizer"
+description = "Gyroscopic inner-ear grafts. The horizon stays level whatever the body does: full accuracy while sliding, wall-running and in the air."
+location = 12
+mass_kg = 0.02
+power_draw_w = 10.0
+heat_w = 0.0
+capacity = 1
+modifiers = Array[ExtResource("2")]([SubResource("mod_0"), SubResource("mod_1"), SubResource("mod_2")])
+requirements = Array[ExtResource("4")]([])
+synergy = ""
+visuals = Array[ExtResource("3")]([SubResource("vis_0")])

@@ -11,6 +11,7 @@ exit_deflection_deg = 8.0
 ricochet_max_angle_deg = 0.0
 ricochet_chance = 0
 ricochet_energy_keep = 0
+drag_scaling_speed = 900.0
 structural_damage_scale = 1.0
 spalls = false
 decal_color = Color(0.25, 0.02, 0.02, 1)

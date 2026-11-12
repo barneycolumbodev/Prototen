@@ -1,10 +1,13 @@
-[gd_resource type="Resource" script_class="WeaponData" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="WeaponData" load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://src/weapons/weapon_data.gd" id="1"]
+[ext_resource type="Texture2D" path="res://assets/ui/weapon_icons/mg42.png" id="wheel_icon"]
 
 [resource]
 script = ExtResource("1")
+icon = ExtResource("wheel_icon")
 display_name = "MG42/A"
+weapon_class = 3
 caliber = "7.62×51mm"
 magazine_size = 150
 closed_bolt = false

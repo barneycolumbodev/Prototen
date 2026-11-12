@@ -72,9 +72,14 @@ func _build() -> void:
 	_list.add_child(title)
 	_add("resume", close)
 	_add("tuning", _on_tuning)
+	_add("map", _on_map)
+	_add("waves", _on_waves)
+	_add("gore", Settings.cycle_gore_level)
 	_add("renderer", _on_renderer)
 	_add("scale", Settings.cycle_render_scale)
+	_add("adaptive", Settings.toggle_adaptive_resolution)
 	_add("fps", Settings.cycle_max_fps)
+	_add("bloom", Settings.toggle_bloom)
 	_add("look", Settings.cycle_look_preset)
 	_add("look_speed", Settings.cycle_look_sensitivity)
 	# Left/right on the look-speed button steps it down/up.
@@ -84,6 +89,7 @@ func _build() -> void:
 			_buttons["look_speed"].accept_event())
 	_add("overlay", func() -> void: Settings.set_overlay_visible(not Settings.overlay_visible))
 	_add("bench", _on_bench)
+	_add("sweep", _on_sweep)
 	_add("quit", func() -> void: get_tree().quit())
 	_notice = Label.new()
 	_notice.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -107,16 +113,26 @@ func _label(id: String, text: String) -> void:
 
 func _refresh() -> void:
 	_label("resume", "Resume")
+	var wm: Node = get_tree().current_scene.get_node_or_null(^"WaveMode") if get_tree().current_scene else null
+	var running: Variant = wm.get(&"running") if wm else false
+	var on: bool = running == true
+	_label("map", "Map: %s" % MAPS.get(_scene_path(), "?"))
+	var rolling: bool = wm is RollingSpawner
+	_label("waves", ("Enemies: %s" if rolling else "Wave mode: %s") % (("stop" if on else "start") if not rolling else ("on" if on else "off")))
+	_label("gore", "Gore: %s" % Settings.gore_name())
 	_label("tuning", "Gun tuning")
 	var now: String = Settings.current_renderer()
 	var next: String = Settings.next_start_renderer()
 	_label("renderer", "Renderer: %s%s" % [_pretty(now), "" if next == now else "  →  %s after restart" % _pretty(next)])
-	_label("scale", "Render scale: %d%%" % roundi(Settings.render_scale * 100.0))
+	_label("scale", ("Render scale: up to %d%%" if Settings.adaptive_resolution else "Render scale: %d%%") % roundi(Settings.render_scale * 100.0))
+	_label("adaptive", "Resolution: %s" % ("auto (holds the frame rate)" if Settings.adaptive_resolution else "fixed"))
 	_label("fps", "Frame cap: %d fps" % Settings.max_fps)
+	_label("bloom", "Bloom: %s" % ("on (costs ~3 ms)" if Settings.bloom else "off"))
 	_label("look", "Look curve: %s" % Settings.look_config().display_name)
 	_label("look_speed", "Look speed: %d%%   (< >)" % roundi(Settings.look_sensitivity * 100.0))
 	_label("overlay", "Debug overlay: %s" % ("on" if Settings.overlay_visible else "off"))
 	_label("bench", "Run benchmark (%d s)" % roundi(BENCH_SECONDS))
+	_label("sweep", "Map cost test (~%d s, Chinatown)" % roundi(FeatureSweep.total_seconds()))
 	_label("quit", "Quit")
 
 
@@ -125,9 +141,39 @@ func _on_renderer() -> void:
 	_notice.text = "Close the app and open it again to start with the %s renderer." % _pretty(method)
 
 
+## Maps the pause menu cycles through (scene path -> name).
+const MAPS: Dictionary[String, String] = {
+	"res://src/levels/chinatown/chinatown.tscn": "Chinatown docks",
+	"res://src/levels/test_room.tscn": "Test range",
+}
+
+
+func _scene_path() -> String:
+	var sc: Node = get_tree().current_scene
+	return sc.scene_file_path if sc else ""
+
+
+func _on_map() -> void:
+	var keys: Array = MAPS.keys()
+	var i: int = keys.find(_scene_path())
+	var next: String = keys[(i + 1) % keys.size()]
+	close()
+	get_tree().change_scene_to_file.call_deferred(next)
+
+
+func _on_waves() -> void:
+	close()
+	EventBus.wave_mode_requested.emit()
+
+
 func _on_tuning() -> void:
 	_root.visible = false
 	TuningMenu.open()
+
+
+func _on_sweep() -> void:
+	close()
+	EventBus.feature_sweep_requested.emit()
 
 
 func _on_bench() -> void:

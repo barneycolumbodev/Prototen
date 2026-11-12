@@ -1,14 +1,17 @@
 class_name PlayerWeapon
 extends Node
 ## The player's guns (docs/m1-gunplay-plan.md). Holds a small loadout (the
-## suppressed pistol, the MG42 and the Saiga-12K), one viewmodel rig per gun. Reads the
+## suppressed pistol, the MG42, the Saiga-12K, the RC-6 rail carbine, the M14/P and the switched Glock 22), one viewmodel rig per gun. Reads the
 ## controller, runs the active gun's GunMechanism, fires rounds through
 ## Ballistics from the eye (so the round goes exactly where the crosshair or
 ## sights point, plus the gun's spread), and drives every piece of feedback:
 ## camera recoil, viewmodel springs, flash, shells, tracers, sound and rumble.
 ##
-## Controls (CLAUDE.md §9.4): RT fire, LT held = aim down sights, X reload,
-## Y switches gun (and cancels a reload). Firing during a sprint drops the
+## Controls (CLAUDE.md §9.4): RT fire, LT held = aim down sights, X reload.
+## Y: a tap swaps back to the previous gun; holding it opens the weapon wheel
+## (time slows, the right stick picks a gun, letting go draws it). Switching
+## cancels a reload. `over_enemy` says whether the line of sight is on an
+## enemy (reticles turn crimson, ReticleStyle). Firing during a sprint drops the
 ## sprint first. The active gun's "Carry" values slow the player down.
 ##
 ## Guns with shell types (WeaponData.ammo_types): D-pad right/left picks the
@@ -17,6 +20,11 @@ extends Node
 ## the load in the chamber (`pellets` projectiles in a pattern). A load with
 ## `use_optic` mounts the optic: aiming goes through it, and near full aim the
 ## viewmodel hides behind the HUD's scope view (`scope_amount()`).
+##
+## Railguns (WeaponData.charge_time > 0): each shot gets the capacitor's
+## charge as its power (speed, recoil); a rising whine plays while it
+## recharges and a tone when it's full; overheating lifts the vent shroud and
+## steams for `vent_time`; the glow strips follow charge and heat.
 
 signal fired
 signal ammo_changed(loaded: int, reserve: int)
@@ -64,10 +72,15 @@ class Slot:
 	preload("res://data/weapons/pistol_57.tres"),
 	preload("res://data/weapons/mg42.tres"),
 	preload("res://data/weapons/saiga12k.tres"),
+	preload("res://data/weapons/rail_carbine.tres"),
+	preload("res://data/weapons/m14p.tres"),
+	preload("res://data/weapons/glock22.tres"),
 ]
 @export var rig_paths: Array[NodePath] = [^"../Head/Camera3D/Viewmodel", ^"../Head/Camera3D/ViewmodelMG42",
-		^"../Head/Camera3D/ViewmodelSaiga"]
+		^"../Head/Camera3D/ViewmodelSaiga", ^"../Head/Camera3D/ViewmodelRail", ^"../Head/Camera3D/ViewmodelM14",
+		^"../Head/Camera3D/ViewmodelGlock"]
 @export var input_enabled: bool = true
+@export var wheel_config: WeaponWheelConfig = preload("res://data/input/weapon_wheel.tres")
 
 var slots: Array[Slot] = []
 var current: int = 0
@@ -96,6 +109,14 @@ var reticle_spread: float = 0.0
 var cam_recoil: Spring
 ## Gun being switched to (-1 = not switching) and holster time left.
 var switching_to: int = -1
+## Gun drawn before this one (a tap on Y goes back to it; -1 = none yet).
+var previous: int = -1
+## Weapon wheel: open, and the slot the stick points at.
+var wheel_open: bool = false
+var wheel_pick: int = 0
+## The line of sight is on a live enemy; `enemy_amount` eases 0..1 for colour.
+var over_enemy: bool = false
+var enemy_amount: float = 0.0
 
 var _player: Player
 var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
@@ -106,6 +127,9 @@ var _shots: int = 0
 var _tail_cooldown: float = 0.0
 var _belt_shake: Spring
 var _cover_closed_sound: bool = true
+## Railgun charge whine (stopped when the next shot fires).
+var _charge_voice: AudioStreamPlayer
+var _glow_time: float = 0.0
 ## Scripted input for tests and the capture demo (overrides the controller).
 var _script_pull: bool = false
 var _script_aim: bool = false
@@ -113,6 +137,12 @@ var _script_reload: bool = false
 var _script_switch: bool = false
 var _script_ammo: int = 0
 var _scripted: bool = false
+## Scripted weapon-wheel input (tests): Y held, right stick.
+var _script_wheel: bool = false
+var _script_y: bool = false
+var _script_stick: Vector2 = Vector2.ZERO
+## Real time (ms) Y went down, -1 when it's up.
+var _y_down_ms: int = -1
 ## Countdown from the last shell-type press to the swap (-1 = none pending).
 var _select_left: float = -1.0
 
@@ -232,6 +262,44 @@ func is_switching() -> bool:
 	return switching_to >= 0
 
 
+## An active part has the hands (the GX-4 arm cannon): the gun goes down and
+## stays down, no firing, reloading, switching or aiming until unstow().
+var stowed: bool = false
+## The part holding the hands while stowed (the HUD shows its rounds).
+var stowed_by: ActivePart
+var _stow_left: float = 0.0
+
+
+func stow() -> void:
+	if stowed:
+		return
+	stowed = true
+	if wheel_open:
+		_close_wheel(false)
+	for ev: StringName in mechanism.holster():
+		_handle(ev)
+	_stop_charge_whine()
+	_stow_left = data.holster_time / handling()
+	Sfx.play_ui(&"holster", -4.0)
+
+
+func unstow() -> void:
+	if not stowed:
+		return
+	stowed = false
+	stowed_by = null
+	_stow_left = 0.0
+	slots[current].rig.visible = true
+	motion.start_draw()
+	mechanism.draw()
+	Sfx.play_ui(&"draw", -4.0)
+
+
+## The gun is all the way down (hidden) while stowed.
+func is_stowed_away() -> bool:
+	return stowed and _stow_left <= 0.0
+
+
 func index_of(display_name: String) -> int:
 	for i: int in slots.size():
 		if slots[i].data.display_name == display_name:
@@ -252,6 +320,95 @@ func script_input(pull: bool, aim: bool, reload: bool = false, switch: bool = fa
 
 func end_script_input() -> void:
 	_scripted = false
+	_script_wheel = false
+
+
+## Drives Y and the right stick for the weapon wheel without a controller (tests).
+func script_wheel(y_held: bool, stick: Vector2 = Vector2.ZERO) -> void:
+	_script_wheel = true
+	_script_y = y_held
+	_script_stick = stick
+
+
+## Wheel slot the stick points at: slot 0 at the top, then clockwise.
+## `stick` uses Input.get_vector axes (x right, y down).
+static func wheel_slot(stick: Vector2, count: int) -> int:
+	if count <= 0:
+		return 0
+	var angle: float = atan2(stick.x, -stick.y)
+	return posmod(roundi(angle / (TAU / count)), count)
+
+
+## A tap on Y: back to the gun you had before (the next one if there isn't one).
+func quick_switch() -> void:
+	var target: int = previous if previous >= 0 and previous != current else (current + 1) % slots.size()
+	request_switch(target)
+
+
+func _open_wheel() -> void:
+	wheel_open = true
+	wheel_pick = current
+	_player.look_blocked = true
+	TimeControl.set_slowmo(wheel_config.time_scale)
+	Sfx.play_ui(&"wheel_open", -6.0)
+
+
+## Closes the wheel; `apply` draws the highlighted gun.
+func _close_wheel(apply: bool) -> void:
+	wheel_open = false
+	_player.look_blocked = false
+	TimeControl.set_slowmo(1.0)
+	if apply and wheel_pick != current and wheel_pick != switching_to:
+		request_switch(wheel_pick)
+
+
+## Y and the wheel, in real time (the wheel slows the game down).
+func _update_wheel() -> void:
+	var active: bool = input_enabled and _player.input_enabled and not stowed
+	var held: bool = _script_y if _script_wheel else (active and not _scripted and Input.is_action_pressed(&"switch_weapon"))
+	var now: int = Time.get_ticks_msec()
+	if held and _y_down_ms < 0:
+		_y_down_ms = now
+	if held and not wheel_open and slots.size() > 2 and now - _y_down_ms >= int(wheel_config.hold_time * 1000.0):
+		_open_wheel()
+	if wheel_open:
+		var stick: Vector2 = _script_stick if _script_wheel else Input.get_vector(&"look_left", &"look_right", &"look_up", &"look_down", 0.0)
+		if stick.length() >= wheel_config.stick_deadzone:
+			var pick: int = wheel_slot(stick, slots.size())
+			if pick != wheel_pick:
+				wheel_pick = pick
+				Sfx.play_ui(&"wheel_tick", -12.0, 0.02)
+	if not held and _y_down_ms >= 0:
+		_y_down_ms = -1
+		if wheel_open:
+			_close_wheel(true)
+		else:
+			quick_switch()
+
+
+## Is the first thing along the line of sight a live enemy?
+func _check_enemy() -> void:
+	var cam: Camera3D = _player.camera()
+	if cam == null or not cam.is_inside_tree():
+		over_enemy = false
+		return
+	var from: Vector3 = cam.global_position
+	var to: Vector3 = from - cam.global_basis.z * minf(round_data().max_range, 400.0)
+	var q: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(from, to, Ballistics.BULLET_MASK)
+	q.collide_with_areas = false
+	var res: Dictionary = cam.get_world_3d().direct_space_state.intersect_ray(q)
+	over_enemy = false
+	if res.is_empty():
+		return
+	var hit_obj: Object = res["collider"]
+	var n: Node = hit_obj as Node
+	for i: int in 9:
+		if n == null:
+			return
+		if n.is_in_group(&"enemies"):
+			over_enemy = true
+			return
+		n = n.get_parent()
 
 
 ## Switches to gun `index` immediately, already drawn (tests, demos, spawn).
@@ -273,9 +430,48 @@ func request_switch(index: int = -1) -> void:
 		return
 	for ev: StringName in mechanism.holster():
 		_handle(ev)
+	_stop_charge_whine()
 	switching_to = target
-	_holster_left = data.holster_time
+	_holster_left = data.holster_time / handling()
 	Sfx.play_ui(&"holster", -4.0)
+
+
+# ------------------------------------------------------------------ body stats (docs/design.md §3.6)
+
+func _stat(s: StringName) -> float:
+	return _player.body.stat(s) if _player and _player.body else 1.0
+
+
+## Proficiency with the current gun's class (handgun, shotgun, rifle, heavy).
+func proficiency() -> float:
+	return _player.body.proficiency(data.weapon_class) if _player and _player.body else 1.0
+
+
+## Recoil multiplier: recoil stat ÷ proficiency (heavy: also strength, structure).
+func recoil_scale() -> float:
+	return _player.body.recoil_scale(data.weapon_class) if _player and _player.body else 1.0
+
+
+func aim_rate() -> float:
+	return maxf(_stat(&"aim_speed") * proficiency(), 0.1)
+
+
+func reload_rate() -> float:
+	return maxf(_stat(&"reload_speed") * proficiency(), 0.1)
+
+
+func handling() -> float:
+	return maxf(_stat(&"handling"), 0.1)
+
+
+## A heavy gun's handling penalty (1 - scale) shrinks with the body's carry
+## stat: base carry ÷ carry, so TL-3 (+25 kg) takes off ~40 % and the DL-1
+## frame (+55 kg) ~60 %.
+func carry_scale(scale: float) -> float:
+	if _player == null or _player.body == null or is_equal_approx(scale, 1.0):
+		return scale
+	var k: float = clampf(_player.body.frame.carry_kg / maxf(_player.body.stat(&"carry_kg"), 1.0), 0.0, 2.0)
+	return clampf(1.0 - (1.0 - scale) * k, 0.1, 1.0)
 
 
 ## Re-reads tuning that springs cache (call after editing `data` live).
@@ -290,6 +486,8 @@ func apply_tuning() -> void:
 
 
 func _activate(index: int) -> void:
+	if index != current:
+		previous = current
 	current = index
 	for i: int in slots.size():
 		slots[i].rig.visible = i == current
@@ -303,6 +501,8 @@ func _activate(index: int) -> void:
 
 
 func _physics_process(delta: float) -> void:
+	# The gun runs in the player's time (faster than the world while dilated).
+	delta *= TimeControl.player_boost()
 	var active: bool = input_enabled and _player.input_enabled
 	var pull: bool = false
 	var held: bool = false
@@ -324,7 +524,6 @@ func _physics_process(delta: float) -> void:
 		pull = Input.is_action_just_pressed(&"fire")
 		held = Input.is_action_pressed(&"fire")
 		reload = Input.is_action_just_pressed(&"reload")
-		switch = Input.is_action_just_pressed(&"switch_weapon")
 		aim_held = Input.is_action_pressed(&"aim")
 		if Input.is_action_just_pressed(&"item_next"):
 			ammo_step += 1
@@ -334,15 +533,30 @@ func _physics_process(delta: float) -> void:
 		aim_held = false
 
 	# Shell type: pick now, swap once the presses stop.
-	if ammo_step != 0 and not is_switching():
+	if ammo_step != 0 and not is_switching() and not stowed:
 		select_ammo(ammo_step)
 	if _select_left >= 0.0:
 		_select_left -= delta
 		if _select_left < 0.0 and mechanism.needs_swap():
 			mechanism.request_swap()
 
+	if wheel_open:
+		# Picking a gun: no shooting, aiming or shell swaps until the wheel closes.
+		pull = false
+		held = false
+		aim_held = false
+	if stowed:
+		pull = false
+		held = false
+		reload = false
+		switch = false
+		aim_held = false
+		if _stow_left > 0.0:
+			_stow_left -= delta
+			if _stow_left <= 0.0:
+				slots[current].rig.visible = false
 	if switch:
-		request_switch()
+		quick_switch()
 	if is_switching():
 		_holster_left -= delta
 		pull = false
@@ -357,15 +571,23 @@ func _physics_process(delta: float) -> void:
 
 	# Aiming or shooting beats sprinting.
 	_player.sprint_blocked = aim_held
+	# Holding the trigger keeps auto-sprint from starting again mid-burst.
+	_player.auto_sprint_blocked = held or pull
 	if (pull or aim_held) and _player.is_sprinting():
 		_player.stop_sprint()
 	if _player.is_sprinting():
-		_sprint_out = data.sprint_to_fire
+		_sprint_out = data.sprint_to_fire / handling()
 	else:
 		_sprint_out = maxf(0.0, _sprint_out - delta)
-	var blocked: bool = _player.is_sprinting() or _sprint_out > 0.0 or is_switching()
+	var blocked: bool = _player.is_sprinting() or _sprint_out > 0.0 or is_switching() or _player.is_mantling() or stowed
 
+	# Holstered guns keep recharging and cooling.
+	for i: int in slots.size():
+		if i != current:
+			slots[i].mechanism.idle(delta)
 	var before: int = mechanism.loaded()
+	mechanism.reload_rate = reload_rate()
+	mechanism.draw_rate = handling()
 	var events: Array[StringName] = mechanism.update(delta, pull, held, reload, blocked)
 	for ev: StringName in events:
 		_handle(ev)
@@ -374,7 +596,7 @@ func _physics_process(delta: float) -> void:
 
 	# ADS: hold LT. Reloading and switching drop the sights.
 	var can_aim: bool = aim_held and not is_reloading() and not _player.is_sprinting() and not is_switching()
-	var aim_time: float = data.optic_ads_time if optic_on() else data.ads_time
+	var aim_time: float = (data.optic_ads_time if optic_on() else data.ads_time) / aim_rate()
 	ads = move_toward(ads, 1.0 if can_aim else 0.0, delta / maxf(aim_time, 0.01))
 	bloom = maxf(0.0, bloom - data.bloom_recovery_deg_s * delta)
 	_since_shot += delta
@@ -385,11 +607,16 @@ func _physics_process(delta: float) -> void:
 		sustained = maxf(0.0, sustained - delta * 3.0)
 	var walk: float = minf(sustained * data.hip_walk_deg_s, data.hip_walk_max_deg)
 	var r: WeaponData = round_data()
-	spread = r.spread_deg(ads, _move_fraction(), not _player.is_on_floor(), bloom, walk)
+	# Stability divides the movement and air penalties; proficiency tightens the whole cone (÷ √).
+	spread = r.spread_deg(ads, _move_fraction(), not _player.is_on_floor(), bloom, walk, _stat(&"stability")) / sqrt(proficiency())
 	reticle_spread = spread + (r.pattern_deg if r.pellets > 1 else 0.0)
+	_check_enemy()
 
 
 func _process(delta: float) -> void:
+	delta *= TimeControl.player_boost()
+	_update_wheel()
+	enemy_amount = move_toward(enemy_amount, 1.0 if over_enemy else 0.0, TimeControl.real_delta(delta / TimeControl.player_boost()) / 0.06)
 	var a: float = ads_visual()
 	# Camera: recoil springs back; FOV and look speed follow the sights.
 	cam_recoil.step(delta)
@@ -398,15 +625,15 @@ func _process(delta: float) -> void:
 	var fov: float = data.optic_fov_scale if optic else data.ads_fov_scale
 	var sens: float = data.optic_sensitivity if optic else data.ads_sensitivity
 	_player.fov_scale = lerpf(1.0, fov, a)
-	_player.look_scale = lerpf(1.0, sens * fov, a) * data.carry_turn_scale
-	_player.move_scale = lerpf(1.0, data.ads_move_speed, a) * data.carry_speed_scale
-	_player.sprint_scale = data.carry_sprint_scale
-	_player.jump_scale = data.carry_jump_scale
+	_player.look_scale = lerpf(1.0, sens * fov, a) * carry_scale(data.carry_turn_scale)
+	_player.move_scale = lerpf(1.0, data.ads_move_speed, a) * carry_scale(data.carry_speed_scale)
+	_player.sprint_scale = carry_scale(data.carry_sprint_scale)
+	_player.jump_scale = carry_scale(data.carry_jump_scale)
 	if _player.aim_assist:
 		_player.aim_assist.ads = a
 
 	var pose: int = 0
-	if is_switching():
+	if is_switching() or _player.is_mantling() or stowed:
 		pose = 3
 	elif is_reloading():
 		pose = 2
@@ -415,9 +642,18 @@ func _process(delta: float) -> void:
 	var s: Slot = slots[current]
 	s.motion.update(delta, a, _player.look_velocity, _move_fraction(), _player.is_on_floor(), pose)
 	s.rig.transform = s.motion.compose(s.hip_xform, s.optic_xform if optic else s.ads_xform, a)
+	var away: float = _player.melee.gun_away() if _player.melee else 0.0
+	if away > 0.0:
+		# Dropped out of the knife's way (PlayerMelee / KnifeViewmodel).
+		var mc: MeleeConfig = _player.melee.cfg
+		s.rig.transform.basis = Basis.from_euler(mc.gun_away_rot_deg * (PI / 180.0) * away) * s.rig.transform.basis
+		s.rig.transform.origin += mc.gun_away_offset * away
 	s.rig.set_slide(s.motion.slide * data.slide_travel)
-	s.rig.set_magazine_out(_mag_offset())
+	s.rig.set_magazine_out(_mag_offset(), data.magazine_travel)
 	s.rig.set_aimed(a)
+	s.rig.set_reticle_color(ReticleStyle.color(enemy_amount))
+	if data.is_rail():
+		_update_rail_visuals(delta, s)
 	if has_shell_types():
 		var shown: AmmoData = s.ammo(_shown_ammo())
 		s.rig.set_optic(shown.use_optic)
@@ -436,6 +672,35 @@ func _process(delta: float) -> void:
 	if data.belt_jiggle > 0.0:
 		_belt_shake.step(delta)
 		s.rig.set_belt_offset(_belt_shake.value)
+
+
+## Glow strips follow the capacitor (dim after a shot, bright when full) and
+## heat (toward orange, pulsing while venting); the vent shroud lifts and
+## steams while the rails vent.
+func _update_rail_visuals(delta: float, s: Slot) -> void:
+	_glow_time += delta
+	var m: GunMechanism = s.mechanism
+	var charge: float = m.charge()
+	var energy: float = lerpf(data.glow_energy.x, data.glow_energy.y, charge * charge)
+	energy *= 1.0 + 0.8 * m.heat
+	# Discharge flash on the shot itself.
+	energy += data.glow_energy.y * 2.5 * exp(-m.since_shot() * 22.0)
+	if m.venting:
+		energy *= 0.75 + 0.25 * sin(_glow_time * 14.0)
+	s.rig.set_glow(data.glow_color.lerp(data.glow_hot_color, pow(m.heat, 0.8)), energy)
+	var p: float = m.vent_progress()
+	var open: float = smoothstep(0.0, 0.1, p) * (1.0 - smoothstep(0.85, 1.0, p)) if m.venting else 0.0
+	s.rig.set_vent(open * data.vent_lift)
+	if open > 0.3:
+		var at: Vector3 = s.rig.global_transform * Vector3(0.2, 0.06, 0.0)
+		Fx.vent_steam(at, s.rig.global_basis.y, 1.0 - p * 0.6)
+
+
+## The charge whine plays on a shared voice; only stop it if it's still ours.
+func _stop_charge_whine() -> void:
+	if _charge_voice and _charge_voice.playing and _charge_voice.stream in Sfx.bank(Sfx.weapon_bank(data, &"charge")):
+		_charge_voice.stop()
+	_charge_voice = null
 
 
 func _move_fraction() -> float:
@@ -509,6 +774,17 @@ func _handle(ev: StringName) -> void:
 			_rumble(Vector3(0.15, 0.1, 0.04))
 		GunMechanism.EV_RELOAD_CANCEL:
 			_play(&"reload_cancel", -8.0)
+		GunMechanism.EV_CHARGED:
+			_play(&"ready", -6.0)
+		GunMechanism.EV_OVERHEAT:
+			_stop_charge_whine()
+			_play(&"overheat", -4.0)
+			_play(&"vent", -2.0)
+			motion.jolt(Vector3(0, -0.004, 0.006), Vector3(-1.5, 0, -2.5))
+			_rumble(Vector3(0.2, 0.15, 0.25))
+		GunMechanism.EV_VENT_DONE:
+			_play(&"ready", -4.0)
+			motion.jolt(Vector3(0, 0.003, 0), Vector3(0, 0, 1.5))
 
 
 func _fire() -> void:
@@ -522,20 +798,24 @@ func _fire() -> void:
 	var gun: Transform3D = rig().global_transform
 	var muzzle: Transform3D = gun * Transform3D(Basis(), data.muzzle_point)
 	_shots += 1
-	var tracer: bool = r.tracer_every > 0 and _shots % r.tracer_every == 0
+	var tracer: bool = (r.tracer_every > 0 and _shots % r.tracer_every == 0) or r.beam_trail_time > 0.0
 	var trail_from: Vector3 = muzzle.origin if tracer or r.embers else Vector3.INF
+	# Railguns: the capacitor's charge sets this shot's energy (1 for other guns).
+	var power: float = mechanism.last_power
 	# Pellets: a pattern around the aim point, all one volley (one shot in the stats).
 	var volley: int = 0
 	var phase: float = _rng.randf() * TAU
 	for i: int in r.pellets:
 		var pellet_dir: Vector3 = Ballistics.pattern_dir(dir, r.pattern_deg, i, r.pellets, phase, _rng)
-		var id: int = Ballistics.fire(r, eye.origin, pellet_dir, _player, trail_from, volley)
+		var id: int = Ballistics.fire(r, eye.origin, pellet_dir, _player, trail_from, volley, power)
 		if volley == 0:
 			volley = id
 	EventBus.shot_fired.emit(_player, eye.origin, dir)
 
 	var a: float = ads_visual()
-	var s: float = lerpf(1.0, data.ads_recoil_scale, a)
+	# Recoil is the round's momentum: for a railgun it goes with speed, √power.
+	var strength: float = sqrt(power)
+	var s: float = lerpf(1.0, data.ads_recoil_scale, a) * strength * recoil_scale()
 	var pitch_kick: float = r.kick_pitch_deg * _rng.randf_range(0.9, 1.1) * s
 	var yaw_kick: float = (_rng.randf_range(-1.0, 1.0) * r.kick_yaw_deg + data.kick_yaw_bias_deg) * s
 	cam_recoil.kick(Vector3(pitch_kick, yaw_kick, _rng.randf_range(-0.4, 0.4) * s) * (1.0 - data.kick_permanent))
@@ -544,18 +824,23 @@ func _fire() -> void:
 			_player.pitch + deg_to_rad(pitch_kick * data.kick_permanent))
 	bloom = minf(bloom + data.bloom_per_shot_deg, data.bloom_max_deg)
 	_since_shot = 0.0
-	motion.fire(a, _rng, shell.recoil_scale if shell else 1.0)
+	motion.fire(a, _rng, (shell.recoil_scale if shell else 1.0) * strength)
 	if data.belt_jiggle > 0.0:
 		_belt_shake.kick(Vector3(_rng.randf_range(-0.3, 0.3), _rng.randf_range(0.2, 1.0), _rng.randf_range(-1.0, 1.0)) * data.belt_jiggle)
 
 	Fx.muzzle_flash(muzzle, r)
-	var eject_vel: Vector3 = gun.basis * data.ejection_velocity + _player.velocity
-	var hull: Color = shell.color if shell and data.shotshell else Color(0, 0, 0, 0)
-	Fx.eject_shell(gun * data.ejection_point, eject_vel, gun.basis, hull)
-	Sfx.play_shot(r, _tail_cooldown <= 0.0)
+	if data.ejects_shells:
+		var eject_vel: Vector3 = gun.basis * data.ejection_velocity + _player.velocity
+		var hull: Color = shell.color if shell and data.shotshell else Color(0, 0, 0, 0)
+		Fx.eject_shell(gun * data.ejection_point, eject_vel, gun.basis, hull)
+	Sfx.play_shot(r, _tail_cooldown <= 0.0, linear_to_db(lerpf(0.55, 1.0, power)))
 	if _tail_cooldown <= 0.0:
 		_tail_cooldown = data.tail_interval
-	_rumble(data.rumble_fire)
+	if data.is_rail():
+		_stop_charge_whine()
+		if not mechanism.venting:
+			_charge_voice = Sfx.play_ui(Sfx.weapon_bank(data, &"charge"), -10.0, 0.0)
+	_rumble(data.rumble_fire * Vector3(strength, strength, 1.0))
 	fired.emit()
 
 

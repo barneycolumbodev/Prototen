@@ -1,0 +1,47 @@
+[gd_resource type="Resource" script_class="RamThrustersData" load_steps=9 format=3]
+
+[ext_resource type="Script" path="res://src/augments/active/ram/ram_thrusters_data.gd" id="1"]
+[ext_resource type="Script" path="res://src/body/stat_modifier.gd" id="2"]
+[ext_resource type="Script" path="res://src/body/part_visual.gd" id="3"]
+[ext_resource type="Script" path="res://src/augments/active/ram/ram_thrusters.gd" id="4"]
+[ext_resource type="Script" path="res://src/body/stat_requirement.gd" id="5"]
+[ext_resource type="PackedScene" path="res://assets/augments/actives_body/kr5_ram_thrusters/kr5_ram_thrusters.gltf" id="8"]
+
+[sub_resource type="Resource" id="req_0"]
+script = ExtResource("5")
+stat = &"structure"
+at_least = 1.3
+reason = "the thrust goes through the spine"
+
+[sub_resource type="Resource" id="vis_0"]
+script = ExtResource("3")
+socket = &"root"
+scene = ExtResource("8")
+model_space = true
+
+[resource]
+script = ExtResource("1")
+id = &"kr5_ram_thrusters"
+display_name = "KR-5 Ram Thrusters"
+description = "Two cold-gas thrusters on the shoulder blades. One press throws you forward along your view at up to 27 m/s for a quarter of a second, through anyone in the way. Two burns stored. Select it on the D-pad, LB fires."
+location = 15
+mass_kg = 7.0
+power_draw_w = 10.0
+heat_w = 0.0
+capacity = 2
+modifiers = Array[ExtResource("2")]([])
+requirements = Array[ExtResource("5")]([SubResource("req_0")])
+synergy = "Needs structure ×1.30 (TL-3, TN-9). The hit is the slide hit × 1.8: mass × usable strength × impact, so a heavy plated body kills with it and a light one only shoves. Lighter bodies fly faster. Each burn costs 7 kJ of reserve and 4.5 kJ of heat."
+visuals = Array[ExtResource("3")]([SubResource("vis_0")])
+behaviour = ExtResource("4")
+short_name = "KR-5"
+deploy_time = 0.05
+recover_time = 0.12
+cooldown_time = 0.15
+charge_max = 2.0
+drain_per_s = 0.0
+regen_per_s = 0.22
+regen_delay = 0.8
+min_to_start = 1.0
+active_power_w = 0.0
+active_heat_w = 0.0

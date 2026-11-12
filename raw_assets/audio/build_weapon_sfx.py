@@ -70,7 +70,16 @@ def click(sec=0.03, freqs=(3100, 4700, 6900), decay=0.012, bright=3000):
     return tr * 0.8 + ring * 0.35
 
 
+# Rebuilt as dull, unringing sounds by build_metal_sfx.py (owner, 2026-11-07:
+# "get rid of the metal dinging"). The old code still runs so the shared rng
+# stays in step for every other sound; it just doesn't write these.
+REPLACED = {"shell_1", "shell_2", "shell_3", "impact_metal_1", "impact_can_1",
+            "ricochet_1", "ricochet_2", "ricochet_3"}
+
+
 def save(name, x, peak_db=-1.0):
+    if name in REPLACED:
+        return
     x = x - np.mean(x)
     # Short fades so nothing clicks at the edges.
     fade = min(len(x) // 4, int(0.004 * SR))

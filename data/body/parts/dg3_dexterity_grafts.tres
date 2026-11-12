@@ -1,0 +1,46 @@
+[gd_resource type="Resource" script_class="PartData" load_steps=10 format=3]
+
+[ext_resource type="Script" path="res://src/body/part_data.gd" id="1"]
+[ext_resource type="Script" path="res://src/body/stat_modifier.gd" id="2"]
+[ext_resource type="Script" path="res://src/body/part_visual.gd" id="3"]
+[ext_resource type="Script" path="res://src/body/stat_requirement.gd" id="4"]
+[ext_resource type="PackedScene" path="res://assets/augments/passives/dg3_dexterity_grafts/dg3_dexterity_grafts.gltf" id="5"]
+
+[sub_resource type="Resource" id="mod_0"]
+script = ExtResource("2")
+stat = &"reload_speed"
+add = 0.0
+mul = 1.3
+
+[sub_resource type="Resource" id="mod_1"]
+script = ExtResource("2")
+stat = &"handling"
+add = 0.0
+mul = 1.2
+
+[sub_resource type="Resource" id="mod_2"]
+script = ExtResource("2")
+stat = &"handgun"
+add = 0.0
+mul = 1.05
+
+[sub_resource type="Resource" id="vis_0"]
+script = ExtResource("3")
+socket = &"root"
+scene = ExtResource("5")
+model_space = true
+
+[resource]
+script = ExtResource("1")
+id = &"dg3_dexterity_grafts"
+display_name = "DG-3 Dexterity Grafts"
+description = "Rebuilt tendons and joint sensors in the hands and wrists. Magazines and grips just happen."
+location = 7
+mass_kg = 0.3
+power_draw_w = 0.0
+heat_w = 0.0
+capacity = 1
+modifiers = Array[ExtResource("2")]([SubResource("mod_0"), SubResource("mod_1"), SubResource("mod_2")])
+requirements = Array[ExtResource("4")]([])
+synergy = ""
+visuals = Array[ExtResource("3")]([SubResource("vis_0")])

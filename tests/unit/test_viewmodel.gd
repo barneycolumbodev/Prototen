@@ -4,7 +4,7 @@ extends GutTest
 ## of the crosshair and point forward, like most console shooters.
 
 const CONFIGS: Array[String] = ["res://data/player/viewmodel_pistol57.tres", "res://data/player/viewmodel_mg42.tres",
-		"res://data/player/viewmodel_saiga.tres"]
+		"res://data/player/viewmodel_saiga.tres", "res://data/player/viewmodel_rail.tres"]
 
 
 func test_guns_sit_lower_right_of_the_crosshair_pointing_forward() -> void:
@@ -29,7 +29,7 @@ func test_player_has_every_gun_and_arms_without_shadows() -> void:
 	var player: Player = (load("res://src/player/player.tscn") as PackedScene).instantiate() as Player
 	add_child_autofree(player)
 	var rigs: Array[Node] = player.find_children("*", "ViewmodelRig", true, false)
-	assert_eq(rigs.size(), 3, "pistol, MG42 and Saiga rigs")
+	assert_eq(rigs.size(), player.weapon().loadout.size(), "one rig per gun in the loadout")
 	for r: Node in rigs:
 		var meshes: Array[Node] = r.find_children("*", "MeshInstance3D", true, false)
 		assert_gte(meshes.size(), 2, "%s: gun + arms" % r.name)
@@ -41,3 +41,6 @@ func test_player_has_every_gun_and_arms_without_shadows() -> void:
 	var saiga: ViewmodelRig = player.get_node(^"Head/Camera3D/ViewmodelSaiga") as ViewmodelRig
 	for part: StringName in [&"slide", &"magazine", &"stock", &"optic"]:
 		assert_true(saiga.has_part(part), "Saiga has a %s part" % part)
+	var rail: ViewmodelRig = player.get_node(^"Head/Camera3D/ViewmodelRail") as ViewmodelRig
+	for part: StringName in [&"magazine", &"vent", &"glow", &"lens"]:
+		assert_true(rail.has_part(part), "rail carbine has a %s" % part)

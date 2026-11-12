@@ -1,0 +1,52 @@
+[gd_resource type="Resource" script_class="GaussArmData" load_steps=9 format=3]
+
+[ext_resource type="Script" path="res://src/augments/active/gauss_arm/gauss_arm_data.gd" id="1"]
+[ext_resource type="Script" path="res://src/body/stat_modifier.gd" id="2"]
+[ext_resource type="Script" path="res://src/body/part_visual.gd" id="3"]
+[ext_resource type="Script" path="res://src/augments/active/gauss_arm/gauss_arm.gd" id="4"]
+[ext_resource type="Resource" path="res://data/weapons/gx4_slug.tres" id="5"]
+[ext_resource type="PackedScene" path="res://assets/augments/gx4_gauss_arm/gx4_gauss_arm.gltf" id="6"]
+[ext_resource type="Resource" path="res://data/player/viewmodel_gx4.tres" id="7"]
+[ext_resource type="Script" path="res://src/body/stat_requirement.gd" id="8"]
+
+[sub_resource type="Resource" id="req_0"]
+script = ExtResource("8")
+stat = &"structure"
+at_least = 1.25
+reason = "coil recoil would shatter an organic shoulder"
+
+[resource]
+script = ExtResource("1")
+id = &"gx4_gauss_arm"
+display_name = "GX-4 Gauss Arm"
+description = "The right forearm is a prosthetic coilgun. Raise it and the hand folds into a fork, the forearm opens, and six drive coils slide out along telescoping rails. Ten rounds of a 40 g slug at 3.2 km/s: it goes through people and thin cover. Select it on the D-pad, LB to raise or fold it, RT to fire. Rounds refill one by one while it's folded."
+location = 6
+mount = &"arm_right"
+mass_kg = 7.5
+power_draw_w = 15.0
+heat_w = 5.0
+capacity = 3
+modifiers = Array[ExtResource("2")]([])
+requirements = Array[ExtResource("8")]([SubResource("req_0")])
+synergy = "Needs structure ×1.25 (CB-1, TL-3, TN-9). Structure × usable strength soaks up the kick; power headroom (supply minus draw) sets how fast rounds recharge."
+visuals = Array[ExtResource("3")]([])
+behaviour = ExtResource("4")
+short_name = "GX-4"
+deploy_time = 1.6
+recover_time = 0.8
+cooldown_time = 0.3
+charge_max = 10.0
+drain_per_s = 0.0
+regen_per_s = 0.25
+regen_delay = 3.0
+min_to_start = 1.0
+active_power_w = 900.0
+active_heat_w = 600.0
+round = ExtResource("5")
+scene = ExtResource("6")
+viewmodel = ExtResource("7")
+brace_ref = 1.67
+brace_min_kick = 0.45
+power_ref_w = 300.0
+recharge_min_scale = 0.35
+recharge_max_scale = 1.8

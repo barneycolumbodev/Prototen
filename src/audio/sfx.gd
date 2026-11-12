@@ -31,6 +31,18 @@ var _reverb: AudioEffectReverb
 ## Confirm already played for this volley, and how strong (hit 1, headshot 2, kill 3).
 var _confirm_volley: int = 0
 var _confirm_rank: int = 0
+var _last_ricochet: float = -10.0
+var _death_voices: Array[float] = []
+var _muffle: AudioEffectLowPassFilter
+const DEATH_VOICE_WINDOW: float = 0.6
+const DEATH_VOICE_MAX: int = 2
+## Seconds between ricochet whines (an MG42 burst along the street would chain them).
+const RICOCHET_GAP: float = 0.35
+## Only some glancing rounds are heard at all.
+const RICOCHET_AUDIBLE: float = 0.4
+## Casing landings: at most one per this many seconds (an MG42 burst drops 20 a second).
+const CASING_GAP: float = 0.15
+var _last_casing: float = -10.0
 
 
 func _ready() -> void:
@@ -91,8 +103,9 @@ func weapon_bank(data: WeaponData, name: StringName) -> StringName:
 
 
 ## Own-gun shot, plus the room tail when `with_tail` (automatic guns rate-limit it).
-func play_shot(data: WeaponData, with_tail: bool = true) -> void:
-	_play_pool(_voices_shot, _next_shot, weapon_bank(data, &"shot"), data.shot_volume_db, 0.04)
+## `extra_db`: per-shot change (a railgun shot on a half-charged capacitor is quieter).
+func play_shot(data: WeaponData, with_tail: bool = true, extra_db: float = 0.0) -> void:
+	_play_pool(_voices_shot, _next_shot, weapon_bank(data, &"shot"), data.shot_volume_db + extra_db, 0.04)
 	_next_shot = (_next_shot + 1) % _voices_shot.size()
 	if with_tail:
 		_play_pool(_voices_tail, _next_tail, weapon_bank(data, &"tail"), -8.0 + data.shot_volume_db, 0.05)
@@ -112,7 +125,7 @@ func _play_pool(pool: Array[AudioStreamPlayer], index: int, name: StringName, vo
 	var stream: AudioStream = streams[_rng.randi() % streams.size()]
 	p.stream = stream
 	p.volume_db = volume_db
-	p.pitch_scale = _pitch(pitch_rand)
+	p.pitch_scale = TimeControl.player_pitch() * (1.0 + _rng.randf_range(-pitch_rand, pitch_rand))
 	p.play()
 
 
@@ -127,7 +140,8 @@ func play_ui(name: StringName, volume_db: float = 0.0, pitch_rand: float = 0.03)
 	var stream: AudioStream = streams[_rng.randi() % streams.size()]
 	p.stream = stream
 	p.volume_db = volume_db
-	p.pitch_scale = _pitch(pitch_rand)
+	# Your own gun and gear: your time, not the world's.
+	p.pitch_scale = TimeControl.player_pitch() * (1.0 + _rng.randf_range(-pitch_rand, pitch_rand))
 	p.play()
 	return p
 
@@ -146,6 +160,48 @@ func play_at(name: StringName, at: Vector3, volume_db: float = 0.0, pitch_rand: 
 	p.play()
 
 
+## A spent case landing near the player: a soft tick, rate-limited.
+func play_casing(bank_name: StringName, at: Vector3) -> void:
+	var now: float = Time.get_ticks_msec() * 0.001
+	if now - _last_casing < CASING_GAP:
+		return
+	_last_casing = now
+	play_at(bank_name, at, -20.0, 0.08)
+
+
+## Muffles everything (time dilation): 0 = clear, 1 = cut off at `cutoff_hz`.
+func set_muffle(amount: float, cutoff_hz: float = 2400.0) -> void:
+	var bus: int = AudioServer.get_bus_index(&"Master")
+	if _muffle == null:
+		_muffle = AudioEffectLowPassFilter.new()
+		_muffle.resonance = 0.6
+		AudioServer.add_bus_effect(bus, _muffle)
+	var idx: int = -1
+	for i: int in AudioServer.get_bus_effect_count(bus):
+		if AudioServer.get_bus_effect(bus, i) == _muffle:
+			idx = i
+	var a: float = clampf(amount, 0.0, 1.0)
+	_muffle.cutoff_hz = lerpf(20000.0, cutoff_hz, sqrt(a))
+	if idx >= 0:
+		AudioServer.set_bus_effect_enabled(bus, idx, a > 0.001)
+
+
+## Rate limit for dying voices: a shotgun blast into a crowd shouldn't stack
+## five screams. Returns true (and takes the slot) if one may play now.
+func claim_death_voice() -> bool:
+	var now: float = Time.get_ticks_msec() * 0.001
+	_death_voices = _death_voices.filter(func(t: float) -> bool: return now - t < DEATH_VOICE_WINDOW)
+	if _death_voices.size() >= DEATH_VOICE_MAX:
+		return false
+	_death_voices.append(now)
+	return true
+
+
+## Pitch for a sound in the world: follows slow motion, plus a random spread.
+func world_pitch(rand: float) -> float:
+	return _pitch(rand)
+
+
 func _pitch(rand: float) -> float:
 	return clampf(Engine.time_scale, 0.25, 1.0) * (1.0 + _rng.randf_range(-rand, rand))
 
@@ -157,9 +213,14 @@ func _on_hit(hit: BallisticHit) -> void:
 	if hit.weapon.pellets > 1:
 		vol -= 5.0
 	var sound: StringName = &"impact_" + String(hit.surface.impact_sound)
-	if hit.result == BallisticHit.Result.RICOCHET:
-		sound = &"impact_metal"
 	play_at(sound, hit.point, vol)
+	# A glancing round: the surface's own impact plus a short whine (not the
+	# range's steel ping, which every grazing street hit used to play).
+	if hit.result == BallisticHit.Result.RICOCHET:
+		var now: float = Time.get_ticks_msec() * 0.001
+		if now - _last_ricochet > RICOCHET_GAP and _rng.randf() < RICOCHET_AUDIBLE:
+			_last_ricochet = now
+			play_at(&"ricochet", hit.point, vol - 4.0, 0.1)
 
 
 func _on_target_hit(kind: StringName, hit: BallisticHit) -> void:

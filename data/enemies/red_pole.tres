@@ -1,0 +1,35 @@
+[gd_resource type="Resource" script_class="EnemyConfig" load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://src/ai/enemy_config.gd" id="1"]
+[ext_resource type="PackedScene" path="res://assets/weapons/enemy/smg.gltf" id="2"]
+[ext_resource type="Resource" path="res://data/enemies/weapons/smg.tres" id="3"]
+[ext_resource type="Script" path="res://src/ai/outfit.gd" id="o0"]
+[ext_resource type="Resource" path="res://data/enemies/outfits/boss.tres" id="o1"]
+
+[resource]
+script = ExtResource("1")
+outfits = Array[ExtResource("o0")]([ExtResource("o1")])
+display_name = "Red Pole"
+callsign = "RED POLE"
+plate_carrier = false
+gun_scene = ExtResource("2")
+weapon = ExtResource("3")
+muzzle = Vector3(0.355, 0.045, 0)
+health = 110.0
+burst_min = 4
+burst_max = 8
+fire_interval = 0.075
+burst_pause = 1.1
+magazine = 30
+reload_time = 2.2
+aim_error_deg = 3.6
+aim_settle_time = 1.0
+reaction_time = 0.6
+preferred_range = 18.0
+max_range = 40.0
+aggressive = false
+officer = true
+courage = 0.85
+suppression_resist = 0.55
+walk_speed = 1.4
+run_speed = 4.2

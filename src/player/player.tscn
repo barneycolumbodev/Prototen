@@ -1,4 +1,4 @@
-[gd_scene load_steps=13 format=3]
+[gd_scene load_steps=20 format=3]
 
 [ext_resource type="Script" path="res://src/player/player.gd" id="1_player"]
 [ext_resource type="Script" path="res://src/player/viewmodel_rig.gd" id="2_rig"]
@@ -12,6 +12,13 @@
 [ext_resource type="Resource" path="res://data/player/viewmodel_saiga.tres" id="10_vmsaiga"]
 [ext_resource type="PackedScene" path="res://assets/weapons/saiga12k/saiga12k.gltf" id="11_saiga"]
 [ext_resource type="PackedScene" path="res://assets/characters/fp_arms_saiga/fp_arms_saiga.gltf" id="12_armssaiga"]
+[ext_resource type="Resource" path="res://data/player/viewmodel_rail.tres" id="13_vmrail"]
+[ext_resource type="PackedScene" path="res://assets/weapons/rail_carbine/rail_carbine.gltf" id="14_rail"]
+[ext_resource type="PackedScene" path="res://assets/characters/fp_arms_rail/fp_arms_rail.gltf" id="15_armsrail"]
+[ext_resource type="Resource" path="res://data/player/viewmodel_m14p.tres" id="16_vmm14"]
+[ext_resource type="PackedScene" path="res://assets/weapons/m14p/m14p.gltf" id="17_m14"]
+[ext_resource type="PackedScene" path="res://assets/characters/fp_arms_m14p/fp_arms_m14p.gltf" id="18_armsm14"]
+[ext_resource type="PackedScene" path="res://assets/weapons/glock22/glock22.gltf" id="40_glock"]
 
 [sub_resource type="CapsuleShape3D" id="capsule"]
 radius = 0.4
@@ -48,6 +55,24 @@ visible = false
 script = ExtResource("2_rig")
 config = ExtResource("10_vmsaiga")
 models = Array[PackedScene]([ExtResource("11_saiga"), ExtResource("12_armssaiga")])
+
+[node name="ViewmodelRail" type="Node3D" parent="Head/Camera3D"]
+visible = false
+script = ExtResource("2_rig")
+config = ExtResource("13_vmrail")
+models = Array[PackedScene]([ExtResource("14_rail"), ExtResource("15_armsrail")])
+
+[node name="ViewmodelM14" type="Node3D" parent="Head/Camera3D"]
+visible = false
+script = ExtResource("2_rig")
+config = ExtResource("16_vmm14")
+models = Array[PackedScene]([ExtResource("17_m14"), ExtResource("18_armsm14")])
+
+[node name="ViewmodelGlock" type="Node3D" parent="Head/Camera3D"]
+visible = false
+script = ExtResource("2_rig")
+config = ExtResource("3_vmcfg")
+models = Array[PackedScene]([ExtResource("40_glock"), ExtResource("5_arms")])
 
 [node name="Weapon" type="Node" parent="."]
 script = ExtResource("6_weapon")

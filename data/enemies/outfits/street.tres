@@ -1,0 +1,42 @@
+[gd_resource type="Resource" script_class="Outfit" load_steps=24 format=3]
+
+[ext_resource type="Script" path="res://src/ai/outfit.gd" id="1"]
+[ext_resource type="Script" path="res://src/ai/garment.gd" id="2"]
+[ext_resource type="Resource" path="res://data/enemies/wardrobe/tee.tres" id="3"]
+[ext_resource type="Resource" path="res://data/enemies/wardrobe/hoodie.tres" id="4"]
+[ext_resource type="Resource" path="res://data/enemies/wardrobe/track.tres" id="5"]
+[ext_resource type="Resource" path="res://data/enemies/wardrobe/bomber.tres" id="6"]
+[ext_resource type="Resource" path="res://data/enemies/wardrobe/shirt_open.tres" id="7"]
+[ext_resource type="Resource" path="res://data/enemies/wardrobe/singlet.tres" id="8"]
+[ext_resource type="Resource" path="res://data/enemies/wardrobe/jeans.tres" id="9"]
+[ext_resource type="Resource" path="res://data/enemies/wardrobe/cargo.tres" id="10"]
+[ext_resource type="Resource" path="res://data/enemies/wardrobe/trackpants.tres" id="11"]
+[ext_resource type="Resource" path="res://data/enemies/wardrobe/shorts.tres" id="12"]
+[ext_resource type="Resource" path="res://data/enemies/wardrobe/sneakers.tres" id="13"]
+[ext_resource type="Resource" path="res://data/enemies/wardrobe/boots.tres" id="14"]
+[ext_resource type="Resource" path="res://data/enemies/wardrobe/hair_fade.tres" id="15"]
+[ext_resource type="Resource" path="res://data/enemies/wardrobe/hair_spiky.tres" id="16"]
+[ext_resource type="Resource" path="res://data/enemies/wardrobe/hair_buzz.tres" id="17"]
+[ext_resource type="Resource" path="res://data/enemies/wardrobe/hair_slick.tres" id="18"]
+[ext_resource type="Resource" path="res://data/enemies/wardrobe/cap.tres" id="19"]
+[ext_resource type="Resource" path="res://data/enemies/wardrobe/beanie.tres" id="20"]
+[ext_resource type="Resource" path="res://data/enemies/wardrobe/glasses.tres" id="21"]
+[ext_resource type="Resource" path="res://data/enemies/wardrobe/chain.tres" id="22"]
+[ext_resource type="Resource" path="res://data/enemies/wardrobe/watch.tres" id="23"]
+
+[resource]
+script = ExtResource("1")
+display_name = "Street"
+weight = 1.0
+tops = Array[ExtResource("2")]([ExtResource("3"), ExtResource("3"), ExtResource("4"), ExtResource("5"), ExtResource("6"), ExtResource("7")])
+inners = Array[ExtResource("2")]([ExtResource("8"), ExtResource("3")])
+bottoms = Array[ExtResource("2")]([ExtResource("9"), ExtResource("10"), ExtResource("11"), ExtResource("12")])
+shoes = Array[ExtResource("2")]([ExtResource("13"), ExtResource("13"), ExtResource("14")])
+hair = Array[ExtResource("2")]([ExtResource("15"), ExtResource("16"), ExtResource("17"), ExtResource("18")])
+bald_chance = 0.1
+hats = Array[ExtResource("2")]([ExtResource("19"), ExtResource("20")])
+hat_chance = 0.25
+accessories = Array[ExtResource("2")]([ExtResource("21"), ExtResource("22"), ExtResource("23")])
+accessory_chance = 0.2
+tattoo_chance = 0.6
+bare_chest_chance = 0.25

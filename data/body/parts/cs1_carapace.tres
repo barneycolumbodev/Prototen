@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="PartData" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://src/body/part_data.gd" id="1"]
+[ext_resource type="Script" path="res://src/body/stat_modifier.gd" id="2"]
+[ext_resource type="Script" path="res://src/body/part_visual.gd" id="3"]
+[ext_resource type="Script" path="res://src/body/stat_requirement.gd" id="4"]
+
+[resource]
+script = ExtResource("1")
+id = &"cs1_carapace"
+display_name = "GS-2 Graft Suit"
+description = "The base suit: a sealed nanoweave undersuit with thin, flat ceramic-polymer plates grafted onto it over the chest, abdomen, back, shoulders, arms, thighs and shins, and hardpoint pads where part hardware docks. Spreads impacts across the plates."
+location = 14
+fixed = true
+mass_kg = 6.0
+power_draw_w = 15.0
+heat_w = 20.0
+capacity = 0
+modifiers = Array[ExtResource("2")]([])
+requirements = Array[ExtResource("4")]([])
+synergy = ""
+visuals = Array[ExtResource("3")]([])

@@ -1,0 +1,64 @@
+[gd_resource type="Resource" script_class="PartData" load_steps=13 format=3]
+
+[ext_resource type="Script" path="res://src/body/part_data.gd" id="1"]
+[ext_resource type="Script" path="res://src/body/stat_modifier.gd" id="2"]
+[ext_resource type="Script" path="res://src/body/part_visual.gd" id="3"]
+[ext_resource type="Script" path="res://src/body/stat_requirement.gd" id="4"]
+[ext_resource type="PackedScene" path="res://assets/augments/passives/dl1_dorsal_load_frame/dl1_dorsal_load_frame.gltf" id="5"]
+
+[sub_resource type="Resource" id="mod_0"]
+script = ExtResource("2")
+stat = &"carry_kg"
+add = 55.0
+mul = 1.0
+
+[sub_resource type="Resource" id="mod_1"]
+script = ExtResource("2")
+stat = &"heavy"
+add = 0.0
+mul = 1.35
+
+[sub_resource type="Resource" id="mod_2"]
+script = ExtResource("2")
+stat = &"recoil"
+add = 0.0
+mul = 0.88
+
+[sub_resource type="Resource" id="mod_3"]
+script = ExtResource("2")
+stat = &"wallrun"
+add = 0.0
+mul = 0.0
+
+[sub_resource type="Resource" id="mod_4"]
+script = ExtResource("2")
+stat = &"profile"
+add = 0.0
+mul = 1.2
+
+[sub_resource type="Resource" id="req_0"]
+script = ExtResource("4")
+stat = &"structure"
+at_least = 1.2
+reason = "the frame anchors to the vertebrae"
+
+[sub_resource type="Resource" id="vis_0"]
+script = ExtResource("3")
+socket = &"root"
+scene = ExtResource("5")
+model_space = true
+
+[resource]
+script = ExtResource("1")
+id = &"dl1_dorsal_load_frame"
+display_name = "DL-1 Dorsal Load Frame"
+description = "A spinal exoframe with shoulder outriggers and an ammunition feed over the shoulder: hip-fire a machine gun at full speed. Too rigid to wall-run."
+location = 9
+mass_kg = 14.0
+power_draw_w = 20.0
+heat_w = 0.0
+capacity = 3
+modifiers = Array[ExtResource("2")]([SubResource("mod_0"), SubResource("mod_1"), SubResource("mod_2"), SubResource("mod_3"), SubResource("mod_4")])
+requirements = Array[ExtResource("4")]([SubResource("req_0")])
+synergy = "Carry +55 kg removes the MG42's handling penalty; no wall-running at all."
+visuals = Array[ExtResource("3")]([SubResource("vis_0")])

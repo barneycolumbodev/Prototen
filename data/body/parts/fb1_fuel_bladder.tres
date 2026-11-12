@@ -1,0 +1,33 @@
+[gd_resource type="Resource" script_class="PartData" load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://src/body/part_data.gd" id="1"]
+[ext_resource type="Script" path="res://src/body/stat_modifier.gd" id="2"]
+[ext_resource type="Script" path="res://src/body/part_visual.gd" id="3"]
+[ext_resource type="Script" path="res://src/body/stat_requirement.gd" id="4"]
+
+[sub_resource type="Resource" id="mod_0"]
+script = ExtResource("2")
+stat = &"power_capacity_j"
+add = 60000.0
+mul = 1.0
+
+[sub_resource type="Resource" id="mod_1"]
+script = ExtResource("2")
+stat = &"profile"
+add = 0.0
+mul = 1.02
+
+[resource]
+script = ExtResource("1")
+id = &"fb1_fuel_bladder"
+display_name = "FB-1 Glucose Fuel Bladder"
+description = "A glucose reservoir and fuel cell in the abdomen. Doubles the stored energy for actives."
+location = 13
+mass_kg = 3.0
+power_draw_w = 0.0
+heat_w = 0.0
+capacity = 1
+modifiers = Array[ExtResource("2")]([SubResource("mod_0"), SubResource("mod_1")])
+requirements = Array[ExtResource("4")]([])
+synergy = ""
+visuals = Array[ExtResource("3")]([])

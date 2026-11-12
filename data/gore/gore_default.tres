@@ -1,0 +1,33 @@
+[gd_resource type="Resource" script_class="GoreConfig" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/gore/gore_config.gd" id="1_gore"]
+
+[resource]
+script = ExtResource("1_gore")
+toughness = 1.0
+blood_amount = 1.0
+head_j = 600.0
+upper_arm_j = 1000.0
+forearm_j = 600.0
+hand_j = 300.0
+thigh_j = 1300.0
+shin_j = 750.0
+arrival_share = 0.3
+blade_factor = 2.2
+blunt_factor = 0.5
+explosive_factor = 1.0
+reach_m = 0.4
+full_m = 0.1
+pulp_factor = 2.6
+head_destroy_j = 800.0
+min_share = 0.2
+accumulate_factor = 1.25
+fling_per_kj = 0.9
+fling_min = 2.0
+fling_max = 6.5
+gib_volley_j = 12000.0
+gib_corpse_j = 8000.0
+blast_sever_f = 0.45
+blast_gib_f = 0.8
+gib_speed = 7.5
+gib_torso_pieces = 8

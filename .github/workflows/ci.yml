@@ -81,12 +81,16 @@ jobs:
             echo "$KEYSTORE_B64" | base64 -d > "$keystore"
             alias="$KEYSTORE_ALIAS"; password="$KEYSTORE_PASSWORD"
           else
-            echo "::warning::ANDROID_KEYSTORE_* secrets are not set. Signing with a throwaway key: uninstall the old APK before installing this one."
+            # A fixed debug key committed to the repo, so every build has the same
+            # signature and installs over the last one. Debug builds only: never
+            # use it for a release. (A new key per run made Android refuse every
+            # update: "package appears to be invalid", 2026-11-07.)
+            echo "ANDROID_KEYSTORE_* secrets are not set. Signing with the committed debug key (tools/android/graft-debug.keystore)."
+            cp tools/android/graft-debug.keystore "$keystore"
             alias=graftdebug; password=graftdebug
-            "$java_home/bin/keytool" -genkeypair -v -keystore "$keystore" -alias "$alias" \
-              -keyalg RSA -keysize 2048 -validity 10000 -storepass "$password" -keypass "$password" \
-              -dname "CN=GRAFT Debug, O=GRAFT, C=US" >/dev/null 2>&1
           fi
+          "$java_home/bin/keytool" -list -v -keystore "$keystore" -storepass "$password" -alias "$alias" \
+            | grep -E "^\s*SHA256:" | sed 's/^/Signing certificate /'
           {
             echo "GODOT_ANDROID_KEYSTORE_DEBUG_PATH=$keystore"
             echo "GODOT_ANDROID_KEYSTORE_DEBUG_USER=$alias"
@@ -105,6 +109,26 @@ jobs:
           test -s build/graft-debug.apk
           ls -la build/graft-debug.apk
 
+      - name: Shrink, re-sign and verify APK
+        run: |
+          set -euo pipefail
+          # Godot stores .ctex textures uncompressed; deflating them took the APK
+          # from 390 MB to 211 MB (2026-11-11). The 390 MB download failed on the
+          # phone with "There was a problem parsing the package".
+          bt="$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -1)"
+          echo "Using build-tools at $bt"
+          python3 -I tools/android/shrink_apk.py build/graft-debug.apk build/repacked.apk
+          "$bt/zipalign" -p -f 4 build/repacked.apk build/aligned.apk
+          "$bt/apksigner" sign --ks "$GODOT_ANDROID_KEYSTORE_DEBUG_PATH" --ks-pass env:GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD \
+            --ks-key-alias "$GODOT_ANDROID_KEYSTORE_DEBUG_USER" --out build/graft-debug.apk build/aligned.apk
+          rm build/repacked.apk build/aligned.apk
+          "$bt/zipalign" -c -p 4 build/graft-debug.apk
+          "$bt/apksigner" verify --verbose --print-certs build/graft-debug.apk | grep -vi "warning"
+          # What the phone's package installer parses first.
+          "$bt/aapt2" dump badging build/graft-debug.apk | sed -n 1,4p
+          ls -la build/graft-debug.apk
+          echo "APK_BYTES=$(stat -c %s build/graft-debug.apk)" >> "$GITHUB_ENV"
+
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
@@ -121,7 +145,8 @@ jobs:
           set -euo pipefail
           short="${GITHUB_SHA::7}"
           notes="Debug build of ${GITHUB_REF_NAME} @ ${short}, CI run #${{ github.run_number }} (${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}).
-          Install graft-debug.apk on the phone. Needs a controller."
+          Install graft-debug.apk on the phone. Needs a controller.
+          Size: $((APK_BYTES / 1000000)) MB (${APK_BYTES} bytes). If the downloaded file is smaller, the download was cut off: download it again."
           gh release delete dev-latest --cleanup-tag --yes 2>/dev/null || true
           sleep 3
           gh release create dev-latest build/graft-debug.apk \

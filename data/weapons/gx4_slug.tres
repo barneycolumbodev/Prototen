@@ -1,0 +1,42 @@
+[gd_resource type="Resource" script_class="WeaponData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/weapons/weapon_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+display_name = "GX-4 Gauss arm"
+weapon_class = 2
+caliber = "40 g tungsten-steel slug"
+magazine_size = 10
+infinite_reserve = true
+fire_interval = 0.6
+automatic = false
+muzzle_velocity = 3200.0
+bullet_mass_g = 40.0
+drag_per_m = 0.0001
+gravity_scale = 0.2
+max_range = 1500.0
+max_penetrations = 24
+penetration_scale = 5.0
+max_ricochets = 0
+damage_per_joule = 0.14
+min_damage = 400.0
+impulse_scale = 2.5
+gore_style = &"gauss"
+flash_color = Color(0.55, 0.78, 1, 1)
+flash_scale = 1.8
+flash_light_energy = 7.0
+flash_light_time = 0.12
+ejects_shells = false
+tracer_every = 0
+smoke_per_shot = 2
+impact_fx_scale = 1.0
+sound_prefix = "gx4_"
+shot_volume_db = 2.0
+tail_interval = 0.0
+rumble_fire = Vector3(1, 1, 0.28)
+rumble_hit = Vector3(0.4, 0.6, 0.08)
+rumble_kill = Vector3(0.8, 1, 0.22)
+hitstop_headshot = 0.09
+hitstop_kill = 0.07
+hitstop_time_scale = 0.05

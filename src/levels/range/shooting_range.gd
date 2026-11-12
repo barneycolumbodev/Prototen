@@ -3,7 +3,10 @@ extends Node3D
 ## M1a shooting range inside the test room (docs/m1-gunplay-plan.md item 3).
 ## Laid out around the spawn's sightlines (spawn at 0,0,12 facing north):
 ## - Steel poppers at ~19 m, one far plate on the mezzanine at ~25 m.
-## - Zoned dummies in the open, behind a drywall wall and behind a fence.
+## - Triad members standing at the target spots (passive: they react, bleed,
+##   fall, but never fire back), in the open, behind a drywall wall and behind
+##   a fence. A new one walks up to an empty spot a while after a kill;
+##   bodies stay until there are too many.
 ## - Penetration lane (east): six materials, each with a witness card behind.
 ## - Destructible drywall wall and plank fence.
 ## - A table of cans and bottles, a stack of crates.
@@ -20,6 +23,9 @@ const PLATES: Array = [
 	[Vector3(-0.5, 3.5, -13.0), 1.2, false],
 ]
 
+const TARGET_RESPAWN: float = 9.0
+const MAX_BODIES: int = 6
+const ROLES: Array[String] = ["gunman", "enforcer", "gunman", "red_pole"]
 const DUMMIES: Array[Vector3] = [
 	Vector3(1.5, 0, -1.0),
 	Vector3(-5.5, 0, 4.0),
@@ -38,7 +44,11 @@ const PEN_LANE: Array = [
 ]
 
 var stats: RangeStats
-var dummies: Array[TargetDummy] = []
+## Range targets, one per DUMMIES spot (null while respawning).
+var targets: Array[Enemy] = []
+var squad: Squad
+var bodies: Array[Enemy] = []
+var _respawn: Array[float] = []
 var plates: Array[SteelPlate] = []
 var panels: Array[PenPanel] = []
 var walls: Array[DestructibleWall] = []
@@ -57,12 +67,13 @@ func _ready() -> void:
 		add_child(plate)
 		plate.position = spec[0]
 		plates.append(plate)
-	for at: Vector3 in DUMMIES:
-		var d: TargetDummy = TargetDummy.new()
-		add_child(d)
-		d.position = at
-		d.rotation.y = _face_spawn(at)
-		dummies.append(d)
+	squad = Squad.new()
+	squad.name = "RangeSquad"
+	add_child(squad)
+	for i: int in DUMMIES.size():
+		targets.append(null)
+		_respawn.append(0.0)
+		spawn_target(i)
 	for i: int in PEN_LANE.size():
 		var spec: Array = PEN_LANE[i]
 		var p: PenPanel = PenPanel.new()
@@ -98,6 +109,69 @@ func _ready() -> void:
 	walls.append(fence)
 	_build_table(Vector3(-2.5, 0, 6.0))
 	_build_crates(Vector3(2.6, 0, 5.4))
+
+
+## Puts a fresh triad member on target spot `i`.
+func spawn_target(i: int) -> Enemy:
+	var e: Enemy = Enemy.new()
+	e.config = load("res://data/enemies/%s.tres" % ROLES[i % ROLES.size()]) as EnemyConfig
+	e.passive = true
+	e.name = "Target%d" % i
+	squad.add(e)
+	add_child(e)
+	e.position = DUMMIES[i]
+	e.face(_face_spawn(DUMMIES[i]))
+	e.died.connect(_on_target_died.bind(i))
+	targets[i] = e
+	return e
+
+
+## Where zone `zone` of target `i` is now (its spot at chest height while it respawns).
+func target_point(i: int, zone: StringName = &"chest") -> Vector3:
+	var e: Enemy = targets[i] if i < targets.size() else null
+	if e and is_instance_valid(e) and e.body and e.body.hitboxes.has(zone):
+		return e.body.hitboxes[zone].global_position
+	return DUMMIES[i] + Vector3.UP * 1.3
+
+
+## Removes every range target and body (wave mode clears the range).
+func clear_targets() -> void:
+	for e: Enemy in targets + bodies:
+		if is_instance_valid(e):
+			e.queue_free()
+	bodies.clear()
+	for i: int in targets.size():
+		targets[i] = null
+		_respawn[i] = -1.0
+
+
+func restore_targets() -> void:
+	for i: int in targets.size():
+		if targets[i] == null:
+			spawn_target(i)
+
+
+func _on_target_died(_e: Enemy, i: int) -> void:
+	bodies.append(targets[i])
+	targets[i] = null
+	_respawn[i] = TARGET_RESPAWN
+	while bodies.size() > MAX_BODIES:
+		var old: Enemy = bodies.pop_front()
+		if is_instance_valid(old):
+			old.queue_free()
+
+
+func _process(delta: float) -> void:
+	for i: int in _respawn.size():
+		if targets[i] == null and _respawn[i] > 0.0:
+			_respawn[i] -= delta
+			if _respawn[i] <= 0.0:
+				var e: Enemy = spawn_target(i)
+				# Step aside from a body lying on the spot.
+				for b: Enemy in bodies:
+					if is_instance_valid(b) and b.body.bone_position(&"hips").distance_to(DUMMIES[i]) < 0.9:
+						e.position = DUMMIES[i] + Vector3(1.1, 0, 0.3)
+						break
 
 
 func _face_spawn(at: Vector3) -> float:

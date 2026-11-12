@@ -12,7 +12,7 @@ const DB: int = 2
 var room: TestRoom
 var player: Player
 var weapon: PlayerWeapon
-var dummy: TargetDummy
+var dummy: Enemy
 
 
 func before_each() -> void:
@@ -23,7 +23,7 @@ func before_each() -> void:
 	weapon = player.weapon()
 	await wait_physics_frames(5)
 	weapon.select_now(weapon.index_of("Saiga-12K"))
-	dummy = room.shooting_range.dummies[0]
+	dummy = room.shooting_range.targets[0]
 	# Stand 5 m in front of the first dummy (it faces +Z).
 	player.global_position = dummy.global_position + dummy.global_basis.z * 5.0
 	await wait_physics_frames(3)

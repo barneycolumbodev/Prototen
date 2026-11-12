@@ -38,10 +38,16 @@ const WEAPON_PARAMS: Array = [
 	["Carry", "carry_sprint_scale", 0.3, 1.0, 0.01, "Sprint speed with gun"],
 	["Carry", "hip_walk_deg_s", 0.0, 10.0, 0.25, "Hip walk (°/s of fire)"],
 	["Carry", "hip_walk_max_deg", 0.0, 10.0, 0.25, "Hip walk max (°)"],
-	["Ballistics", "muzzle_velocity", 300.0, 900.0, 10.0, "Muzzle velocity (m/s)"],
+	["Ballistics", "muzzle_velocity", 300.0, 3500.0, 10.0, "Muzzle velocity (m/s)"],
 	["Ballistics", "penetration_scale", 0.3, 3.0, 0.05, "Penetration power"],
 	["Ballistics", "damage_per_joule", 0.05, 0.4, 0.005, "Damage per joule"],
 	["Ballistics", "impulse_scale", 0.0, 80.0, 1.0, "Push on hit"],
+	["Railgun", "charge_time", 0.2, 2.0, 0.05, "Capacitor full after (s)"],
+	["Railgun", "min_charge_power", 0.1, 1.0, 0.05, "Power when fired early"],
+	["Railgun", "heat_per_shot", 0.0, 0.5, 0.01, "Heat per shot"],
+	["Railgun", "heat_cool_per_s", 0.0, 2.0, 0.05, "Cooling per second"],
+	["Railgun", "vent_time", 0.3, 4.0, 0.1, "Vent time (s)"],
+	["Railgun", "beam_trail_time", 0.0, 2.0, 0.05, "Trail lingers (s)"],
 	["Feedback", "hitstop_headshot", 0.0, 0.15, 0.005, "Hit-stop headshot (s)"],
 	["Feedback", "hitstop_kill", 0.0, 0.15, 0.005, "Hit-stop kill (s)"],
 ]
@@ -51,7 +57,35 @@ const ASSIST_PARAMS: Array = [
 	["Aim assist", "pull_deg_s", 0.0, 20.0, 0.5, "Pull when aimed (°/s)"],
 ]
 
+## Movement feel (data/player/movement_default.tres; 2026-11-11 overhaul).
+const MOVE_PARAMS: Array = [
+	["Movement", "walk_speed", 3.0, 10.0, 0.1, "Walk speed (m/s)"],
+	["Movement", "sprint_speed", 6.0, 16.0, 0.1, "Sprint speed (m/s)"],
+	["Movement", "ground_response", 4.0, 30.0, 0.5, "Speed-up/brake snap"],
+	["Movement", "ground_turn_rate", 4.0, 30.0, 0.5, "Turn carve (rad/s)"],
+	["Movement", "overspeed_friction", 0.0, 30.0, 0.5, "Momentum bleed (m/s²)"],
+	["Movement", "air_turn_rate", 0.0, 8.0, 0.1, "Air steering (rad/s)"],
+	["Movement", "air_accel", 0.0, 40.0, 0.5, "Air accel (m/s²)"],
+	["Movement", "jump_velocity", 5.0, 12.0, 0.1, "Jump speed (m/s)"],
+	["Movement", "jump_release_gravity_scale", 1.0, 4.0, 0.05, "Short-hop cut"],
+	["Movement", "apex_gravity_scale", 0.3, 1.0, 0.05, "Hang at top"],
+	["Movement", "fall_gravity_scale", 0.8, 2.0, 0.05, "Fall weight"],
+	["Movement", "slide_friction", 1.0, 12.0, 0.1, "Slide friction"],
+	["Movement", "slide_boost", 0.0, 8.0, 0.1, "Slide boost (m/s)"],
+	["Movement", "wallrun_time", 0.5, 3.0, 0.05, "Wall-run time (s)"],
+	["Movement", "land_dip_per_mps", 0.0, 0.03, 0.001, "Landing dip"],
+	["Movement", "sprint_fov_deg", 0.0, 12.0, 0.5, "Sprint FOV (°)"],
+	["Movement", "strafe_roll_deg", 0.0, 4.0, 0.1, "Strafe lean (°)"],
+]
+
+## Dismemberment and blood (data/gore/gore_default.tres; 2026-11-11).
+const GORE_PARAMS: Array = [
+	["Gore", "toughness", 0.3, 3.0, 0.05, "Body toughness (× cut thresholds)"],
+	["Gore", "blood_amount", 0.3, 2.5, 0.05, "Blood amount"],
+]
+
 var _root: Control
+var _move: MovementConfig
 var _list: VBoxContainer
 var _readout: TextEdit
 var _first_focus: Control
@@ -78,6 +112,7 @@ func open() -> void:
 		return
 	_weapon = player.weapon()
 	_assist = player.aim_assist.config if player.aim_assist else null
+	_move = player.movement
 	_build()
 	_root.visible = true
 	DebugOverlay.visible = false
@@ -128,7 +163,19 @@ func save() -> void:
 		for p: Array in ASSIST_PARAMS:
 			var prop: String = p[1]
 			cfg.set_value("aim_assist", prop, _assist.get(prop))
+	if _move:
+		for p: Array in MOVE_PARAMS:
+			var prop: String = p[1]
+			cfg.set_value("movement", prop, _move.get(prop))
+	for p: Array in GORE_PARAMS:
+		var prop: String = p[1]
+		cfg.set_value("gore", prop, Gore.config.get(prop))
 	cfg.save(SAVE_PATH)
+
+
+## Railgun sliders only appear for railguns.
+static func shows(param: Array, data: WeaponData) -> bool:
+	return param[0] != "Railgun" or data.is_rail()
 
 
 ## Save-file section for a gun ("weapon_pistol_57", "weapon_mg42").
@@ -141,6 +188,30 @@ static func load_saved_all(weapon: PlayerWeapon, assist: AimAssistConfig) -> voi
 	for slot: PlayerWeapon.Slot in weapon.slots:
 		load_saved(slot.data, null)
 	load_saved(null, assist)
+	var player: Player = weapon.get_parent() as Player
+	if player:
+		load_saved_movement(player.movement)
+	load_saved_gore()
+
+
+## Applies saved gore tuning (Gore.config).
+static func load_saved_gore() -> void:
+	var cfg: ConfigFile = ConfigFile.new()
+	if cfg.load(SAVE_PATH) != OK or not cfg.has_section("gore"):
+		return
+	for prop: String in cfg.get_section_keys("gore"):
+		if prop in Gore.config:
+			Gore.config.set(prop, cfg.get_value("gore", prop))
+
+
+## Applies saved movement tuning (the player's MovementConfig).
+static func load_saved_movement(move: MovementConfig) -> void:
+	var cfg: ConfigFile = ConfigFile.new()
+	if move == null or cfg.load(SAVE_PATH) != OK or not cfg.has_section("movement"):
+		return
+	for prop: String in cfg.get_section_keys("movement"):
+		if prop in move:
+			move.set(prop, cfg.get_value("movement", prop))
 
 
 ## Applies saved tuning to one gun and/or the aim assist. The section saved
@@ -166,6 +237,8 @@ static func load_saved(data: WeaponData, assist: AimAssistConfig) -> void:
 func values_text() -> String:
 	var lines: PackedStringArray = PackedStringArray(["# %s (data/weapons)" % _weapon.data.display_name])
 	for p: Array in WEAPON_PARAMS:
+		if not shows(p, _weapon.data):
+			continue
 		var prop: String = p[1]
 		lines.append("%s = %s" % [prop, var_to_str(_weapon.data.get(prop))])
 	if _assist:
@@ -174,6 +247,15 @@ func values_text() -> String:
 		for p: Array in ASSIST_PARAMS:
 			var prop: String = p[1]
 			lines.append("%s = %s" % [prop, var_to_str(_assist.get(prop))])
+	if _move:
+		lines.append("# movement (data/player/movement_default.tres)")
+		for p: Array in MOVE_PARAMS:
+			var prop: String = p[1]
+			lines.append("%s = %s" % [prop, var_to_str(_move.get(prop))])
+	lines.append("# gore (data/gore/gore_default.tres)")
+	for p: Array in GORE_PARAMS:
+		var prop: String = p[1]
+		lines.append("%s = %s" % [prop, var_to_str(Gore.config.get(prop))])
 	return "\n".join(lines)
 
 
@@ -204,7 +286,7 @@ func _build() -> void:
 	_first_focus = null
 
 	var title: Label = Label.new()
-	title.text = "GUN TUNING — %s" % _weapon.data.display_name
+	title.text = "TUNING — %s, movement and gore" % _weapon.data.display_name
 	title.add_theme_font_size_override("font_size", 22)
 	_list.add_child(title)
 	_button("Back (B)", back)
@@ -219,7 +301,9 @@ func _build() -> void:
 			stats.reset())
 	_button("Restore defaults", _on_defaults)
 	var section: String = ""
-	for p: Array in WEAPON_PARAMS + (ASSIST_PARAMS if _assist else []):
+	for p: Array in WEAPON_PARAMS + (ASSIST_PARAMS if _assist else []) + (MOVE_PARAMS if _move else []) + GORE_PARAMS:
+		if not shows(p, _weapon.data):
+			continue
 		var sec: String = p[0]
 		if sec != section:
 			section = sec
@@ -228,7 +312,14 @@ func _build() -> void:
 			head.add_theme_color_override("font_color", Color(1.0, 0.75, 0.4))
 			head.add_theme_font_size_override("font_size", 15)
 			_list.add_child(head)
-		var target: Resource = _assist if sec == "Aim assist" else _weapon.data
+		var target: Resource = _weapon.data
+		match sec:
+			"Aim assist":
+				target = _assist
+			"Movement":
+				target = _move
+			"Gore":
+				target = Gore.config
 		var prop: String = p[1]
 		var lo: float = p[2]
 		var hi: float = p[3]
@@ -321,6 +412,17 @@ func _on_defaults() -> void:
 			for p: Array in ASSIST_PARAMS:
 				var prop: String = p[1]
 				_assist.set(prop, fresh_assist.get(prop))
+	if _move:
+		var fresh_move: MovementConfig = ResourceLoader.load(_move.resource_path, "", ResourceLoader.CACHE_MODE_IGNORE) as MovementConfig
+		if fresh_move:
+			for p: Array in MOVE_PARAMS:
+				var prop: String = p[1]
+				_move.set(prop, fresh_move.get(prop))
+	var fresh_gore: GoreConfig = ResourceLoader.load(Gore.config.resource_path, "", ResourceLoader.CACHE_MODE_IGNORE) as GoreConfig
+	if fresh_gore:
+		for p: Array in GORE_PARAMS:
+			var prop: String = p[1]
+			Gore.config.set(prop, fresh_gore.get(prop))
 	_weapon.apply_tuning()
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(SAVE_PATH))
 	_build()

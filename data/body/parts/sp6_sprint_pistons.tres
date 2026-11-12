@@ -1,0 +1,52 @@
+[gd_resource type="Resource" script_class="PartData" load_steps=11 format=3]
+
+[ext_resource type="Script" path="res://src/body/part_data.gd" id="1"]
+[ext_resource type="Script" path="res://src/body/stat_modifier.gd" id="2"]
+[ext_resource type="Script" path="res://src/body/part_visual.gd" id="3"]
+[ext_resource type="Script" path="res://src/body/stat_requirement.gd" id="4"]
+[ext_resource type="PackedScene" path="res://assets/augments/passives/sp6_sprint_pistons/sp6_sprint_pistons.gltf" id="5"]
+
+[sub_resource type="Resource" id="mod_0"]
+script = ExtResource("2")
+stat = &"move_speed"
+add = 0.0
+mul = 1.15
+
+[sub_resource type="Resource" id="mod_1"]
+script = ExtResource("2")
+stat = &"jump"
+add = 0.0
+mul = 1.25
+
+[sub_resource type="Resource" id="mod_2"]
+script = ExtResource("2")
+stat = &"slide"
+add = 0.0
+mul = 1.1
+
+[sub_resource type="Resource" id="mod_3"]
+script = ExtResource("2")
+stat = &"noise"
+add = 0.0
+mul = 1.4
+
+[sub_resource type="Resource" id="vis_0"]
+script = ExtResource("3")
+socket = &"root"
+scene = ExtResource("5")
+model_space = true
+
+[resource]
+script = ExtResource("1")
+id = &"sp6_sprint_pistons"
+display_name = "SP-6 Calf Sprint Pistons"
+description = "Gas pistons along the calves that kick on every stride. Very fast, very loud."
+location = 8
+mass_kg = 6.0
+power_draw_w = 50.0
+heat_w = 60.0
+capacity = 2
+modifiers = Array[ExtResource("2")]([SubResource("mod_0"), SubResource("mod_1"), SubResource("mod_2"), SubResource("mod_3")])
+requirements = Array[ExtResource("4")]([])
+synergy = ""
+visuals = Array[ExtResource("3")]([SubResource("vis_0")])

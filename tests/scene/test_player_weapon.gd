@@ -45,15 +45,27 @@ func test_holding_lt_aims_down_sights_and_releasing_returns() -> void:
 
 func test_rt_fires_one_round_and_recoil_recovers() -> void:
 	var pitch0: float = player.pitch
-	var peak: float = 0.0
+	# The peak is read off the spring's own trajectory right after the kick, in
+	# 1 ms steps. Sampling it once per rendered frame missed the peak whenever
+	# the CI runner dropped a slow frame (CI run 42893461601: 0.71 for 0.94).
+	var peak: Array[float] = [0.0]
+	var on_shot: Callable = func(_shooter: Node, _origin: Vector3, _dir: Vector3) -> void:
+		var probe := Spring.new(weapon.cam_recoil.frequency, weapon.cam_recoil.damping)
+		probe.value = weapon.cam_recoil.value
+		probe.velocity = weapon.cam_recoil.velocity
+		probe.target = weapon.cam_recoil.target
+		for i: int in 500:
+			peak[0] = maxf(peak[0], probe.step(0.001).x)
+	EventBus.shot_fired.connect(on_shot, CONNECT_DEFERRED | CONNECT_ONE_SHOT)
 	Input.action_press(&"fire")
 	for i: int in 20:
 		await wait_frames(1)
-		peak = maxf(peak, weapon.cam_recoil.value.x)
 	Input.action_release(&"fire")
+	if EventBus.shot_fired.is_connected(on_shot):
+		EventBus.shot_fired.disconnect(on_shot)
 	assert_eq(weapon.mechanism.loaded(), 20)
 	var expected: float = weapon.data.kick_pitch_deg * (1.0 - weapon.data.kick_permanent)
-	assert_between(peak, expected * 0.8, expected * 1.2, "camera kicked up by the tuned amount")
+	assert_between(peak[0], expected * 0.8, expected * 1.2, "camera kicked up by the tuned amount")
 	await wait_seconds(1.0)
 	assert_lt(absf(weapon.cam_recoil.value.x), 0.05, "spring recovered")
 	var kept: float = rad_to_deg(player.pitch - pitch0)
@@ -61,7 +73,7 @@ func test_rt_fires_one_round_and_recoil_recovers() -> void:
 
 
 func test_rounds_land_where_the_sights_point() -> void:
-	var dummy: TargetDummy = room.shooting_range.dummies[0]
+	var dummy: Enemy = room.shooting_range.targets[0]
 	var head: Vector3 = dummy.parts[&"head"].global_position
 	var kinds: Array[StringName] = []
 	EventBus.target_hit.connect(func(kind: StringName, _h: BallisticHit) -> void: kinds.append(kind))

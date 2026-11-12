@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="BodyLoadout" load_steps=12 format=3]
+
+[ext_resource type="Script" path="res://src/body/body_loadout.gd" id="1"]
+[ext_resource type="Script" path="res://src/body/part_data.gd" id="2"]
+[ext_resource type="Resource" path="res://data/body/parts/cs1_carapace.tres" id="p0"]
+[ext_resource type="Resource" path="res://data/body/parts/tl3_titanium_skeleton.tres" id="p1"]
+[ext_resource type="Resource" path="res://data/body/parts/sa2_synaptic_accelerator.tres" id="p2"]
+[ext_resource type="Resource" path="res://data/body/parts/em2_myofibrils.tres" id="p3"]
+[ext_resource type="Resource" path="res://data/body/parts/hs5_heat_sinks.tres" id="p4"]
+[ext_resource type="Resource" path="res://data/body/parts/rp2_ram_plating.tres" id="p5"]
+[ext_resource type="Resource" path="res://data/body/parts/kr5_ram_thrusters.tres" id="p6"]
+[ext_resource type="Resource" path="res://data/body/parts/mw7_monofilament_whip.tres" id="p7"]
+[ext_resource type="Resource" path="res://data/body/parts/bw6_fan_shield.tres" id="p8"]
+
+[resource]
+script = ExtResource("1")
+display_name = "Reaper"
+description = "Close work: the monofilament whip in the right hand, the fan shield on the left arm, ram plating and the ram thrusters to get there. No guns while the whip or shield is out."
+parts = Array[ExtResource("2")]([ExtResource("p0"), ExtResource("p1"), ExtResource("p2"), ExtResource("p3"), ExtResource("p4"), ExtResource("p5"), ExtResource("p6"), ExtResource("p7"), ExtResource("p8")])

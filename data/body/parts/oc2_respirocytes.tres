@@ -1,0 +1,39 @@
+[gd_resource type="Resource" script_class="PartData" load_steps=8 format=3]
+
+[ext_resource type="Script" path="res://src/body/part_data.gd" id="1"]
+[ext_resource type="Script" path="res://src/body/stat_modifier.gd" id="2"]
+[ext_resource type="Script" path="res://src/body/part_visual.gd" id="3"]
+[ext_resource type="Script" path="res://src/body/stat_requirement.gd" id="4"]
+
+[sub_resource type="Resource" id="mod_0"]
+script = ExtResource("2")
+stat = &"move_speed"
+add = 0.0
+mul = 1.04
+
+[sub_resource type="Resource" id="mod_1"]
+script = ExtResource("2")
+stat = &"regen_delay"
+add = 0.0
+mul = 0.85
+
+[sub_resource type="Resource" id="mod_2"]
+script = ExtResource("2")
+stat = &"heat_dissipation_w"
+add = 80.0
+mul = 1.0
+
+[resource]
+script = ExtResource("1")
+id = &"oc2_respirocytes"
+display_name = "OC-2 Respirocyte Blood"
+description = "Synthetic oxygen-carrier cells and a coolant fraction in the blood. More endurance, and the blood itself carries heat away."
+location = 11
+mass_kg = 0.1
+power_draw_w = 10.0
+heat_w = 0.0
+capacity = 2
+modifiers = Array[ExtResource("2")]([SubResource("mod_0"), SubResource("mod_1"), SubResource("mod_2")])
+requirements = Array[ExtResource("4")]([])
+synergy = ""
+visuals = Array[ExtResource("3")]([])

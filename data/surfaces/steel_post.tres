@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="SurfaceMaterial" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/weapons/surface_material.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"steel_post"
+display_name = "Steel post"
+resistance_j_per_cm = 9000.0
+exit_deflection_deg = 0.0
+ricochet_max_angle_deg = 16.0
+ricochet_chance = 0.35
+ricochet_energy_keep = 0.3
+structural_damage_scale = 0.0
+spalls = false
+decal_color = Color(0.22, 0.22, 0.23, 1)
+decal_radius = 0.01
+particle_color = Color(1, 0.75, 0.35, 1)
+particle_kind = &"sparks"
+particle_count = 10
+impact_sound = &"metal"
+is_flesh = false

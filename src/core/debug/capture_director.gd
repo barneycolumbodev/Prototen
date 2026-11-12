@@ -38,6 +38,8 @@ func _ready() -> void:
 		set_process(false)
 		return
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	# Software rendering is slow: keep captures at full resolution.
+	Settings.adaptive.held = true
 	DirAccess.make_dir_recursive_absolute(_dir)
 	_run.call_deferred()
 

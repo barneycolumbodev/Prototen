@@ -37,7 +37,7 @@ fi
 # Fallback when download.blender.org is blocked: Blender as a Python module from PyPI
 # (PyPI is on the default allowlist). tools/blender.sh uses it when the binary is missing.
 if [ ! -x /opt/blender/blender ] && [ ! -x /opt/bpy-venv/bin/python ]; then
-  { python3 -m venv /opt/bpy-venv && /opt/bpy-venv/bin/pip install -q "bpy==${BLENDER_VERSION}"; } \
+  { python3 -m venv /opt/bpy-venv && /opt/bpy-venv/bin/pip install -q "bpy==${BLENDER_VERSION}" pillow numpy; } \
     || echo "bpy fallback install failed" >> "$ERR"
 fi
 exit 0

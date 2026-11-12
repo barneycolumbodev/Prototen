@@ -12,6 +12,9 @@ signal killed(victim: Node, info: DamageInfo)
 signal benchmark_requested(duration_sec: float)
 @warning_ignore("unused_signal")
 signal benchmark_finished(result: Dictionary)
+## Pause menu → Map cost test: times the map with each effect switched off.
+@warning_ignore("unused_signal")
+signal feature_sweep_requested
 ## Every bullet contact (ballistics.gd): effects, sound, stats and targets listen.
 @warning_ignore("unused_signal")
 signal ballistic_hit(hit: BallisticHit)
@@ -19,3 +22,23 @@ signal ballistic_hit(hit: BallisticHit)
 ## kind: &"hit", &"headshot", &"kill", &"armor"
 @warning_ignore("unused_signal")
 signal target_hit(kind: StringName, hit: BallisticHit)
+## An enemy shouts (subtitles): speaker callsign, line, where.
+@warning_ignore("unused_signal")
+signal callout(speaker: String, text: String, at: Vector3)
+## The player was hit: damage after armour, direction it came from (world).
+@warning_ignore("unused_signal")
+signal player_damaged(amount: float, from_dir: Vector3)
+@warning_ignore("unused_signal")
+signal player_died
+## Wave mode: wave number, enemies left (-1 = between waves).
+@warning_ignore("unused_signal")
+signal wave_changed(wave: int, left: int)
+## The player slid into a living enemy and shoved him (m/s given to him).
+@warning_ignore("unused_signal")
+signal slide_impact(enemy: Node, push: float)
+## Pause menu: start or stop wave mode.
+@warning_ignore("unused_signal")
+signal wave_mode_requested
+## Rolling spawns (open maps): kills so far, enemies in the fight or on their way.
+@warning_ignore("unused_signal")
+signal score_changed(kills: int, hostiles: int)

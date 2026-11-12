@@ -73,10 +73,48 @@ Pulled forward from M3: "the next gun is the MG42 light gun — chrome and black
 - **Controls:** Y cycles pistol → MG42 → Saiga-12K.
 - **Previews:** `docs/previews/saiga12k_*.png` (Blender: side, beauty, left, receiver, optic, first person), `fp_arms_saiga.png`, and in-game captures `saiga12k_ingame_hip/irons/scope/dragons_breath.png` (`--demo=hip|ads|fire --weapon=2 --ammo=<0..2>`).
 - Tests: `tests/unit/test_saiga_mechanism.gd` (chamber and magazine loads, swap, cancel, rack), `tests/unit/test_ammo_data.gd` (round data, 12-gauge energies, slug drop matches the simulation, pellet pattern), `tests/scene/test_saiga.gd` (9 pellets count as one shot, D-pad swap mounts the optic and tints the tape, scope view, Dragon's Breath sets a dummy alight).
+## M1a.3 — RC-6 "Lance" rail carbine (owner request, 2026-11-02)
+
+Owner brief and design reading: docs/design.md §4.4. Fourth gun in the loadout.
+
+- **Model:** `raw_assets/weapons/rail_carbine/build.py`. Bullpup, 0.85 m: graphite core loft with layered ceramic plates (superellipse bands), glowing seams, capacitor-bank fins in the stock, a 40-slug top magazine with windows onto slugs lying across the gun, reflex optic with a ring reticle, raked support grip inside a front loop, split-rail muzzle fork with heat-tinted rails, swept side vanes, FCL readout, power-cell cap, markings. 14.9k triangles, 4K baked maps. Moving/live parts: `magazine` (pulls back and up), `vent` (top shroud, lifts while venting), `glow` (emission driven by charge and heat), `lens` (real transparent glass).
+- **Arms:** `raw_assets/characters/fp_arms_rail/build.py` (the MG42 arms builder; right hand on the shared pistol-grip profile, left hand on the raked support grip). 7.8k triangles.
+- **Handling (`data/weapons/rail_carbine.tres`):** semi-auto, 0.2 s between shots at the fastest; capacitor full after 0.75 s; 2,600 m/s, 7 g, penetration ×1.8; 2.4° kick (scaled by √power); ADS 0.22 s to a 0.62× FOV reflex sight; 2.0 s reload. Carry penalty light (96 %).
+- **Code:** `WeaponData` "Capacitor and heat" group, `GunMechanism` (charge, heat, forced vent, `EV_CHARGED`/`EV_OVERHEAT`/`EV_VENT_DONE`), `Ballistics.fire(..., power)` + pooled camera-facing trail ribbons (`src/vfx/rail_trail.gdshader`), speed-dependent flesh drag (`SurfaceMaterial.drag_scaling_speed`, only above 900 m/s so the pistol and MG42 are unchanged), `Fx` flash colour / impact scale / vent steam, `ViewmodelRig` vent/glow/lens/magazine direction, HUD charge/heat gauge, "Railgun" section in Gun tuning (only shown for the rail carbine).
+- **Sound:** `raw_assets/audio/build_rail_sfx.py`, 13 synthesized files: capacitor snap + plasma arc crackle, magnetic thwack with pitch drop, Mach 7.6 crack, sub punch, rails ringing, long rolling boom tail; charge whine, ready tone, overheat beeps, vent hiss with cooling ticks, magnetic magazine seat.
+- **Tests:** `tests/unit/test_rail_mechanism.gd`, `tests/scene/test_rail_carbine.gd`, budgets in `tests/unit/test_weapon_assets.gd`.
+
+## M1a.4 — Weapon wheel, reticles, M14/P (owner request, 2026-11-02)
+
+"The carbine looks good. I need a weapon wheel for now so I can have both the shotgun and the rail carbine. Additionally the reticle for the shotgun should be a circle, with it being a dot when slugs are attached, additionally the reticle is seaglass green blue normally but turns crimson when over an enemy, for all weapons. Additionally, add in a black polymer M14 style battle rifle, with a suppressor and stubby foregrip."
+
+- **Both new guns in one build:** the Saiga-12K branch (PR #3) was merged into the rail carbine branch, keeping both features everywhere (shell types and pellets, rail capacitor/heat, embers and rail trails). Loadout: pistol, MG42, Saiga-12K, rail carbine, M14/P.
+- **Weapon wheel** (`PlayerWeapon` + `src/ui/weapon_wheel_view.gd`, tuning `data/input/weapon_wheel.tres`): tap Y = previous gun; hold Y 0.2 s = the wheel opens, time slows to 30 % (`TimeControl.set_slowmo`), look stops (`Player.look_blocked`), the right stick highlights a wedge (slot 0 at the top, clockwise), letting go draws it; no shooting or aiming while it's up. Wedges show a rendered icon (`raw_assets/ui/weapon_icons/build.py`, `WeaponData.icon`), the name and rounds loaded; the centre the highlighted gun and calibre. Sounds `wheel_open`, `wheel_tick` (`raw_assets/audio/build_ui_sfx.py`).
+- **Reticles** (`src/ui/reticle_style.gd`): seaglass, crimson while a ray along the line of sight hits a live enemy first (`PlayerWeapon.over_enemy`; target dummies are in group `enemies` while alive). Saiga hip reticle: a circle the size of the pellet pattern plus spread with buck and Dragon's Breath, a dot with slugs. The PSO scope reticle and the rail carbine's reflex ring (now its own `reticle` part) follow the same colours.
+- **M14/P** (`raw_assets/weapons/m14p/build.py`, design §4.5): 7.3k triangles, 4K baked; parts `slide` (bolt, op rod and handle cycle on every shot), `magazine`, `stock` (hidden while aiming). Arms: `raw_assets/characters/fp_arms_m14p/build.py` (the shared grip profile 22 mm lower). Sounds: `raw_assets/audio/build_m14_sfx.py` (suppressed but supersonic crack, deep can thump, op rod and bolt "ka-chunk", rock-in magazine, op rod slap).
+- **Tests:** `tests/scene/test_weapon_wheel.gd`, `tests/scene/test_m14p.gd`, budgets and icons in `tests/unit/test_weapon_assets.gd`.
+
+## M1b — Movement (built 2026-11-04)
+
+- **Slide:** B while sprinting. Starts 3 m/s faster than the sprint (max 15 m/s), slows at 6.5 m/s², a little steering, camera drops and rolls 5°. A during a slide hops out of it with the speed.
+- **Wall-run:** airborne, pushing forward at 5.5 m/s or more, with a wall within 0.75 m at your side: you run along it at 11.5 m/s with 10 % gravity rising back to full over 1.6 s; the camera rolls away from the wall. A jumps off (out and up). Touch the floor or another wall before running the same wall again.
+- **Mantle:** A at a ledge 0.45–2.2 m high (with room to stand on it) climbs it in about a third of a second; the gun drops out of view while you climb.
+- Values in `data/player/movement_default.tres`. Air dash is not built (no free button yet; it comes with the parts system).
+- Tests: `tests/scene/test_movement.gd`.
+
+## M1c — Enemies, gore and waves (owner request, 2026-11-03)
+
+"Do the rest of M1, like the gore effects and stuff. I think we have enough weapons for now. But that also means you need to make at least one basic enemy model, because I only want to see the gore effects on actual enemies. And populate the firing range with them. And they should be, like, triad members."
+
+- **Triad member** (`raw_assets/characters/triad/build.py`): 1.75 m man in a nylon bomber jacket (knit hem, cuffs and collar, centre zip, seams), cargo trousers with thigh pockets, black sneakers with white soles, a short faded haircut. ~10k triangles, one 2K atlas (painted in numpy from baked position maps; normals and AO baked). 23-bone rig, weights from bone chains with joint blends then smoothed. 17 clips posed with IK (hands on the gun's grips, feet planted): aim, low-ready idle, walk ×4 directions, run, cover, crouch aim, blind fire, reload, stumble, gut wound, crawl, surrender, flee, cower. Severable head, forearms and shins cut from the same mesh with flesh caps. The Blender/MPFB route wasn't possible (extensions.blender.org, MakeHuman and Quaternius sites are blocked in this session), so everything is procedural. Previews: `docs/previews/triad_*.png`.
+- **Enemy guns** (`raw_assets/weapons/enemy_guns/build.py`): Type 56, pump shotgun, Type 85-style SMG; same grip points so all three use the same clips. Ballistics data in `data/enemies/weapons/`.
+- **Godot:** `src/ai/enemy_body.gd` (model, zones, plates, animation tree, ragdoll, dismemberment, wounds), `src/ai/enemy_pose.gd` (aim and flinch layer), `src/ai/enemy.gd` (health, reactions, morale, perception, combat), `src/ai/squad.gd` (tokens, contact, cover, callouts), `src/ai/triad.gdshader`, `src/gore/gore.gd`, `src/gore/ragdoll_budget.gd`.
+- **Range:** the four dummy spots now hold passive triad members (Gunman, Enforcer, Gunman, Red Pole). They turn to face you, react, bleed, crawl, surrender and die, but never fire. 9 s after a kill a new one walks up (beside the body if it's lying on the spot); up to 6 bodies stay.
+- **Wave mode:** Pause → Wave mode. The range targets clear, waves come in from the edges of the room (4 Gunmen first; Enforcers from wave 2; a Red Pole from wave 3; up to 12 at once). A wave ends when nobody's left fighting. Dying (health 200, regenerates after 3 s; rounds do 7 damage per kJ, so a Type 56 hit is 14) restarts from wave 1. HUD: health bar, red arcs toward whoever hit you, darkening when suppressed, callout subtitles, wave banner.
+- **Sounds** (`raw_assets/audio/build_enemy_sfx.py`): enemy shots for the three guns, rounds cracking/whizzing past you, pain grunts, body falls, severing, enemy reload; slide and mantle.
+- **Debug:** `-- --demo=gore [--gore-steps=mixed|wounds|wound1]` shoots the range targets with a scripted sequence for screenshots; `-- --waves` starts wave mode; `-- --god` makes the player invulnerable.
+- Tests: `tests/scene/test_enemies.gd` (zones, wounds, ragdoll freeze and cap, dismemberment by setting, gore off, plates, leg hits, wave composition, enemies firing back, near-miss suppression), updated range/weapon tests now shoot triad targets.
 
 ## Later M1 slices
 
-- **M1b — Movement:** sprint polish, slide, wall-run, mantle, air dash; viewmodel reacts to all of them.
-- **M1c — Targets that fight back:** locational damage on humanoids, gore and ragdolls, three enemy roles with awareness, suppression and morale, wave mode.
-
-M1 is done when the owner wants to keep playing the wave mode (CLAUDE.md §12).
+- Owner playtest of M1b/M1c; tuning from the notes (enemy accuracy and damage, morale, gore amounts).

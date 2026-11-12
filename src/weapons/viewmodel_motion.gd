@@ -62,7 +62,8 @@ func apply_tuning() -> void:
 	pose_rot.damping = data.pose_spring_damping
 
 
-## `strength`: recoil of the load fired (AmmoData.recoil_scale), 1 = the gun's own.
+## `strength`: 1 = the gun's own recoil; scaled by the load fired (AmmoData.recoil_scale) and,
+## for railguns, by the slug's momentum (√ capacitor power).
 func fire(ads: float, rng: RandomNumberGenerator, strength: float = 1.0) -> void:
 	var s: float = lerpf(1.0, data.ads_vm_scale, ads) * strength
 	recoil_pos.kick(Vector3(0.0, data.vm_kick_back * 0.12, data.vm_kick_back) * s)

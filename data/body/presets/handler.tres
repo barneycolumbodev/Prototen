@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="BodyLoadout" load_steps=11 format=3]
+
+[ext_resource type="Script" path="res://src/body/body_loadout.gd" id="1"]
+[ext_resource type="Script" path="res://src/body/part_data.gd" id="2"]
+[ext_resource type="Resource" path="res://data/body/parts/cs1_carapace.tres" id="p0"]
+[ext_resource type="Resource" path="res://data/body/parts/nl3_cortical_uplink.tres" id="p1"]
+[ext_resource type="Resource" path="res://data/body/parts/sa2_synaptic_accelerator.tres" id="p2"]
+[ext_resource type="Resource" path="res://data/body/parts/pc3_power_cell.tres" id="p3"]
+[ext_resource type="Resource" path="res://data/body/parts/fb1_fuel_bladder.tres" id="p4"]
+[ext_resource type="Resource" path="res://data/body/parts/rx9_reflex_overclock.tres" id="p5"]
+[ext_resource type="Resource" path="res://data/body/parts/sd3_shrike_drone.tres" id="p6"]
+[ext_resource type="Resource" path="res://data/body/parts/ad2_arc_projector.tres" id="p7"]
+
+[resource]
+script = ExtResource("1")
+display_name = "Handler"
+description = "Fights from somewhere else: the cortical uplink flies the Shrike out to 120 m, the power cell and fuel bladder feed the arc projector (four links in the chain), RX-9 for when they find you."
+parts = Array[ExtResource("2")]([ExtResource("p0"), ExtResource("p1"), ExtResource("p2"), ExtResource("p3"), ExtResource("p4"), ExtResource("p5"), ExtResource("p6"), ExtResource("p7")])

@@ -6,7 +6,7 @@ config_version=5
 [application]
 
 config/name="GRAFT"
-run/main_scene="res://src/levels/test_room.tscn"
+run/main_scene="res://src/levels/chinatown/chinatown.tscn"
 config/description="Prototype: augmented-soldier FPS for Android with a controller."
 config/version="0.0.1"
 config/features=PackedStringArray("4.7", "Mobile")
@@ -25,6 +25,8 @@ Ballistics="*res://src/weapons/ballistics.gd"
 TimeControl="*res://src/core/time_control.gd"
 Fx="*res://src/vfx/fx.gd"
 Sfx="*res://src/audio/sfx.gd"
+Gore="*res://src/gore/gore.gd"
+RagdollBudget="*res://src/gore/ragdoll_budget.gd"
 
 [debug]
 
@@ -57,6 +59,9 @@ pointing/emulate_touch_from_mouse=false
 3d_physics/layer_3="hitbox"
 3d_physics/layer_4="props"
 3d_physics/layer_5="debris"
+3d_physics/layer_6="ragdoll"
+3d_physics/layer_7="enemy"
+3d_physics/layer_8="clip"
 
 [physics]
 
@@ -74,3 +79,5 @@ scaling_3d/scale=1.0
 lights_and_shadows/directional_shadow/size=2048
 lights_and_shadows/directional_shadow/soft_shadow_filter_quality=1
 environment/defaults/default_clear_color=Color(0.08, 0.09, 0.1, 1)
+occlusion_culling/use_occlusion_culling=true
+mesh_lod/lod_change/threshold_pixels=2.0

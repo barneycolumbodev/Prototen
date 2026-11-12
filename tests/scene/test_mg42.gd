@@ -32,7 +32,7 @@ func _switch_to_mg() -> void:
 	await wait_seconds(weapon.loadout[0].holster_time + mg.draw_time + 0.2)
 
 
-func test_y_switches_to_the_mg42_and_round_to_the_pistol() -> void:
+func test_y_switches_to_the_mg42_and_back() -> void:
 	assert_eq(weapon.data.display_name, "Five-seveN SR")
 	await _switch_to_mg()
 	assert_eq(weapon.data.display_name, "MG42/A")
@@ -40,16 +40,18 @@ func test_y_switches_to_the_mg42_and_round_to_the_pistol() -> void:
 	assert_true(weapon.rig().visible)
 	assert_false(weapon.slots[0].rig.visible, "pistol put away")
 	assert_eq(weapon.mechanism.loaded(), 150)
-	# Y cycles the loadout: MG42 -> Saiga-12K -> pistol.
-	for i: int in 2:
-		Input.action_press(&"switch_weapon")
-		await wait_physics_frames(2)
-		Input.action_release(&"switch_weapon")
-		await wait_seconds(weapon.data.holster_time + weapon.loadout[(weapon.current + 1) % 3].draw_time + 0.2)
+	# A tap on Y swaps back to the gun you had before (hold Y for the weapon wheel).
+	Input.action_press(&"switch_weapon")
+	await wait_physics_frames(2)
+	Input.action_release(&"switch_weapon")
+	await wait_seconds(weapon.loadout[1].holster_time + weapon.loadout[0].draw_time + 0.2)
 	assert_eq(weapon.data.display_name, "Five-seveN SR")
 
 
 func test_mg42_slows_you_down() -> void:
+	# Walking speeds (full tilt would auto-sprint).
+	player.movement = player.movement.duplicate() as MovementConfig
+	player.movement.auto_sprint = false
 	Input.action_press(&"move_forward")
 	await wait_seconds(0.8)
 	var pistol_speed: float = Vector2(player.velocity.x, player.velocity.z).length()
@@ -58,7 +60,10 @@ func test_mg42_slows_you_down() -> void:
 	Input.action_press(&"move_forward")
 	await wait_seconds(0.8)
 	var mg_speed: float = Vector2(player.velocity.x, player.velocity.z).length()
-	assert_almost_eq(mg_speed / pistol_speed, weapon.data.carry_speed_scale, 0.03,
+	# The penalty shrinks with the body's carry stat (TL-3 in the default loadout).
+	assert_lt(weapon.carry_scale(weapon.data.carry_speed_scale), 1.0)
+	assert_gt(weapon.carry_scale(weapon.data.carry_speed_scale), weapon.data.carry_speed_scale, "TL-3 carries some of it")
+	assert_almost_eq(mg_speed / pistol_speed, weapon.carry_scale(weapon.data.carry_speed_scale), 0.03,
 			"walk speed scaled by the carry penalty (%.2f vs %.2f m/s)" % [mg_speed, pistol_speed])
 	assert_lt(player.sprint_scale, 1.0)
 	assert_lt(player.jump_scale, 1.0)

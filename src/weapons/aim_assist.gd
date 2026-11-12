@@ -47,12 +47,16 @@ func apply(player: Player, rate: Vector2, delta: float) -> Vector2:
 	if best_angle == INF:
 		return rate
 	on_target = true
-	var out: Vector2 = rate * lerpf(config.slowdown, 1.0, best_angle / best_radius)
+	# The body's perception stat (target tracking, docs/design.md §3.6) scales
+	# how much the assist slows and pulls.
+	var perc: float = player.body.stat(&"perception") if player.body else 1.0
+	var slow: float = clampf(1.0 - (1.0 - config.slowdown) * perc, 0.05, 1.0)
+	var out: Vector2 = rate * lerpf(slow, 1.0, best_angle / best_radius)
 	# Pull while aimed, only when the player is moving the stick.
 	if ads > 0.5 and rate.length() > config.pull_needs_input and best_angle < config.pull_radius_deg * clampf(10.0 / eye.distance_to(best), 0.35, 2.5):
 		var local: Vector3 = cam.global_basis.inverse() * (best - eye)
 		var want: Vector2 = Vector2(rad_to_deg(atan2(local.x, -local.z)), -rad_to_deg(atan2(local.y, -local.z)))
-		var step: Vector2 = want.limit_length(config.pull_deg_s * ads * delta)
+		var step: Vector2 = want.limit_length(config.pull_deg_s * perc * ads * delta)
 		out += step / maxf(delta, 0.0001)
 	return out
 
