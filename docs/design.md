@@ -303,7 +303,7 @@ The owner described two combinations. They are benchmarks for the systems, built
 
 ### 4.5a Glock 22 with a switch
 
-Owner, 2026-11-12: a Glock with a dropped-in auto sear, chambered in .40 S&W, at a realistic but high fire rate. Full auto at 1,200 rpm (switched Glocks run about 1,100–1,300), a 22-round factory extended magazine (empty in about 1.1 s), 180 gr at 300 m/s. Hits harder per round than the Five-seveN but penetrates less; the muzzle climbs hard and walks sideways, so it's a close-range room-clearer. Unsuppressed, with its own synthesized shot (`raw_assets/audio/build_glock_sfx.py`). Tuning in `data/weapons/glock22.tres`; sixth slot on the wheel. Placeholder: uses the Five-seveN model and arms until its own model is built.
+Owner, 2026-11-12: a Glock with a dropped-in auto sear, chambered in .40 S&W, at a realistic but high fire rate. Full auto at 1,200 rpm (switched Glocks run about 1,100–1,300), a 22-round factory extended magazine (empty in about 1.1 s), 180 gr at 300 m/s. Hits harder per round than the Five-seveN but penetrates less; the muzzle climbs hard and walks sideways, so it's a close-range room-clearer. Unsuppressed, with its own synthesized shot (`raw_assets/audio/build_glock_sfx.py`). Tuning in `data/weapons/glock22.tres`; sixth slot on the wheel. Model: `raw_assets/weapons/glock22/build.py` (black polymer frame and nitride slide, night sights, the switch as a back plate with a selector lever on the slide, the 22-round magazine sticking out below the grip). It is built on the Five-seveN's grip frame and sight line, so it shares the pistol arms and ADS eye point.
 
 ### 4.6 Weapon wheel and reticles
 

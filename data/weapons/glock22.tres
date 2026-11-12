@@ -1,7 +1,7 @@
 [gd_resource type="Resource" script_class="WeaponData" load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://src/weapons/weapon_data.gd" id="1"]
-[ext_resource type="Texture2D" path="res://assets/ui/weapon_icons/pistol_57.png" id="wheel_icon"]
+[ext_resource type="Texture2D" path="res://assets/ui/weapon_icons/glock22.png" id="wheel_icon"]
 
 [resource]
 script = ExtResource("1")
@@ -70,7 +70,7 @@ bob_rate = 1.9
 land_dip = 0.006
 pose_spring_hz = 4.5
 pose_spring_damping = 0.85
-muzzle_point = Vector3(0.284, 0.0, 0.0)
+muzzle_point = Vector3(0.094, 0.0, 0.0)
 ejection_point = Vector3(0.012, 0.018, 0.006)
 ejection_velocity = Vector3(-0.6, 1.6, 2.6)
 flash_scale = 0.85
