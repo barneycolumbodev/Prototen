@@ -21,6 +21,7 @@
 [ext_resource type="Resource" path="res://data/player/viewmodel_mp5.tres" id="19_vmmp5"]
 [ext_resource type="PackedScene" path="res://assets/weapons/mp5/mp5.gltf" id="20_mp5"]
 [ext_resource type="PackedScene" path="res://assets/characters/fp_arms_mp5/fp_arms_mp5.gltf" id="21_armsmp5"]
+[ext_resource type="PackedScene" path="res://assets/weapons/glock22/glock22.gltf" id="40_glock"]
 
 [sub_resource type="CapsuleShape3D" id="capsule"]
 radius = 0.4
@@ -75,6 +76,11 @@ visible = false
 script = ExtResource("2_rig")
 config = ExtResource("19_vmmp5")
 models = Array[PackedScene]([ExtResource("20_mp5"), ExtResource("21_armsmp5")])
+[node name="ViewmodelGlock" type="Node3D" parent="Head/Camera3D"]
+visible = false
+script = ExtResource("2_rig")
+config = ExtResource("3_vmcfg")
+models = Array[PackedScene]([ExtResource("40_glock"), ExtResource("5_arms")])
 
 [node name="Weapon" type="Node" parent="."]
 script = ExtResource("6_weapon")

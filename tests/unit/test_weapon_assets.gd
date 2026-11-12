@@ -54,7 +54,7 @@ func test_textures_are_vram_compressed() -> void:
 			"res://assets/weapons/rail_carbine/textures/rail_carbine",
 			"res://assets/characters/fp_arms_rail/textures/fp_arms_rail",
 			"res://assets/weapons/m14p/textures/m14p", "res://assets/characters/fp_arms_m14p/textures/fp_arms_m14p",
-			"res://assets/weapons/mp5/textures/mp5",
+			"res://assets/weapons/mp5/textures/mp5", "res://assets/weapons/glock22/textures/glock22",
 			"res://assets/characters/operative/textures/operative", "res://assets/characters/operative/textures/operative_head"]:
 		for name: String in ["basecolor", "orm", "normal", "emission"]:
 			if prefix.ends_with("operative_head") and name == "emission":
@@ -158,6 +158,25 @@ func test_mp5_parts_budget_and_baked_material() -> void:
 	assert_between(tris, 8000, 25000, "first-person MP5 (%d tris)" % tris)
 
 
+func test_glock22_parts_budget_and_baked_material() -> void:
+	var gun: Node = (load("res://assets/weapons/glock22/glock22.gltf") as PackedScene).instantiate()
+	# Body plus the parts the game drives: the slide (with the switch on its back) and the magazine.
+	for part: String in ["body", "slide", "magazine"]:
+		assert_true(gun.find_child(part, true, false) != null, "has a %s node" % part)
+	var meshes: Array[MeshInstance3D] = _meshes(gun)
+	var mat: StandardMaterial3D = meshes[0].mesh.surface_get_material(0) as StandardMaterial3D
+	for mi: MeshInstance3D in meshes:
+		assert_eq(mi.mesh.surface_get_material(0), mat, "one shared material")
+	assert_not_null(mat.albedo_texture)
+	assert_not_null(mat.normal_texture)
+	assert_not_null(mat.roughness_texture)
+	assert_not_null(mat.metallic_texture, "steel slide vs polymer frame comes from the metal map")
+	assert_not_null(mat.emission_texture, "tritium night sights")
+	var tris: int = _tris(gun)
+	gun.free()
+	assert_between(tris, 8000, 16000, "first-person Glock 22 (%d tris)" % tris)
+
+
 func test_m14p_arms_budget() -> void:
 	var arms: Node = (load("res://assets/characters/fp_arms_m14p/fp_arms_m14p.gltf") as PackedScene).instantiate()
 	var tris: int = _tris(arms)
@@ -166,7 +185,7 @@ func test_m14p_arms_budget() -> void:
 
 
 func test_every_gun_has_a_wheel_icon() -> void:
-	for path: String in ["pistol_57", "mg42", "saiga12k", "rail_carbine", "m14p", "mp5"]:
+	for path: String in ["pistol_57", "mg42", "saiga12k", "rail_carbine", "m14p", "mp5", "glock22"]:
 		var d: WeaponData = load("res://data/weapons/%s.tres" % path) as WeaponData
 		assert_not_null(d.icon, "%s has a weapon wheel icon" % path)
 
