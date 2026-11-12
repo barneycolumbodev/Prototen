@@ -1,7 +1,7 @@
 class_name PlayerWeapon
 extends Node
 ## The player's guns (docs/m1-gunplay-plan.md). Holds a small loadout (the
-## suppressed pistol, the MG42, the Saiga-12K, the RC-6 rail carbine and the M14/P), one viewmodel rig per gun. Reads the
+## suppressed pistol, the MG42, the Saiga-12K, the RC-6 rail carbine, the M14/P and the switched Glock 22), one viewmodel rig per gun. Reads the
 ## controller, runs the active gun's GunMechanism, fires rounds through
 ## Ballistics from the eye (so the round goes exactly where the crosshair or
 ## sights point, plus the gun's spread), and drives every piece of feedback:
@@ -74,9 +74,11 @@ class Slot:
 	preload("res://data/weapons/saiga12k.tres"),
 	preload("res://data/weapons/rail_carbine.tres"),
 	preload("res://data/weapons/m14p.tres"),
+	preload("res://data/weapons/glock22.tres"),
 ]
 @export var rig_paths: Array[NodePath] = [^"../Head/Camera3D/Viewmodel", ^"../Head/Camera3D/ViewmodelMG42",
-		^"../Head/Camera3D/ViewmodelSaiga", ^"../Head/Camera3D/ViewmodelRail", ^"../Head/Camera3D/ViewmodelM14"]
+		^"../Head/Camera3D/ViewmodelSaiga", ^"../Head/Camera3D/ViewmodelRail", ^"../Head/Camera3D/ViewmodelM14",
+		^"../Head/Camera3D/ViewmodelGlock"]
 @export var input_enabled: bool = true
 @export var wheel_config: WeaponWheelConfig = preload("res://data/input/weapon_wheel.tres")
 

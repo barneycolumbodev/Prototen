@@ -67,5 +67,11 @@ script = ExtResource("2_rig")
 config = ExtResource("16_vmm14")
 models = Array[PackedScene]([ExtResource("17_m14"), ExtResource("18_armsm14")])
 
+[node name="ViewmodelGlock" type="Node3D" parent="Head/Camera3D"]
+visible = false
+script = ExtResource("2_rig")
+config = ExtResource("3_vmcfg")
+models = Array[PackedScene]([ExtResource("4_pistol"), ExtResource("5_arms")])
+
 [node name="Weapon" type="Node" parent="."]
 script = ExtResource("6_weapon")

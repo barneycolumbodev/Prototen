@@ -301,6 +301,10 @@ The owner described two combinations. They are benchmarks for the systems, built
 - Owner (2026-11-02): "a black polymer M14 style battle rifle, with a suppressor and stubby foregrip."
 - Built *(Claude's reading)*: an M14 action in a one-piece black polymer stock with a pistol grip, after the M14A1 (which had a pistol-grip stock and a forward grip): open-top receiver with the bolt visible, op rod and charging handle on the right, rear aperture sight, ventilated upper handguard, front band, gas cylinder, a front sight post on the gas lock (the can covers the flash suppressor's), 20-round box magazine, steel butt plate, a stubby vertical grip on a short rail, and a suppressor. 7.62×51 ball (9.5 g, 850 m/s, 3.4 kJ), semi-auto, 20+1; heavy but controllable kick. Values in `data/weapons/m14p.tres`.
 
+### 4.5a Glock 22 with a switch
+
+Owner, 2026-11-12: a Glock with a dropped-in auto sear, chambered in .40 S&W, at a realistic but high fire rate. Full auto at 1,200 rpm (switched Glocks run about 1,100–1,300), a 22-round factory extended magazine (empty in about 1.1 s), 180 gr at 300 m/s. Hits harder per round than the Five-seveN but penetrates less; the muzzle climbs hard and walks sideways, so it's a close-range room-clearer. Unsuppressed, with its own synthesized shot (`raw_assets/audio/build_glock_sfx.py`). Tuning in `data/weapons/glock22.tres`; sixth slot on the wheel. Placeholder: uses the Five-seveN model and arms until its own model is built.
+
 ### 4.6 Weapon wheel and reticles
 
 - Owner (2026-11-02): "I need a weapon wheel for now so I can have both the shotgun and the rail carbine." **Y:** a tap goes back to the previous gun; holding it opens the wheel (time slows to 30 %, the right stick points at a gun, letting go draws it). Tuning in `data/input/weapon_wheel.tres`.
