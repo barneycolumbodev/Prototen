@@ -151,83 +151,83 @@
 		{
 			"bufferView":0,
 			"componentType":5126,
-			"count":2079,
+			"count":10790,
 			"max":[
-				0.09149999916553497,
-				0.016499999910593033,
-				0.016031941398978233
+				0.09230000525712967,
+				0.009800000116229057,
+				0.01560852862894535
 			],
 			"min":[
-				-0.11308959126472473,
-				-0.1371999979019165,
-				-0.01679999940097332
+				-0.10038299113512039,
+				-0.11982972174882889,
+				-0.015605240128934383
 			],
 			"type":"VEC3"
 		},
 		{
 			"bufferView":1,
 			"componentType":5126,
-			"count":2079,
+			"count":10790,
 			"type":"VEC3"
 		},
 		{
 			"bufferView":2,
 			"componentType":5126,
-			"count":2079,
+			"count":10790,
 			"type":"VEC2"
 		},
 		{
 			"bufferView":3,
 			"componentType":5123,
-			"count":5382,
+			"count":30390,
 			"type":"SCALAR"
 		},
 		{
 			"bufferView":4,
 			"componentType":5126,
-			"count":491,
+			"count":1676,
 			"max":[
-				-0.068400539457798,
-				-0.12721171975135803,
-				0.01360000018030405
+				-0.027586555108428,
+				-0.016555186361074448,
+				0.012400001287460327
 			],
 			"min":[
-				-0.1290999948978424,
-				-0.18650001287460327,
-				-0.01360000018030405
+				-0.10951268672943115,
+				-0.1607981026172638,
+				-0.012400001287460327
 			],
 			"type":"VEC3"
 		},
 		{
 			"bufferView":5,
 			"componentType":5126,
-			"count":491,
+			"count":1676,
 			"type":"VEC3"
 		},
 		{
 			"bufferView":6,
 			"componentType":5126,
-			"count":491,
+			"count":1676,
 			"type":"VEC2"
 		},
 		{
 			"bufferView":7,
 			"componentType":5123,
-			"count":1440,
+			"count":3816,
 			"type":"SCALAR"
 		},
 		{
 			"bufferView":8,
 			"componentType":5126,
-			"count":2627,
+			"count":4636,
 			"max":[
-				0.09300000220537186,
-				0.027249999344348907,
-				0.019500000402331352
+				0.09299999475479126,
+				0.016499999910593033,
+				0.018917158246040344
 			],
 			"min":[
-				-0.10700000077486038,
-				-0.009999999776482582,
+				-0.10082000494003296,
+				-0.01850000023841858,
 				-0.012749999761581421
 			],
 			"type":"VEC3"
@@ -235,93 +235,93 @@
 		{
 			"bufferView":9,
 			"componentType":5126,
-			"count":2627,
+			"count":4636,
 			"type":"VEC3"
 		},
 		{
 			"bufferView":10,
 			"componentType":5126,
-			"count":2627,
+			"count":4636,
 			"type":"VEC2"
 		},
 		{
 			"bufferView":11,
 			"componentType":5123,
-			"count":4548,
+			"count":8868,
 			"type":"SCALAR"
 		}
 	],
 	"bufferViews":[
 		{
 			"buffer":0,
-			"byteLength":24948,
+			"byteLength":129480,
 			"byteOffset":0,
 			"target":34962
 		},
 		{
 			"buffer":0,
-			"byteLength":24948,
-			"byteOffset":24948,
+			"byteLength":129480,
+			"byteOffset":129480,
 			"target":34962
 		},
 		{
 			"buffer":0,
-			"byteLength":16632,
-			"byteOffset":49896,
+			"byteLength":86320,
+			"byteOffset":258960,
 			"target":34962
 		},
 		{
 			"buffer":0,
-			"byteLength":10764,
-			"byteOffset":66528,
+			"byteLength":60780,
+			"byteOffset":345280,
 			"target":34963
 		},
 		{
 			"buffer":0,
-			"byteLength":5892,
-			"byteOffset":77292,
+			"byteLength":20112,
+			"byteOffset":406060,
 			"target":34962
 		},
 		{
 			"buffer":0,
-			"byteLength":5892,
-			"byteOffset":83184,
+			"byteLength":20112,
+			"byteOffset":426172,
 			"target":34962
 		},
 		{
 			"buffer":0,
-			"byteLength":3928,
-			"byteOffset":89076,
+			"byteLength":13408,
+			"byteOffset":446284,
 			"target":34962
 		},
 		{
 			"buffer":0,
-			"byteLength":2880,
-			"byteOffset":93004,
+			"byteLength":7632,
+			"byteOffset":459692,
 			"target":34963
 		},
 		{
 			"buffer":0,
-			"byteLength":31524,
-			"byteOffset":95884,
+			"byteLength":55632,
+			"byteOffset":467324,
 			"target":34962
 		},
 		{
 			"buffer":0,
-			"byteLength":31524,
-			"byteOffset":127408,
+			"byteLength":55632,
+			"byteOffset":522956,
 			"target":34962
 		},
 		{
 			"buffer":0,
-			"byteLength":21016,
-			"byteOffset":158932,
+			"byteLength":37088,
+			"byteOffset":578588,
 			"target":34962
 		},
 		{
 			"buffer":0,
-			"byteLength":9096,
-			"byteOffset":179948,
+			"byteLength":17736,
+			"byteOffset":615676,
 			"target":34963
 		}
 	],
@@ -333,7 +333,7 @@
 	],
 	"buffers":[
 		{
-			"byteLength":189044,
+			"byteLength":633412,
 			"uri":"glock22.bin"
 		}
 	]

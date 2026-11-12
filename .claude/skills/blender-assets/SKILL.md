@@ -39,3 +39,13 @@ See perf-budget. Keep first-person weapons under ~15k triangles at LOD0 and enem
 - Export glTF **separate** (`.gltf` + `.bin` + `textures/`) so Godot imports each texture on its own.
 - After the first import, set every texture's `.import` to `compress/mode=2` (VRAM, ETC2/ASTC), `mipmaps/generate=true`, and `compress/normal_map=1` on normal maps. Godot's headless import defaults to lossless. `tests/unit/test_weapon_assets.gd` checks this.
 - Check it in-engine: `tools/screenshot.sh res://src/levels/lookdev/weapon_lookdev.tscn /tmp/shots`.
+
+## Sculpted (SDF) parts and bake pitfalls (reference: raw_assets/weapons/glock22/build.py)
+
+- Moulded polymer (frames, grips) reads best as one `raw_assets/_lib/sdf.py` sculpt with smooth unions; steel stays hard-surface.
+- Offset the SDF grid by odd fractions of a cell. A flat face that lands exactly on a grid plane makes the mesher emit stair-step slivers, which show up as noise, fake wear and black bake wedges.
+- LOW from a sculpt: mesh a coarser grid (~0.9 mm) and decimate once, without the symmetry option. Finer bases, symmetry and multi-pass decimation fold triangles over each other (z-fighting slivers). The Glock's `--diagnose` counts folds.
+- Parts that sit within a few mm of each other (slide on frame, magazine in grip): explode them apart for the bake, or rays pick up the neighbour's surface (olive/yellow islands in the normal map).
+- On LOW: clear custom normals, mark sharp by angle (~35°), unwrap with the same angle, then area-weighted normals. Long triangles otherwise smear gradients across flat faces.
+- No pointiness edge-wear on sculpted meshes; the fine mesh noise reads as speckled wear.
+- A grip texture from a 3D voronoi goes flat wherever a curved surface slices between cell centres. Project a 2D pattern three ways (triplanar).
