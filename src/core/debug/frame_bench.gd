@@ -8,6 +8,10 @@ signal finished(result: Dictionary)
 
 var _frame_ms: PackedFloat32Array = PackedFloat32Array()
 var _gpu_ms: PackedFloat32Array = PackedFloat32Array()
+## Render CPU time (culling, draw lists, driver) on the render thread.
+var _cpu_ms: PackedFloat32Array = PackedFloat32Array()
+var _prims: PackedFloat32Array = PackedFloat32Array()
+var _draws: PackedFloat32Array = PackedFloat32Array()
 var _duration: float = 0.0
 var _elapsed: float = 0.0
 var _running: bool = false
@@ -27,6 +31,9 @@ func progress() -> float:
 func start(duration_sec: float) -> void:
 	_frame_ms.clear()
 	_gpu_ms.clear()
+	_cpu_ms.clear()
+	_prims.clear()
+	_draws.clear()
 	_duration = duration_sec
 	_elapsed = 0.0
 	_running = true
@@ -46,6 +53,11 @@ func _process(delta: float) -> void:
 	var gpu: float = RenderingServer.viewport_get_measured_render_time_gpu(get_viewport().get_viewport_rid())
 	if gpu > 0.0:
 		_gpu_ms.append(gpu)
+	var cpu: float = RenderingServer.viewport_get_measured_render_time_cpu(get_viewport().get_viewport_rid())
+	if cpu > 0.0:
+		_cpu_ms.append(cpu)
+	_prims.append(Performance.get_monitor(Performance.RENDER_TOTAL_PRIMITIVES_IN_FRAME))
+	_draws.append(Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME))
 	if _elapsed >= _duration:
 		_finish()
 
@@ -56,6 +68,9 @@ func _finish() -> void:
 	Settings.adaptive.held = _saved_held
 	var result: Dictionary = summarize(_frame_ms)
 	result["gpu_avg_ms"] = _mean(_gpu_ms)
+	result["render_cpu_avg_ms"] = _mean(_cpu_ms)
+	result["prims_avg"] = _mean(_prims)
+	result["draws_avg"] = _mean(_draws)
 	result["renderer"] = RenderingServer.get_current_rendering_method()
 	result["driver"] = RenderingServer.get_current_rendering_driver_name()
 	result["gpu"] = RenderingServer.get_video_adapter_name()

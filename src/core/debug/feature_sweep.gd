@@ -15,8 +15,12 @@ const SETTLE_SECONDS: float = 1.0
 ## [label, features switched off, render scale (0 = the scale it started at)].
 ## 2026-11-07: rows for the gun model and two fixed resolutions, so the next
 ## round shows how much the frame scales with pixels on the phone.
+## 2026-11-12: three rows with ten triad men standing round the spot, so the
+## phone measures what the men cost and what their LODs save.
 const STEPS: Array = [
 	["all on", [], 0.0],
+	["+10 men", [&"+men"]],
+	["+10 men, no LODs", [&"+men", &"+men_full"]],
 	["reflections off", [&"probes"]],
 	["bloom off", [&"glow"]],
 	["water streaks off", [&"water_streaks"]],
@@ -25,14 +29,21 @@ const STEPS: Array = [
 	["steam off", [&"steam"]],
 	["fog off", [&"fog"]],
 	["gun hidden", [&"viewmodel"]],
+	["HUD hidden", [&"hud"]],
 	["all on @ 100% res", [], 1.0],
 	["all on @ 70% res", [], 0.7],
+	["all on @ 50% res", [], 0.5],
 ]
 
 var atmos: NightAtmosphere
+## Puts the men for the "+10 men" rows in place (the level sets it) and
+## returns them; they're freed when the sweep ends.
+var spawn_men: Callable
+var _men: Array[Node3D] = []
 ## Hidden for the "gun hidden" row: the first-person rigs and their fill light.
 var viewmodel: Array[Node3D] = []
 var _vm_saved: Dictionary[Node3D, bool] = {}
+var _hud_saved: Dictionary[CanvasLayer, bool] = {}
 var _start_scale: float = 1.0
 var bench: FrameBench
 var rows: Array[Dictionary] = []
@@ -55,6 +66,9 @@ func start() -> void:
 	_i = 0
 	_start_scale = get_tree().root.scaling_3d_scale
 	Settings.adaptive.held = true
+	# Placed now and hidden: their meshes bake in the background during the
+	# first row, so the men rows measure the LODs.
+	_show_men(false, false)
 	_begin_step()
 
 
@@ -62,13 +76,23 @@ func _begin_step() -> void:
 	for f: StringName in NightAtmosphere.FEATURES:
 		atmos.set_feature(f, true)
 	_show_viewmodel(true)
+	_show_hud(true)
 	var step: Array = STEPS[_i]
 	var off: Array = step[1]
+	var men: bool = false
+	var full: bool = false
 	for f: StringName in off:
 		if f == &"viewmodel":
 			_show_viewmodel(false)
+		elif f == &"hud":
+			_show_hud(false)
+		elif f == &"+men":
+			men = true
+		elif f == &"+men_full":
+			full = true
 		else:
 			atmos.set_feature(f, false)
+	_show_men(men, full)
 	var s: float = step[2] if step.size() > 2 else 0.0
 	get_tree().root.scaling_3d_scale = s if s > 0.0 else _start_scale
 	_settle = SETTLE_SECONDS
@@ -81,6 +105,45 @@ func _process(delta: float) -> void:
 	if _settle <= 0.0:
 		bench.finished.connect(_on_step_done, CONNECT_ONE_SHOT)
 		bench.start(STEP_SECONDS)
+
+
+## The men in view or hidden (placed on the first call); `full`: every LOD off.
+func _show_men(on: bool, full: bool) -> void:
+	if _men.is_empty() and spawn_men.is_valid():
+		var made: Array = spawn_men.call()
+		for n: Variant in made:
+			if n is Node3D:
+				var nd: Node3D = n
+				_men.append(nd)
+	for m: Node3D in _men:
+		if not is_instance_valid(m):
+			continue
+		m.visible = on
+		for g: Node in m.find_children("*", "GeometryInstance3D", true, false):
+			(g as GeometryInstance3D).lod_bias = 1000.0 if full else 1.0
+
+
+func _free_men() -> void:
+	for m: Node3D in _men:
+		if is_instance_valid(m):
+			m.queue_free()
+	_men.clear()
+
+
+## Hides every 2D layer (HUD, menus) but the debug overlay, or puts them back.
+func _show_hud(on: bool) -> void:
+	if not on:
+		for n: Node in get_tree().root.find_children("*", "CanvasLayer", true, false):
+			var cl: CanvasLayer = n as CanvasLayer
+			if cl.layer >= 100 or cl == _layer:
+				continue
+			_hud_saved[cl] = cl.visible
+			cl.visible = false
+		return
+	for cl: CanvasLayer in _hud_saved:
+		if is_instance_valid(cl):
+			cl.visible = _hud_saved[cl]
+	_hud_saved.clear()
 
 
 ## Hides the rigs (remembering which were showing), or puts them back.
@@ -108,6 +171,8 @@ func progress() -> float:
 
 func _on_step_done(result: Dictionary) -> void:
 	rows.append({"step": STEPS[_i][0], "gpu_ms": result.get("gpu_avg_ms", 0.0), "frame_ms": result.get("avg_ms", 0.0),
+		"cpu_ms": result.get("render_cpu_avg_ms", 0.0), "prims": result.get("prims_avg", 0.0),
+		"draws": result.get("draws_avg", 0.0),
 		"p95_ms": result.get("p95_ms", 0.0), "scale": get_tree().root.scaling_3d_scale})
 	_i += 1
 	if _i < STEPS.size():
@@ -118,6 +183,8 @@ func _on_step_done(result: Dictionary) -> void:
 		atmos.set_feature(f, true)
 	atmos.set_feature(&"glow", Settings.bloom)
 	_show_viewmodel(true)
+	_show_hud(true)
+	_free_men()
 	get_tree().root.scaling_3d_scale = _start_scale
 	Settings.adaptive.held = false
 	_save()
@@ -137,14 +204,20 @@ static func format_rows(r: Array[Dictionary]) -> String:
 	var base_gpu: float = r[0]["gpu_ms"]
 	var base_frame: float = r[0]["frame_ms"]
 	var lines: PackedStringArray = PackedStringArray()
-	lines.append("MAP COST TEST  (GPU ms per frame; saving vs all on; res %d%%)" % roundi(_scale_of(r[0]) * 100.0))
+	var base_cpu: float = r[0].get("cpu_ms", 0.0)
+	lines.append("MAP COST TEST  (ms per frame; change vs all on; res %d%%)" % roundi(_scale_of(r[0]) * 100.0))
 	for row: Dictionary in r:
 		var g: float = row["gpu_ms"]
 		var f: float = row["frame_ms"]
+		var c: float = row.get("cpu_ms", 0.0)
+		var tris: float = row.get("prims", 0.0)
+		var draws: float = row.get("draws", 0.0)
+		var counts: String = "  %4dk tris %3d draws" % [roundi(tris / 1000.0), roundi(draws)]
 		if row == r[0]:
-			lines.append("%-20s gpu %5.1f   frame %5.1f" % [row["step"], g, f])
+			lines.append("%-17s gpu %5.1f         rcpu %4.1f         frame %5.1f        " % [row["step"], g, c, f] + counts)
 		else:
-			lines.append("%-20s gpu %5.1f (%+.1f)   frame %5.1f (%+.1f)" % [row["step"], g, g - base_gpu, f, f - base_frame])
+			lines.append("%-17s gpu %5.1f (%+5.1f) rcpu %4.1f (%+4.1f) frame %5.1f (%+5.1f)" % [row["step"], g, g - base_gpu,
+					c, c - base_cpu, f, f - base_frame] + counts)
 	lines.append("Screenshot this for Claude. Pause to close.")
 	return "\n".join(lines)
 

@@ -30,6 +30,10 @@ var _timer: float = 0.0
 var _restart: float = -1.0
 var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
 var _recent: Array[int] = []
+## Looks picked ahead per role, their meshes building in the background
+## (TriadMeshBaker), so a spawn costs no merge on the main thread.
+var _looks: Dictionary[String, Array] = {}
+const LOOKS_AHEAD: int = 2
 
 
 func _ready() -> void:
@@ -54,6 +58,9 @@ func start() -> void:
 	kills = 0
 	spawned_total = 0
 	_queue = config.start_count
+	# The first wave: enough of each role in the oven for the opening spawns.
+	for role: String in ["gunman", "enforcer", "red_pole"]:
+		_fill_looks(role, LOOKS_AHEAD + (config.start_count if role == "gunman" else 1))
 	_timer = 0.5
 	_emit()
 
@@ -182,6 +189,7 @@ func _occupied(p: Vector3) -> bool:
 func _spawn(role: String, at: Vector3) -> Enemy:
 	var e: Enemy = Enemy.new()
 	e.config = load("res://data/enemies/%s.tres" % role) as EnemyConfig
+	e.look = _take_look(role)
 	squad.add(e)
 	level.add_child(e)
 	# A little jitter so repeat spawns don't stack, but never into view: at a
@@ -207,6 +215,26 @@ func _spawn(role: String, at: Vector3) -> Enemy:
 	_cleanup()
 	spawned.emit(e)
 	return e
+
+
+## The next look for `role` (picked ahead), and another put in the oven.
+func _take_look(role: String) -> TriadLook:
+	_fill_looks(role, LOOKS_AHEAD + 1)
+	var list: Array = _looks[role]
+	var look: TriadLook = list.pop_front()
+	_fill_looks(role, LOOKS_AHEAD)
+	return look
+
+
+func _fill_looks(role: String, count: int) -> void:
+	if not _looks.has(role):
+		_looks[role] = []
+	var list: Array = _looks[role]
+	var cfg: EnemyConfig = load("res://data/enemies/%s.tres" % role) as EnemyConfig
+	while list.size() < count:
+		var look: TriadLook = TriadLook.pick(cfg.outfits, _rng)
+		TriadMeshBaker.prefetch(look, EnemyBody.source_meshes())
+		list.append(look)
 
 
 static var _blob_mesh: QuadMesh

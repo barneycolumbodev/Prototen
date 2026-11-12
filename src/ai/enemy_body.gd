@@ -117,6 +117,8 @@ static var _split_cache: Dictionary[String, ArrayMesh] = {}
 static var _gib_meshes: Dictionary[String, ArrayMesh] = {}
 ## Where each gib mesh's middle was in the rest pose (it's stored centred).
 static var _gib_centres: Dictionary[String, Vector3] = {}
+## The model's own meshes by node name (triad, part_body, part_head, vest...), read once.
+static var _sources: Dictionary[StringName, Mesh] = {}
 
 ## The enemy that owns this body (gets on_part_hit / on_part_burn).
 var owner_node: Node
@@ -148,6 +150,8 @@ var _wounds: PackedVector4Array = PackedVector4Array()
 var _wound_age: PackedFloat32Array = PackedFloat32Array()
 var _ragdoll_time: float = 0.0
 var _split: bool = false
+## Showing the synchronous merge (no LODs) until TriadMeshBaker's arrives.
+var _lod_wait: bool = false
 var _plates: Array[StaticBody3D] = []
 ## Bone attachments by bone name. Their transforms include the ragdoll and
 ## the aim layer (Skeleton3D.get_bone_global_pose() doesn't, outside modifiers).
@@ -183,6 +187,11 @@ func _ready() -> void:
 	pose.name = "EnemyPose"
 	skeleton.add_child(pose)
 	_setup_ragdoll()
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_PREDELETE:
+		TriadMeshBaker.release(look)
 
 
 # ------------------------------------------------------------------ public
@@ -443,6 +452,9 @@ func _process(delta: float) -> void:
 			freeze()
 		elif _ragdoll_time > RagdollBudget.FREEZE_AFTER * 2.0:
 			freeze()
+	if _lod_wait and TriadMeshBaker.is_settled(look):
+		_lod_wait = false
+		_swap_in_baked()
 	if not _wounds.is_empty():
 		for i: int in _wound_age.size():
 			_wound_age[i] += delta
@@ -633,18 +645,65 @@ func _split_mesh() -> void:
 
 
 ## The man and everything he wears, intact (before any cut). One mesh.
+## From TriadMeshBaker (with LODs) when it's ready; otherwise merged here
+## and swapped for the baked one when that arrives.
 func intact_mesh() -> ArrayMesh:
 	var key: String = look.key()
 	if _intact.has(key):
 		return _intact[key]
+	var baked: ArrayMesh = TriadMeshBaker.take(look, "I")
+	if baked:
+		_store(_intact, key, baked)
+		return baked
+	if TriadMeshBaker.enabled:
+		TriadMeshBaker.prefetch(look, source_meshes())
+		_lod_wait = true
 	var srcs: Array[Array] = [[&"triad", _meshes[&"triad"].mesh, 0, 0]]
 	for g: Garment in look.garments:
 		var name: StringName = StringName("w_" + String(g.mesh))
 		if _wardrobe.has(name):
 			srcs.append([name, _wardrobe[name], 0, int(g.slot)])
-	var m: ArrayMesh = _merge(srcs)
-	_store(_intact, key, m)
-	return m
+	# Not cached: the next man in these clothes gets the baked one.
+	return _merge(srcs)
+
+
+func _swap_in_baked() -> void:
+	if _split or gibbed:
+		return
+	var key: String = look.key()
+	var m: ArrayMesh = _intact.get(key)
+	if m == null:
+		m = TriadMeshBaker.take(look, "I")
+		if m == null:
+			return
+		_store(_intact, key, m)
+	_meshes[&"triad"].mesh = m
+
+
+## The model's source meshes by node name (main thread; read once).
+static func source_meshes() -> Dictionary[StringName, Mesh]:
+	if _sources.is_empty():
+		var root: Node = MODEL.instantiate()
+		var sk: Skeleton3D = root.find_child("Skeleton3D", true, false) as Skeleton3D
+		for c: Node in sk.get_children():
+			var mi: MeshInstance3D = c as MeshInstance3D
+			if mi and mi.mesh:
+				_sources[StringName(mi.name)] = mi.mesh
+		root.free()
+	return _sources
+
+
+## `segment` and everything below it, with nothing cut yet (the first cut's piece).
+static func intact_group(segment: StringName) -> Array[StringName]:
+	var out: Array[StringName] = [segment]
+	var i: int = 0
+	while i < out.size():
+		for seg: StringName in SEGMENT_ORDER:
+			var sp: Array = SEGMENTS[seg]
+			if sp[2] == out[i]:
+				out.append(seg)
+		i += 1
+	return out
 
 
 ## Every piece of the body and of what he wears, merged; CUSTOM0.w tells
@@ -653,6 +712,10 @@ func split_mesh() -> ArrayMesh:
 	var key: String = look.key()
 	if _split_cache.has(key):
 		return _split_cache[key]
+	var baked: ArrayMesh = TriadMeshBaker.take(look, "S")
+	if baked:
+		_store(_split_cache, key, baked)
+		return baked
 	var srcs: Array[Array] = []
 	for i: int in SEGMENT_ORDER.size() + 1:
 		var part: String = "body" if i == 0 else String(SEGMENT_ORDER[i - 1])
@@ -673,6 +736,12 @@ func gib_mesh(group: Array[StringName]) -> ArrayMesh:
 	var key: String = look.key() + "|" + ",".join(PackedStringArray(group))
 	if _gib_meshes.has(key):
 		return _gib_meshes[key]
+	var centre_out: Array[Vector3] = []
+	var baked: ArrayMesh = TriadMeshBaker.take(look, "G|" + ",".join(PackedStringArray(group)), centre_out)
+	if baked and not centre_out.is_empty():
+		_store(_gib_meshes, key, baked)
+		_gib_centres[key] = centre_out[0]
+		return baked
 	var srcs: Array[Array] = []
 	for seg: StringName in group:
 		var mi: MeshInstance3D = _meshes.get(SEGMENTS[seg][0])

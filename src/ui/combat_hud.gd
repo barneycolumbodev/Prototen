@@ -35,25 +35,63 @@ class Vignette:
 	var suppression: float = 0.0
 	var arcs: Array[Vector2] = []  # x = screen angle (0 = ahead/top), y = alpha
 
+	## The edge fade as textures: what STEPS stacked strips of falling alpha
+	## add up to (2026-11-12: the 40 strips blended about five full screens
+	## of pixels at the phone's native resolution in every fight; four
+	## textured strips cover a tenth of that and look the same).
+	const STEPS: int = 10
+	const PROFILE_TEXELS: int = 64
+	## Left, right, top, bottom: each fades from its screen edge inward.
+	var _edges: Array[ImageTexture] = []
+	var _profile_alpha: float = -1.0
+
 	func _draw() -> void:
 		var r: Rect2 = get_rect()
 		var c: Vector2 = r.size * 0.5
 		var a: float = clampf(hurt * 0.55 + suppression * 0.25, 0.0, 0.8)
 		if a > 0.01:
-			var col: Color = Color(0.55, 0.0, 0.0, a) if hurt >= suppression * 0.5 else Color(0.0, 0.0, 0.0, a)
-			var steps: int = 10
-			for i: int in steps:
-				var t: float = float(i) / steps
-				var w: float = (1.0 - t) * minf(r.size.x, r.size.y) * 0.16
-				var fade: Color = Color(col.r, col.g, col.b, col.a * (1.0 - t) * 0.22)
-				draw_rect(Rect2(0, 0, r.size.x, w), fade)
-				draw_rect(Rect2(0, r.size.y - w, r.size.x, w), fade)
-				draw_rect(Rect2(0, 0, w, r.size.y), fade)
-				draw_rect(Rect2(r.size.x - w, 0, w, r.size.y), fade)
+			var col: Color = Color(0.55, 0.0, 0.0, 1.0) if hurt >= suppression * 0.5 else Color(0.0, 0.0, 0.0, 1.0)
+			_update_edges(a)
+			var w: float = minf(r.size.x, r.size.y) * 0.16
+			draw_texture_rect(_edges[0], Rect2(0, 0, w, r.size.y), false, col)
+			draw_texture_rect(_edges[1], Rect2(r.size.x - w, 0, w, r.size.y), false, col)
+			draw_texture_rect(_edges[2], Rect2(0, 0, r.size.x, w), false, col)
+			draw_texture_rect(_edges[3], Rect2(0, r.size.y - w, r.size.x, w), false, col)
 		var rad: float = minf(r.size.x, r.size.y) * 0.24
 		for arc: Vector2 in arcs:
 			var ang: float = arc.x - PI * 0.5
 			draw_arc(c, rad, ang - 0.32, ang + 0.32, 18, Color(1.0, 0.18, 0.12, arc.y), 7.0, true)
+
+	## Alpha across a strip (x = 0 at the screen edge, 1 at its inner side)
+	## for overall alpha `a`: layer i covered the outer (1 - i/STEPS) of it at
+	## a × (1 - i/STEPS) × 0.22, blended over the ones before.
+	static func profile(a: float, x: float) -> float:
+		var keep: float = 1.0
+		for i: int in STEPS:
+			var t: float = float(i) / STEPS
+			if x < 1.0 - t:
+				keep *= 1.0 - a * (1.0 - t) * 0.22
+		return 1.0 - keep
+
+	func _update_edges(a: float) -> void:
+		if not _edges.is_empty() and absf(a - _profile_alpha) < 0.01:
+			return
+		_profile_alpha = a
+		var n: int = PROFILE_TEXELS
+		var imgs: Array[Image] = [Image.create(n, 1, false, Image.FORMAT_RGBA8), Image.create(n, 1, false, Image.FORMAT_RGBA8),
+				Image.create(1, n, false, Image.FORMAT_RGBA8), Image.create(1, n, false, Image.FORMAT_RGBA8)]
+		for j: int in n:
+			var v: Color = Color(1, 1, 1, profile(a, (j + 0.5) / n))
+			imgs[0].set_pixel(j, 0, v)
+			imgs[1].set_pixel(n - 1 - j, 0, v)
+			imgs[2].set_pixel(0, j, v)
+			imgs[3].set_pixel(0, n - 1 - j, v)
+		if _edges.is_empty():
+			for img: Image in imgs:
+				_edges.append(ImageTexture.create_from_image(img))
+		else:
+			for k: int in 4:
+				_edges[k].update(imgs[k])
 
 
 class HealthBar:

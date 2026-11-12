@@ -16,6 +16,14 @@ const MIN_SCALE: float = 0.6
 const STEP_UP: float = 0.05
 ## Budget as a share of the frame (leaves room for the CPU and vsync jitter).
 const BUDGET_SHARE: float = 0.88
+## Missed frames only count against resolution when the GPU timer is silent
+## or says the GPU is busy (above this share of its budget). With the GPU at
+## half load, a missed frame is the CPU's or the pacing's: fewer pixels
+## wouldn't bring it back, only blur the picture (2026-11-12: the owner saw
+## 45 fps at 70 % and at the 60 % floor alike, and a grainier image).
+const GPU_BUSY: float = 0.75
+## A GPU this far under budget may climb back up even while frames miss.
+const GPU_IDLE: float = 0.6
 
 var enabled: bool = true
 ## The player's render scale: the most this will use.
@@ -75,7 +83,8 @@ func frame_budget_ms() -> float:
 
 static func is_calm(gpu_ms: float, frame_ms: float, budget_ms: float) -> bool:
 	var gpu_ok: bool = gpu_ms <= 0.0 or gpu_ms < budget_ms * BUDGET_SHARE * 0.72
-	return gpu_ok and frame_ms < budget_ms * 1.06
+	var gpu_idle: bool = gpu_ms > 0.0 and gpu_ms < budget_ms * BUDGET_SHARE * GPU_IDLE
+	return gpu_ok and (frame_ms < budget_ms * 1.06 or gpu_idle)
 
 
 ## The next scale for one window of measurements. Pure, for tests.
@@ -83,7 +92,7 @@ static func step(current: float, gpu_ms: float, frame_ms: float, budget_ms: floa
 	var target: float = budget_ms * BUDGET_SHARE
 	var load_ms: float = gpu_ms if gpu_ms > 0.0 else 0.0
 	# Missed frames show in the frame time even when the GPU timer is silent.
-	if frame_ms > budget_ms * 1.2:
+	if frame_ms > budget_ms * 1.2 and (gpu_ms <= 0.0 or gpu_ms > target * GPU_BUSY):
 		load_ms = maxf(load_ms, frame_ms * BUDGET_SHARE)
 	if load_ms > target:
 		var k: float = sqrt(target / load_ms)
