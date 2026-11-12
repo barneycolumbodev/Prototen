@@ -457,3 +457,35 @@ Please try:
 - Device / renderer / settings:
 - Notes from the owner:
 - Follow-ups: Cantonese callouts would need a Cantonese voice model (not available in the session); a few more garments (vests, tank tops with prints, suit jackets) and face shapes are easy to add to the bank.
+
+## 2026-11-12 — Performance pass: no hitches on cuts and spawns, LODs for the men (waiting for the owner)
+
+Owner: "The latest build has slightly worse performance averaging around 45 frames per second even on 70 percent and variable resolution. Optimize it without compromising fidelity."
+
+Build: `dev-latest` from branch `ccr-1f8f82b9-ssbn8k` @ c6b6df0, CI run #28 (manual run, GUT passed), `graft-debug.apk` 210,921,731 bytes. Installs over the previous build.
+
+What was measured (cloud; the phone's GPU can't be measured here):
+- A new probe (`-- --perf=15` on Chinatown) plays the map with the rolling spawns and a bot shooting men with the M14, and times every frame on the CPU. Eight men fighting cost ~0.55 ms a frame plus ~1.3 ms per physics tick on the cloud's CPU, so steady game logic isn't what holds the phone at 45.
+- **The hitches were mesh merges on the main thread.** Each man is one mesh of his body and clothes, merged when he spawns (5–10 ms) and merged again into all his pieces at his first cut (8–15 ms), on the cloud's CPU, roughly 3× that on the phone, plus a GPU readback per piece. Every spawn of three and every first limb off dropped one or two frames.
+- **The merged men had no LODs.** Godot's importer makes LODs for the glTF's own meshes, not for meshes built at runtime, so a man 30 m away drew all ~12.5k triangles, and up to 12 men plus 10 bodies can be in view.
+- **The HUD's red and dark edge vignette** (hurt or under fire) drew 40 stacked translucent strips at the phone's native 1604×720. Native resolution, so lowering the render scale never touched it: about five full screens of blending in every firefight.
+
+What changed (no visual change intended anywhere):
+- **Men's meshes are built on a worker thread** (`src/ai/triad_mesh_baker.gd`), ahead of time: the spawner picks each man's clothes a spawn or two early, so his intact mesh, the mesh after his first cut and the piece each first cut throws are ready before he appears. In the cloud the worst first cut went from 10–15 ms to 1–3 ms, the worst spawn from 10 ms to 3–6 ms.
+- **LODs for every man and body**: about 12.5k → 6k → 3k → 1.4k triangles with distance; Godot switches only when the difference is under 2 pixels. The cut mesh's LODs never join two pieces, so nothing stretches when a limb comes off (tested). Ten men round the player: +38.5k triangles without LODs, +13.3k with. A/B at 3× zoom: `docs/previews/triad_lod_ab.png` (top LODs, bottom full detail; the only differences are rain and gun sway).
+- **The vignette** is four gradient strips (a tenth of the pixels), matched to the old stacked strips within 4 % (`tests/unit/test_perf_tuning.gd`).
+- **Men's shader** skips its wound/blood/char noise (16 hash functions a pixel) on men who have none of those. Identical result.
+- **Auto resolution** only lowers the render scale when the GPU timer says the GPU is busy. Before, any missed frame lowered it, even when the misses were the CPU's, which only made the picture grainier.
+- **Map cost test** (Pause): new rows "+10 men" and "+10 men, no LODs" (ten men placed round the spot), "HUD hidden" and "50 % res"; new columns: render-CPU ms (rcpu), triangles and draw calls.
+
+Cloud evidence: `tools/check.sh` passes, 333 tests; new tests `tests/scene/test_mesh_baker.gd` (baked mesh = the old merge, has LODs, no LOD triangle spans two pieces, baked gibs match, spawns get LODs, a man spawned without a prefetch gets them swapped in) and `tests/unit/test_perf_tuning.gd`. Not checked: anything on the phone's GPU. I can't tell yet whether 45 fps is the GPU, the CPU or frame pacing, so the next screenshot decides the next step.
+
+Please try:
+1. Play Chinatown with the overlay on through a few waves, shooting limbs off. Any hitch when a limb comes off or men arrive? What fps in a fight?
+2. **Pause → Map cost test** (~80 s, don't touch the controller) and screenshot the table. That tells me exactly where the 45 comes from: if *frame* is well above *gpu*, it's the CPU or pacing; if *gpu* barely changes between 100/70/50 %, it's vertices or fixed passes, not pixels.
+3. Look at men at a distance: anything popping or changing shape as they walk away?
+
+- Device / renderer / settings:
+- Measured:
+- Notes from the owner:
+- Follow-ups: if the CPU side is the limit, try rendering on its own thread (needs a crash-safe toggle); spawns still cost 3–6 ms in the cloud (building the animation tree and hitboxes), so pooling men is next for those.

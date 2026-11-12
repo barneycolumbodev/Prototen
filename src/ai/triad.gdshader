@@ -208,8 +208,16 @@ void fragment() {
 	float rough = orm.g;
 	float metal = orm.b;
 
-	float n1 = vnoise(rest_pos * 90.0);
-	float n2 = vnoise(rest_pos * 260.0);
+	// The noise only shapes wounds, blood and char: an unhurt man skips it
+	// (uniform branch, the same for every pixel; 16 hashes a pixel saved).
+	float n1 = 0.0;
+	float n2 = 0.0;
+	if (wound_count > 0 || bloodied > 0.0 || char_amount > 0.0) {
+		n1 = vnoise(rest_pos * 90.0);
+	}
+	if (wound_count > 0) {
+		n2 = vnoise(rest_pos * 260.0);
+	}
 	vec3 blood = vec3(0.22, 0.008, 0.008);
 	float wet = 0.0;
 	for (int i = 0; i < 8; i++) {

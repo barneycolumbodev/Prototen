@@ -115,6 +115,7 @@ func _ready() -> void:
 	sweep.name = "FeatureSweep"
 	sweep.atmos = atmos
 	sweep.bench = _bench
+	sweep.spawn_men = _sweep_men
 	for c: Node in player.camera().get_children():
 		if c is Node3D:
 			sweep.viewmodel.append(c as Node3D)
@@ -150,12 +151,28 @@ func _ready() -> void:
 			world_material.set_shader_parameter(&"debug_view", arg.trim_prefix("--debug-view=").to_int())
 		if arg == "--god":
 			player.invulnerable = true
+		if arg == "--no-lod":
+			get_viewport().mesh_lod_threshold = 0.0  # capture A/B: every mesh at full detail
 		if arg == "--line-up":
 			_line_up.call_deferred()
 		if arg == "--sweep":
 			_quit_after_bench = true
 			spawns_on = false
 			start_feature_sweep.call_deferred()
+		if arg.begins_with("--perf="):
+			var probe: PerfProbe = PerfProbe.new()
+			probe.seconds = arg.trim_prefix("--perf=").to_float()
+			probe.player = player
+			for a2: String in OS.get_cmdline_user_args():
+				if a2.begins_with("--perf-exp="):
+					probe.experiment = a2.trim_prefix("--perf-exp=")
+				if a2 == "--perf-calm":
+					probe.calm = true
+				if a2 == "--perf-spin":
+					probe.spin = true
+			player.invulnerable = true
+			spawns_on = true
+			add_child(probe)
 		if arg.begins_with("--bench="):
 			_quit_after_bench = true
 			spawns_on = false
@@ -176,6 +193,7 @@ func _line_up() -> void:
 		var e: Enemy = Enemy.new()
 		e.config = load("res://data/enemies/%s.tres" % roles[i]) as EnemyConfig
 		e.passive = true
+		e.look_seed = 1000 + i  # the same men every capture (A/B shots)
 		add_child(e)
 		e.global_position = player.global_position + fwd * dists[i] + right * (1.6 * (i - 1))
 		var to: Vector3 = player.global_position - e.global_position
@@ -435,6 +453,30 @@ func start_feature_sweep() -> void:
 	if wave_mode.running:
 		wave_mode.stop()
 	sweep.start()
+
+
+## Ten passive men round the map cost test's spot, 5 to 27 m out, on the
+## navmesh, facing it (the "+10 men" rows).
+func _sweep_men() -> Array:
+	var out: Array = []
+	var centre: Vector3 = player.global_position
+	var nav_map: RID = get_world_3d().navigation_map
+	var roles: Array[String] = ["gunman", "gunman", "enforcer", "gunman", "red_pole"]
+	for i: int in 10:
+		var ang: float = TAU * i / 10.0 + 0.3
+		var want: Vector3 = centre + Vector3(sin(ang), 0.0, cos(ang)) * (5.0 + 2.4 * i)
+		var at: Vector3 = NavigationServer3D.map_get_closest_point(nav_map, want)
+		if at == Vector3.ZERO and want.length() > 1.0:
+			at = Vector3(want.x, centre.y, want.z)
+		var e: Enemy = Enemy.new()
+		e.config = load("res://data/enemies/%s.tres" % roles[i % roles.size()]) as EnemyConfig
+		e.passive = true
+		add_child(e)
+		e.global_position = at
+		var to: Vector3 = centre - at
+		e.face(atan2(to.x, to.z))
+		out.append(e)
+	return out
 
 
 func _on_sweep_finished(_rows: Array[Dictionary]) -> void:

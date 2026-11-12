@@ -53,6 +53,12 @@ Checked 2026-11-01 in the first cloud session (CLAUDE.md §1 step 5, §10.4). Up
 - With `mesa-vulkan-drivers` installed, `tools/screenshot.sh` renders with **the Mobile renderer on lavapipe** (the overlay says `mobile/vulkan llvmpipe`), about 4 fps. Without it Godot silently falls back to Compatibility. Features that only exist in Mobile (per-instance effects, the paint shader's arrays) should be checked this way.
 - `rm -rf` on a path built from shell variables is refused by the harness; scratch directories are created per run instead (`mkdir -p`), never cleaned from scripts.
 
+## 2026-11-12: performance tooling
+
+- `src/core/debug/perf_probe.gd` (`-- --perf=<s>` on Chinatown) measures CPU cost per frame headless; see the perf-budget skill. Headless Godot sleeps 6.9 ms every frame (it can't draw), so frame times there mean nothing unless the probe zeroes `OS.low_processor_usage_mode_sleep_usec`, which it does.
+- `--no-lod` on Chinatown draws every mesh at full detail (capture A/B for LODs).
+- The Map cost test runs in the cloud with `-- --sweep` under xvfb + lavapipe: its GPU times are meaningless there, its triangle and draw counts are exact.
+
 ## What the owner can fix in the environment settings (claude.ai/code)
 
 1. **Network access → Custom**, keep the defaults, add the hosts in CLAUDE.md §10.1 (at least `download.blender.org`, `extensions.blender.org`, `api.polyhaven.com`, `dl.polyhaven.org`, `ambientcg.com`).

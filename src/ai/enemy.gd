@@ -33,6 +33,9 @@ const LOS_MASK: int = Ballistics.LAYER_WORLD
 @export var passive: bool = false
 ## Seed for what he wears (TriadLook); < 0: random.
 @export var look_seed: int = -1
+## What he wears, picked ahead by the spawner so his meshes are built in the
+## background before he arrives (TriadMeshBaker); null: picked on spawn.
+var look: TriadLook
 
 var squad: Squad
 var body: EnemyBody
@@ -163,7 +166,7 @@ func _ready() -> void:
 	add_child(cs)
 	body = EnemyBody.new()
 	body.name = "Body"
-	body.setup(self, config, null, look_seed)
+	body.setup(self, config, look, look_seed)
 	add_child(body)
 	nav = NavigationAgent3D.new()
 	nav.path_desired_distance = 0.6
