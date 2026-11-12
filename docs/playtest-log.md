@@ -462,6 +462,8 @@ Please try:
 
 Owner: "The latest build has slightly worse performance averaging around 45 frames per second even on 70 percent and variable resolution. Optimize it without compromising fidelity."
 
+Build: `dev-latest` from branch `ccr-1f8f82b9-ssbn8k` @ c6b6df0, CI run #28 (manual run, GUT passed), `graft-debug.apk` 210,921,731 bytes. Installs over the previous build.
+
 What was measured (cloud; the phone's GPU can't be measured here):
 - A new probe (`-- --perf=15` on Chinatown) plays the map with the rolling spawns and a bot shooting men with the M14, and times every frame on the CPU. Eight men fighting cost ~0.55 ms a frame plus ~1.3 ms per physics tick on the cloud's CPU, so steady game logic isn't what holds the phone at 45.
 - **The hitches were mesh merges on the main thread.** Each man is one mesh of his body and clothes, merged when he spawns (5–10 ms) and merged again into all his pieces at his first cut (8–15 ms), on the cloud's CPU, roughly 3× that on the phone, plus a GPU readback per piece. Every spawn of three and every first limb off dropped one or two frames.
