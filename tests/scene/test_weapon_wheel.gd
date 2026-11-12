@@ -70,7 +70,7 @@ func test_every_gun_is_on_the_wheel() -> void:
 	var names: PackedStringArray = PackedStringArray()
 	for s: PlayerWeapon.Slot in weapon.slots:
 		names.append(s.data.display_name)
-	for want: String in ["Five-seveN SR", "MG42/A", "Saiga-12K", "RC-6 Lance", "M14/P"]:
+	for want: String in ["Five-seveN SR", "MG42/A", "Saiga-12K", "RC-6 Lance", "M14/P", "MP5/SD-L"]:
 		assert_true(names.has(want), "%s in the loadout %s" % [want, names])
 
 

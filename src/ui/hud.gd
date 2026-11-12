@@ -7,7 +7,9 @@ extends CanvasLayer
 ## railguns, the weapon wheel (hold Y), controller prompt, benchmark status.
 ## Reticles are seaglass, crimson while the line of sight is on an enemy
 ## (ReticleStyle); the shotgun's is a circle the size of the pattern, a dot
-## with slugs.
+## with slugs. A gun with a laser (the MP5) hides the hip reticle while the
+## dot is on a surface: the dot is the reticle. Guns whose rounds follow the
+## gun (`aim_follows_gun`) draw the reticle where the aim line points.
 
 var bench: FrameBench
 ## Set by the level.
@@ -179,6 +181,8 @@ class Reticle:
 	var marker_color: Color = Color.WHITE
 	var marker_scale: float = 1.0
 	var reload: float = 0.0
+	## Aim point relative to the screen centre, pixels (guns whose rounds follow the gun).
+	var aim_offset: Vector2 = Vector2.ZERO
 	const MARKER_SEC: float = 0.28
 
 	func _process(delta: float) -> void:
@@ -186,7 +190,7 @@ class Reticle:
 		queue_redraw()
 
 	func _draw() -> void:
-		var c: Vector2 = size * 0.5
+		var c: Vector2 = size * 0.5 + aim_offset
 		var col: Color = Color(color.r, color.g, color.b, 0.92 * alpha)
 		var shadow: Color = Color(0, 0, 0, 0.5 * alpha)
 		if alpha > 0.01:
@@ -221,6 +225,7 @@ class Reticle:
 				draw_line(c + n * r0, c + n * r1, Color(0, 0, 0, m.a * 0.6), 4.0)
 				draw_line(c + n * r0, c + n * r1, m, 2.5)
 		if reload > 0.0:
+			c = size * 0.5
 			var w: float = 70.0
 			var y: float = c.y + 34.0
 			draw_rect(Rect2(c.x - w * 0.5, y, w, 4), Color(0, 0, 0, 0.5))
@@ -296,7 +301,8 @@ func _process(delta: float) -> void:
 		if cam:
 			_reticle.gap_px = spread_to_pixels(weapon.reticle_spread, cam.fov, _reticle.size.y) + 3.0
 			_scope.fov_deg = cam.fov
-		_reticle.alpha = clampf(1.0 - weapon.ads_visual() * 2.0, 0.0, 1.0)
+		_reticle.alpha = 0.0 if weapon.laser_on() else clampf(1.0 - weapon.ads_visual() * 2.0, 0.0, 1.0)
+		_reticle.aim_offset = aim_offset_px(weapon, cam, _reticle.size)
 		_reticle.reload = weapon.mechanism.reload_progress()
 		_reticle.shape = reticle_shape(weapon)
 		_reticle.color = ReticleStyle.color(weapon.enemy_amount)
@@ -367,9 +373,22 @@ static func reticle_shape(w: PlayerWeapon) -> Reticle.Shape:
 	return Reticle.Shape.CROSS
 
 
+## Where the aim line points on screen, relative to the centre (pixels in
+## `area`); zero for guns whose rounds always leave along the centre.
+static func aim_offset_px(w: PlayerWeapon, cam: Camera3D, area: Vector2) -> Vector2:
+	if cam == null or w.data.aim_follows_gun <= 0.0:
+		return Vector2.ZERO
+	var at: Vector3 = cam.global_position + w.aim_forward() * 50.0
+	if cam.is_position_behind(at):
+		return Vector2.ZERO
+	var vp: Vector2 = cam.get_viewport().get_visible_rect().size
+	var p: Vector2 = cam.unproject_position(at) - vp * 0.5
+	return p * (area.y / maxf(vp.y, 1.0))
+
+
 ## Reticle drawn now (tests).
 func reticle_state() -> Dictionary:
-	return {"shape": _reticle.shape, "color": _reticle.color}
+	return {"shape": _reticle.shape, "color": _reticle.color, "alpha": _reticle.alpha}
 
 
 ## Half the spread cone in screen pixels (vertical FOV, viewport height).

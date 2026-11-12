@@ -166,7 +166,7 @@ func test_m14p_arms_budget() -> void:
 
 
 func test_every_gun_has_a_wheel_icon() -> void:
-	for path: String in ["pistol_57", "mg42", "saiga12k", "rail_carbine", "m14p"]:
+	for path: String in ["pistol_57", "mg42", "saiga12k", "rail_carbine", "m14p", "mp5"]:
 		var d: WeaponData = load("res://data/weapons/%s.tres" % path) as WeaponData
 		assert_not_null(d.icon, "%s has a weapon wheel icon" % path)
 

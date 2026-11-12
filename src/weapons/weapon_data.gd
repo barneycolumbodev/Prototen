@@ -34,6 +34,9 @@ enum WeaponClass { HANDGUN, SHOTGUN, RIFLE, HEAVY }
 @export_range(0.0, 0.3) var fire_buffer: float = 0.12
 ## Delay between leaving a sprint and the first shot.
 @export_range(0.0, 0.5) var sprint_to_fire: float = 0.13
+## Fires on the run: the trigger doesn't end a sprint, and the gun comes up
+## out of the sprint pose while firing (the MP5's run-and-gun).
+@export var sprint_fire: bool = false
 @export_range(0.0, 1.5) var draw_time: float = 0.4
 ## Seconds to put the gun away when switching to the other one.
 @export_range(0.05, 1.5) var holster_time: float = 0.2
@@ -151,6 +154,23 @@ enum WeaponClass { HANDGUN, SHOTGUN, RIFLE, HEAVY }
 @export_range(0.0, 30.0) var bloom_recovery_deg_s: float = 4.5
 ## Fraction of hip spread, movement spread and bloom that still applies aimed.
 @export_range(0.0, 1.0) var ads_spread_scale: float = 0.12
+## Fraction of the viewmodel's turn (sway, recoil, poses) the shots follow:
+## 0 = rounds always leave along the centre of the view; above 0 they leave
+## along the gun, and so does the laser, so the dot shows where they go.
+@export_range(0.0, 1.0) var aim_follows_gun: float = 0.0
+
+@export_group("Laser")
+## Under-barrel laser: emitter in weapon space, how far it reaches (0 = no
+## laser), colour. The beam and dot mark the centre of the shot cone, at the
+## hip and aimed; the hip reticle gives way to the dot while it's on a surface.
+@export var laser_point: Vector3 = Vector3.ZERO
+@export_range(0.0, 500.0) var laser_range: float = 0.0
+@export var laser_color: Color = Color(0.25, 1.0, 0.35)
+## Dot size: angular diameter (degrees) and the smallest it gets up close (m).
+@export_range(0.01, 2.0) var laser_dot_deg: float = 0.22
+@export_range(0.001, 0.1) var laser_dot_min_m: float = 0.012
+## Beam brightness near the emitter (0 = dot only; a real 5 mW beam is faint).
+@export_range(0.0, 4.0) var laser_beam_energy: float = 0.6
 
 @export_group("Recoil: camera")
 ## Peak upward kick per shot, degrees.
@@ -260,6 +280,9 @@ enum WeaponClass { HANDGUN, SHOTGUN, RIFLE, HEAVY }
 @export var magazine_travel: Vector3 = Vector3(0.0, -1.0, 0.0)
 ## Belt (node "belt") shake per shot, metres.
 @export_range(0.0, 0.02) var belt_jiggle: float = 0.0
+## Cocking handle (node "charging_handle"): how far back it sits while the
+## bolt is held open (empty gun) before the slap forward, weapon −X metres.
+@export_range(0.0, 0.2) var charging_handle_travel: float = 0.0
 
 @export_group("Feedback")
 ## Controller rumble per shot: weak motor, strong motor, seconds.

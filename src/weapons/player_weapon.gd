@@ -1,7 +1,7 @@
 class_name PlayerWeapon
 extends Node
 ## The player's guns (docs/m1-gunplay-plan.md). Holds a small loadout (the
-## suppressed pistol, the MG42, the Saiga-12K, the RC-6 rail carbine and the M14/P), one viewmodel rig per gun. Reads the
+## suppressed pistol, the MG42, the Saiga-12K, the RC-6 rail carbine, the M14/P and the MP5), one viewmodel rig per gun. Reads the
 ## controller, runs the active gun's GunMechanism, fires rounds through
 ## Ballistics from the eye (so the round goes exactly where the crosshair or
 ## sights point, plus the gun's spread), and drives every piece of feedback:
@@ -25,6 +25,14 @@ extends Node
 ## charge as its power (speed, recoil); a rising whine plays while it
 ## recharges and a tone when it's full; overheating lifts the vent shroud and
 ## steams for `vent_time`; the glow strips follow charge and heat.
+##
+## Aim line (`aim_forward()`): rounds leave the eye along the centre of the
+## view, or, for guns with `aim_follows_gun` > 0, turned by that fraction of
+## the viewmodel's own turn (sway, recoil, poses), so they go where the gun
+## points. A laser (`laser_range` > 0, the MP5) draws its beam and dot along
+## that same line, so the dot is the centre of the shot cone. Guns with
+## `sprint_fire` shoot on the run: the trigger doesn't end a sprint and the
+## gun comes up out of the sprint pose while firing.
 
 signal fired
 signal ammo_changed(loaded: int, reserve: int)
@@ -74,9 +82,11 @@ class Slot:
 	preload("res://data/weapons/saiga12k.tres"),
 	preload("res://data/weapons/rail_carbine.tres"),
 	preload("res://data/weapons/m14p.tres"),
+	preload("res://data/weapons/mp5.tres"),
 ]
 @export var rig_paths: Array[NodePath] = [^"../Head/Camera3D/Viewmodel", ^"../Head/Camera3D/ViewmodelMG42",
-		^"../Head/Camera3D/ViewmodelSaiga", ^"../Head/Camera3D/ViewmodelRail", ^"../Head/Camera3D/ViewmodelM14"]
+		^"../Head/Camera3D/ViewmodelSaiga", ^"../Head/Camera3D/ViewmodelRail", ^"../Head/Camera3D/ViewmodelM14",
+		^"../Head/Camera3D/ViewmodelMP5"]
 @export var input_enabled: bool = true
 @export var wheel_config: WeaponWheelConfig = preload("res://data/input/weapon_wheel.tres")
 
@@ -112,6 +122,10 @@ var previous: int = -1
 ## Weapon wheel: open, and the slot the stick points at.
 var wheel_open: bool = false
 var wheel_pick: int = 0
+## The laser (guns with `laser_range` > 0): beam and dot on the aim line.
+var laser: WeaponLaser
+## The trigger is held this physics tick (sprint fire keeps the gun up while it is).
+var trigger_held: bool = false
 ## The line of sight is on a live enemy; `enemy_amount` eases 0..1 for colour.
 var over_enemy: bool = false
 var enemy_amount: float = 0.0
@@ -154,6 +168,10 @@ func _ready() -> void:
 		rig.visible = i == current
 	cam_recoil = Spring.new(data.camera_spring_hz, data.camera_spring_damping)
 	_belt_shake = Spring.new(14.0, 0.25)
+	laser = WeaponLaser.new()
+	laser.name = "Laser"
+	add_child(laser)
+	laser.set_data(data)
 	_player.landed.connect(func(speed: float) -> void: motion.landed(speed))
 	EventBus.target_hit.connect(_on_target_hit)
 	_emit_ammo.call_deferred()
@@ -391,7 +409,7 @@ func _check_enemy() -> void:
 		over_enemy = false
 		return
 	var from: Vector3 = cam.global_position
-	var to: Vector3 = from - cam.global_basis.z * minf(round_data().max_range, 400.0)
+	var to: Vector3 = from + aim_forward() * minf(round_data().max_range, 400.0)
 	var q: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(from, to, Ballistics.BULLET_MASK)
 	q.collide_with_areas = false
 	var res: Dictionary = cam.get_world_3d().direct_space_state.intersect_ray(q)
@@ -494,6 +512,8 @@ func _activate(index: int) -> void:
 	bloom = 0.0
 	sustained = 0.0
 	apply_tuning()
+	if laser:
+		laser.set_data(data)
 	weapon_changed.emit(data)
 	ammo_changed.emit(mechanism.loaded(), mechanism.reserve)
 
@@ -567,17 +587,20 @@ func _physics_process(delta: float) -> void:
 			mechanism.draw()
 			Sfx.play_ui(&"draw", -4.0)
 
-	# Aiming or shooting beats sprinting.
+	# Aiming or shooting beats sprinting (a run-and-gun gun only gives way to aiming).
+	var run_gun: bool = data.sprint_fire
+	trigger_held = held or pull
 	_player.sprint_blocked = aim_held
 	# Holding the trigger keeps auto-sprint from starting again mid-burst.
-	_player.auto_sprint_blocked = held or pull
-	if (pull or aim_held) and _player.is_sprinting():
+	_player.auto_sprint_blocked = (held or pull) and not run_gun
+	if ((pull and not run_gun) or aim_held) and _player.is_sprinting():
 		_player.stop_sprint()
-	if _player.is_sprinting():
+	if _player.is_sprinting() and not run_gun:
 		_sprint_out = data.sprint_to_fire / handling()
 	else:
 		_sprint_out = maxf(0.0, _sprint_out - delta)
-	var blocked: bool = _player.is_sprinting() or _sprint_out > 0.0 or is_switching() or _player.is_mantling() or stowed
+	var sprint_block: bool = _player.is_sprinting() and not run_gun
+	var blocked: bool = sprint_block or _sprint_out > 0.0 or is_switching() or _player.is_mantling() or stowed
 
 	# Holstered guns keep recharging and cooling.
 	for i: int in slots.size():
@@ -635,7 +658,7 @@ func _process(delta: float) -> void:
 		pose = 3
 	elif is_reloading():
 		pose = 2
-	elif _player.is_sprinting():
+	elif _player.is_sprinting() and not firing_on_the_run():
 		pose = 1
 	var s: Slot = slots[current]
 	s.motion.update(delta, a, _player.look_velocity, _move_fraction(), _player.is_on_floor(), pose)
@@ -647,6 +670,8 @@ func _process(delta: float) -> void:
 		s.rig.transform.basis = Basis.from_euler(mc.gun_away_rot_deg * (PI / 180.0) * away) * s.rig.transform.basis
 		s.rig.transform.origin += mc.gun_away_offset * away
 	s.rig.set_slide(s.motion.slide * data.slide_travel)
+	if data.charging_handle_travel > 0.0:
+		s.rig.set_charging_handle(data.charging_handle_travel if s.motion.slide_locked() else 0.0)
 	s.rig.set_magazine_out(_mag_offset(), data.magazine_travel)
 	s.rig.set_aimed(a)
 	s.rig.set_reticle_color(ReticleStyle.color(enemy_amount))
@@ -670,6 +695,55 @@ func _process(delta: float) -> void:
 	if data.belt_jiggle > 0.0:
 		_belt_shake.step(delta)
 		s.rig.set_belt_offset(_belt_shake.value)
+	_update_laser(s)
+
+
+## Rounds leave along this line (world space, unit). The centre of the view,
+## turned by `aim_follows_gun` of the gun's own turn away from its rest
+## placement (sway and poses; not the viewmodel's recoil flip, bob or landing).
+## The camera kick (real recoil) turns the view itself, so it's in here too.
+func aim_forward() -> Vector3:
+	var cam: Camera3D = _player.camera() if _player else null
+	if cam == null:
+		return Vector3.FORWARD
+	var forward: Vector3 = -cam.global_basis.z
+	var k: float = data.aim_follows_gun
+	if k <= 0.0 or slots.is_empty():
+		return forward
+	var s: Slot = slots[current]
+	var rest: Transform3D = s.hip_xform.interpolate_with(s.optic_xform if optic_on() else s.ads_xform, ads_visual())
+	var turn_w: Basis = Basis.from_euler(s.motion.aim_rotation_deg() * (PI / 180.0))
+	var d0: Vector3 = (rest.basis * Vector3.RIGHT).normalized()
+	var d1: Vector3 = (rest.basis * (turn_w * Vector3.RIGHT)).normalized()
+	if d0.dot(d1) > 0.999999:
+		return forward
+	var turn: Quaternion = Quaternion.IDENTITY.slerp(Quaternion(d0, d1), k)
+	return (cam.global_basis * (turn * Vector3.FORWARD)).normalized()
+
+
+## Sprinting with the trigger down (or just after a shot) on a run-and-gun gun.
+func firing_on_the_run() -> bool:
+	return data.sprint_fire and _player.is_sprinting() and (trigger_held or _since_shot < 0.35)
+
+
+## The laser follows the aim line; it's off while the gun is away.
+func _update_laser(s: Slot) -> void:
+	if laser == null:
+		return
+	var cam: Camera3D = _player.camera()
+	var knife: float = _player.melee.gun_away() if _player.melee else 0.0
+	var away: bool = stowed or is_switching() or not s.rig.visible or knife > 0.5
+	if data.laser_range <= 0.0 or cam == null or not cam.is_inside_tree() or away:
+		laser.hide_laser()
+		return
+	var emitter: Vector3 = s.rig.global_transform * data.laser_point
+	laser.update_laser(emitter, cam.global_position, aim_forward(), cam.get_world_3d().direct_space_state,
+			[_player.get_rid()])
+
+
+## The laser dot is on a surface (the HUD hides the hip reticle for it).
+func laser_on() -> bool:
+	return laser != null and laser.on_surface
 
 
 ## Glow strips follow the capacitor (dim after a shot, bright when full) and
@@ -791,7 +865,7 @@ func _fire() -> void:
 	var shell: AmmoData = slots[current].ammo(mechanism.fired_ammo)
 	var cam: Camera3D = _player.camera()
 	var eye: Transform3D = cam.global_transform
-	var forward: Vector3 = -eye.basis.z
+	var forward: Vector3 = aim_forward()
 	var dir: Vector3 = Ballistics.random_in_cone(forward, spread, _rng)
 	var gun: Transform3D = rig().global_transform
 	var muzzle: Transform3D = gun * Transform3D(Basis(), data.muzzle_point)

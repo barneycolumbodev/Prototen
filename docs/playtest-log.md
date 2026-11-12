@@ -489,3 +489,26 @@ Please try:
 - Measured:
 - Notes from the owner:
 - Follow-ups: if the CPU side is the limit, try rendering on its own thread (needs a crash-safe toggle); spawns still cost 3–6 ms in the cloud (building the animation tree and hitboxes), so pooling men is next for those.
+
+## 2026-11-12 — MP5/SD-L: run-and-gun SMG with a red dot and a green laser (waiting for the owner)
+
+Owner's ask: "a very detailed mp5, with a red dot sight, suppressor, under barrel green laser ... great hipfire spread ... high mobility run and gun, contained hipfire, which is accurate to the green laser, even while moving, jumping, or walk running." Details in design §4.6.
+
+What's in the build:
+- The MP5 is the sixth gun on the weapon wheel (hold Y). Full auto, 800 rpm, 30 + 1, suppressed 9 mm, about two torso hits per gunman.
+- **Fire on the run:** with the MP5, RT doesn't stop a sprint. You keep sprint speed and the gun comes up out of the sprint pose while you fire. LT still ends the sprint. Other guns are unchanged.
+- **The laser is the reticle:** at the hip the crosshair disappears while the green dot is on something; rounds go to the dot (within a cone about a fist wide at 10 m). Walking, running and jumping don't move the dot; whipping the view round makes it lag a touch and settle, and the rounds follow it.
+- No weight penalty, fast draw (0.3 s), fast to the sights (0.14 s) through the red dot.
+- Empty reloads end with the HK slap: the cocking handle stays back until the reload slaps it home.
+
+Cloud evidence: `tools/check.sh` passes, 348 tests; `tests/scene/test_mp5.gd` (14 tests). Measured there: a 15-round burst while strafing and jumping stayed within 0.47° of the laser line; on a wall 28 m off, strafing and jumping, every round landed within 0.40 m of the dot; a running gunman at 10 m went down in 2 rounds. In-game screenshots: `docs/previews/mp5_ingame_hip.png`, `mp5_ingame_ads.png`, `mp5_ingame_burst.png`. Not checked: how it feels on the controller, the sounds by ear, and the phone's frame rate with it out (the laser adds two draw calls and no light).
+
+Please try:
+1. Sprint with the MP5 and hold RT while running and jumping across the range. Does the dot stay where the rounds go? Is the cone tight enough, or too tight?
+2. Flick the view quickly while firing. Is the dot's lag nice, or annoying? (It follows 60 % of the gun's sway; Pause → Tuning → Laser "Dot follows gun sway" changes it live, 0 pins it to the screen centre.)
+3. Is the laser easy to see: dot size, beam brightness? Do the sounds read as a suppressed MP5?
+
+- Device / renderer / settings:
+- Measured:
+- Notes from the owner:
+- Follow-ups:

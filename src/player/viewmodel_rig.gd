@@ -19,6 +19,8 @@ extends Node3D
 ##              reticle (seaglass, crimson over an enemy; ReticleStyle)
 ##   `optic`    shown only while the loaded shells use it (Saiga-12K slugs)
 ##   `shell_hull`, `mag_tape`  tinted with the loaded shell type's colour
+##   `charging_handle`  travels −X while the bolt is held open (MP5 cocking handle)
+##   `laser`    the laser's emitter window (self-lit; WeaponLaser draws the beam)
 
 @export var config: ViewmodelConfig
 @export var models: Array[PackedScene] = []
@@ -40,6 +42,9 @@ var _lens: GeometryInstance3D
 var _reticle: GeometryInstance3D
 var _reticle_mat: StandardMaterial3D
 var _optic: Node3D
+var _handle: Node3D
+var _handle_rest: Vector3
+var _laser: GeometryInstance3D
 var _tinted: Array[GeometryInstance3D] = []
 var _tint_mat: StandardMaterial3D
 var _scoped: bool = false
@@ -74,6 +79,10 @@ func _ready() -> void:
 			_reticle = model.find_child("reticle", true, false) as GeometryInstance3D
 		if _optic == null:
 			_optic = model.find_child("optic", true, false) as Node3D
+		if _handle == null:
+			_handle = model.find_child("charging_handle", true, false) as Node3D
+		if _laser == null:
+			_laser = model.find_child("laser", true, false) as GeometryInstance3D
 		for part: String in ["shell_hull", "mag_tape"]:
 			var g: GeometryInstance3D = model.find_child(part, true, false) as GeometryInstance3D
 			if g:
@@ -88,6 +97,14 @@ func _ready() -> void:
 		_belt_rest = _belt.position
 	if _vent:
 		_vent_rest = _vent.position
+	if _handle:
+		_handle_rest = _handle.position
+	if _laser:
+		# The emitter window glows in the laser's colour whatever the bake did.
+		var lit: StandardMaterial3D = StandardMaterial3D.new()
+		lit.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		lit.albedo_color = Color(0.45, 1.0, 0.5)
+		_laser.material_override = lit
 	if _glow:
 		# Self-lit strips: no texture needed, the game sets colour and energy.
 		_glow_mat = StandardMaterial3D.new()
@@ -145,6 +162,10 @@ func has_part(part_name: StringName) -> bool:
 			return _reticle != null
 		&"optic":
 			return _optic != null
+		&"charging_handle":
+			return _handle != null
+		&"laser":
+			return _laser != null
 	return false
 
 
@@ -241,6 +262,16 @@ func set_scoped(scoped: bool) -> void:
 
 func is_scoped() -> bool:
 	return _scoped
+
+
+## Cocking handle travel back from rest, metres (weapon space −X).
+func set_charging_handle(back: float) -> void:
+	if _handle:
+		_handle.position = _handle_rest + Vector3(-back, 0.0, 0.0)
+
+
+func charging_handle_back() -> float:
+	return _handle_rest.x - _handle.position.x if _handle else 0.0
 
 
 ## Belt offset from rest (weapon space), for the feed shake.
