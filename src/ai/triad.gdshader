@@ -208,20 +208,19 @@ void fragment() {
 	float rough = orm.g;
 	float metal = orm.b;
 
-	// The noise only shapes wounds, blood and char, and is worked out only
-	// where something uses it: an unhurt man skips it (uniform branch), and a
-	// wounded one computes it only on pixels near a wound (optimization
-	// overhaul C-01; the output is the same as computing it everywhere).
+	// The noise only shapes the overall blood and char, and is worked out
+	// only where something uses it (an unhurt man skips it: uniform branch).
 	float n1 = 0.0;
-	float n2 = 0.0;
-	bool have_n1 = false;
-	bool have_n2 = false;
 	if (bloodied > 0.0 || char_amount > 0.0) {
 		n1 = vnoise(rest_pos * 90.0);
-		have_n1 = true;
 	}
 	vec3 blood = vec3(0.22, 0.008, 0.008);
 	float wet = 0.0;
+	// Wounds are solid shapes (owner, 2026-11-13: "a solid little wound...
+	// without that pattern"): a black hole, a hard rim, a smooth soak and a
+	// run below. No noise in them. Entries are round with a dark bruised
+	// rim; exits are torn open into a few smooth lobes with raw meat round
+	// the hole. Each pops a little bigger for a moment as it opens.
 	for (int i = 0; i < 8; i++) {
 		if (i >= wound_count) {
 			break;
@@ -231,40 +230,51 @@ void fragment() {
 		bool exit_w = w.w < 0.0;
 		float age = wound_age[i];
 		vec3 d = rest_pos - w.xyz;
-		float soak_r = r * (2.2 + 2.6 * clamp(age / 4.0, 0.0, 1.0)) * (exit_w ? 1.5 : 1.0) * mix(1.4, 1.0, m.a);
+		float len = length(d);
+		float soak_r = r * (exit_w ? (1.7 + 1.6 * clamp(age / 3.0, 0.0, 1.0)) : (1.5 + 1.4 * clamp(age / 3.0, 0.0, 1.0)))
+				* mix(1.35, 1.0, m.a);
+		float pop = 1.0 + 0.45 * (1.0 - smoothstep(0.0, 0.12, age));
 		float below = w.y - rest_pos.y;
-		float run_len = r * (3.0 + 10.0 * clamp(age / 5.0, 0.0, 1.0));
-		// Early out: the noisy distance is at least 0.75 of the true one and
-		// soak_r is the widest of the soak, torn and hole radii, so past it
-		// none of them reaches this pixel; the run needs the pixel below the
-		// wound, above the run's end and within its width (wob is at most
-		// 0.006 narrower than the flat distance).
-		if (length(d) * 0.75 >= soak_r && (below < 0.0 || below >= run_len || length(d.xz) >= r * 0.55 + 0.006)) {
+		float run_len = r * (2.5 + 9.0 * clamp(age / 5.0, 0.0, 1.0));
+		// Early out: past the soak (its uneven edge reaches 1.2 soak_r) and the
+		// torn edge (lobes reach 1.34 r),
+		// and not in the run below the wound.
+		if (len >= max(soak_r * 1.2, r * 1.34 * pop) && (below < 0.0 || below >= run_len || length(d.xz) >= r * 0.5 + 0.006)) {
 			continue;
 		}
-		if (!have_n1) {
-			n1 = vnoise(rest_pos * 90.0);
-			have_n1 = true;
-		}
-		if (!have_n2) {
-			n2 = vnoise(rest_pos * 260.0);
-			have_n2 = true;
-		}
-		float dist = length(d) * (0.75 + 0.5 * n1);
-		// Blood soaking out (bigger on cloth than skin, grows for a few seconds).
-		float soak = 1.0 - smoothstep(soak_r * 0.55, soak_r, dist);
-		// A run of blood below the wound.
-		float wob = length(d.xz + vec2(0.006 * sin(rest_pos.y * 120.0), 0.0));
-		float run = (1.0 - smoothstep(r * 0.25, r * 0.55, wob)) * step(0.0, below) * (1.0 - smoothstep(run_len * 0.6, run_len, below));
+		// Angle round the wound on the skin, for the torn lobes.
+		vec3 tn = normalize(cross(rest_nrm, vec3(0.0, 1.0, 0.0)) + vec3(0.0, 0.0, 0.001));
+		vec3 bn = cross(rest_nrm, tn);
+		float ang = atan(dot(d, bn), dot(d, tn));
+		float seed = fract(w.x * 91.7 + w.z * 37.3) * 6.2832;
+		float lobe = exit_w ? 1.0 + 0.22 * sin(5.0 * ang + seed) + 0.12 * sin(9.0 * ang + 2.0 * seed)
+				: 1.0 + 0.07 * sin(3.0 * ang + seed);
+		float dist = len / (lobe * pop);
+		// Blood soaked out round it (wider on cloth than skin), its edge a
+		// little uneven but smooth, and a run below.
+		float wick = 1.0 + 0.13 * sin(4.0 * ang + seed * 1.7) + 0.07 * sin(7.0 * ang + seed * 3.1);
+		float soak = 1.0 - smoothstep(soak_r * 0.8, soak_r, len / wick);
+		float wob = length(d.xz + vec2(0.004 * sin(rest_pos.y * 120.0), 0.0));
+		float run = (1.0 - smoothstep(r * 0.22, r * 0.45, wob)) * step(0.0, below) * (1.0 - smoothstep(run_len * 0.7, run_len, below));
+		// All blood where it has soaked through: a part-mix with bright
+		// cloth comes out pink or purple.
 		float stain = max(soak, run * 0.9);
-		col = mix(col, blood * (0.7 + 0.5 * n2), stain * 0.85);
+		// Thick and dark close to the wound, redder where it has spread
+		// thin, so it reads as a soaked patch and not a red disc.
+		vec3 soaked = mix(vec3(0.07, 0.003, 0.003), blood, smoothstep(r * 0.8, soak_r, len));
+		col = mix(col, soaked, stain);
 		wet = max(wet, stain);
-		// Torn flesh and the hole itself.
-		float torn_r = r * (exit_w ? 1.0 : 0.55);
-		float torn = 1.0 - smoothstep(torn_r * 0.75, torn_r, dist + 0.15 * r * n2);
-		col = mix(col, vec3(0.38, 0.03, 0.025) * (0.7 + 0.6 * n2), torn);
-		float hole = 1.0 - smoothstep(torn_r * 0.32, torn_r * 0.5, dist);
-		col = mix(col, vec3(0.03, 0.0, 0.0), hole);
+		// The rim: bruised and dark on an entry, raw red meat on an exit.
+		float rim = 1.0 - smoothstep(r * 0.92, r, dist);
+		col = mix(col, exit_w ? vec3(0.42, 0.035, 0.03) : vec3(0.15, 0.012, 0.012), rim);
+		if (exit_w) {
+			// Darker meat toward the hole.
+			col = mix(col, vec3(0.2, 0.01, 0.012), (1.0 - smoothstep(r * 0.55, r * 0.75, dist)) * rim);
+		}
+		float hole_r = r * (exit_w ? 0.42 : 0.5);
+		float hole = 1.0 - smoothstep(hole_r * 0.85, hole_r, dist);
+		col = mix(col, vec3(0.015, 0.0, 0.0), hole);
+		wet = max(wet, rim);
 	}
 	col = mix(col, blood * (0.8 + 0.4 * n1), bloodied * smoothstep(0.35, 0.75, n1) * 0.8);
 	wet = max(wet, bloodied * 0.6);

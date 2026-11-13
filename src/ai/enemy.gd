@@ -223,10 +223,12 @@ func on_part_hit(part: HitboxPart, hit: BallisticHit) -> void:
 	_volley_dep[zone] = _volley_dep.get(zone, 0.0) + dep
 	var head: bool = zone == &"head" or zone == &"neck"
 	# Wounds and blood (also on corpses).
-	var entry_r: float = clampf(0.007 + dep * 0.000006, 0.006, 0.02)
+	# Drawn a little bigger than life so a hit reads at a distance on a
+	# 720p phone (owner, 2026-11-13: more feedback the moment a round hits).
+	var entry_r: float = clampf(0.011 + dep * 0.000006, 0.011, 0.024)
 	body.add_wound(zone, hit.point, entry_r, false)
 	if hit.result == BallisticHit.Result.PENETRATED:
-		body.add_wound(zone, hit.exit_point, clampf(0.012 + hit.energy_out * 0.000004, 0.012, 0.045), true)
+		body.add_wound(zone, hit.exit_point, clampf(0.02 + hit.energy_out * 0.000005, 0.02, 0.05), true)
 	var violence: float = sqrt(maxf(dep, 30.0) / 300.0)
 	if hit.weapon and hit.weapon.gore_style != &"":
 		# Its own effect replaces the usual sprays (the GX-4's corkscrew).

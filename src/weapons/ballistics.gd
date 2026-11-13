@@ -99,6 +99,8 @@ class Trail:
 		return used > 0 and age < life
 var _embers: MultiMeshInstance3D
 var _ember_count: int = 0
+## Wakes behind the operative's rounds in RX-9 slow motion.
+var wakes: RoundWakes
 ## Projectiles fired since start (a shotgun shell adds one per pellet).
 var rounds_fired: int = 0
 
@@ -130,6 +132,8 @@ class Projectile:
 	var trail_index: int = 1
 	## Ember streak tail (starts at the muzzle).
 	var ember_tail: Vector3
+	## Its slot in RoundWakes while the world is slowed (-1: none).
+	var wake: int = -1
 	var mask: int = BULLET_MASK
 	## The shooter's own body.
 	var exclude: Array[RID] = []
@@ -195,6 +199,8 @@ func _ready() -> void:
 			trail.segments.append(seg)
 		_trails.append(trail)
 	_build_embers()
+	wakes = RoundWakes.new()
+	add_child(wakes)
 
 
 func _build_embers() -> void:
@@ -254,6 +260,10 @@ func fire(weapon: WeaponData, origin: Vector3, direction: Vector3, shooter: Node
 		p.tracer = _tracers[_tracer_next]
 		_tracer_next = (_tracer_next + 1) % _tracers.size()
 		p.tracer_tail = tracer_from
+	if p.trail == null and not weapon.embers and shooter and shooter.is_in_group(&"player") \
+			and TimeControl.dilation_amount() > RoundWakes.MIN_DILATION:
+		# Start it a little ahead of the muzzle, so it doesn't cover the gun.
+		p.wake = wakes.claim(p.id, origin + p.velocity.normalized() * 0.5)
 	_live.append(p)
 	_paths.append(p)
 	if _paths.size() > TRAJECTORY_KEEP:
@@ -261,6 +271,7 @@ func fire(weapon: WeaponData, origin: Vector3, direction: Vector3, shooter: Node
 	# Resolve the first tick now: point-blank shots land on the trigger frame.
 	_step(p, 1.0 / Engine.physics_ticks_per_second * Engine.time_scale)
 	_update_tracer(p)
+	_update_wake(p)
 	_extend_trail(p)
 	if not p.alive:
 		_live.erase(p)
@@ -358,6 +369,7 @@ func _place_segment(t: Trail, i: int) -> void:
 
 
 func _process(delta: float) -> void:
+	wakes.advance(delta)
 	for t: Trail in _trails:
 		if t.used == 0:
 			continue
@@ -412,6 +424,13 @@ func _update_tracer(p: Projectile) -> void:
 		p.tracer = null
 
 
+func _update_wake(p: Projectile) -> void:
+	if p.wake < 0:
+		return
+	if not wakes.update(p.wake, p.id, p.position, p.alive) or not p.alive:
+		p.wake = -1
+
+
 func live_count() -> int:
 	return _live.size()
 
@@ -440,6 +459,7 @@ static func pattern_dir(dir: Vector3, cone_deg: float, i: int, n: int, phase: fl
 func clear() -> void:
 	_live.clear()
 	_paths.clear()
+	wakes.clear()
 	_dirty = true
 
 
@@ -453,6 +473,7 @@ func _physics_process(delta: float) -> void:
 		for p: Projectile in _live:
 			_step(p, delta)
 			_update_tracer(p)
+			_update_wake(p)
 			_extend_trail(p)
 		_update_embers()
 		var still: Array[Projectile] = []

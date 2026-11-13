@@ -41,7 +41,7 @@ func test_lb_slows_the_world_and_lb_again_stops_it() -> void:
 	assert_true(td.is_running(), "a tap starts it (no holding)")
 	await _real_wait(0.5)
 	assert_eq(td.state, ActivePart.State.ACTIVE)
-	assert_almost_eq(Engine.time_scale, td.cfg.world_scale, 0.02, "the world runs at 30 %")
+	assert_almost_eq(Engine.time_scale, td.cfg.world_scale, 0.02, "the world runs at the part's world scale")
 	assert_gt(TimeControl.player_boost(), 1.5, "the operative runs faster than the world")
 	var before: float = td.charge
 	await _real_wait(0.5)
@@ -90,3 +90,28 @@ func test_death_ends_it() -> void:
 	await wait_frames(2)
 	assert_false(td.is_running())
 	assert_almost_eq(Engine.time_scale, 1.0, 0.01)
+
+
+## Owner, 2026-11-13: "slow it down just slightly more for them while keeping
+## you moving at the same speed".
+func test_world_slower_operative_unchanged() -> void:
+	var c: TimeDilationData = load("res://data/body/parts/rx9_reflex_overclock.tres") as TimeDilationData
+	assert_almost_eq(c.world_scale, 0.24, 0.001, "the world at 24 % (was 30 %)")
+	assert_almost_eq(c.player_scale, 0.65, 0.001, "the operative still at 65 % of real time")
+
+
+## While the world is slowed the operative's rounds leave a wake, so you see
+## each one go in and come out (owner, 2026-11-13). Not at normal speed.
+func test_rounds_leave_a_wake_only_while_slowed() -> void:
+	var w: WeaponData = load("res://data/weapons/pistol_57.tres") as WeaponData
+	var from: Vector3 = player.global_position + Vector3(0, 1.6, 0)
+	# Down into the floor a few metres ahead, so the round stops soon.
+	var dir: Vector3 = Vector3(0, -0.4, -1).normalized()
+	Ballistics.fire(w, from, dir, player)
+	assert_eq(Ballistics.wakes.live_count(), 0, "no wake at normal speed")
+	TimeControl.set_dilation(0.24, 0.65)
+	Ballistics.fire(w, from, dir, player)
+	assert_eq(Ballistics.wakes.live_count(), 1, "a wake behind the round in slow motion")
+	TimeControl.set_dilation(1.0, 1.0)
+	await wait_seconds(1.5)
+	assert_eq(Ballistics.wakes.live_count(), 0, "it fades once the round has stopped")

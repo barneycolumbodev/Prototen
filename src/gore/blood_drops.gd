@@ -30,6 +30,10 @@ const MAX_FLIGHT: float = 1.8
 ## Trace rays allowed per frame; past it, drops fall back to the floor rule.
 const RAYS_PER_FRAME: int = 110
 const SHADER: Shader = preload("res://src/gore/blood_drop.gdshader")
+## What a drop is: blood, or a bit of tissue torn out with it (darker, duller,
+## lumpy; owner, 2026-11-13).
+const KIND_BLOOD: int = 0
+const KIND_CHUNK: int = 1
 
 
 ## A drop reaching a surface.
@@ -173,7 +177,7 @@ static func time_to_height(p0: Vector3, v0: Vector3, k: float, floor_y: float, l
 ## (-INF: unknown, they live out `life`). `stain_size`: see Landing.stain.
 ## Returns the flight time.
 func emit(origin: Vector3, velocity: Vector3, size: float, drag: float, stain: bool, floor_y: float = -INF,
-		life: float = MAX_FLIGHT, stain_size: float = 0.0) -> float:
+		life: float = MAX_FLIGHT, stain_size: float = 0.0, kind: int = KIND_BLOOD) -> float:
 	var k: float = maxf(drag, 0.05)
 	var end: float = life
 	var traced: bool = false
@@ -209,8 +213,9 @@ func emit(origin: Vector3, velocity: Vector3, size: float, drag: float, stain: b
 	var i: int = _next
 	_next = (_next + 1) % MAX_DROPS
 	# The shader reads the launch state out of the instance transform:
-	# X = launch velocity, Y = (launch time, end time, size), Z = (drag, seed, 0).
-	_mm.set_instance_transform(i, Transform3D(Basis(velocity, Vector3(clock, clock + end, size), Vector3(k, _rng.randf(), 0.0)), origin))
+	# X = launch velocity, Y = (launch time, end time, size), Z = (drag, seed, kind).
+	_mm.set_instance_transform(i, Transform3D(Basis(velocity, Vector3(clock, clock + end, size),
+			Vector3(k, _rng.randf(), float(kind))), origin))
 	_ends[i] = clock + end
 	if _mm.visible_instance_count < MAX_DROPS:
 		_mm.visible_instance_count = maxi(_mm.visible_instance_count, i + 1)
@@ -224,7 +229,7 @@ func emit(origin: Vector3, velocity: Vector3, size: float, drag: float, stain: b
 ## of what they left (a flying limb, a moving stump).
 func cone(at: Vector3, dir: Vector3, count: int, speed_min: float, speed_max: float, spread_deg: float,
 		size_min: float, size_max: float, drag_base: float, stains: int, inherit: Vector3 = Vector3.ZERO,
-		floor_y: float = -INF, life: float = MAX_FLIGHT) -> void:
+		floor_y: float = -INF, life: float = MAX_FLIGHT, kind: int = KIND_BLOOD) -> void:
 	if count <= 0:
 		return
 	var z: Vector3 = dir.normalized() if dir.length_squared() > 0.0001 else Vector3.UP
@@ -241,4 +246,4 @@ func cone(at: Vector3, dir: Vector3, count: int, speed_min: float, speed_max: fl
 		var r: float = sqrt(_rng.randf()) * tan_spread
 		var d: Vector3 = (z + (x * cos(a) + y * sin(a)) * r).normalized()
 		var s: float = lerpf(speed_min, speed_max, pow(_rng.randf(), 1.6))
-		emit(at, d * s + inherit, size, drag_for(size, drag_base), big, floor_y, life)
+		emit(at, d * s + inherit, size, drag_for(size, drag_base), big, floor_y, life, 0.0, kind)

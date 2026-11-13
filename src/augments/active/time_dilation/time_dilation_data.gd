@@ -6,8 +6,8 @@ extends ActivePartData
 ## in data/body/parts/rx9_reflex_overclock.tres.
 
 @export_group("Time")
-## How fast the world runs while it's on (0.3 = 30 %).
-@export_range(0.05, 1.0) var world_scale: float = 0.3
+## How fast the world runs while it's on (0.24 = 24 %).
+@export_range(0.05, 1.0) var world_scale: float = 0.24
 ## How fast the operative runs (movement, gun, reloads). Looking is always real time.
 @export_range(0.05, 1.0) var player_scale: float = 0.65
 
