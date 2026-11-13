@@ -45,6 +45,8 @@ static func make(player: Player, scene: PackedScene, p_view: ViewmodelConfig, ri
 			r.anim.callback_mode_process = AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_MANUAL
 			r.anim.play(r.clip)
 			r.anim.seek(0.0, true)
+	# One draw per material instead of one per piece (optimization overhaul C-07).
+	RigidMerge.apply(r.model)
 	for n: Node in r.model.find_children("*", "MeshInstance3D", true, false):
 		(n as MeshInstance3D).cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	r.add_to_group(&"suit_painted")

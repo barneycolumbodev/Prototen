@@ -7,9 +7,11 @@ shader_type spatial;
 // so grime, edge wear and the weave still show. A part with no region map
 // is painted as one piece (`single_region`).
 
-uniform sampler2D tex_albedo : source_color, hint_default_white, filter_linear_mipmap_anisotropic;
-uniform sampler2D tex_orm : hint_default_white, filter_linear_mipmap_anisotropic;
-uniform sampler2D tex_normal : hint_normal, filter_linear_mipmap_anisotropic;
+// Plain trilinear: the arms and the suit face the camera, where anisotropic
+// filtering adds cost and nothing visible (optimization overhaul C-04).
+uniform sampler2D tex_albedo : source_color, hint_default_white, filter_linear_mipmap;
+uniform sampler2D tex_orm : hint_default_white, filter_linear_mipmap;
+uniform sampler2D tex_normal : hint_normal, filter_linear_mipmap;
 uniform sampler2D tex_emission : source_color, hint_default_black, filter_linear_mipmap;
 uniform sampler2D tex_region : hint_default_black, filter_nearest;
 uniform vec4 albedo_factor = vec4(1.0);
@@ -30,7 +32,12 @@ void fragment() {
 	vec3 orm = texture(tex_orm, UV).rgb;
 	float rough = orm.g * rough_factor;
 	float metal = orm.b * metal_factor;
-	int id = single_region >= 0 ? single_region : int(texture(tex_region, UV).r * 255.0 + 0.5);
+	// BodyColors sets single_region to 0 when no suit channel is painted, so
+	// an unpainted suit skips the region read.
+	int id = single_region;
+	if (id < 0) {
+		id = int(texture(tex_region, UV).r * 255.0 + 0.5);
+	}
 	id = clamp(id, 0, 11);
 	vec4 p = paint[id];
 	vec4 s = surf[id];

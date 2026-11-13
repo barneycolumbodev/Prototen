@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Status | Plan only. No game code, data or assets were changed to write it. |
+| Status | Phase 1 built 2026-11-13 (see §12); waiting for the phone. Phase 0 skipped by the owner. |
 | Date | 2026-11-13 |
 | Target | Moto G 5G (2025): Dimensity 6300 (2× Cortex-A76 + 6× A55), Mali-G57 MC2, 4 GB RAM, 720×1604 at 120 Hz |
 | Goal | A steady 60 fps in Chinatown combat with no loss of look |
@@ -447,3 +447,36 @@ Engine files read (godotengine/godot, tag `4.7.2-stable`): `servers/rendering/re
 | First person | `src/player/player.tscn`, `viewmodel_rig.gd`, `src/body/suit_paint.gdshader`, weapon and augment generators in `raw_assets/` |
 | HUD, effects | `src/ui/hud.gd`, `combat_hud.gd`, `src/vfx/fx.gd` |
 | Tooling | `tools/session_start.sh`, `tools/screenshot.sh` |
+
+---
+
+## 12. Progress
+
+### Phase 1 — built 2026-11-13 (owner: "start with phase one and not zero")
+
+Phase 0 was skipped at the owner's request, so nothing below has a phone number yet. Cloud evidence: `tools/check.sh` passes (all GUT tests, 5 new), and fixed-camera captures before and after were compared.
+
+| Task | What was done | Evidence in the cloud |
+|---|---|---|
+| P-01 | Pause → **Frame pacing**: Swappy mode fixed (0), auto pipelined (1) or auto (2, engine default). Applies at the next start, through the same override file as the renderer. The default is unchanged (2): pick the steadier one on the phone. | — (Android only) |
+| P-02 | Frame cap 60 / **40** / 30. Adaptive resolution already targets the cap. | — |
+| P-05 | `physics/common/max_physics_steps_per_frame = 3` (was 8). | — |
+| R-01 | Opaque draw order: gun and arms 0, men 1 (`EnemyBody.RENDER_PRIORITY`), map 2 (`ChinatownMap.WORLD_PRIORITY`). The Mobile renderer sorts ascending by priority (checked in the 4.7.2 source; the offset makes negative values legal too, contrary to §6). | Captures match within run-to-run noise. |
+| W-01 | World shader reads the puddle noise only on wet, upward-facing pixels, with gradients taken outside the branch. | Same output by construction; captures within noise. |
+| C-01 | Wound loop skips wounds whose widest radius can't reach the pixel; both noise values are computed only near a wound. | Same wounded man with the old and new shader in one run: **pixel-identical**. |
+| C-04 | Arm and suit textures trilinear instead of anisotropic; the region map is skipped when no suit colour is set. | Captures within noise. |
+| C-07 | `RigidMerge` (src/core/rigid_merge.gd): each rigid-piece model becomes one skinned mesh per material, one bone per piece, bones following the original (now empty) nodes. Done when the model is built, not in the Blender export, so the generators and the code that drives the pieces stay as they are. GX-4 107 → 8 surfaces, fan shield 102 → 6, whip 90 → 8, knife 73 → 8, drone 29 → 8, every triangle kept. | GUT; GX-4 deployed frame 114 → 73 draws; captures match. The merged meshes have no LODs (first person; the drone flies at range with 6.6k triangles). |
+| C-08 | Enemy guns: one surface each (`GunFlatten`, palette texture for the old materials' values, LODs regenerated). Blob shadows: one `MultiMeshInstance3D` for all men. | Gun A/B against the imported materials: max difference 4/255 on 359 edge pixels. |
+| U-07 | Reticle, rail gauge, health bar and vignette redraw only when a value they show changes. | GUT. |
+| F-15 | A frozen corpse stops `_process` once its wounds stop spreading (5 s) and `_physics_process` once it stops bleeding; a hit, cut or throw wakes it. | GUT. |
+| W-10 | Map import: no shadow meshes; a post-import step (`tools/import/map_post_import.gd`) stores the world data channel (CUSTOM0) as half floats, keeping LODs and compression. Imported map 12 MB → 8.5 MB. | Captures within noise. |
+| H-02 | `tests/unit/test_texture_sizes.gd`: fails on any imported texture over 2048, outside a whitelist (map lightmap; the two triad textures until C-02). | Fails when an entry is removed from the whitelist. |
+| E-01 | Steam: one process material and one mesh for all vents; a puff the camera is inside fades and stops drawing. | Captures within noise. |
+
+Notes from building it:
+
+- **Cloud captures are not deterministic on Chinatown.** Two runs of the same old build differ on up to 9 % of pixels (reflection probes still filling in, rain, steam, swinging lanterns). Judge "no change" against that spread, or A/B inside one run as for C-01 and C-08.
+- **A custom spatial shader that passes per-vertex values in its own varyings rendered without the ambient light** in the lit pass (Mobile renderer, lavapipe); the same values as uniforms or through the built-in UV were correct. Not investigated further. Worth remembering for future shaders.
+- F-20 still applies: the session had no software Vulkan driver until `mesa-vulkan-drivers` was installed by hand.
+
+**For the owner:** install the build, play a Chinatown fight with the overlay on, and compare with the last build. Then try Pause → Frame pacing → fixed (restart the app) and say which feels steadier. Any screenshot of the overlay helps.

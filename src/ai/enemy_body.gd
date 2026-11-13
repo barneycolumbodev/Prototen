@@ -25,6 +25,13 @@ signal ragdoll_frozen
 const MODEL: PackedScene = preload("res://assets/characters/triad/triad.gltf")
 const WARDROBE: PackedScene = preload("res://assets/characters/triad/triad_wardrobe.gltf")
 const SHADER: Shader = preload("res://src/ai/triad.gdshader")
+## Opaque draw order (optimization overhaul R-01): the Mobile renderer draws
+## lower priorities first, and has no depth pre-pass. The gun and arms stay
+## at 0, the men come next, the map last, so whatever is nearer and covers
+## more of the screen rejects the pixels behind it before they are shaded.
+const RENDER_PRIORITY: int = 1
+## Seconds after which a wound's blood stops spreading (triad.gdshader).
+const WOUND_GROW_TIME: float = 5.0
 const TEX_BASE: Texture2D = preload("res://assets/characters/triad/textures/triad_basecolor.png")
 const TEX_ORM: Texture2D = preload("res://assets/characters/triad/textures/triad_orm.png")
 const TEX_NORMAL: Texture2D = preload("res://assets/characters/triad/textures/triad_normal.png")
@@ -302,6 +309,7 @@ func add_wound(zone: StringName, hit_point: Vector3, radius: float, exit_wound: 
 	var spec: Array = ZONES.get(zone, [])
 	if spec.is_empty():
 		return
+	set_process(true)  # a sleeping corpse ages its new wound again
 	var zone_bone: StringName = spec[0]
 	var bi: int = skeleton.find_bone(zone_bone)
 	# Back into the rest pose: rest_global * pose_global⁻¹ * skeleton⁻¹.
@@ -436,6 +444,7 @@ func unfreeze() -> void:
 	if not frozen:
 		return
 	frozen = false
+	set_process(true)
 	_ragdoll_time = 0.0
 	_tree.active = true
 	_sim.active = true
@@ -459,6 +468,21 @@ func _process(delta: float) -> void:
 		for i: int in _wound_age.size():
 			_wound_age[i] += delta
 		material.set_shader_parameter(&"wound_age", _wound_age)
+	if frozen and _can_sleep():
+		# A frozen corpse whose blood has stopped spreading has nothing left
+		# to do until it's hit or moved (optimization overhaul F-15).
+		set_process(false)
+
+
+## Frozen, the baked mesh in, and every wound past the age where the shader
+## stops growing it (triad.gdshader: soak over 4 s, run over 5 s).
+func _can_sleep() -> bool:
+	if _lod_wait:
+		return false
+	for age: float in _wound_age:
+		if age < WOUND_GROW_TIME:
+			return false
+	return true
 
 
 func _settled() -> bool:
@@ -877,6 +901,7 @@ func _setup_meshes() -> void:
 	_load_wardrobe()
 	material = ShaderMaterial.new()
 	material.shader = SHADER
+	material.render_priority = RENDER_PRIORITY
 	material.set_shader_parameter(&"base_tex", TEX_BASE)
 	material.set_shader_parameter(&"orm_tex", TEX_ORM)
 	material.set_shader_parameter(&"normal_tex", TEX_NORMAL)
@@ -991,6 +1016,7 @@ func _setup_gun() -> void:
 		# Gun model: +X muzzle, +Y up, +Z its right. Weapon bone: +Y along the barrel, +Z up, +X right.
 		gun.transform = Transform3D(Basis(Vector3(0, 1, 0), Vector3(0, 0, 1), Vector3(1, 0, 0)), Vector3.ZERO)
 		_gun_socket.add_child(gun)
+		GunFlatten.apply(gun)
 
 
 func _setup_animation() -> void:

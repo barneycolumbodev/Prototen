@@ -67,6 +67,9 @@ pointing/emulate_touch_from_mouse=false
 
 3d/physics_engine="Jolt Physics"
 common/physics_ticks_per_second=60
+; At most 3 ticks in one frame (default 8): after a hitch the game runs slow
+; for a moment instead of stuttering further (optimization overhaul P-05).
+common/max_physics_steps_per_frame=3
 
 [rendering]
 
