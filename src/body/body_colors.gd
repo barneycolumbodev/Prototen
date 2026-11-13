@@ -211,9 +211,20 @@ func _suit_material(src: BaseMaterial3D, regions: Texture2D, ref: Array[float]) 
 			paint[k + 1] = Vector4(c.r, c.g, c.b, 1.0)
 	m.set_shader_parameter(&"paint", paint)
 	m.set_shader_parameter(&"surf", surf)
+	if not _any_suit_channel():
+		# Nothing painted: every region keeps the baked look, so the shader
+		# can skip the region map (optimization overhaul C-04).
+		m.set_shader_parameter(&"single_region", 0)
 	if has(&"lights"):
 		m.set_shader_parameter(&"glow_paint", _glow(color(&"lights")))
 	return m
+
+
+func _any_suit_channel() -> bool:
+	for ch: StringName in SUIT_CHANNELS:
+		if has(ch) or finish(ch) != Finish.DEFAULT:
+			return true
+	return false
 
 
 func _part_material(src: BaseMaterial3D, key: StringName, gkey: StringName) -> ShaderMaterial:

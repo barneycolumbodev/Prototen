@@ -23,6 +23,7 @@ const PLAYER_SCENE: PackedScene = preload("res://src/player/player.tscn")
 ## Visual layer of the static map. Character lights and the moon skip it
 ## (its lighting is baked).
 const MAP_LAYER: int = 2
+const WORLD_PRIORITY: int = 2
 ## Physics layer for invisible walls: they stop people, not bullets.
 const LAYER_CLIP: int = Ballistics.LAYER_CLIP
 const DETAIL_RANGE: float = 42.0
@@ -218,6 +219,9 @@ static func load_layout() -> Dictionary:
 func _build_map_meshes() -> void:
 	world_material = ShaderMaterial.new()
 	world_material.shader = preload("res://src/levels/chinatown/world.gdshader")
+	# Drawn after the first-person view (0) and the men (EnemyBody.RENDER_PRIORITY):
+	# the Mobile renderer draws lower priorities first (optimization overhaul R-01).
+	world_material.render_priority = WORLD_PRIORITY
 	world_material.set_shader_parameter(&"albedo_arr", load("res://assets/env/world/world_albedo.webp"))
 	world_material.set_shader_parameter(&"normal_arr", load("res://assets/env/world/world_normal.webp"))
 	world_material.set_shader_parameter(&"orm_arr", load("res://assets/env/world/world_orm.webp"))

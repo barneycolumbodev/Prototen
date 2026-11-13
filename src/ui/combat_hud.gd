@@ -44,6 +44,14 @@ class Vignette:
 	## Left, right, top, bottom: each fades from its screen edge inward.
 	var _edges: Array[ImageTexture] = []
 	var _profile_alpha: float = -1.0
+	var _drawn: Array = []
+
+	## Redrawn only when something it shows changed (optimization overhaul U-07).
+	func redraw_if_changed() -> void:
+		var now: Array = [hurt, suppression, arcs.duplicate(), size]
+		if now != _drawn:
+			_drawn = now
+			queue_redraw()
 
 	func _draw() -> void:
 		var r: Rect2 = get_rect()
@@ -100,6 +108,14 @@ class HealthBar:
 	var shown: float = 1.0
 	const W: float = 240.0
 	const H: float = 10.0
+	var _drawn: Array = []
+
+	## Redrawn only when something it shows changed (optimization overhaul U-07).
+	func redraw_if_changed() -> void:
+		var now: Array = [fraction, shown]
+		if now != _drawn:
+			_drawn = now
+			queue_redraw()
 
 	func _draw() -> void:
 		draw_rect(Rect2(0, 0, W, H), Color(0, 0, 0, 0.45))
@@ -168,7 +184,7 @@ func _process(delta: float) -> void:
 		_vignette.suppression = player.suppression
 		if not player.dead:
 			_down.visible = false
-	_health.queue_redraw()
+	_health.redraw_if_changed()
 	_banner_time -= delta
 	_wave.modulate.a = clampf(_banner_time, 0.25, 1.0) if _banner_time > -999.0 else 1.0
 	_update_arcs(delta)
@@ -197,7 +213,7 @@ func _update_arcs(delta: float) -> void:
 			arcs.append(Vector2(ang, (1.0 - ind.age / INDICATOR_TIME) * clampf(ind.strength, 0.4, 1.0)))
 	_hits = still
 	_vignette.arcs = arcs
-	_vignette.queue_redraw()
+	_vignette.redraw_if_changed()
 
 
 func _on_damaged(amount: float, from_dir: Vector3) -> void:

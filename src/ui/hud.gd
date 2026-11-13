@@ -42,9 +42,15 @@ class RailGauge:
 	var _t: float = 0.0
 	const W: float = 150.0
 
+	var _drawn: Array = []
+
 	func _process(delta: float) -> void:
 		_t += delta
-		queue_redraw()
+		# Redrawn only when something it shows changed (optimization overhaul U-07).
+		var now: Array = [charge, heat, venting, size, _t if venting else 0.0]
+		if now != _drawn:
+			_drawn = now
+			queue_redraw()
 
 	func _draw() -> void:
 		var x0: float = size.x - W
@@ -185,9 +191,15 @@ class Reticle:
 	var aim_offset: Vector2 = Vector2.ZERO
 	const MARKER_SEC: float = 0.28
 
+	var _drawn: Array = []
+
 	func _process(delta: float) -> void:
 		marker_time = maxf(0.0, marker_time - delta)
-		queue_redraw()
+		# Redrawn only when something it shows changed (optimization overhaul U-07).
+		var now: Array = [shape, color, gap_px, alpha, marker_time, marker_color, marker_scale, reload, aim_offset, size]
+		if now != _drawn:
+			_drawn = now
+			queue_redraw()
 
 	func _draw() -> void:
 		var c: Vector2 = size * 0.5 + aim_offset

@@ -79,6 +79,7 @@ func _build() -> void:
 	_add("scale", Settings.cycle_render_scale)
 	_add("adaptive", Settings.toggle_adaptive_resolution)
 	_add("fps", Settings.cycle_max_fps)
+	_add("pacing", _on_pacing)
 	_add("bloom", Settings.toggle_bloom)
 	_add("look", Settings.cycle_look_preset)
 	_add("look_speed", Settings.cycle_look_sensitivity)
@@ -127,6 +128,9 @@ func _refresh() -> void:
 	_label("scale", ("Render scale: up to %d%%" if Settings.adaptive_resolution else "Render scale: %d%%") % roundi(Settings.render_scale * 100.0))
 	_label("adaptive", "Resolution: %s" % ("auto (holds the frame rate)" if Settings.adaptive_resolution else "fixed"))
 	_label("fps", "Frame cap: %d fps" % Settings.max_fps)
+	var pace_now: int = Settings.current_pacing_mode()
+	var pace_next: int = Settings.next_start_pacing_mode()
+	_label("pacing", "Frame pacing: %s%s" % [Settings.pacing_name(pace_now), "" if pace_next == pace_now else "  →  %s after restart" % Settings.pacing_name(pace_next)])
 	_label("bloom", "Bloom: %s" % ("on (costs ~3 ms)" if Settings.bloom else "off"))
 	_label("look", "Look curve: %s" % Settings.look_config().display_name)
 	_label("look_speed", "Look speed: %d%%   (< >)" % roundi(Settings.look_sensitivity * 100.0))
@@ -139,6 +143,11 @@ func _refresh() -> void:
 func _on_renderer() -> void:
 	var method: String = Settings.cycle_next_start_renderer()
 	_notice.text = "Close the app and open it again to start with the %s renderer." % _pretty(method)
+
+
+func _on_pacing() -> void:
+	var mode: int = Settings.cycle_next_start_pacing_mode()
+	_notice.text = "Close the app and open it again to use frame pacing: %s." % Settings.pacing_name(mode)
 
 
 ## Maps the pause menu cycles through (scene path -> name).

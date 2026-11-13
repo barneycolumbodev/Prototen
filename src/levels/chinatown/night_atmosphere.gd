@@ -365,7 +365,30 @@ func _build_rain() -> void:
 # ------------------------------------------------------------------ steam and sound
 
 func _build_steam() -> void:
-	var shader: Shader = preload("res://src/levels/chinatown/steam.gdshader")
+	# One process material and one mesh (with its material) for every vent
+	# (optimization overhaul E-01): the emitters share their pipelines and
+	# uniform sets instead of building nine of each.
+	var pm: ParticleProcessMaterial = ParticleProcessMaterial.new()
+	pm.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_SPHERE
+	pm.emission_sphere_radius = 0.25
+	pm.direction = Vector3.UP
+	pm.spread = 12.0
+	pm.initial_velocity_min = 0.35
+	pm.initial_velocity_max = 0.7
+	pm.gravity = Vector3(0.12, 0.05, -0.05)
+	pm.scale_min = 0.8
+	pm.scale_max = 1.4
+	var curve: CurveTexture = CurveTexture.new()
+	var cv: Curve = Curve.new()
+	cv.add_point(Vector2(0, 0.4))
+	cv.add_point(Vector2(1, 2.4))
+	curve.curve = cv
+	pm.scale_curve = curve
+	var q: QuadMesh = QuadMesh.new()
+	q.size = Vector2(1.0, 1.0)
+	var mat: ShaderMaterial = ShaderMaterial.new()
+	mat.shader = preload("res://src/levels/chinatown/steam.gdshader")
+	q.material = mat
 	for m: Dictionary in map.layout["markers"]:
 		if ChinatownMap.fstr(m, "kind") != "steam":
 			continue
@@ -373,28 +396,7 @@ func _build_steam() -> void:
 		p.amount = 10
 		p.lifetime = 4.0
 		p.preprocess = 4.0
-		var pm: ParticleProcessMaterial = ParticleProcessMaterial.new()
-		pm.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_SPHERE
-		pm.emission_sphere_radius = 0.25
-		pm.direction = Vector3.UP
-		pm.spread = 12.0
-		pm.initial_velocity_min = 0.35
-		pm.initial_velocity_max = 0.7
-		pm.gravity = Vector3(0.12, 0.05, -0.05)
-		pm.scale_min = 0.8
-		pm.scale_max = 1.4
-		var curve: CurveTexture = CurveTexture.new()
-		var cv: Curve = Curve.new()
-		cv.add_point(Vector2(0, 0.4))
-		cv.add_point(Vector2(1, 2.4))
-		curve.curve = cv
-		pm.scale_curve = curve
 		p.process_material = pm
-		var q: QuadMesh = QuadMesh.new()
-		q.size = Vector2(1.0, 1.0)
-		var mat: ShaderMaterial = ShaderMaterial.new()
-		mat.shader = shader
-		q.material = mat
 		p.draw_pass_1 = q
 		p.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		add_child(p)

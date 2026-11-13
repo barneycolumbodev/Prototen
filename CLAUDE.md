@@ -86,7 +86,7 @@ Starting budgets. These are guesses: measure them on the phone in M0 and replace
 
 | Budget | Start |
 |---|---|
-| Frame rate | 60 fps; locked 30 as a fallback setting |
+| Frame rate | 60 fps; locked 40 or 30 as fallback settings (40 added 2026-11-13, optimization overhaul P-02) |
 | Render scale | 0.8–1.0 of 720p |
 | Draw calls | ≤ 150 |
 | Triangles on screen | ≤ 250k |

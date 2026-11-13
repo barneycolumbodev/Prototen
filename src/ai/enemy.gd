@@ -330,6 +330,7 @@ func release(throw_velocity: Vector3, by: Node) -> void:
 	_thrown_by = by
 	_thrown_speed = maxf(throw_velocity.length(), 0.5)
 	_thrown_time = 0.0
+	set_physics_process(true)
 	_thrown_hit.clear()
 
 
@@ -491,6 +492,7 @@ func sever(seg: StringName, velocity_out: Vector3, destroy: bool, hit: Ballistic
 	if not body.sever(seg, velocity_out, destroy):
 		return false
 	_bleeders.append(Bleeder.new(seg))
+	set_physics_process(true)
 	Sfx.play_at(&"gore_sever", body.cut_point(seg), 0.0, 0.1)
 	if not alive:
 		return true
@@ -639,6 +641,10 @@ func _physics_process(delta: float) -> void:
 		_update_bleeders(delta)
 		if _thrown_speed > 0.0:
 			_update_thrown(delta)
+		elif _bleeders.is_empty() and body.frozen and not held:
+			# A frozen corpse that has stopped bleeding runs no code until a
+			# cut or a throw wakes it (optimization overhaul F-15).
+			set_physics_process(false)
 		return
 	if held or _thrown_speed > 0.0:
 		_update_bleeders(delta)

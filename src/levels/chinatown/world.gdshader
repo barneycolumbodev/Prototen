@@ -75,8 +75,19 @@ void fragment() {
 	// where the ground is flat and low (texture cavities fill first).
 	float wet = v_data.y * rain;
 	float up = smoothstep(0.75, 0.97, v_wnrm.y);
-	float pn = texture(noise_tex, v_wpos.xz * 0.021).r * 0.65 + texture(noise_tex, v_wpos.xz * 0.1).r * 0.35;
-	float puddle = up * wet * smoothstep(0.62 - puddles * 0.3, 0.7 - puddles * 0.3, pn + (1.0 - orm.r) * 0.35);
+	// The puddle noise only matters on wet ground facing up (puddle is 0
+	// everywhere else): walls, ceilings and indoor surfaces skip both reads
+	// (optimization overhaul W-01). Gradients are taken outside the branch so
+	// the mip choice is the same as an unconditional read.
+	float puddle = 0.0;
+	vec2 pp = v_wpos.xz;
+	vec2 pdx = dFdx(pp);
+	vec2 pdy = dFdy(pp);
+	if (up * wet > 0.0) {
+		float pn = textureGrad(noise_tex, pp * 0.021, pdx * 0.021, pdy * 0.021).r * 0.65
+				+ textureGrad(noise_tex, pp * 0.1, pdx * 0.1, pdy * 0.1).r * 0.35;
+		puddle = up * wet * smoothstep(0.62 - puddles * 0.3, 0.7 - puddles * 0.3, pn + (1.0 - orm.r) * 0.35);
+	}
 	float darken = wet * (1.0 - metal) * mix(0.25, 0.45, up);
 	alb *= 1.0 - darken;
 	rough = mix(rough, rough * 0.4, wet);

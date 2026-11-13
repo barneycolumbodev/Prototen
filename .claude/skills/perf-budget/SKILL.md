@@ -9,7 +9,7 @@ Target: Moto G 5G (2025) — Dimensity 6300, Mali-G57 MC2, 4 GB RAM, 720×1604 a
 
 | Budget | Start value (replace with phone measurements) |
 |---|---|
-| Frame rate | 60 fps; locked 30 as a fallback setting |
+| Frame rate | 60 fps; locked 40 or 30 as fallback settings (40 added 2026-11-13, optimization overhaul P-02) |
 | Render scale | 0.8–1.0 of 720p |
 | Draw calls | ≤ 150 |
 | Triangles on screen | ≤ 250k |

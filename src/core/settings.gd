@@ -11,8 +11,18 @@ signal changed
 const SETTINGS_PATH: String = "user://settings.cfg"
 const OVERRIDE_PATH: String = "user://settings_override.cfg"
 const RENDER_SCALES: Array[float] = [0.7, 0.8, 0.9, 1.0]
-const FPS_CAPS: Array[int] = [60, 30]
+## 40 is three refreshes of the 120 Hz screen: evenly paced, a fallback
+## when 60 can't hold (optimization overhaul P-02).
+const FPS_CAPS: Array[int] = [60, 40, 30]
 const RENDERERS: Array[String] = ["mobile", "gl_compatibility"]
+## Android frame pacing (Swappy) modes (optimization overhaul P-01). Read at
+## start, so it goes through the override file like the renderer.
+## 0: honours the frame cap, never lowers it. 1 and 2: may lower the target
+## by themselves until they find a rate the phone holds (2 is the engine
+## default). Pick the steadier one on the phone.
+const PACING_SETTING: String = "display/window/frame_pacing/android/swappy_mode"
+const PACING_MODES: Array[int] = [2, 0, 1]
+const PACING_NAMES: Array[String] = ["fixed (honours the cap)", "auto, pipelined", "auto (engine default)"]
 const LOOK_PRESETS: Array[String] = ["standard", "linear", "precise"]
 ## Look speed multipliers offered in the pause menu (on top of the preset).
 const LOOK_SPEEDS: Array[float] = [0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.15, 1.3, 1.5]
@@ -195,6 +205,37 @@ func cycle_next_start_renderer() -> String:
 	if err != OK:
 		push_warning("Settings: could not save renderer override (%s)" % error_string(err))
 	return method
+
+
+## Frame pacing mode in use (read at start).
+func current_pacing_mode() -> int:
+	var mode: int = ProjectSettings.get_setting(PACING_SETTING, 2)
+	return mode
+
+
+## Frame pacing mode that will be used on the next start.
+func next_start_pacing_mode() -> int:
+	var cfg: ConfigFile = ConfigFile.new()
+	if cfg.load(OVERRIDE_PATH) == OK and cfg.has_section_key("display", "window/frame_pacing/android/swappy_mode"):
+		var mode: int = cfg.get_value("display", "window/frame_pacing/android/swappy_mode", 2)
+		return mode
+	return current_pacing_mode()
+
+
+func cycle_next_start_pacing_mode() -> int:
+	var i: int = PACING_MODES.find(next_start_pacing_mode())
+	var mode: int = PACING_MODES[(i + 1) % PACING_MODES.size()]
+	var cfg: ConfigFile = ConfigFile.new()
+	cfg.load(OVERRIDE_PATH)  # missing file is fine
+	cfg.set_value("display", "window/frame_pacing/android/swappy_mode", mode)
+	var err: Error = cfg.save(OVERRIDE_PATH)
+	if err != OK:
+		push_warning("Settings: could not save frame pacing override (%s)" % error_string(err))
+	return mode
+
+
+static func pacing_name(mode: int) -> String:
+	return PACING_NAMES[clampi(mode, 0, PACING_NAMES.size() - 1)]
 
 
 ## The element after `current` in `values` (wraps). Unknown values go to the first element.

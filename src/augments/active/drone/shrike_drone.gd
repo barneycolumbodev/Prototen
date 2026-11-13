@@ -224,6 +224,8 @@ func _build_craft() -> void:
 		_anim.callback_mode_process = AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_MANUAL
 		_anim.play(_clip)
 		_anim.seek(0.0, true)
+	# One draw per material instead of one per piece (optimization overhaul C-07).
+	RigidMerge.apply(_model)
 	cam = Camera3D.new()
 	cam.fov = cfg.camera_fov
 	cam.near = 0.05

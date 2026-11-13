@@ -208,15 +208,17 @@ void fragment() {
 	float rough = orm.g;
 	float metal = orm.b;
 
-	// The noise only shapes wounds, blood and char: an unhurt man skips it
-	// (uniform branch, the same for every pixel; 16 hashes a pixel saved).
+	// The noise only shapes wounds, blood and char, and is worked out only
+	// where something uses it: an unhurt man skips it (uniform branch), and a
+	// wounded one computes it only on pixels near a wound (optimization
+	// overhaul C-01; the output is the same as computing it everywhere).
 	float n1 = 0.0;
 	float n2 = 0.0;
-	if (wound_count > 0 || bloodied > 0.0 || char_amount > 0.0) {
+	bool have_n1 = false;
+	bool have_n2 = false;
+	if (bloodied > 0.0 || char_amount > 0.0) {
 		n1 = vnoise(rest_pos * 90.0);
-	}
-	if (wound_count > 0) {
-		n2 = vnoise(rest_pos * 260.0);
+		have_n1 = true;
 	}
 	vec3 blood = vec3(0.22, 0.008, 0.008);
 	float wet = 0.0;
@@ -229,14 +231,30 @@ void fragment() {
 		bool exit_w = w.w < 0.0;
 		float age = wound_age[i];
 		vec3 d = rest_pos - w.xyz;
+		float soak_r = r * (2.2 + 2.6 * clamp(age / 4.0, 0.0, 1.0)) * (exit_w ? 1.5 : 1.0) * mix(1.4, 1.0, m.a);
+		float below = w.y - rest_pos.y;
+		float run_len = r * (3.0 + 10.0 * clamp(age / 5.0, 0.0, 1.0));
+		// Early out: the noisy distance is at least 0.75 of the true one and
+		// soak_r is the widest of the soak, torn and hole radii, so past it
+		// none of them reaches this pixel; the run needs the pixel below the
+		// wound, above the run's end and within its width (wob is at most
+		// 0.006 narrower than the flat distance).
+		if (length(d) * 0.75 >= soak_r && (below < 0.0 || below >= run_len || length(d.xz) >= r * 0.55 + 0.006)) {
+			continue;
+		}
+		if (!have_n1) {
+			n1 = vnoise(rest_pos * 90.0);
+			have_n1 = true;
+		}
+		if (!have_n2) {
+			n2 = vnoise(rest_pos * 260.0);
+			have_n2 = true;
+		}
 		float dist = length(d) * (0.75 + 0.5 * n1);
 		// Blood soaking out (bigger on cloth than skin, grows for a few seconds).
-		float soak_r = r * (2.2 + 2.6 * clamp(age / 4.0, 0.0, 1.0)) * (exit_w ? 1.5 : 1.0) * mix(1.4, 1.0, m.a);
 		float soak = 1.0 - smoothstep(soak_r * 0.55, soak_r, dist);
 		// A run of blood below the wound.
-		float below = w.y - rest_pos.y;
 		float wob = length(d.xz + vec2(0.006 * sin(rest_pos.y * 120.0), 0.0));
-		float run_len = r * (3.0 + 10.0 * clamp(age / 5.0, 0.0, 1.0));
 		float run = (1.0 - smoothstep(r * 0.25, r * 0.55, wob)) * step(0.0, below) * (1.0 - smoothstep(run_len * 0.6, run_len, below));
 		float stain = max(soak, run * 0.9);
 		col = mix(col, blood * (0.7 + 0.5 * n2), stain * 0.85);

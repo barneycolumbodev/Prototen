@@ -512,3 +512,24 @@ Please try:
 - Measured:
 - Notes from the owner:
 - Follow-ups:
+
+## Optimization Phase 1 — 2026-11-13 — free wins (waiting for the owner)
+
+What's in the APK (details in `optimization overhaul.md` §12): no change to the picture is intended.
+- The gun is drawn before the men and the map, so the map isn't shaded under it.
+- Cheaper shaders: rain work only on wet ground, wounds only near wounds, plainer filtering on the arms.
+- Augment arms, the drone and the knife draw in 6–8 calls instead of 29–107; enemy guns in one call each, all contact shadows in one.
+- The HUD redraws only when something on it changes; frozen corpses stop running code; steam shares its materials and fades when you're inside a puff.
+- After a hitch, at most 3 physics steps in one frame (was 8).
+- Pause → Frame cap now has 40 (three refreshes of the 120 Hz screen).
+- Pause → **Frame pacing** (applies after restarting the app): "fixed" never lowers the frame rate by itself; "auto" is what the game used until now.
+
+Please try:
+1. A Chinatown fight with the overlay on. Screenshot the overlay. Does it feel steadier than the last build?
+2. Pause → Frame pacing → fixed. Close and reopen the app. Fight again: steadier or worse?
+3. Deploy the GX-4 and the fan shield in a fight: any hitch when they come out?
+
+- Device / renderer / settings:
+- Measured:
+- Notes from the owner:
+- Follow-ups:

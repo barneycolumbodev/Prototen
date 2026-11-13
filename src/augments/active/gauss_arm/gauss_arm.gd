@@ -109,6 +109,8 @@ func _build_rig() -> void:
 			anim.callback_mode_process = AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_MANUAL
 			anim.play(anim_name)
 			anim.seek(0.0, true)
+	# One draw per material instead of one per piece (optimization overhaul C-07).
+	RigidMerge.apply(model)
 	muzzle_tip = model.find_child("muzzle_tip", true, false) as Node3D
 	for k: int in 10:
 		var led: Node3D = model.find_child("led_%d" % k, true, false) as Node3D
