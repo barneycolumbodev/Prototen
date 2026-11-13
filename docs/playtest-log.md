@@ -533,3 +533,26 @@ Please try:
 - Measured:
 - Notes from the owner:
 - Follow-ups:
+
+## Impact feedback and RX-9 — 2026-11-13 (waiting for the owner)
+
+Owner: slow the world a little more under the RX-9 without slowing the operative; more feedback the moment a round hits ("a solid little wound... without that pattern"); in slow motion, clearly see the round go in, come out and throw a brutal but restrained splatter onto what's behind (Brutal Doom, Soldier of Fortune); cheap.
+
+What's in the APK (design §3.4 RX-9 and §5.5 "The moment of impact"):
+- RX-9: the world at 24 % (was 30 %); you still move, shoot and reload at 65 % of real time.
+- Wounds: solid shapes, no noise pattern. Black hole, hard rim, a soaked patch that spreads for 3 s and runs down. Exits are torn and bigger. Drawn bigger than life so they read at fighting distance.
+- The moment of impact: a burst of blood at the entry, a fan of jets out of the exit, more drops, bits of tissue, a bigger splatter on the wall behind with spines and runs.
+- In slow motion your rounds leave a thin wake, so you see each one go in and come out the back.
+- Bug fixed: every bullet-impact particle (dust, sparks, splinters, glass) was drawn about a metre wide. That was the big pale puff on walls; it hid the blood. They're now their real few centimetres, which also costs less.
+- Cost: two more draw calls at most (bursts, wakes); wound shading is cheaper than before (no noise).
+
+Please try:
+1. Shoot a man standing in front of a wall with the Five-seveN, normal speed. Do you see a hit land? Is the wall splatter the right size?
+2. Same with the RX-9 on. Do you see the round go in and come out? Too much, too little, too slow?
+3. Is the wound on his clothes readable at fighting distance? Does it look like a wound or a sticker?
+4. Does the RX-9 feel slower for them and the same for you?
+
+- Device / renderer / settings:
+- Measured:
+- Notes from the owner:
+- Follow-ups:

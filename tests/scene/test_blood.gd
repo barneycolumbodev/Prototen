@@ -205,3 +205,56 @@ func test_gore_off_spills_nothing() -> void:
 	Gore.splat(SPOT, Vector3.UP, 0.3)
 	assert_eq(Gore.drop_count(), 0)
 	assert_eq(Gore.splat_count(), 0)
+
+
+## Owner, 2026-11-13: more punch the moment a round hits, clearest in RX-9
+## slow motion: a burst at the entry, a fan out of the exit, bits of tissue.
+func test_a_round_through_a_body_bursts_at_entry_and_exit() -> void:
+	room.shooting_range.clear_targets()
+	var e: Enemy = Enemy.new()
+	e.config = load("res://data/enemies/gunman.tres") as EnemyConfig
+	e.passive = true
+	room.add_child(e)
+	e.position = SPOT + Vector3(0, 0, -1.0)
+	e.face(0.0)
+	await wait_physics_frames(6)
+	var bursts: int = Gore.bursts_fx.emitted
+	var at: Vector3 = e.body.chest_position()
+	Ballistics.fire(m14, at + Vector3(0, 0, 5.0), Vector3(0, 0, -1), player)
+	await wait_physics_frames(2)
+	assert_eq(Gore.bursts_fx.emitted - bursts, 2, "one burst where it went in, one where it came out")
+	assert_eq(Gore.bursts_fx.live_count(Gore.drops.clock), 2, "both showing")
+	var chunks: int = 0
+	for i: int in BloodDrops.MAX_DROPS:
+		if roundi(Gore.drops.multimesh.get_instance_transform(i).basis.z.z) == BloodDrops.KIND_CHUNK:
+			chunks += 1
+	assert_gt(chunks, 0, "bits of tissue thrown out of the exit")
+	await wait_seconds(0.4)
+	assert_eq(Gore.bursts_fx.live_count(Gore.drops.clock), 0, "gone a fraction of a second later")
+
+
+func test_the_burst_runs_on_game_time() -> void:
+	Engine.time_scale = 0.25
+	Gore.bursts_fx.emit(Gore.drops.clock, SPOT + Vector3.UP, Vector3.FORWARD, 0.3, 0.2, 0.04, true)
+	var real_start: int = Time.get_ticks_msec()
+	while Time.get_ticks_msec() - real_start < 300:
+		await wait_frames(1)
+	assert_eq(Gore.bursts_fx.live_count(Gore.drops.clock), 1, "at quarter speed a 0.2 s burst is still going after 0.3 s")
+	Engine.time_scale = 1.0
+	await wait_seconds(0.3)
+	assert_eq(Gore.bursts_fx.live_count(Gore.drops.clock), 0)
+
+
+func test_bursts_are_capped() -> void:
+	for i: int in ImpactBursts.MAX_BURSTS * 3:
+		Gore.bursts_fx.emit(Gore.drops.clock, SPOT + Vector3.UP, Vector3.FORWARD, 0.3, 0.5, 0.04, true)
+	assert_eq(Gore.bursts_fx.live_count(Gore.drops.clock), ImpactBursts.MAX_BURSTS, "the oldest is reused")
+
+
+## Impact particles (dust, sparks, splinters) were drawn about a metre
+## across: a billboard particle material drops the particle's scale unless
+## told to keep it. Found in the 2026-11-13 impact captures.
+func test_impact_particles_keep_their_size() -> void:
+	for kind: StringName in [&"dust", &"sparks", &"splinters", &"glass"]:
+		var m: StandardMaterial3D = Fx._particle_material(kind)
+		assert_true(m.billboard_keep_scale, "%s particles are drawn at their own size" % kind)

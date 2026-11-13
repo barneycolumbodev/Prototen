@@ -145,41 +145,97 @@ def blob(c, cx, cy, r0, rng, lobes=7, rough=0.22, thick=0.9, spines=0):
             c.ellipse(cx + np.cos(a) * rr, cy + np.sin(a) * rr, w * 1.6, w * 1.1, a, thick * 0.8)
 
 
+def spine(c, cx, cy, a, r_from, length, w, thick, rng):
+    """A ray thrown out of a stain: tapering, a little wavy, a bead at its end."""
+    steps = max(int(length * c.n / 2), 6)
+    wob = rng.uniform(-1, 1)
+    for i in range(steps):
+        f = i / (steps - 1)
+        rr = r_from + length * f
+        aa = a + 0.03 * wob * np.sin(f * 5.0)
+        ww = w * (1.0 - 0.8 * f) ** 0.8
+        c.ellipse(cx + np.cos(aa) * rr, cy + np.sin(aa) * rr, max(ww * 1.8, length / steps * 1.4), ww, aa,
+                  thick * (0.85 - 0.25 * f))
+    if rng.random() < 0.8:  # the drop that ran out along the spine
+        rr = r_from + length * rng.uniform(1.03, 1.25)
+        bw = w * rng.uniform(0.9, 1.5)
+        c.ellipse(cx + np.cos(a) * rr, cy + np.sin(a) * rr, bw * rng.uniform(1.2, 2.0), bw, a, thick * 0.9)
+
+
 def impact_spatter(seed):
+    """Blood thrown hard and square at a surface (owner, 2026-11-13: brutal,
+    in the line of Brutal Doom and Soldier of Fortune, but restrained). A
+    heavy, uneven mass with dark clots in it, a crown of thick spines with
+    beads at their ends, and medium drops round it."""
     rng = np.random.default_rng(seed)
     c = Canvas()
-    cx, cy = 0.5 + rng.uniform(-0.03, 0.03), 0.5 + rng.uniform(-0.03, 0.03)
-    r0 = rng.uniform(0.13, 0.17)
-    blob(c, cx, cy, r0, rng, lobes=8, rough=0.3, thick=0.95, spines=int(rng.integers(7, 12)))
-    for _ in range(int(rng.integers(70, 110))):
+    cx, cy = 0.5 + rng.uniform(-0.02, 0.02), 0.5 + rng.uniform(-0.02, 0.02)
+    r0 = rng.uniform(0.15, 0.18)
+    blob(c, cx, cy, r0, rng, lobes=10, rough=0.34, thick=0.8, spines=0)
+    # Lobes pushed out of the mass.
+    for _ in range(int(rng.integers(4, 7))):
         a = rng.random() * 6.283
-        dist = r0 * (1.1 + rng.exponential(0.55))
+        rr = r0 * rng.uniform(0.6, 0.95)
+        blob(c, cx + np.cos(a) * rr, cy + np.sin(a) * rr, r0 * rng.uniform(0.3, 0.5), rng, lobes=5, rough=0.3,
+             thick=0.85)
+    # Clots: thick dark lumps.
+    for _ in range(int(rng.integers(6, 12))):
+        a = rng.random() * 6.283
+        rr = r0 * rng.uniform(0.0, 0.8)
+        s = r0 * rng.uniform(0.05, 0.13)
+        c.ellipse(cx + np.cos(a) * rr, cy + np.sin(a) * rr, s * rng.uniform(1.0, 1.6), s, rng.random() * 3.14, 1.0)
+    # The crown of spines.
+    n = int(rng.integers(12, 18))
+    for i in range(n):
+        a = (i + rng.uniform(-0.35, 0.35)) / n * 6.283
+        length = r0 * rng.uniform(0.35, 1.25)
+        w = r0 * rng.uniform(0.06, 0.13)
+        spine(c, cx, cy, a, r0 * 0.8, length, w, 0.85, rng)
+    # Medium and small drops thrown past it.
+    for _ in range(int(rng.integers(40, 60))):
+        a = rng.random() * 6.283
+        dist = r0 * (1.15 + rng.exponential(0.6))
         if dist > 0.41:
             continue
-        size = rng.uniform(0.003, 0.013) * (1.0 - 0.6 * dist / 0.41)
-        stretch = 1.0 + 2.5 * (dist / 0.41) * rng.random()
-        c.ellipse(cx + np.cos(a) * dist, cy + np.sin(a) * dist, size * stretch, size, a, rng.uniform(0.35, 0.8))
+        size = rng.uniform(0.005, 0.016) * (1.0 - 0.5 * dist / 0.41)
+        stretch = 1.0 + 2.2 * (dist / 0.41) * rng.random()
+        if rng.random() < 0.25:
+            c.tear(cx + np.cos(a) * dist, cy + np.sin(a) * dist, size * stretch * 2.2, size * 1.6, a, 0.75)
+        else:
+            c.ellipse(cx + np.cos(a) * dist, cy + np.sin(a) * dist, size * stretch, size, a, rng.uniform(0.5, 0.85))
     return c.done()
 
 
 def forward_spatter(seed):
+    """Blood that left an exit wound and hit a surface at an angle, going
+    toward +X: a heavy mass where it struck, thick streaks and tear-shaped
+    drops fanning out from it, longer the further they went."""
     rng = np.random.default_rng(seed)
     c = Canvas()
-    ox, oy = 0.16, 0.5 + rng.uniform(-0.04, 0.04)
-    blob(c, ox + 0.03, oy, rng.uniform(0.045, 0.065), rng, lobes=6, rough=0.35, thick=0.9, spines=0)
-    for _ in range(int(rng.integers(150, 210))):
-        a = rng.normal(0.0, 0.3)
-        dist = rng.uniform(0.02, 0.74) ** 0.8 * 0.76
+    ox, oy = 0.17, 0.5 + rng.uniform(-0.03, 0.03)
+    blob(c, ox + 0.04, oy, rng.uniform(0.07, 0.09), rng, lobes=7, rough=0.35, thick=0.85, spines=0)
+    for _ in range(int(rng.integers(4, 7))):
+        blob(c, ox + 0.06 + rng.uniform(0.0, 0.1), oy + rng.normal(0.0, 0.04), rng.uniform(0.025, 0.045), rng,
+             lobes=5, rough=0.3, thick=0.9)
+    # Thick streaks out of the mass.
+    for _ in range(int(rng.integers(9, 14))):
+        a = rng.normal(0.0, 0.22)
+        length = rng.uniform(0.2, 0.62)
+        spine(c, ox + 0.04, oy, a, 0.06, length, rng.uniform(0.008, 0.02), 0.8, rng)
+    # Drops thrown along, long ones further out.
+    for _ in range(int(rng.integers(70, 100))):
+        a = rng.normal(0.0, 0.28)
+        dist = rng.uniform(0.04, 0.74) ** 0.85 * 0.76
         px, py = ox + np.cos(a) * dist, oy + np.sin(a) * dist
         if not (PAD < px < 1 - PAD and PAD < py < 1 - PAD):
             continue
         f = dist / 0.76
-        size = rng.uniform(0.0035, 0.012) * (1.15 - 0.75 * f)
-        stretch = 1.4 + 5.0 * f * rng.uniform(0.5, 1.0)
-        if rng.random() < 0.18:
-            c.tear(px, py, size * stretch * 2.0, size * 2.0, a, rng.uniform(0.5, 0.9))
+        size = rng.uniform(0.005, 0.015) * (1.15 - 0.6 * f)
+        stretch = 1.5 + 4.5 * f * rng.uniform(0.5, 1.0)
+        if rng.random() < 0.35:
+            c.tear(px, py, size * stretch * 2.0, size * 2.0, a, rng.uniform(0.6, 0.9))
         else:
-            c.ellipse(px, py, size * stretch, size, a, rng.uniform(0.35, 0.8))
+            c.ellipse(px, py, size * stretch, size, a, rng.uniform(0.5, 0.85))
     return c.done()
 
 

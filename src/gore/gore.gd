@@ -74,6 +74,8 @@ var sprays_fired: int = 0
 
 ## Blood in the air.
 var drops: BloodDrops
+## The burst thrown out of a wound the moment a round goes in or out.
+var bursts_fx: ImpactBursts
 
 var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
 var _splat_mm: MultiMesh
@@ -118,6 +120,8 @@ func _ready() -> void:
 	_pool_mat = _pool_mm.mesh.surface_get_material(0) as ShaderMaterial
 	drops = BloodDrops.new()
 	add_child(drops)
+	bursts_fx = ImpactBursts.new()
+	add_child(bursts_fx)
 
 
 ## Weapon-specific gore (WeaponData.gore_style), e.g. the GX-4's corkscrew
@@ -185,13 +189,18 @@ func _amount() -> float:
 
 
 ## A round went into (and maybe out of) a body. `scale`: how violent (1 = a
-## pistol round to the torso).
-## - Entry: a little fine back-spatter toward the shooter.
-## - Exit (the round went through): a cone of drops along the round, faster
-##   and heavier with the energy it left; a fine spray on head shots and
-##   heavy hits; a gout that carries on to whatever is behind and leaves the
-##   big stain there.
-## - No exit: sometimes a drop falls from the wound.
+## pistol round to the torso). Owner, 2026-11-13: the moment of impact needs
+## more punch, clearest in RX-9 slow motion: "the round clearly entering,
+## exiting, throwing a blood splatter that's reasonably sized but brutal into
+## a nearby object or surface" (Brutal Doom, Soldier of Fortune, but
+## restrained, and cheap).
+## - Entry: a small burst (ImpactBursts) and a fast back-spatter toward the
+##   shooter.
+## - Exit (the round went through): a fan burst along the round, a cone of
+##   drops, a few dark bits of tissue, a fine spray on head shots and heavy
+##   hits, and the gout: the bulk of what left, in one piece, carried to
+##   whatever is behind, where it leaves the big stain.
+## - No exit: a heavier burst at the entry and sometimes a drop falls.
 func flesh_hit(hit: BallisticHit, scale: float, headshot: bool) -> void:
 	if not is_on():
 		return
@@ -199,18 +208,27 @@ func flesh_hit(hit: BallisticHit, scale: float, headshot: bool) -> void:
 	var k: float = clampf(scale, 0.3, 4.0) * _amount()
 	var back: Vector3 = (hit.normal * 0.75 - hit.direction * 0.25).normalized()
 	var floor_y: float = _floor_y(hit.point)
-	drops.cone(hit.point, back, roundi(4.0 * k), 0.6, 2.2 + 0.8 * k, 34.0, 0.004, 0.011, 2.2,
-			1 if k > 1.2 else 0, Vector3.ZERO, floor_y, 0.9)
-	if hit.result == BallisticHit.Result.PENETRATED:
+	var through: bool = hit.result == BallisticHit.Result.PENETRATED
+	var c: float = drops.clock
+	bursts_fx.emit(c, hit.point, back, (0.07 + 0.025 * k) * (1.0 if through else 1.35), 0.11, 0.022, false)
+	drops.cone(hit.point, back, roundi(6.0 * k), 1.2, 3.2 + 1.0 * k, 30.0, 0.004, 0.012, 2.0,
+			1 if k > 1.0 else 0, Vector3.ZERO, floor_y, 0.9)
+	if through:
 		var fast: float = sqrt(k)
-		drops.cone(hit.exit_point, hit.direction, mini(roundi(9.0 * k), 36), 1.5, 4.5 + 4.5 * fast, 17.0, 0.006, 0.02,
-				0.9, clampi(roundi(3.0 * k), 2, 7), Vector3.ZERO, floor_y)
+		var reach: float = clampf(0.22 + 0.1 * k, 0.22, 0.6)
+		bursts_fx.emit(c, hit.exit_point, hit.direction, reach, 0.2 + 0.04 * fast, 0.045, true)
+		drops.cone(hit.exit_point, hit.direction, mini(roundi(12.0 * k), 40), 2.0, 5.0 + 4.5 * fast, 16.0, 0.006, 0.022,
+				0.9, clampi(roundi(3.0 * k), 2, 8), Vector3.ZERO, floor_y)
+		# Bits of tissue: few, heavy, dark; they carry and leave their own marks.
+		drops.cone(hit.exit_point, hit.direction, clampi(roundi(1.5 * k), 1, 5), 3.0, 4.0 + 3.0 * fast, 12.0, 0.016,
+				0.026, 0.35, clampi(roundi(1.5 * k), 1, 5), Vector3.ZERO, floor_y, BloodDrops.MAX_FLIGHT,
+				BloodDrops.KIND_CHUNK)
 		if headshot or k > 1.6:
 			mist(hit.exit_point, hit.direction, k)
 		# The gout: the bulk of what leaves, in one piece, to the wall behind.
 		var out: Vector3 = (hit.direction + Vector3(0, _rng.randf_range(-0.03, 0.1), 0)).normalized()
-		drops.emit(hit.exit_point, out * (6.0 + 2.5 * fast), 0.026 + 0.006 * k, 0.35, true, floor_y, BloodDrops.MAX_FLIGHT,
-				0.26 + 0.15 * k)
+		drops.emit(hit.exit_point, out * (6.5 + 2.5 * fast), 0.028 + 0.006 * k, 0.3, true, floor_y, BloodDrops.MAX_FLIGHT,
+				clampf(0.38 + 0.2 * k, 0.38, 0.95))
 	elif _rng.randf() < 0.5:
 		drip(hit.point, 0.012 + 0.003 * k)
 	if headshot:
@@ -603,6 +621,7 @@ func clear() -> void:
 	_pools.clear()
 	_pool_mm.visible_instance_count = 0
 	drops.clear()
+	bursts_fx.clear()
 	for g: RigidBody3D in _gibs:
 		if is_instance_valid(g):
 			g.visible = false
@@ -614,6 +633,7 @@ func _process(delta: float) -> void:
 	for l: BloodDrops.Landing in drops.advance(delta):
 		_on_landing(l)
 	_splat_mat.set_shader_parameter(&"now", drops.clock)
+	bursts_fx.set_clock(drops.clock)
 	_pool_mat.set_shader_parameter(&"now", drops.clock)
 	if not _fading.is_empty():
 		for i: int in _fading.keys():

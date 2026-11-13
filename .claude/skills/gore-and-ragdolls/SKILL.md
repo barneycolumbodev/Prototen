@@ -74,3 +74,10 @@ GUT tests for zone lookup, armor/penetration maths and pool caps. Screenshots of
 - Stumps: `Enemy.Bleeder` pumps at `BLEED_HEART_HZ` with exponentially falling pressure (faster once dead) via `Gore.spurt`.
 - Gib pool: hidden (cleared) gibs are reused first; a chunk may replace a limb that has lain `GIB_KEEP_TIME` (20 s). Without that, a long fight filled every slot with old limbs and bursts threw nothing.
 - Captures: `--demo=gore-lineup` now has six men, ordinary guns (M14 arm, MG42 leg, pistol hand, buckshot head, M14 head, Gauss burst), a wall 1.5 m behind them, and cameras CapLineup, CapLineupL/R, CapLineupWall, CapLineupFloor. The test room's grid shader aliases into horizontal lines on surfaces seen edge-on; that isn't the blood.
+
+## As built (2026-11-13: the moment of impact)
+
+- Design: docs/design.md §5.5 "The moment of impact". Entry/exit bursts: `src/gore/impact_bursts.gd` + `impact_burst.gdshader` (MultiMesh, launch state in the instance transform, game clock from `Gore.drops.clock`). Round wakes in RX-9 slow motion: `src/vfx/round_wakes.gd` (owned by Ballistics, `Projectile.wake`). Tissue bits: `BloodDrops.KIND_CHUNK` in the drop's Z axis.
+- Wounds in `triad.gdshader` are solid (no noise): hole, rim, lobed exits, soak darker near the hole. Keep the early-out radius in step with the widest shape (soak × 1.2 for the uneven edge, 1.34 r for exit lobes).
+- `BaseMaterial3D.BILLBOARD_PARTICLES` drops the particle's scale unless `billboard_keep_scale` is true. Without it every CPUParticles3D quad is drawn at the mesh's 1 m size.
+- Captures: `-- --demo=impact` with Godot's `--fixed-fps 60` so each frame is the same slice of time; `--impact-cam=shooter`, `--impact-normal`, `--impact-gun=<weapon>`, `--impact-zone=<zone>`. Frame sequence PNGs into the capture dir. Install `mesa-vulkan-drivers` first or captures silently fall back to Compatibility.

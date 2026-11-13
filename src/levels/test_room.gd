@@ -136,6 +136,10 @@ func _ready() -> void:
 			var gl: GoreLineup = GoreLineup.new()
 			gl.room = self
 			add_child(gl)
+		elif arg == "--demo=impact":
+			var im: ImpactDemo = ImpactDemo.new()
+			im.room = self
+			add_child(im)
 		elif arg == "--demo=wardrobe":
 			var wl: WardrobeLineup = WardrobeLineup.new()
 			wl.room = self
