@@ -7,7 +7,9 @@ extends Node
 ##   --stage=<0..1>   freeze part-way through the deploy
 ##   --act=<name>     after deploying, do the part's thing: lash (whip),
 ##                    grab / throw (mesh arm), fly / boom (drone), arc,
-##                    ram
+##                    ram, deadeye / mark / volley / impact (setae: fibres
+##                    grown; four marks placed; needles in flight; the
+##                    first cavity)
 ##   --hold=<frames>  frames to let run after the act before freezing (default 6)
 ##   --paint=channel:rrggbb,...  suit colours (BodyColors channels)
 ##   --cam=x,y,z,tx,ty,tz  shoot from a camera at x,y,z looking at tx,ty,tz
@@ -30,6 +32,10 @@ var _phase: int = 0
 var _frames: int = 0
 var _a: Enemy
 var _b: Enemy
+var _c: Enemy
+var _d: Enemy
+var _marked: bool = false
+const SETAE_ACTS: Array[String] = ["deadeye", "mark", "volley", "impact"]
 var _cam: Camera3D
 
 
@@ -71,6 +77,18 @@ func _ready() -> void:
 
 
 func _physics_process(_delta: float) -> void:
+	if not act in SETAE_ACTS:
+		_step()
+
+
+## The setae's acts run per drawn frame: physics frames barely tick in their
+## slowed time. Their --hold is milliseconds of the part's real time after the release.
+func _process(_delta: float) -> void:
+	if act in SETAE_ACTS:
+		_step()
+
+
+func _step() -> void:
 	var p: Player = room.player
 	_frames += 1
 	match _phase:
@@ -125,6 +143,16 @@ func _place_targets() -> void:
 		"ram":
 			_a.global_position = Vector3(0.5, 0.0, 1.5)
 			_b.global_position = Vector3(0.9, 0.0, -1.0)
+		"deadeye", "mark", "volley", "impact":
+			_a.global_position = Vector3(-1.4, 0.0, -2.5)
+			_b.global_position = Vector3(1.3, 0.0, -4.5)
+			_c = room.shooting_range.targets[1]
+			_d = room.shooting_range.targets[3]
+			if _c and _d:
+				_c.global_position = Vector3(3.2, 0.0, -1.5)
+				_d.global_position = Vector3(-0.2, 0.0, -7.5)
+				_c.face(0.0)
+				_d.face(0.0)
 		_:
 			return
 	_a.face(0.0)
@@ -180,11 +208,41 @@ func _acted() -> bool:
 		"ram":
 			if (part as RamThrusters).struck == 0 and _frames < 40:
 				return false
+		"deadeye", "mark", "volley", "impact":
+			var st: Setae = part as Setae
+			if st.throws == 0 and st.hairs_grown() < st.needles.size() + 40:
+				_frames = 0
+				return false
+			if act == "deadeye":
+				return true
+			if not _marked:
+				_marked = true
+				st.script_mark(_a, &"head")
+				st.script_mark(_b, &"chest")
+				if _c and _d:
+					st.script_mark(_c, &"chest")
+					st.script_mark(_d, &"head")
+				_frames = 0
+				return false
+			if act == "mark":
+				return true
+			if st.throws == 0:
+				if _frames > 8:
+					st.script_throw()
+				return false
+			if act == "impact" and st.cavities == 0:
+				return false
+			_frames = hold
+			return st.released_for * 1000.0 >= hold
 	return true
 
 
 func _freeze() -> void:
 	_phase = 9
+	var st: Setae = part as Setae
+	if st:
+		print("capture: setae mode %d state %d throw_t %.2f deadeye %.2f needles %d cavities %d time %.3f" % [st.mode, st.state,
+			st._throw_t, st.deadeye, st.needles.size(), st.cavities, Engine.time_scale])
 	if _cam:
 		_cam.make_current()
 	get_tree().paused = true

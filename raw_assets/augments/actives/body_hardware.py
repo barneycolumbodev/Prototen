@@ -11,6 +11,7 @@ exported as B_<bone>__<part> meshes that BodyAppearance mounts on the bones).
   mw7_monofilament_whip the reel and its folded boom on the back of the right wrist
   nt5_mesh_arm          the braid sleeved over the left forearm between a driver collar and a slip ring
   bw6_fan_shield        the seven leaves folded in a stack along the outer left forearm on their hub
+  sx8_urticating_setae  the setae bank on the back of the left forearm: 24 ceramic ports, gill plates, feed lines
 
 Run (one part per run; they bake independently):
   tools/blender.sh raw_assets/augments/actives/body_hardware.py --part sd3_shrike_drone \\
@@ -282,6 +283,36 @@ elif PART == "bw6_fan_shield":
     hi, lo = both(build)
     C.add_piece("shield", "forearm.L", hi, lo)
     views = (("side", (1.5, -1.5, 1.2), (0.5, 0.0, 1.05), 60), ("front", (1.0, -3.4, 1.7), (0.0, 0.0, 1.3), 85))
+
+# ====================================================================== SX-8 setae bank
+elif PART == "sx8_urticating_setae":
+    CERAMIC = C.mat_paint(PART + "_ceramic", (0.78, 0.74, 0.66), 0.38)
+    MATS.append(CERAMIC)
+    o0, d, w, n = arm_frame("L", 0.2)
+    o1, _d, _w, _n = arm_frame("L", 0.86)
+    L = (o1 - o0).length
+
+    def build(det, out):
+        mid = o0.lerp(o1, 0.5)
+        out.append(C.slab("bank", mid + n * 0.006, (d, w, n), (L, 0.046, 0.012), METAL, det, 0.003))
+        for s in (-1, 1):
+            out.append(C.slab("gill", mid + n * 0.002 + w * s * 0.031, (d, w, n), (L * 0.8, 0.014, 0.004), GRAFT, det, 0.001))
+            out.append(C.slab("gill_glow", mid + n * 0.0045 + w * s * 0.025, (d, w, n), (L * 0.7, 0.0016, 0.0012), GLOW, False))
+        if det:
+            for r, ws in enumerate((-0.013, 0.0, 0.013)):
+                for k in range(8):
+                    t = (k + (0.5 if r == 1 else 0.0)) / 7.5
+                    p = o0 + d * (0.012 + (L - 0.024) * t) + w * ws + n * 0.012
+                    out.append(C.cyl("port", p, p + n * 0.003, 0.0042, CERAMIC, True, 12, 0.0004))
+                    out.append(C.cyl("bore", p + n * 0.0026, p + n * 0.0032, 0.0025, RUBBER, False, 10, 0.0))
+            for s in (-1, 1):
+                out.append(C.cable("feed", [o0 + w * s * 0.012 + n * 0.008, o0 - d * 0.04 + w * s * 0.014 + n * 0.012, o0 - d * 0.09 + w * s * 0.016 + n * 0.006], 0.0035, RUBBER, True))
+        else:
+            out.append(C.slab("ports", mid + n * 0.0125, (d, w, n), (L - 0.02, 0.036, 0.002), CERAMIC, False))
+
+    hi, lo = both(build)
+    C.add_piece("bank", "forearm.L", hi, lo)
+    views = (("side", (1.3, -1.3, 1.25), (0.45, 0.0, 1.13), 60), ("front", (1.0, -3.4, 1.7), (0.0, 0.0, 1.3), 85))
 
 else:
     raise SystemExit("unknown part " + PART)

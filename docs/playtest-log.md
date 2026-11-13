@@ -556,3 +556,27 @@ Please try:
 - Measured:
 - Notes from the owner:
 - Follow-ups:
+
+## SX-8 Urticating Setae — 2026-11-13 (waiting for the owner)
+
+Owner: a new active, nanotech: vents on the side of the arm that grow long razor-thin nanite hairs; a dead-eye where you mark up to 4 or 5 targets; the fire button throws the hairs, which harden in the air and leave cavitation wounds that wipe most enemies out. "Our AoE." A badass throwing animation.
+
+What's in the APK (design §3.4c):
+- Loadout screen (View): the SX-8 is an orange tile among the actives. It takes the left forearm (it replaces the NT-5 or BW-6) and runs on the Operator as it is. Install it and it goes on D-pad right.
+- LB: the gun goes down, the left arm comes forward, 48 fibres grow out of 24 ports, the world slows almost to a stop (colour drained, a heartbeat, amber edges).
+- LT marks the body part under the crosshair (it snaps to the nearest head or chest if you're close). 4 marks, 5 with OB-5 or TG-6 eyes. Several on one man are allowed. 5 s to mark (more with more processing).
+- RT: the arm whips across, the fibres leave as needles, time comes back. Head marks lose the head, limb marks lose the limb, torso marks burst the body (Maximum gore). Needles that go through stick in the wall.
+- LB while marking folds it and keeps the throw. One throw; it regrows in about 12 s.
+
+Please try:
+1. Wave mode or the docks: mark four men, throw. Does it feel like a finishing move? Is the throw animation strong enough?
+2. Is 5 s of marking right? Is ×0.06 too slow or not slow enough?
+3. Are the needles readable in flight? Do you see them reach each man?
+4. Too strong? It kills four men every 12 s. Options: longer regrowth, fewer marks, or torso marks that only kill.
+5. Is LT for marking natural, or would you rather mark by holding RT and release to throw?
+
+- Device / renderer / settings:
+- Measured:
+- Notes from the owner:
+- Follow-ups:
+

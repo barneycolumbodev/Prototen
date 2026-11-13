@@ -5,7 +5,7 @@ extends GutTest
 var frame: PlayerBodyConfig = preload("res://data/player/body_default.tres")
 var lib: PartLibrary = preload("res://data/body/part_library.tres")
 const NEW: Array[StringName] = [&"mw7_monofilament_whip", &"nt5_mesh_arm", &"bw6_fan_shield", &"sd3_shrike_drone",
-	&"ad2_arc_projector", &"kr5_ram_thrusters", &"tc4_thermoptic_shroud"]
+	&"ad2_arc_projector", &"kr5_ram_thrusters", &"tc4_thermoptic_shroud", &"sx8_urticating_setae"]
 
 
 func _operator_with(ids: Array[StringName]) -> BodyLoadout:
@@ -15,9 +15,9 @@ func _operator_with(ids: Array[StringName]) -> BodyLoadout:
 	return lo
 
 
-func test_the_library_has_nine_actives_with_behaviours() -> void:
+func test_the_library_has_ten_actives_with_behaviours() -> void:
 	var acts: Array[ActivePartData] = lib.actives()
-	assert_eq(acts.size(), 9, "RX-9, GX-4 and the seven of 2026-11-10")
+	assert_eq(acts.size(), 10, "RX-9, GX-4, the seven of 2026-11-10 and the SX-8")
 	for a: ActivePartData in acts:
 		assert_not_null(a.behaviour, String(a.id))
 		assert_ne(a.short_name, "", String(a.id))
@@ -56,6 +56,8 @@ func test_one_part_per_arm() -> void:
 	lo.install(lib.find(&"bw6_fan_shield"))
 	assert_false(lo.has_part(&"nt5_mesh_arm"), "the shield and the mesh arm are both the left arm")
 	assert_true(lo.has_part(&"mw7_monofilament_whip"))
+	lo.install(lib.find(&"sx8_urticating_setae"))
+	assert_false(lo.has_part(&"bw6_fan_shield"), "the setae bank is the left forearm too")
 
 
 func test_requirements_come_from_the_passives() -> void:
