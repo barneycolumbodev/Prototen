@@ -11,6 +11,7 @@ extends Node
 ##   --capture-only=<name>      only shoot the camera with this node name
 ##   --capture-pause            open the pause menu before shooting
 ##   --capture-tuning           open the gun tuning menu before shooting
+##   --capture-strike=<frames>  R3 strike, then the active shot that many frames later
 ## Nodes in the "capture_busy" group (e.g. GunplayDemo) delay the first shot.
 
 const GROUP: StringName = &"capture_cameras"
@@ -20,6 +21,7 @@ var _warmup: int = 30
 var _only: String = ""
 var _open_pause: bool = false
 var _open_tuning: bool = false
+var _strike: int = -1
 
 
 func _ready() -> void:
@@ -34,6 +36,8 @@ func _ready() -> void:
 			_open_pause = true
 		elif arg == "--capture-tuning":
 			_open_tuning = true
+		elif arg.begins_with("--capture-strike="):
+			_strike = arg.trim_prefix("--capture-strike=").to_int()
 	if _dir.is_empty():
 		set_process(false)
 		return
@@ -71,6 +75,14 @@ func _run() -> void:
 	if start_cam and (_only.is_empty() or _only == "active"):
 		start_cam.make_current()
 		await _frames(_warmup)
+		if _strike >= 0:
+			var p: Player = get_tree().get_first_node_in_group(&"player") as Player
+			if p and p.melee:
+				if p.melee.knife:
+					for i: int in 4:
+						p.melee.knife.cut(true)
+				p.melee.script_strike()
+				await _frames(_strike)
 		shots += _save("%s_active.png" % scene_name)
 	print("capture: %d screenshots in %s (renderer %s)" % [shots, _dir, RenderingServer.get_current_rendering_method()])
 	get_tree().quit(0 if shots > 0 else 1)

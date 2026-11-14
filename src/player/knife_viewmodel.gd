@@ -10,6 +10,52 @@ extends Node3D
 ## past times, so it's smooth however fast the swing and the frame rate).
 
 const TRAIL_SAMPLES: int = 22
+## Blood on the blade (owner 2026-11-14): every cut adds to it and it stays,
+## creeping from the tip back toward the guard, fresh red over darker dried
+## blood. Drawn as a second pass over the blade's own materials.
+const BLOOD_SHADER: String = """
+shader_type spatial;
+render_mode blend_mix, depth_draw_never, cull_back, shadows_disabled;
+uniform float coat : hint_range(0.0, 1.0) = 0.0;
+uniform float fresh : hint_range(0.0, 1.0) = 0.0;
+uniform vec3 tip = vec3(0.0);
+uniform vec3 base = vec3(0.0, 0.0, 0.1);
+varying vec3 v_local;
+float hash(vec3 p) {
+	p = fract(p * 0.3183099 + 0.1);
+	p *= 17.0;
+	return fract(p.x * p.y * p.z * (p.x + p.y + p.z));
+}
+float noise(vec3 x) {
+	vec3 i = floor(x);
+	vec3 f = fract(x);
+	f = f * f * (3.0 - 2.0 * f);
+	return mix(mix(mix(hash(i), hash(i + vec3(1, 0, 0)), f.x), mix(hash(i + vec3(0, 1, 0)), hash(i + vec3(1, 1, 0)), f.x), f.y),
+			mix(mix(hash(i + vec3(0, 0, 1)), hash(i + vec3(1, 0, 1)), f.x), mix(hash(i + vec3(0, 1, 1)), hash(i + vec3(1, 1, 1)), f.x), f.y), f.z);
+}
+void vertex() {
+	v_local = VERTEX;
+}
+void fragment() {
+	vec3 axis = tip - base;
+	float along = clamp(dot(v_local - base, axis) / max(dot(axis, axis), 1e-6), 0.0, 1.0);
+	float n = noise(v_local * 90.0) * 0.6 + noise(v_local * 260.0) * 0.4;
+	// Tip first; streaks run back toward the guard as the coat builds.
+	float reach = coat * 1.25 - (1.0 - along) * 0.9;
+	float m = smoothstep(0.0, 0.12, reach + (n - 0.5) * 0.35);
+	if (m < 0.01) {
+		discard;
+	}
+	vec3 dried = vec3(0.16, 0.012, 0.01);
+	vec3 wet = vec3(0.42, 0.015, 0.012);
+	float w = clamp(fresh * 1.2 - n * 0.4, 0.0, 1.0);
+	ALBEDO = mix(dried, wet, w);
+	ROUGHNESS = mix(0.55, 0.12, w);
+	METALLIC = 0.0;
+	SPECULAR = 0.6;
+	ALPHA = m * mix(0.85, 0.97, w);
+}
+"""
 const TRAIL_SHADER: String = """
 shader_type spatial;
 render_mode unshaded, blend_add, cull_disabled, depth_draw_never, shadows_disabled;
@@ -31,6 +77,12 @@ var _quats: Array[Quaternion] = []
 var _trail: MeshInstance3D
 var _im: ImmediateMesh = ImmediateMesh.new()
 var _blood: float = 0.0
+## How much blood the blade carries (0..1); grows with each cut, never resets.
+var blood_coat: float = 0.0
+## How fresh the newest blood is (1 just after a cut, fades over a minute).
+var blood_fresh: float = 0.0
+var _blood_mat: ShaderMaterial
+var _blood_mats: Array[ShaderMaterial] = []
 
 
 static func make(player: Player, p_cfg: MeleeConfig) -> KnifeViewmodel:
@@ -47,6 +99,7 @@ static func make(player: Player, p_cfg: MeleeConfig) -> KnifeViewmodel:
 	if tip and base:
 		k._tip_local = _local_to(tip, k.rig).origin
 		k._base_local = _local_to(base, k.rig).origin
+	k._coat_blade()
 	k._trail = MeshInstance3D.new()
 	k._trail.name = "KnifeTrail"
 	k._trail.mesh = k._im
@@ -72,6 +125,45 @@ static func _local_to(node: Node3D, ancestor: Node3D) -> Transform3D:
 			x = (n as Node3D).transform * x
 		n = n.get_parent()
 	return x
+
+
+## Puts the blood pass on the blade's surfaces (blade_steel, blade_coat).
+func _coat_blade() -> void:
+	_blood_mat = ShaderMaterial.new()
+	var sh: Shader = Shader.new()
+	sh.code = BLOOD_SHADER
+	_blood_mat.shader = sh
+	_blood_mat.render_priority = 1
+	for node: Node in rig.model.find_children("*", "MeshInstance3D", true, false):
+		var mi: MeshInstance3D = node as MeshInstance3D
+		if mi.mesh == null:
+			continue
+		var to_mesh: Transform3D = _local_to(mi, rig).affine_inverse()
+		var bm: ShaderMaterial = null
+		for i: int in mi.mesh.get_surface_count():
+			var m: Material = mi.get_active_material(i)
+			if m == null or not (m.resource_name.begins_with("blade_")):
+				continue
+			var own: Material = m.duplicate() as Material
+			# One blood pass per mesh: the blade's tip and base in that mesh's own coordinates.
+			if bm == null:
+				bm = _blood_mat.duplicate() as ShaderMaterial
+				bm.set_shader_parameter(&"tip", to_mesh * _tip_local)
+				bm.set_shader_parameter(&"base", to_mesh * _base_local)
+				_blood_mats.append(bm)
+			own.next_pass = bm
+			mi.set_surface_override_material(i, own)
+	_apply_blood()
+
+
+func blood_materials() -> Array[ShaderMaterial]:
+	return _blood_mats
+
+
+func _apply_blood() -> void:
+	for bm: ShaderMaterial in blood_materials():
+		bm.set_shader_parameter(&"coat", blood_coat)
+		bm.set_shader_parameter(&"fresh", blood_fresh)
 
 
 func _exit_tree() -> void:
@@ -114,6 +206,9 @@ func play(p_speed: float) -> void:
 ## The blade went through someone: the trail and the swing after it run red.
 func cut(lethal: bool) -> void:
 	_blood = 1.0 if lethal else 0.75
+	blood_coat = minf(blood_coat + (cfg.blood_per_kill if lethal else cfg.blood_per_cut), 1.0)
+	blood_fresh = 1.0
+	_apply_blood()
 
 
 ## Camera-space pose of the hand (the handle centre) at strike time `at`.
@@ -146,6 +241,10 @@ func gun_away() -> float:
 ## Advances the clip. Call every frame with the player's delta.
 func tick(delta: float) -> void:
 	_im.clear_surfaces()
+	if blood_fresh > 0.0:
+		blood_fresh = maxf(blood_fresh - delta / maxf(cfg.blood_dry_time, 0.1), 0.0)
+		if rig.visible:
+			_apply_blood()
 	if t < 0.0:
 		return
 	t += delta * speed
