@@ -49,3 +49,8 @@ extends Resource
 @export var trail_min_speed: float = 3.0
 @export var trail_color: Color = Color(0.75, 0.86, 1.0, 0.55)
 @export var trail_blood_color: Color = Color(0.55, 0.02, 0.02, 0.8)
+## Blood on the blade: how much of it one cut / one kill adds (0..1 covers
+## the whole blade; it never comes off), and seconds for wet blood to dry dark.
+@export var blood_per_cut: float = 0.12
+@export var blood_per_kill: float = 0.2
+@export var blood_dry_time: float = 45.0
