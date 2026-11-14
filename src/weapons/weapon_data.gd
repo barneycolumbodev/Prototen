@@ -26,6 +26,23 @@ enum WeaponClass { HANDGUN, SHOTGUN, RIFLE, HEAVY }
 ## Range/testing: reserve never runs out.
 @export var infinite_reserve: bool = true
 
+@export_group("Launcher")
+## A grenade launcher: each shot launches this round (Grenades) from the
+## muzzle instead of firing a Ballistics round. Aimed, the fire control lases
+## the range and programs an airburst (GrenadeData, PlayerWeapon.fcs_*).
+@export var grenade: GrenadeData
+## Revolver cylinder: chambers (0 = none). The rig turns node "cylinder" one
+## chamber per shot about `cylinder_axis` (a line along X through this point,
+## weapon space) and shows a "round_<n>" in each loaded chamber.
+@export_range(0, 12) var cylinder_chambers: int = 0
+@export var cylinder_axis: Vector3 = Vector3.ZERO
+## Seconds the cylinder takes to turn one chamber.
+@export_range(0.01, 0.5) var cylinder_index_time: float = 0.07
+## The crane the cylinder swings out on to load ("crane", "cylinder" and the
+## rounds turn about a line along X through `crane_hinge` by `crane_swing_deg`).
+@export var crane_hinge: Vector3 = Vector3.ZERO
+@export_range(-180.0, 180.0) var crane_swing_deg: float = 0.0
+
 @export_group("Fire")
 ## Fastest the mechanism cycles (seconds between shots). Semi-auto.
 @export_range(0.03, 1.0) var fire_interval: float = 0.1
@@ -59,6 +76,14 @@ enum WeaponClass { HANDGUN, SHOTGUN, RIFLE, HEAVY }
 @export_range(0.0, 1.0) var mag_out_point: float = 0.22
 ## Fraction where the new magazine seats; ammo is committed from here.
 @export_range(0.0, 1.0) var mag_in_point: float = 0.6
+## One round at a time (a revolver cylinder): > 0 = seconds per round. The
+## reload opens the gun (`reload_open_time`, spent cases out), loads rounds
+## one by one until it's full, then closes (`reload_close_time`). A trigger
+## pull with a round in closes it early; sprinting or switching stops it with
+## whatever went in.
+@export_range(0.0, 2.0) var round_load_time: float = 0.0
+@export_range(0.0, 2.0) var reload_open_time: float = 0.4
+@export_range(0.0, 2.0) var reload_close_time: float = 0.35
 
 @export_group("Ballistics")
 ## Metres per second at the muzzle (SS190 from a 4.8" barrel with can ≈ 650).
@@ -298,6 +323,11 @@ enum WeaponClass { HANDGUN, SHOTGUN, RIFLE, HEAVY }
 ## Kinetic energy at the muzzle, J (`power`: capacitor charge fraction for railguns).
 func muzzle_energy(power: float = 1.0) -> float:
 	return 0.5 * bullet_mass_g * 0.001 * muzzle_velocity * muzzle_velocity * power
+
+
+## True for guns that load one round at a time (a revolver cylinder).
+func loads_singly() -> bool:
+	return round_load_time > 0.0
 
 
 ## True for guns with a capacitor bank (railguns).

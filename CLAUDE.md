@@ -158,7 +158,7 @@ Put an empty `.gdignore` file in `raw_assets/`, `tools/` and `docs/` so Godot do
 | LB | The selected active part (tap on / tap off; the LC-6 catcher is held: hold to catch, let go to throw back, owner 2026-11-13). RB: free (owner, 2026-11-07). While a part is out, RT and LT are its own (whip: LT + right stick steers, RT lashes; mesh arm: RT grabs, RT throws; drone: sticks fly, A/B climb/sink, RT detonates; setae: LT marks, RT throws) |
 | A | Jump (wall-run on contact) |
 | B | Slide (a tap runs it out) / crouch |
-| X | Reload (hold to interact) |
+| X | Reload (hold to interact; the M32A1 loads a round at a time, RT shuts it and fires) |
 | Y | Tap: previous weapon. Hold: weapon wheel (owner, 2026-11-02; the MG barrel change needs another input in M3) |
 | D-pad | Left / down / right: select active part 1 / 2 / 3 for LB, in the order they were installed (default: RX-9 / GX-4 arm / empty; 2026-11-10: any three of nine; 2026-11-13: of ten; 2026-11-14: of eleven). Up: shell type on guns that take several (Saiga-12K) (owner, 2026-11-07) |
 | Menu / View | Pause / body status and loadout (built 2026-11-05; loadout 2026-11-08; LB there: colours, 2026-11-10; 2026-11-11: every part on one grid, A installs or removes, RB jumps to the part that supplies a missing requirement) |
@@ -272,6 +272,7 @@ Each milestone ends with an APK on the owner's phone and an entry in `docs/playt
    Started 2026-11-05 (owner): the parts system foundation, the operative's base body (the GS-2 graft suit; helmet on or off, with the owner's face; Y on the body-status screen) on a body-status screen, and the time slowdown (RX-9 on LB). See design §3.4, §3.4a. 2026-11-07: three actives on LB picked with the D-pad, and the second active, the GX-4 Gauss arm.
 4. **M3 – Heavy weapons.** MG42-style machine gun with heat and barrel changes (the gun itself, its handling and a flat carry penalty were pulled into M1 by the owner on 2026-11-01; heat and barrel changes stay here). Heavy armor parts, two more actives, dismemberment (pulled forward and built 2026-11-11, design §5.5), machine-gunner and anti-augment enemies.
    Done when sustained fire tears up a room and the phone holds its frame rate.
+   2026-11-14 (Claude's choice; owner: "find something missing and add it"): the M32A1 six-shot 40 mm grenade launcher, the first explosive gun. Rounds fly an arc, arm after 9 m, and burst on impact or, aimed, in the air past the point the fire-control sight lased (over cover). Real fragments that cover stops, a revolving cylinder that loads a round at a time, and a new look for every blast (fireball, smoke, dust ring, scorch), the drone's included (design §4.8).
 5. **M4 – Look and sound.** Art direction applied to two or three test areas, lighting, an audio pass.
 
 What comes after the prototype gets decided then.

@@ -21,6 +21,10 @@ extends Node3D
 ##   `shell_hull`, `mag_tape`  tinted with the loaded shell type's colour
 ##   `charging_handle`  travels −X while the bolt is held open (MP5 cocking handle)
 ##   `laser`    the laser's emitter window (self-lit; WeaponLaser draws the beam)
+##   `cylinder` a revolver cylinder: turns about its axis a chamber a shot and
+##              swings out on the crane to load (M32A1)
+##   `crane`    the yoke the cylinder swings out on (swings, doesn't turn)
+##   `round_<n>` the case head in chamber n (turns and swings with the cylinder)
 
 @export var config: ViewmodelConfig
 @export var models: Array[PackedScene] = []
@@ -45,6 +49,12 @@ var _optic: Node3D
 var _handle: Node3D
 var _handle_rest: Vector3
 var _laser: GeometryInstance3D
+var _cylinder: Node3D
+var _cylinder_rest: Transform3D
+var _crane: Node3D
+var _crane_rest: Transform3D
+var _rounds: Array[Node3D] = []
+var _round_rest: Array[Transform3D] = []
 var _tinted: Array[GeometryInstance3D] = []
 var _tint_mat: StandardMaterial3D
 var _scoped: bool = false
@@ -83,6 +93,15 @@ func _ready() -> void:
 			_handle = model.find_child("charging_handle", true, false) as Node3D
 		if _laser == null:
 			_laser = model.find_child("laser", true, false) as GeometryInstance3D
+		if _cylinder == null:
+			_cylinder = model.find_child("cylinder", true, false) as Node3D
+			_crane = model.find_child("crane", true, false) as Node3D
+			for k: int in 12:
+				var r: Node3D = model.find_child("round_%d" % k, true, false) as Node3D
+				if r == null:
+					break
+				_rounds.append(r)
+				_round_rest.append(r.transform)
 		for part: String in ["shell_hull", "mag_tape"]:
 			var g: GeometryInstance3D = model.find_child(part, true, false) as GeometryInstance3D
 			if g:
@@ -99,6 +118,10 @@ func _ready() -> void:
 		_vent_rest = _vent.position
 	if _handle:
 		_handle_rest = _handle.position
+	if _cylinder:
+		_cylinder_rest = _cylinder.transform
+	if _crane:
+		_crane_rest = _crane.transform
 	if _laser:
 		# The emitter window glows in the laser's colour whatever the bake did.
 		var lit: StandardMaterial3D = StandardMaterial3D.new()
@@ -166,6 +189,10 @@ func has_part(part_name: StringName) -> bool:
 			return _handle != null
 		&"laser":
 			return _laser != null
+		&"cylinder":
+			return _cylinder != null
+		&"crane":
+			return _crane != null
 	return false
 
 
@@ -278,3 +305,35 @@ func charging_handle_back() -> float:
 func set_belt_offset(offset: Vector3) -> void:
 	if _belt:
 		_belt.position = _belt_rest + offset
+
+
+## Revolver cylinder: turned `index_deg` about the line along X through
+## `axis` (weapon space), and swung out `swing_deg` with the crane about the
+## line along X through `hinge`. The case heads go with it.
+func set_cylinder(index_deg: float, swing_deg: float, axis: Vector3, hinge: Vector3) -> void:
+	if _cylinder == null:
+		return
+	var spin: Transform3D = Transform3D(Basis(), axis) * Transform3D(Basis(Vector3.RIGHT, deg_to_rad(index_deg)), Vector3.ZERO) \
+			* Transform3D(Basis(), -axis)
+	var swing: Transform3D = Transform3D(Basis(), hinge) * Transform3D(Basis(Vector3.RIGHT, deg_to_rad(swing_deg)), Vector3.ZERO) \
+			* Transform3D(Basis(), -hinge)
+	_cylinder.transform = swing * spin * _cylinder_rest
+	if _crane:
+		_crane.transform = swing * _crane_rest
+	for k: int in _rounds.size():
+		_rounds[k].transform = swing * spin * _round_rest[k]
+
+
+## Shows or hides the case head in chamber `k`.
+func set_round_visible(k: int, shown: bool) -> void:
+	if k >= 0 and k < _rounds.size():
+		_rounds[k].visible = shown
+
+
+func round_visible(k: int) -> bool:
+	return k >= 0 and k < _rounds.size() and _rounds[k].visible
+
+
+## The cylinder's transform in weapon space (tests).
+func cylinder_transform() -> Transform3D:
+	return _cylinder.transform if _cylinder else Transform3D()

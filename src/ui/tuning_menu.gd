@@ -11,7 +11,7 @@ const SAVE_PATH: String = "user://tuning.cfg"
 
 ## [section, property, min, max, step, label]
 const WEAPON_PARAMS: Array = [
-	["Recoil", "kick_pitch_deg", 0.0, 4.0, 0.05, "Kick up (°)"],
+	["Recoil", "kick_pitch_deg", 0.0, 6.0, 0.05, "Kick up (°)"],
 	["Recoil", "kick_yaw_deg", 0.0, 2.0, 0.02, "Kick sideways (± °)"],
 	["Recoil", "kick_yaw_bias_deg", -0.5, 0.5, 0.01, "Drift right (°/shot)"],
 	["Recoil", "kick_permanent", 0.0, 1.0, 0.02, "Climb that stays"],
@@ -33,7 +33,7 @@ const WEAPON_PARAMS: Array = [
 	["Accuracy", "move_spread_deg", 0.0, 4.0, 0.05, "Moving spread (°)"],
 	["Accuracy", "air_spread_deg", 0.0, 6.0, 0.05, "In-the-air spread (°)"],
 	["Accuracy", "bloom_per_shot_deg", 0.0, 2.0, 0.05, "Bloom per shot (°)"],
-	["Fire", "fire_interval", 0.05, 0.3, 0.005, "Fastest follow-up (s)"],
+	["Fire", "fire_interval", 0.05, 0.6, 0.005, "Fastest follow-up (s)"],
 	["Fire", "fire_buffer", 0.0, 0.3, 0.01, "Trigger buffer (s)"],
 	["Carry", "carry_speed_scale", 0.3, 1.0, 0.01, "Move speed with gun"],
 	["Carry", "carry_sprint_scale", 0.3, 1.0, 0.01, "Sprint speed with gun"],
@@ -52,6 +52,12 @@ const WEAPON_PARAMS: Array = [
 	["Laser", "aim_follows_gun", 0.0, 1.0, 0.05, "Dot follows gun sway"],
 	["Laser", "laser_dot_deg", 0.1, 2.0, 0.05, "Dot size (°)"],
 	["Laser", "laser_beam_energy", 0.0, 2.0, 0.05, "Beam brightness"],
+	["Launcher", "arming_distance", 0.0, 30.0, 0.5, "Fuze arms after (m)"],
+	["Launcher", "airburst_offset", 0.0, 4.0, 0.1, "Airburst past the lased point (m)"],
+	["Launcher", "blast_radius", 1.0, 8.0, 0.1, "Blast radius (m)"],
+	["Launcher", "blast_damage", 0.0, 600.0, 10.0, "Blast damage at the centre"],
+	["Launcher", "fragment_count", 0.0, 2000.0, 20.0, "Fragments"],
+	["Launcher", "fireball_radius", 0.2, 2.0, 0.05, "Fireball size (m)"],
 	["Feedback", "hitstop_headshot", 0.0, 0.15, 0.005, "Hit-stop headshot (s)"],
 	["Feedback", "hitstop_kill", 0.0, 0.15, 0.005, "Hit-stop kill (s)"],
 ]
@@ -161,7 +167,9 @@ func save() -> void:
 		var section: String = section_for(slot.data)
 		for p: Array in WEAPON_PARAMS:
 			var prop: String = p[1]
-			cfg.set_value(section, prop, slot.data.get(prop))
+			var holder: Resource = param_target(p, slot.data)
+			if holder:
+				cfg.set_value(section, GRENADE_KEY + prop if holder != slot.data else prop, holder.get(prop))
 	if _assist:
 		cfg.set_value("aim_assist", "enabled", _assist.enabled)
 		for p: Array in ASSIST_PARAMS:
@@ -177,13 +185,29 @@ func save() -> void:
 	cfg.save(SAVE_PATH)
 
 
-## Railgun sliders only appear for railguns.
+## Launcher values live in the gun's GrenadeData; saved under this prefix in the gun's section.
+const GRENADE_KEY: String = "grenade/"
+
+
+## Railgun sliders only appear for railguns, launcher ones for launchers
+## (which have no use for the bullet's ballistics).
 static func shows(param: Array, data: WeaponData) -> bool:
 	if param[0] == "Railgun":
 		return data.is_rail()
 	if param[0] == "Laser":
 		return data.laser_range > 0.0
+	if param[0] == "Launcher":
+		return data.grenade != null
+	if param[0] == "Ballistics":
+		return data.grenade == null
 	return true
+
+
+## The resource a weapon parameter lives in (the gun, or its grenade; null if it has none).
+static func param_target(param: Array, data: WeaponData) -> Resource:
+	if param[0] == "Launcher":
+		return data.grenade
+	return data
 
 
 ## Save-file section for a gun ("weapon_pistol_57", "weapon_mg42").
@@ -233,7 +257,11 @@ static func load_saved(data: WeaponData, assist: AimAssistConfig) -> void:
 		if not cfg.has_section(section) and cfg.has_section("weapon") and section == "weapon_pistol_57":
 			section = "weapon"
 		for prop: String in cfg.get_section_keys(section) if cfg.has_section(section) else PackedStringArray():
-			if prop in data:
+			if prop.begins_with(GRENADE_KEY):
+				var gp: String = prop.trim_prefix(GRENADE_KEY)
+				if data.grenade and gp in data.grenade:
+					data.grenade.set(gp, cfg.get_value(section, prop))
+			elif prop in data:
 				data.set(prop, cfg.get_value(section, prop))
 	if assist and cfg.has_section("aim_assist"):
 		for prop: String in cfg.get_section_keys("aim_assist"):
@@ -248,7 +276,8 @@ func values_text() -> String:
 		if not shows(p, _weapon.data):
 			continue
 		var prop: String = p[1]
-		lines.append("%s = %s" % [prop, var_to_str(_weapon.data.get(prop))])
+		var holder: Resource = param_target(p, _weapon.data)
+		lines.append("%s%s = %s" % ["grenade: " if holder != _weapon.data else "", prop, var_to_str(holder.get(prop))])
 	if _assist:
 		lines.append("# aim assist (data/input/aim_assist.tres)")
 		lines.append("enabled = %s" % var_to_str(_assist.enabled))
@@ -320,7 +349,7 @@ func _build() -> void:
 			head.add_theme_color_override("font_color", Color(1.0, 0.75, 0.4))
 			head.add_theme_font_size_override("font_size", 15)
 			_list.add_child(head)
-		var target: Resource = _weapon.data
+		var target: Resource = param_target(p, _weapon.data)
 		match sec:
 			"Aim assist":
 				target = _assist

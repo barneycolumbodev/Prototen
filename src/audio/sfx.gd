@@ -186,6 +186,63 @@ func set_muffle(amount: float, cutoff_hz: float = 2400.0) -> void:
 		AudioServer.set_bus_effect_enabled(bus, idx, a > 0.001)
 
 
+## Stunned hearing after a blast close by (Explosion.grenade): every sound but
+## the ring is muffled by `amount` (0..1), easing back over CONCUSS_TIME of
+## real time; above a quarter, a ring in the ears.
+const CONCUSS_TIME: float = 2.6
+var _concuss: float = 0.0
+var _concuss_filters: Array[AudioEffectLowPassFilter] = []
+var _ring: AudioStreamPlayer
+
+
+func concuss(amount: float) -> void:
+	var a: float = clampf(amount, 0.0, 1.0)
+	if _concuss_filters.is_empty():
+		for bus_name: StringName in [&"SFX", &"Tail"]:
+			var bus: int = AudioServer.get_bus_index(bus_name)
+			if bus < 0:
+				continue
+			var f: AudioEffectLowPassFilter = AudioEffectLowPassFilter.new()
+			f.resonance = 0.5
+			f.cutoff_hz = 20000.0
+			AudioServer.add_bus_effect(bus, f)
+			_concuss_filters.append(f)
+		_ring = AudioStreamPlayer.new()
+		_ring.bus = &"Master"
+		add_child(_ring)
+	if a > 0.25:
+		var streams: Array = bank(&"ear_ring")
+		if not streams.is_empty() and (not _ring.playing or a > _concuss + 0.2):
+			_ring.stream = streams[_rng.randi() % streams.size()]
+			_ring.volume_db = lerpf(-26.0, -9.0, a)
+			_ring.play()
+	_concuss = maxf(_concuss, a)
+	_apply_concuss()
+
+
+## How stunned the hearing is now (0..1).
+func concussion() -> float:
+	return _concuss
+
+
+func _process(delta: float) -> void:
+	if _concuss <= 0.0:
+		return
+	_concuss = maxf(0.0, _concuss - TimeControl.real_delta(delta) / CONCUSS_TIME)
+	_apply_concuss()
+
+
+func _apply_concuss() -> void:
+	for f: AudioEffectLowPassFilter in _concuss_filters:
+		f.cutoff_hz = lerpf(20000.0, 450.0, pow(_concuss, 0.6))
+	for bus_name: StringName in [&"SFX", &"Tail"]:
+		var bus: int = AudioServer.get_bus_index(bus_name)
+		for i: int in AudioServer.get_bus_effect_count(bus):
+			var fx: AudioEffect = AudioServer.get_bus_effect(bus, i)
+			if fx in _concuss_filters:
+				AudioServer.set_bus_effect_enabled(bus, i, _concuss > 0.001)
+
+
 ## Rate limit for dying voices: a shotgun blast into a crowd shouldn't stack
 ## five screams. Returns true (and takes the slot) if one may play now.
 func claim_death_voice() -> bool:
