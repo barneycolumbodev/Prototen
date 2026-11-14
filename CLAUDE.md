@@ -50,7 +50,7 @@ Commit after each step.
 
 ## 3–6. Game design
 
-Augmentation (§3; the actives in §3.4, §3.4b and §3.4c, the passive library in §3.6, colours in §3.7), test loadouts (§4), combat simulation (§5), art direction (§6) and maps (§7) live in [`docs/design.md`](docs/design.md).
+Augmentation (§3; the actives in §3.4, §3.4b, §3.4c and §3.4d, the passive library in §3.6, colours in §3.7), test loadouts (§4), combat simulation (§5), art direction (§6) and maps (§7) live in [`docs/design.md`](docs/design.md).
 
 ---
 
@@ -155,12 +155,12 @@ Put an empty `.gdignore` file in `raw_assets/`, `tools/` and `docs/` so Godot do
 | Left stick / L3 | Move / sprint |
 | Right stick / R3 | Look / melee strike (built 2026-11-08) |
 | LT (hold) / RT | Aim down sights / fire |
-| LB | The selected active part (tap on / tap off). RB: free (owner, 2026-11-07). While a part is out, RT and LT are its own (whip: LT + right stick steers, RT lashes; mesh arm: RT grabs, RT throws; drone: sticks fly, A/B climb/sink, RT detonates; setae: LT marks, RT throws) |
+| LB | The selected active part (tap on / tap off; the LC-6 catcher is held: hold to catch, let go to throw back, owner 2026-11-13). RB: free (owner, 2026-11-07). While a part is out, RT and LT are its own (whip: LT + right stick steers, RT lashes; mesh arm: RT grabs, RT throws; drone: sticks fly, A/B climb/sink, RT detonates; setae: LT marks, RT throws) |
 | A | Jump (wall-run on contact) |
 | B | Slide (a tap runs it out) / crouch |
 | X | Reload (hold to interact) |
 | Y | Tap: previous weapon. Hold: weapon wheel (owner, 2026-11-02; the MG barrel change needs another input in M3) |
-| D-pad | Left / down / right: select active part 1 / 2 / 3 for LB, in the order they were installed (default: RX-9 / GX-4 arm / empty; 2026-11-10: any three of nine; 2026-11-13: of ten). Up: shell type on guns that take several (Saiga-12K) (owner, 2026-11-07) |
+| D-pad | Left / down / right: select active part 1 / 2 / 3 for LB, in the order they were installed (default: RX-9 / GX-4 arm / empty; 2026-11-10: any three of nine; 2026-11-13: of ten; 2026-11-14: of eleven). Up: shell type on guns that take several (Saiga-12K) (owner, 2026-11-07) |
 | Menu / View | Pause / body status and loadout (built 2026-11-05; loadout 2026-11-08; LB there: colours, 2026-11-10; 2026-11-11: every part on one grid, A installs or removes, RB jumps to the part that supplies a missing requirement) |
 
 Aiming: response-curve presets, acceleration on full tilt, radial deadzones, aim assist in layers (slowdown near targets, slight pull while aiming down sights). Gyro aiming from the phone if the controller holds it.
@@ -268,6 +268,7 @@ Each milestone ends with an APK on the owner's phone and an entry in `docs/playt
    2026-11-08 (owner): the passive system: ~35 core stats with relationships (load, structure cap, momentum, link range, heat), 37 passives with tradeoffs and requirements, four presets, a loadout screen, the R3 strike; four parts with finished hardware (design §3.6).
    2026-11-10 (owner): seven more actives with models, deploy animations and sounds (the monofilament whip, the Shrike drone, the mesh arm that grabs and throws, plus ram thrusters, a thermoptic shroud, a fan shield and an arc projector: nine in all, any three on the D-pad), and the part-by-part colour customizer (design §3.4b, §3.7).
    2026-11-13 (owner): the SX-8 Urticating Setae, the AoE: a dead-eye that marks up to four or five body parts with LT, then throws nanite needles that leave cavitation wounds (design §3.4c). LT/RT while it's out: mark/throw.
+   2026-11-14 (owner, asked 2026-11-13): the LC-6 Lorentz Catcher: hold LB and enemy rounds from the front are caught in a magnetic field in front of the left hand; let go (or run out of time or heat) and exactly those rounds go back out over a wide area at the aim point (design §3.4d).
    Started 2026-11-05 (owner): the parts system foundation, the operative's base body (the GS-2 graft suit; helmet on or off, with the owner's face; Y on the body-status screen) on a body-status screen, and the time slowdown (RX-9 on LB). See design §3.4, §3.4a. 2026-11-07: three actives on LB picked with the D-pad, and the second active, the GX-4 Gauss arm.
 4. **M3 – Heavy weapons.** MG42-style machine gun with heat and barrel changes (the gun itself, its handling and a flat carry penalty were pulled into M1 by the owner on 2026-11-01; heat and barrel changes stay here). Heavy armor parts, two more actives, dismemberment (pulled forward and built 2026-11-11, design §5.5), machine-gunner and anti-augment enemies.
    Done when sustained fire tears up a room and the phone holds its frame rate.

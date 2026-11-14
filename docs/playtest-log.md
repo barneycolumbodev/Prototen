@@ -580,3 +580,26 @@ Please try:
 - Notes from the owner:
 - Follow-ups:
 
+
+## LC-6 Lorentz Catcher — 2026-11-14 (waiting for the owner)
+
+Owner (2026-11-13): an active like the catch-and-return hand from a giant-robot shooter: hold LB and it collects the rounds fired at you; let go, or the timer runs out, and it releases a cloud of them over a large area where you're aiming. It can only shoot back as many as it caught.
+
+What's in the APK (design §3.4d):
+- Loadout screen (View): the LC-6 is an orange tile among the actives. It takes the left forearm (it replaces the NT-5, BW-6 or SX-8) and runs on the Operator as it is (it needs the HS-5's cooling). Install it and it goes on D-pad right.
+- Hold LB: the gun goes down, eight coil petals swing forward round the left hand. Rounds fired at you from the front stop in the air and hang, glowing, in front of the palm. CAUGHT n / 40 at the bottom; the amber ring at the crosshair is where they'll go.
+- Let go of LB (or hold for 6 s, or run hot): the hand punches forward and every caught round goes back out over that ring, some steered onto the men inside it. Nothing caught, nothing thrown.
+- Catching heats you (a rifle round is about 0.7 kJ of the 30 kJ heat store): hold too many and it lets go on its own.
+
+Cloud evidence: `tools/check.sh` passes, 376 tests (8 new in `tests/scene/test_catcher.gd`: online on the Operator and offline without the HS-5; catches 12 rifle rounds from the front with no damage taken; rounds from behind get through; holds 40 and lets the rest fly on; letting go throws back exactly the 18 it caught, at the crosshair, and they kill the man there; a tap with nothing caught just folds; the hold time and overheating both force the release; a PC-3 raises the hold to 58 and OB-5 eyes steer more of the spread). In-game captures with the Mobile renderer on the cloud's software Vulkan: `docs/previews/lc6_lorentz_catcher_ingame.png` (deploy, 13 caught, 34 caught, the release, the hits). Model previews: `lc6_lorentz_catcher_hero.png`, `lc6_lorentz_catcher_body.png`. Not checked in the cloud: how holding LB feels on the controller, the sounds by ear, and the phone's frame rate with a full cloud (two extra draw calls for the cloud, one for the field).
+
+Please try:
+1. On the docks: walk into a squad's fire holding LB, then let go with the ring on them. Does catching and throwing back feel powerful? Is it readable which rounds you caught?
+2. Is 40 rounds and 6 s right? Is the 3 m area too wide or too tight?
+3. Do you want the returned rounds to hit harder (faster than they came in), or as now (a little slower)?
+4. Holding means you can't shoot while catching. Good, or should RT also throw early?
+
+- Device / renderer / settings:
+- Measured:
+- Notes from the owner:
+- Follow-ups:

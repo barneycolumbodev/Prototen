@@ -9,7 +9,9 @@ extends Node
 ##                    grab / throw (mesh arm), fly / boom (drone), arc,
 ##                    ram, deadeye / mark / volley / impact (setae: fibres
 ##                    grown; four marks placed; needles in flight; the
-##                    first cavity)
+##                    first cavity), catch / full / release (catcher: rounds
+##                    streaming into the field; the field nearly full; just
+##                    after letting go, the rounds on their way back)
 ##   --hold=<frames>  frames to let run after the act before freezing (default 6)
 ##   --paint=channel:rrggbb,...  suit colours (BodyColors channels)
 ##   --cam=x,y,z,tx,ty,tz  shoot from a camera at x,y,z looking at tx,ty,tz
@@ -36,6 +38,8 @@ var _c: Enemy
 var _d: Enemy
 var _marked: bool = false
 const SETAE_ACTS: Array[String] = ["deadeye", "mark", "volley", "impact"]
+const CATCH_ACTS: Array[String] = ["catch", "full", "release"]
+var _shots: int = 0
 var _cam: Camera3D
 
 
@@ -106,6 +110,9 @@ func _step() -> void:
 			_b = room.shooting_range.targets[2]
 			_place_targets()
 			p.augments.select(part.slot)
+			var lc: LorentzCatcher = part as LorentzCatcher
+			if lc:
+				lc.script_hold(true)
 			p.augments.use_selected()
 			_phase = 1
 			_frames = 0
@@ -153,10 +160,25 @@ func _place_targets() -> void:
 				_d.global_position = Vector3(-0.2, 0.0, -7.5)
 				_c.face(0.0)
 				_d.face(0.0)
+		"catch", "full", "release":
+			_a.global_position = Vector3(-2.6, 0.0, -5.0)
+			_b.global_position = Vector3(1.0, 0.0, -11.0)
+			_c = room.shooting_range.targets[1]
+			if _c:
+				_c.global_position = Vector3(2.4, 0.0, -6.5)
+				_c.face(0.0)
 		_:
 			return
 	_a.face(0.0)
 	_b.face(0.0)
+	if act in CATCH_ACTS:
+		# The gunmen turn to the operative; the crosshair is on the man down range.
+		for e: Enemy in [_a, _c]:
+			if e:
+				var d: Vector3 = room.player.global_position - e.global_position
+				e.face(atan2(-d.x, -d.z))
+		GunplayDemo.aim_at(room.player, _b.body.chest_position() + Vector3(-1.2, 0.0, 0.0))
+		return
 	GunplayDemo.aim_at(room.player, _a.body.chest_position())
 
 
@@ -208,6 +230,21 @@ func _acted() -> bool:
 		"ram":
 			if (part as RamThrusters).struck == 0 and _frames < 40:
 				return false
+		"catch", "full", "release":
+			var lc: LorentzCatcher = part as LorentzCatcher
+			if lc.mode == LorentzCatcher.Mode.CATCHING:
+				_shoot_at_player()
+				var want: int = 14 if act == "catch" else 34
+				if lc.held.size() < want:
+					_frames = 0
+					return false
+				if act == "release":
+					GunplayDemo.aim_at(room.player, _b.body.chest_position())
+					lc.script_hold(false)
+					_frames = 0
+					return false
+				return true
+			return lc.mode == LorentzCatcher.Mode.RELEASING
 		"deadeye", "mark", "volley", "impact":
 			var st: Setae = part as Setae
 			if st.throws == 0 and st.hairs_grown() < st.needles.size() + 40:
@@ -235,6 +272,20 @@ func _acted() -> bool:
 			_frames = hold
 			return st.released_for * 1000.0 >= hold
 	return true
+
+
+## The two gunmen fire at the operative's eye, one round each every other frame, with tracers.
+func _shoot_at_player() -> void:
+	_shots += 1
+	if _shots % 2 != 0:
+		return
+	var eye: Vector3 = room.player.camera().global_position
+	for e: Enemy in [_a, _c]:
+		if e == null or not e.alive:
+			continue
+		var from: Vector3 = e.body.chest_position() + Vector3(0.0, 0.25, 0.0) + (eye - e.global_position).normalized() * 0.6
+		var at: Vector3 = eye + Vector3(randf_range(-0.3, 0.3), randf_range(-0.5, 0.15), 0.0)
+		Ballistics.fire(e.config.weapon, from, (at - from).normalized(), e, from)
 
 
 func _freeze() -> void:
