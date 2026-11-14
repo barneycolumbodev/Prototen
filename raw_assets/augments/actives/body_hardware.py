@@ -12,6 +12,7 @@ exported as B_<bone>__<part> meshes that BodyAppearance mounts on the bones).
   nt5_mesh_arm          the braid sleeved over the left forearm between a driver collar and a slip ring
   bw6_fan_shield        the seven leaves folded in a stack along the outer left forearm on their hub
   sx8_urticating_setae  the setae bank on the back of the left forearm: 24 ceramic ports, gill plates, feed lines
+  lc6_lorentz_catcher   the drive ring at the left wrist and its eight coil petals folded back along the forearm
 
 Run (one part per run; they bake independently):
   tools/blender.sh raw_assets/augments/actives/body_hardware.py --part sd3_shrike_drone \\
@@ -312,6 +313,43 @@ elif PART == "sx8_urticating_setae":
 
     hi, lo = both(build)
     C.add_piece("bank", "forearm.L", hi, lo)
+    views = (("side", (1.3, -1.3, 1.25), (0.45, 0.0, 1.13), 60), ("front", (1.0, -3.4, 1.7), (0.0, 0.0, 1.3), 85))
+
+# ====================================================================== LC-6 Lorentz Catcher, folded
+elif PART == "lc6_lorentz_catcher":
+    a, b = body.joint("forearm.L"), body.joint("hand.L")
+    d = (b - a).normalized()
+    u = d.cross(Z).normalized()
+    v = d.cross(u).normalized()
+    L = (b - a).length
+    R0, R1 = 0.055, 0.046  # the suit's forearm, elbow to wrist (with the plates)
+
+    def build(det, out):
+        ring_at = L - 0.03
+        out.append(C.cyl("ring", a + d * (ring_at - 0.016), a + d * (ring_at + 0.012), R1 + 0.011, METAL, det, 32, 0.0014))
+        out.append(C.cyl("ring_glow", a + d * (ring_at - 0.004), a + d * (ring_at - 0.001), R1 + 0.0118, GLOW, False, 32, 0.0))
+        out.append(C.cyl("ring_lip", a + d * (ring_at + 0.012), a + d * (ring_at + 0.017), R1 + 0.005, GRAFT, det, 32, 0.0006))
+        plen = 0.19
+        for k in range(8):
+            ang = math.radians(22.5 + 45.0 * k)
+            r = u * math.cos(ang) + v * math.sin(ang)
+            w_ = d.cross(r).normalized()
+            # Folded: lying back from the ring toward the elbow, a little proud of the plates.
+            t_mid = (ring_at - plen * 0.5) / L
+            rad = R0 + (R1 - R0) * t_mid + 0.009
+            mid = a + d * (ring_at - plen * 0.5) + r * rad
+            out.append(C.slab("petal", mid, (d, w_, r), (plen, 0.026, 0.0055), GRAFT, det, 0.0012))
+            out.append(C.slab("petal_glow", mid + r * 0.0032, (d, w_, r), (plen * 0.8, 0.003, 0.0012), GLOW, False))
+            pack = a + d * (ring_at - plen * 0.55) + r * (rad + 0.002)
+            if det:
+                for i in range(7):
+                    out.append(C.slab("turn", pack + d * ((i - 3) * 0.0102), (d, w_, r), (0.0072, 0.03, 0.0095), COPPER, True, 0.0007))
+            else:
+                out.append(C.slab("pack", pack, (d, w_, r), (0.072, 0.03, 0.0095), COPPER, False))
+            out.append(C.slab("shoe", a + d * (ring_at - plen + 0.008) + r * rad, (d, w_, r), (0.016, 0.022, 0.0075), METAL, det, 0.001))
+
+    hi, lo = both(build)
+    C.add_piece("petals", "forearm.L", hi, lo)
     views = (("side", (1.3, -1.3, 1.25), (0.45, 0.0, 1.13), 60), ("front", (1.0, -3.4, 1.7), (0.0, 0.0, 1.3), 85))
 
 else:

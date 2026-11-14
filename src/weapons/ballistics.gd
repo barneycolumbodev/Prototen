@@ -16,6 +16,11 @@ extends Node3D
 ## share one `volley` id, so stats count a shell once. Ember rounds (Dragon's
 ## Breath) are drawn as glowing streaks from one MultiMesh (one draw call for
 ## all of them) and set alight whatever has `on_burn(hit)`.
+##
+## Catchers (the LC-6 Lorentz Catcher) are spheres that take other people's
+## rounds out of the air: a round whose path enters one from its open side
+## stops there and is handed to the catcher, which may fire it back later
+## (`fire(..., glow)` draws such rounds as hot streaks, like embers).
 
 ## Physics layers (project.godot [layer_names]).
 const LAYER_WORLD: int = 1
@@ -54,9 +59,12 @@ const TRAIL_SEGMENTS: int = 10
 const TRAIL_MAX_LENGTH: float = 400.0
 const TRAIL_SHADER: Shader = preload("res://src/vfx/rail_trail.gdshader")
 ## Ember streaks (Dragon's Breath): instances in one MultiMesh.
-const EMBER_MAX: int = 64
+const EMBER_MAX: int = 128
 const EMBER_LENGTH: float = 1.6
 const EMBER_WIDTH: float = 0.045
+## Glowing (thrown-back) rounds: streaks start this far from where they were fired, at this share of the width.
+const GLOW_START: float = 1.8
+const GLOW_WIDTH: float = 1.0
 
 ## Draws the last few trajectories (tuning menu / range toggle).
 var show_trajectories: bool = false:
@@ -99,6 +107,11 @@ class Trail:
 		return used > 0 and age < life
 var _embers: MultiMeshInstance3D
 var _ember_count: int = 0
+## Fields that catch rounds in flight (add_catcher / remove_catcher).
+var _catchers: Array[BulletCatcher] = []
+## Rounds taken out of the air by catchers since start.
+var rounds_caught: int = 0
+
 ## Wakes behind the operative's rounds in RX-9 slow motion.
 var wakes: RoundWakes
 ## Projectiles fired since start (a shotgun shell adds one per pellet).
@@ -139,6 +152,10 @@ class Projectile:
 	var exclude: Array[RID] = []
 	## Instance ids already told about a near miss by this round.
 	var near_missed: Array[int] = []
+	## Drawn as a hot streak (alpha 0 = not): rounds a catcher throws back.
+	var glow: Color = Color(0, 0, 0, 0)
+	## A catcher turned it away (full): it isn't offered again.
+	var refused: bool = false
 
 	func energy() -> float:
 		return 0.5 * mass_kg * velocity.length_squared()
@@ -233,8 +250,10 @@ func _build_embers() -> void:
 ## ember rounds, where its glowing streak starts).
 ## `volley`: id of the first pellet of the same shell (0 = this round starts one).
 ## `power`: energy fraction (railgun capacitor charge); speed goes with √power.
+## `glow`: drawn as a hot streak of this colour (alpha > 0), like an ember round
+## but without setting anything alight.
 func fire(weapon: WeaponData, origin: Vector3, direction: Vector3, shooter: Node = null,
-		tracer_from: Vector3 = Vector3.INF, volley: int = 0, power: float = 1.0) -> int:
+		tracer_from: Vector3 = Vector3.INF, volley: int = 0, power: float = 1.0, glow: Color = Color(0, 0, 0, 0)) -> int:
 	var p: Projectile = Projectile.new()
 	p.id = _next_id
 	p.volley = volley if volley != 0 else p.id
@@ -252,7 +271,12 @@ func fire(weapon: WeaponData, origin: Vector3, direction: Vector3, shooter: Node
 	if shooter and shooter.has_method(&"ballistic_exclude"):
 		p.exclude = shooter.call(&"ballistic_exclude")
 	p.record(origin)
-	if weapon.embers:
+	p.glow = glow
+	if glow.a > 0.0:
+		# Thrown back from right in front of the eye: the streak starts a little
+		# way out, or the first frame is a slab across the view.
+		p.ember_tail = origin + p.velocity.normalized() * GLOW_START
+	elif weapon.embers:
 		p.ember_tail = tracer_from if tracer_from.is_finite() else origin
 	elif tracer_from.is_finite() and weapon.beam_trail_time > 0.0:
 		p.trail = _claim_trail(p.id, weapon, tracer_from)
@@ -456,6 +480,36 @@ static func pattern_dir(dir: Vector3, cone_deg: float, i: int, n: int, phase: fl
 	return (dir * cos(r) + (right * cos(phi) + up2 * sin(phi)) * sin(r)).normalized()
 
 
+## A field that catches rounds (BulletCatcher). Remove it when it goes down.
+func add_catcher(c: BulletCatcher) -> void:
+	if not _catchers.has(c):
+		_catchers.append(c)
+
+
+func remove_catcher(c: BulletCatcher) -> void:
+	_catchers.erase(c)
+
+
+func catcher_count() -> int:
+	return _catchers.size()
+
+
+## The first catcher this stretch of a round's path enters: [catcher, distance], or [].
+func _catch_on(p: Projectile, a: Vector3, dir: Vector3, length: float) -> Array:
+	var best: BulletCatcher = null
+	var best_t: float = INF
+	for c: BulletCatcher in _catchers:
+		if not c.enabled or c.owner == p.shooter or not is_instance_valid(c.owner):
+			continue
+		var t: float = c.entry(a, dir, length)
+		if t >= 0.0 and t < best_t:
+			best = c
+			best_t = t
+	if best == null:
+		return []
+	return [best, best_t]
+
+
 func clear() -> void:
 	_live.clear()
 	_paths.clear()
@@ -501,13 +555,37 @@ func _step(p: Projectile, delta: float) -> void:
 	var space: PhysicsDirectSpaceState3D = get_world_3d().direct_space_state
 	var contacts: int = 0
 	var seg_start: Vector3 = p.position
+	var was_caught: bool = false
 	while remaining > 0.0005 and p.alive and contacts < MAX_CONTACTS_PER_STEP:
 		var dir: Vector3 = p.velocity.normalized()
 		var to: Vector3 = p.position + dir * remaining
+		var caught: Array = [] if _catchers.is_empty() or p.refused else _catch_on(p, p.position, dir, remaining)
+		if not caught.is_empty():
+			# Only as far as the field: anything beyond it is behind the catch.
+			var at: float = caught[1]
+			to = p.position + dir * at
 		var q: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(p.position, to, p.mask, p.exclude)
 		q.hit_back_faces = false
 		q.collide_with_areas = false
 		var res: Dictionary = space.intersect_ray(q)
+		if res.is_empty() and not caught.is_empty():
+			var c: BulletCatcher = caught[0]
+			var shooter: Node = p.shooter if is_instance_valid(p.shooter) else null
+			if c.on_catch.call(p.weapon, to, p.velocity, shooter):
+				p.travelled += p.position.distance_to(to)
+				p.position = to
+				p.record(to)
+				p.alive = false
+				rounds_caught += 1
+				was_caught = true
+				break
+			# Full: it flies on, and isn't offered to a catcher again.
+			p.refused = true
+			to = p.position + dir * remaining
+			q = PhysicsRayQueryParameters3D.create(p.position, to, p.mask, p.exclude)
+			q.hit_back_faces = false
+			q.collide_with_areas = false
+			res = space.intersect_ray(q)
 		if res.is_empty():
 			p.travelled += remaining
 			p.position = to
@@ -525,7 +603,9 @@ func _step(p: Projectile, delta: float) -> void:
 		p.position = after
 		remaining = maxf(0.0, remaining - used) * (p.velocity.length() / maxf(speed, 1.0))
 	p.age += delta
-	_near_misses(p, seg_start, p.position)
+	if not was_caught:
+		# A caught round never got past the field: no whizz, no suppression.
+		_near_misses(p, seg_start, p.position)
 	if p.alive:
 		p.record(p.position)
 	if p.age > MAX_LIFETIME or p.travelled > w.max_range or p.velocity.length() < MIN_SPEED:
@@ -717,23 +797,31 @@ func _update_embers() -> void:
 	var mm: MultiMesh = _embers.multimesh
 	var n: int = 0
 	for p: Projectile in _live:
-		if not p.weapon.embers or n >= EMBER_MAX:
+		if not (p.weapon.embers or p.glow.a > 0.0) or n >= EMBER_MAX:
 			continue
 		var head: Vector3 = p.position
 		var span: Vector3 = head - p.ember_tail
 		var length: float = span.length()
-		if length < 0.02:
+		if length < 0.02 or span.dot(p.velocity) <= 0.0:
 			continue
 		var dir: Vector3 = span / length
-		length = minf(length, EMBER_LENGTH)
+		# Thrown-back rounds draw long, like tracers; embers short.
+		var cap: float = TRACER_LENGTH * 0.85 if p.glow.a > 0.0 else EMBER_LENGTH
+		length = minf(length, cap)
 		var up: Vector3 = Vector3.UP if absf(dir.y) < 0.95 else Vector3.RIGHT
 		var basis: Basis = Basis.looking_at(dir, up)
 		basis.z = basis.z * length
+		if p.glow.a > 0.0:
+			basis.x *= GLOW_WIDTH
+			basis.y *= GLOW_WIDTH
 		mm.set_instance_transform(n, Transform3D(basis, head - dir * length * 0.5))
 		var heat: float = clampf(p.velocity.length() / maxf(p.muzzle_speed, 1.0), 0.0, 1.0)
-		mm.set_instance_color(n, Color(1.0, 0.35 + 0.45 * heat, 0.08 + 0.3 * heat * heat, 0.55 + 0.45 * heat))
+		if p.glow.a > 0.0:
+			mm.set_instance_color(n, Color(p.glow.r, p.glow.g * (0.6 + 0.4 * heat), p.glow.b * heat, p.glow.a * (0.5 + 0.5 * heat)))
+		else:
+			mm.set_instance_color(n, Color(1.0, 0.35 + 0.45 * heat, 0.08 + 0.3 * heat * heat, 0.55 + 0.45 * heat))
 		n += 1
-		p.ember_tail = head - dir * minf(length, EMBER_LENGTH * 0.55)
+		p.ember_tail = head - dir * minf(length, cap * 0.55)
 	mm.visible_instance_count = n
 	_ember_count = n
 

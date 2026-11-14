@@ -1,0 +1,57 @@
+[gd_resource type="Resource" script_class="LorentzCatcherData" load_steps=12 format=3]
+
+[ext_resource type="Script" path="res://src/augments/active/catcher/lorentz_catcher_data.gd" id="1"]
+[ext_resource type="Script" path="res://src/body/stat_modifier.gd" id="2"]
+[ext_resource type="Script" path="res://src/body/part_visual.gd" id="3"]
+[ext_resource type="Script" path="res://src/augments/active/catcher/lorentz_catcher.gd" id="4"]
+[ext_resource type="Script" path="res://src/body/stat_requirement.gd" id="5"]
+[ext_resource type="PackedScene" path="res://assets/augments/lc6_lorentz_catcher/lc6_lorentz_catcher.gltf" id="6"]
+[ext_resource type="Script" path="res://src/player/viewmodel_config.gd" id="7"]
+[ext_resource type="PackedScene" path="res://assets/augments/actives_body/lc6_lorentz_catcher/lc6_lorentz_catcher.gltf" id="8"]
+
+[sub_resource type="Resource" id="view"]
+script = ExtResource("7")
+eye_position = Vector3(-0.5, 0.17, 0.34)
+look_target = Vector3(1.0, 0.02, -0.04)
+
+[sub_resource type="Resource" id="req_0"]
+script = ExtResource("5")
+stat = &"heat_dissipation_w"
+at_least = 500.0
+reason = "every round it stops dumps its energy into the coils as heat"
+
+[sub_resource type="Resource" id="vis_0"]
+script = ExtResource("3")
+socket = &"root"
+scene = ExtResource("8")
+model_space = true
+
+[resource]
+script = ExtResource("1")
+id = &"lc6_lorentz_catcher"
+display_name = "LC-6 Lorentz Catcher"
+description = "Eight coil petals on a drive ring behind the left wrist. Hold LB: they bloom forward round the open hand and throw a pulsed magnetic field out in front of you. Rounds fired at you from the front are braked to a stop by eddy currents and held, hot, in a cloud in front of the palm. Let go of LB (or run out of hold time) and the coils throw every round it caught back out, as a spread over a wide area where you're aiming. It throws back exactly what it caught."
+location = 6
+mount = &"arm_left"
+mass_kg = 3.5
+power_draw_w = 10.0
+heat_w = 5.0
+capacity = 3
+modifiers = Array[ExtResource("2")]([])
+requirements = Array[ExtResource("5")]([SubResource("req_0")])
+synergy = "Needs 500 W of cooling (HS-5, or HP-4 with OC-2). Each catch puts a third of the round's energy into the body as heat: overheat and it lets go of everything at once. Power supply sets how many it holds (40 at 450 W, 58 with a PC-3); the power reserve pays to throw them back (short of it they go slower). Perception sends more of the spread onto bodies. Six seconds of hold. Takes the left arm: not with the NT-5, BW-6 or SX-8; the gun goes down while it's up."
+visuals = Array[ExtResource("3")]([SubResource("vis_0")])
+behaviour = ExtResource("4")
+short_name = "LC-6"
+deploy_time = 0.35
+recover_time = 0.3
+cooldown_time = 0.4
+charge_max = 6.0
+drain_per_s = 1.0
+regen_per_s = 0.75
+regen_delay = 1.5
+min_to_start = 1.5
+active_power_w = 120.0
+active_heat_w = 200.0
+scene = ExtResource("6")
+viewmodel = SubResource("view")

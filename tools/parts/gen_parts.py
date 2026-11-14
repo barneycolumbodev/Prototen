@@ -241,11 +241,13 @@ part("oc2_respirocytes", "OC-2 Respirocyte Blood", BLOOD, 0.1, 10, 0, 2,
 
 # ============================================================== actives (hand-edited files) and presets
 ACTIVES = ["rx9_reflex_overclock", "gx4_gauss_arm", "mw7_monofilament_whip", "nt5_mesh_arm", "bw6_fan_shield", "sd3_shrike_drone",
-           "ad2_arc_projector", "kr5_ram_thrusters", "tc4_thermoptic_shroud", "sx8_urticating_setae"]
+           "ad2_arc_projector", "kr5_ram_thrusters", "tc4_thermoptic_shroud", "sx8_urticating_setae",
+           "lc6_lorentz_catcher"]
 ORDER = [SUIT, HEAD, EYES, EARS, NERVOUS, SKELETON, MUSCLE, ORGANS, TORSO, ARMS, HANDS, LEGS, SPINE, BACK, SKIN, BLOOD]
 ACTIVE_LOC = {"rx9_reflex_overclock": NERVOUS, "gx4_gauss_arm": ARMS, "mw7_monofilament_whip": ARMS, "nt5_mesh_arm": ARMS,
               "bw6_fan_shield": ARMS, "sd3_shrike_drone": BACK, "ad2_arc_projector": BACK, "kr5_ram_thrusters": BACK,
-              "tc4_thermoptic_shroud": SKIN, "sx8_urticating_setae": ARMS}
+              "tc4_thermoptic_shroud": SKIN, "sx8_urticating_setae": ARMS,
+              "lc6_lorentz_catcher": ARMS}
 
 PRESETS = {
     "loadout_default": ("Operator", "The all-rounder: titanium frame, fast muscle, cooling, the synaptic accelerator; RX-9 and the GX-4 arm.",
@@ -447,6 +449,21 @@ active("sx8_urticating_setae", "SX-8 Urticating Setae", "SX-8", ARMS, "setae/set
        vis=[("forearm.L", BOX, (0.05, 0.2, 0.03), (0.0, 0.14, 0.04), "hardware"), ("forearm.L", BOX, (0.002, 0.16, 0.002), (0.0, 0.14, 0.057), "glow")])
 
 
+active("lc6_lorentz_catcher", "LC-6 Lorentz Catcher", "LC-6", ARMS, "catcher/lorentz_catcher.gd", "catcher/lorentz_catcher_data.gd", 3.5, 10, 5, 3,
+       "Eight coil petals on a drive ring behind the left wrist. Hold LB: they bloom forward round the open hand and throw a "
+       "pulsed magnetic field out in front of you. Rounds fired at you from the front are braked to a stop by eddy currents and "
+       "held, hot, in a cloud in front of the palm. Let go of LB (or run out of hold time) and the coils throw every round it "
+       "caught back out, as a spread over a wide area where you're aiming. It throws back exactly what it caught.",
+       [("heat_dissipation_w", 500.0, "every round it stops dumps its energy into the coils as heat")],
+       "Needs 500 W of cooling (HS-5, or HP-4 with OC-2). Each catch puts a third of the round's energy into the body as heat: "
+       "overheat and it lets go of everything at once. Power supply sets how many it holds (40 at 450 W, 58 with a PC-3); the "
+       "power reserve pays to throw them back (short of it they go slower). Perception sends more of the spread onto bodies. "
+       "Six seconds of hold. Takes the left arm: not with the NT-5, BW-6 or SX-8; the gun goes down while it's up.",
+       (0.35, 0.3, 0.4), (6.0, 1.0, 0.75, 1.5, 1.5), (120, 200), mount="arm_left",
+       scene="res://assets/augments/lc6_lorentz_catcher/lc6_lorentz_catcher.gltf", view=vm((-0.5, 0.17, 0.34), (1.0, 0.02, -0.04)),
+       vis=[("forearm.L", CYL, (0.06, 0.03, 0.06), (0.0, 0.24, 0.0), "hardware"), ("forearm.L", CYL, (0.062, 0.004, 0.062), (0.0, 0.24, 0.0), "glow")])
+
+
 def body_scene(pid):
     """The part's hardware modelled on the operative, if it has been built."""
     rel = f"assets/augments/actives_body/{pid}/{pid}.gltf"
@@ -489,7 +506,7 @@ def write_active(p):
     cls = {"whip/whip_data.gd": "WhipData", "mesh_arm/mesh_arm_data.gd": "MeshArmData", "shield/fan_shield_data.gd": "FanShieldData",
            "drone/shrike_drone_data.gd": "ShrikeDroneData", "arc/arc_projector_data.gd": "ArcProjectorData",
            "ram/ram_thrusters_data.gd": "RamThrustersData", "cloak/thermoptic_shroud_data.gd": "ThermopticShroudData",
-           "setae/setae_data.gd": "SetaeData"}[p["data_script"]]
+           "setae/setae_data.gd": "SetaeData", "catcher/lorentz_catcher_data.gd": "LorentzCatcherData"}[p["data_script"]]
     out = [f'[gd_resource type="Resource" script_class="{cls}" load_steps={len(ext) + len(subs) + 1} format=3]', ""] + ext + [""] + subs
     dep, rec, cd = p["timing"]
     cmax, drain, regen, delay, least = p["charge"]
