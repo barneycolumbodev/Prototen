@@ -17,6 +17,7 @@ extends Node3D
 ##   targets that burn. Fires on targets ride along with them.
 ## - 12-gauge shells: their own small pool, hull tinted per load.
 ## - GX-4 arm cannon beams: a core and a corkscrew helix (GaussBeam), 3 pooled.
+## - Blasts (grenades, the drone): fireball, smoke, dust ring, scorch (ExplosionFx).
 
 const MAX_HOLES: int = 24
 const MAX_STATIC_HOLES: int = 128
@@ -109,6 +110,26 @@ func _ready() -> void:
 	_flame = _emitters[0].duplicate() as CPUParticles3D
 	add_child(_flame)
 	EventBus.ballistic_hit.connect(_on_hit)
+
+
+# ------------------------------------------------------------------ blasts
+
+var _explosions: ExplosionFx
+
+
+## A blast's fireball, smoke, dust ring and scorch (ExplosionFx).
+func explosion(at: Vector3, normal: Vector3, radius: float, airburst: bool) -> void:
+	if not enabled:
+		return
+	explosion_fx().spawn(at, normal, radius, airburst)
+
+
+func explosion_fx() -> ExplosionFx:
+	if _explosions == null:
+		_explosions = ExplosionFx.new()
+		_explosions.name = "Explosions"
+		add_child(_explosions)
+	return _explosions
 
 
 # ------------------------------------------------------------------ muzzle

@@ -59,6 +59,9 @@ var fov_add_deg: float = 0.0
 ## A shot's field-of-view punch (degrees; the arm cannon), and an extra zoom
 ## from an active part's own aiming (1 = none).
 var fov_punch_deg: float = 0.0
+## Blast shake (add_shake): strength 0..2 and its clock (real seconds).
+var _shake: float = 0.0
+var _shake_time: float = 0.0
 var fov_extra_scale: float = 1.0
 ## Set by the weapon: carrying a heavy gun cuts sprint speed and jump height.
 var sprint_scale: float = 1.0
@@ -325,8 +328,26 @@ func stop_sprint() -> void:
 
 
 ## Camera recoil offset on top of the view, degrees: x = up, y = right, z = roll.
+## The blast shake (add_shake) rides on top.
 func set_camera_recoil(deg: Vector3) -> void:
-	_camera.rotation = Vector3(deg_to_rad(deg.x), -deg_to_rad(deg.y), deg_to_rad(deg.z))
+	var d: Vector3 = deg + shake_offset()
+	_camera.rotation = Vector3(deg_to_rad(d.x), -deg_to_rad(d.y), deg_to_rad(d.z))
+
+
+## Shakes the view (a blast close by): `amount` 1 is a grenade at arm's
+## length. Decays over about a second of real time.
+func add_shake(amount: float) -> void:
+	_shake = clampf(maxf(_shake, amount) + amount * 0.25, 0.0, 2.0)
+
+
+## The shake's turn of the view now, degrees (pitch, yaw, roll).
+func shake_offset() -> Vector3:
+	if _shake <= 0.001:
+		return Vector3.ZERO
+	var t: float = _shake_time
+	var k: float = _shake * _shake
+	return Vector3(sin(t * 41.0) + 0.5 * sin(t * 67.0 + 1.3), sin(t * 37.0 + 2.1) + 0.5 * sin(t * 59.0),
+			sin(t * 29.0 + 0.7)) * Vector3(2.4, 1.8, 1.6) * k
 
 
 ## The camera jumps with the body (after a teleport: spawn, respawn).
@@ -358,6 +379,9 @@ func _unhandled_input(event: InputEvent) -> void:
 func _process(delta: float) -> void:
 	# Looking is a reflex: real time, whatever the world's time scale.
 	var look_dt: float = TimeControl.real_delta(delta)
+	if _shake > 0.0:
+		_shake_time += look_dt
+		_shake = maxf(0.0, _shake - look_dt * (0.6 + _shake * 1.6))
 	if input_enabled and not look_blocked and not look_frozen:
 		var look: LookConfig = Settings.look_config()
 		var raw: Vector2 = Input.get_vector(&"look_left", &"look_right", &"look_up", &"look_down", 0.0)

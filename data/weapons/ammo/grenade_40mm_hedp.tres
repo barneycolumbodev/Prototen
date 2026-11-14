@@ -1,0 +1,38 @@
+[gd_resource type="Resource" script_class="GrenadeData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/weapons/grenade_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+display_name = "40 mm HEDP"
+mass_kg = 0.23
+muzzle_velocity = 76.0
+drag_per_m = 0.001
+gravity_scale = 1.0
+spin_hz = 60.0
+max_flight_time = 12.0
+arming_distance = 9.0
+blunt_damage_per_j = 0.09
+bounce_restitution = 0.32
+bounce_friction = 0.55
+dud_lifetime = 9.0
+airburst_offset = 1.5
+airburst_clearance = 0.35
+fcs_max_range = 200.0
+fcs_lock_time = 0.12
+blast_radius = 3.4
+blast_damage = 260.0
+self_blast_scale = 0.45
+fragment_count = 620
+body_area_m2 = 0.7
+fragment_mass_g = 0.4
+fragment_velocity = 1500.0
+fragment_drag_per_m = 0.04
+fragment_range = 22.0
+fragment_max_per_body = 8
+fragment_scatter = 14
+fragment_damage_per_joule = 0.13
+fireball_radius = 0.75
+shake_strength = 1.0
+shake_range = 26.0
+concussion_range = 7.0

@@ -1,4 +1,4 @@
-[gd_scene load_steps=23 format=3]
+[gd_scene load_steps=26 format=3]
 
 [ext_resource type="Script" path="res://src/player/player.gd" id="1_player"]
 [ext_resource type="Script" path="res://src/player/viewmodel_rig.gd" id="2_rig"]
@@ -22,6 +22,8 @@
 [ext_resource type="PackedScene" path="res://assets/weapons/mp5/mp5.gltf" id="20_mp5"]
 [ext_resource type="PackedScene" path="res://assets/characters/fp_arms_mp5/fp_arms_mp5.gltf" id="21_armsmp5"]
 [ext_resource type="PackedScene" path="res://assets/weapons/glock22/glock22.gltf" id="40_glock"]
+[ext_resource type="Resource" path="res://data/player/viewmodel_m32.tres" id="41_vmm32"]
+[ext_resource type="PackedScene" path="res://assets/weapons/m32/m32.gltf" id="42_m32"]
 
 [sub_resource type="CapsuleShape3D" id="capsule"]
 radius = 0.4
@@ -81,6 +83,12 @@ visible = false
 script = ExtResource("2_rig")
 config = ExtResource("3_vmcfg")
 models = Array[PackedScene]([ExtResource("40_glock"), ExtResource("5_arms")])
+
+[node name="ViewmodelM32" type="Node3D" parent="Head/Camera3D"]
+visible = false
+script = ExtResource("2_rig")
+config = ExtResource("41_vmm32")
+models = Array[PackedScene]([ExtResource("42_m32"), ExtResource("9_armsmg")])
 
 [node name="Weapon" type="Node" parent="."]
 script = ExtResource("6_weapon")

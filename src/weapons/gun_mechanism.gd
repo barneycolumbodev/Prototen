@@ -27,6 +27,13 @@ extends RefCounted
 ## bolt, which throws the old chambered shell out (EV_EJECT_CHAMBERED) and
 ## chambers one of the new load: the empty-reload length.
 ##
+## One round at a time (`WeaponData.round_load_time`, the M32's cylinder):
+## the reload opens the gun (EV_MAG_OUT: the spent cases fall out), loads a
+## round every `round_load_time` (EV_ROUND_IN, ammo committed each time) until
+## it's full, then closes (EV_SLIDE_RELEASE). A trigger pull with a round in
+## closes it early and the shot goes once it's shut; a cancel (sprint, switch)
+## stops it with whatever went in.
+##
 ## Cyclic rate is exact: time left over after a cycle carries into the next
 ## shot, so 0.05 s (1,200 rpm) fires every third 60 Hz physics tick instead of
 ## drifting to every fourth.
@@ -48,6 +55,11 @@ const EV_OVERHEAT: StringName = &"overheat"
 const EV_VENT_DONE: StringName = &"vent_done"
 ## A swap racked a live shell out of the chamber (eject it, of `ejected_ammo`).
 const EV_EJECT_CHAMBERED: StringName = &"eject_chambered"
+## A single-round reload put one round in.
+const EV_ROUND_IN: StringName = &"round_in"
+
+## Single-round reload: opening the gun, loading rounds, closing it.
+enum LoadPhase { OPENING, LOADING, CLOSING }
 
 ## Fraction of an empty reload where the slide closes.
 const SLIDE_RELEASE_POINT: float = 0.86
@@ -79,6 +91,9 @@ var ejected_ammo: int = 0
 ## run this many times faster (reload speed × proficiency, handling).
 var reload_rate: float = 1.0
 var draw_rate: float = 1.0
+## Single-round reload: where it is, and rounds put in so far this reload.
+var load_phase: LoadPhase = LoadPhase.OPENING
+var rounds_loaded: int = 0
 
 var _state_time: float = 0.0
 var _buffered: float = -1.0
@@ -92,6 +107,9 @@ var _slide_done: bool = false
 var _since_shot: float = 999.0
 var _vent_left: float = 0.0
 var _charged_sent: bool = true
+var _phase_time: float = 0.0
+var _single_need: int = 0
+var _fire_after_close: bool = false
 
 
 func _init(p_data: WeaponData) -> void:
@@ -123,6 +141,9 @@ func loaded() -> int:
 
 
 func reload_duration() -> float:
+	if data.loads_singly():
+		var rounds: int = maxi(_single_need, 1)
+		return (data.reload_open_time + data.round_load_time * rounds + data.reload_close_time) / maxf(reload_rate, 0.05)
 	var t: float = data.reload_empty_time if empty_reload and data.closed_bolt else data.reload_tactical_time
 	return t / maxf(reload_rate, 0.05)
 
@@ -131,7 +152,34 @@ func reload_duration() -> float:
 func reload_progress() -> float:
 	if state != State.RELOADING:
 		return 0.0
+	if data.loads_singly():
+		var open_t: float = data.reload_open_time
+		var load_t: float = data.round_load_time
+		var close_t: float = data.reload_close_time
+		var total: float = open_t + load_t * maxi(_single_need, 1) + close_t
+		var done: float = _phase_time
+		match load_phase:
+			LoadPhase.LOADING:
+				done = open_t + load_t * rounds_loaded + _phase_time
+			LoadPhase.CLOSING:
+				total = open_t + load_t * rounds_loaded + close_t
+				done = total - close_t + _phase_time
+		return clampf(done / maxf(total, 0.01), 0.0, 1.0)
 	return clampf(_state_time / reload_duration(), 0.0, 1.0)
+
+
+## Single-round reload: 0..1 how far the gun is open (the cylinder swung out).
+func open_amount() -> float:
+	if state != State.RELOADING or not data.loads_singly():
+		return 0.0
+	match load_phase:
+		LoadPhase.OPENING:
+			var k: float = clampf(_phase_time / maxf(data.reload_open_time, 0.01), 0.0, 1.0)
+			return k * k * (3.0 - 2.0 * k)
+		LoadPhase.CLOSING:
+			var k: float = clampf(_phase_time / maxf(data.reload_close_time * 0.6, 0.01), 0.0, 1.0)
+			return 1.0 - k * k * (3.0 - 2.0 * k)
+	return 1.0
 
 
 func state_time() -> float:
@@ -211,6 +259,8 @@ func update(delta: float, pull: bool, held: bool, reload: bool, blocked: bool, c
 				var over: float = _state_time - data.fire_interval
 				_enter(State.READY)
 				_carry = clampf(over, 0.0, data.fire_interval)
+		State.RELOADING when data.loads_singly():
+			_advance_single(delta, pull, cancel, events)
 		State.RELOADING:
 			var interrupt: bool = cancel or (pull and (chambered or _mag_in_done))
 			if interrupt and not _mag_in_done:
@@ -303,8 +353,67 @@ func _start_reload(events: Array[StringName], swap: bool = false) -> void:
 	_mag_out_done = false
 	_mag_in_done = false
 	_slide_done = false
+	load_phase = LoadPhase.OPENING
+	_phase_time = 0.0
+	rounds_loaded = 0
+	_single_need = data.magazine_size - loaded()
+	_fire_after_close = false
 	_enter(State.RELOADING)
 	events.append(EV_RELOAD_START)
+
+
+## One step of a single-round reload.
+func _advance_single(delta: float, pull: bool, cancel: bool, events: Array[StringName]) -> void:
+	if cancel:
+		_cancel_reload(events)
+		return
+	if pull and loaded() > 0 and load_phase != LoadPhase.CLOSING:
+		# Enough: shut it and shoot.
+		_fire_after_close = true
+		if load_phase == LoadPhase.OPENING:
+			# Not open yet: close from as far as it got.
+			_phase_time = data.reload_close_time * (1.0 - clampf(_phase_time / maxf(data.reload_open_time, 0.01), 0.0, 1.0))
+		else:
+			_phase_time = 0.0
+		load_phase = LoadPhase.CLOSING
+		return
+	_phase_time += delta * maxf(reload_rate, 0.05)
+	match load_phase:
+		LoadPhase.OPENING:
+			if _phase_time >= data.reload_open_time:
+				_phase_time -= data.reload_open_time
+				load_phase = LoadPhase.LOADING
+				events.append(EV_MAG_OUT)
+		LoadPhase.LOADING:
+			if _phase_time >= data.round_load_time:
+				_phase_time -= data.round_load_time
+				_insert_round(events)
+				if loaded() >= data.magazine_size or (not data.infinite_reserve and reserve <= 0):
+					load_phase = LoadPhase.CLOSING
+					_phase_time = 0.0
+		LoadPhase.CLOSING:
+			if _phase_time >= data.reload_close_time:
+				events.append(EV_SLIDE_RELEASE)
+				events.append(EV_RELOAD_DONE)
+				_enter(State.READY)
+				if _fire_after_close:
+					_buffered = data.fire_buffer
+				_fire_after_close = false
+
+
+func _insert_round(events: Array[StringName]) -> void:
+	if not data.infinite_reserve:
+		if reserve <= 0:
+			return
+		reserve -= 1
+	if not chambered:
+		chambered = true
+		chamber_ammo = load_ammo
+	else:
+		magazine += 1
+	mag_ammo = load_ammo
+	rounds_loaded += 1
+	events.append(EV_ROUND_IN)
 
 
 func _advance_reload(events: Array[StringName]) -> void:

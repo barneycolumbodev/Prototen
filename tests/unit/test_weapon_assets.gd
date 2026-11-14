@@ -185,7 +185,7 @@ func test_m14p_arms_budget() -> void:
 
 
 func test_every_gun_has_a_wheel_icon() -> void:
-	for path: String in ["pistol_57", "mg42", "saiga12k", "rail_carbine", "m14p", "mp5", "glock22"]:
+	for path: String in ["pistol_57", "mg42", "saiga12k", "rail_carbine", "m14p", "mp5", "glock22", "m32"]:
 		var d: WeaponData = load("res://data/weapons/%s.tres" % path) as WeaponData
 		assert_not_null(d.icon, "%s has a weapon wheel icon" % path)
 
@@ -222,3 +222,16 @@ func test_pistol_suppressor_is_solid_to_the_muzzle() -> void:
 	assert_gt(max_x, 0.28, "reaches the muzzle")
 	assert_gt(outward, 60, "suppressor tube faces point outward (%d out, %d in)" % [outward, inward])
 	assert_gt(outward, inward * 3, "suppressor tube isn't inside out (%d out, %d in)" % [outward, inward])
+
+
+func test_m32_budget_and_moving_parts() -> void:
+	var gun: Node = (load("res://assets/weapons/m32/m32.gltf") as PackedScene).instantiate()
+	var tris: int = _tris(gun)
+	for part: String in ["body", "crane", "cylinder", "stock", "lens", "reticle", "round_0", "round_5"]:
+		assert_not_null(gun.find_child(part, true, false), "M32 has its %s node" % part)
+	gun.free()
+	assert_lt(tris, 32000, "M32 game mesh (%d tris)" % tris)
+	var round: Node = (load("res://assets/weapons/m32/grenade_40mm.gltf") as PackedScene).instantiate()
+	var rt: int = _tris(round)
+	round.free()
+	assert_lt(rt, 800, "the 40 mm round in flight (%d tris)" % rt)

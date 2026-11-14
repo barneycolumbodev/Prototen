@@ -603,3 +603,28 @@ Please try:
 - Measured:
 - Notes from the owner:
 - Follow-ups:
+
+## M32A1 grenade launcher — 2026-11-14 (waiting for the owner)
+
+Owner (2026-11-14): "look around the code base and find a well-defined artistic task ... add something that you feel is missing." Claude's pick: nothing in the arsenal was explosive, nothing arced, nothing reached a man behind cover, and the only blast in the game (the drone's) was a few tiny particles. So: a six-shot 40 mm revolver grenade launcher, and a real look for every blast.
+
+What's in the APK (design §4.8):
+- **Hold Y**: the M32A1 MGL is the eighth gun on the wheel. Olive-grey frame, black six-chamber cylinder, a fire-control sight with a laser rangefinder, a fuze setter ring at the muzzle.
+- **From the hip**, rounds fly an arc (a level shot lands about 40 m out). A diamond in the HUD shows where the round will land and how far; it reads SAFE when the round would still be unarmed there (the fuze arms after 9 m).
+- **Hold LT**: the sight lases whatever is under the dot (RNG at the side of the sight). Aim at the top edge of the wall a man is hiding behind (AIRBURST +1.5 m) and the round goes just over it and bursts above him. Aim at a man (IMPACT) and it bursts on him.
+- **Close in** (under 9 m) the round doesn't go off: it hits like a brick and bounces away.
+- **The burst**: fireball, rising smoke, dust thrown along the floor, a scorch with embers; the shake and, close by, your hearing goes muffled with a ringing. Real fragments: they go through the men they reach, and cover stops them. A man a few metres out usually goes down; further out they get hit in an arm or a leg and limp or drop their aim.
+- **X**: the cylinder swings out to the right, the empty cases fall, rounds go in one at a time; RT shuts it and fires with whatever's in.
+
+Cloud evidence: `tools/check.sh` (22 new tests in `tests/unit/test_grenade_data.gd` and `tests/scene/test_m32.gd`; list in design §4.8). In-game captures with the Mobile renderer on the cloud's software Vulkan: `docs/previews/m32_ingame.png` (aimed, the burst, reload, hip marker) and `m32_ingame_blast.png` (an airburst over a wall, side-on). The tuning menu (Pause → Tuning) has a Launcher section for the arming distance, airburst offset, blast and fragments. Model previews `docs/previews/m32_*.png`. Not checked in the cloud: how the blast reads at night on the phone, the sounds by ear, and frame time with several bursts on screen.
+
+Please try:
+1. On the docks: fire from the hip at a squad behind a car or a stall. Then do the same aimed, on the top edge of their cover. Does the airburst feel like the right answer to men hiding?
+2. Is 9 m of arming right? Too short makes it a point-blank cannon; too long makes it useless in the alleys.
+3. Is the blast big enough? Too big? Does the smoke get in the way?
+4. Does reloading a round at a time feel good, or should X fill all six in one go?
+
+- Device / renderer / settings:
+- Measured:
+- Notes from the owner:
+- Follow-ups:

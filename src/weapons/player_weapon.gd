@@ -33,6 +33,16 @@ extends Node
 ## that same line, so the dot is the centre of the shot cone. Guns with
 ## `sprint_fire` shoot on the run: the trigger doesn't end a sprint and the
 ## gun comes up out of the sprint pose while firing.
+##
+## Grenade launchers (WeaponData.grenade, the M32A1): each shot launches a
+## 40 mm round from the muzzle (Grenades). At the hip it leaves toward what the
+## view is on and drops on its way, and `impact_point` is where it would land
+## (the HUD marks it). Aimed, the fire control lases the point under the sight
+## (`fcs_*`): the round is sent on the arc that passes through it (just over
+## it for a surface) and its fuze is set to burst `airburst_offset` past it.
+## The cylinder (WeaponData.cylinder_chambers) turns a chamber per shot, swings
+## out to reload a round at a time, and shows a case head in every loaded or
+## spent chamber.
 
 signal fired
 signal ammo_changed(loaded: int, reserve: int)
@@ -51,6 +61,12 @@ class Slot:
 	var optic_xform: Transform3D
 	## What one round of each load is fired with (AmmoData.apply_to), same order as data.ammo_types.
 	var rounds: Array[WeaponData] = []
+	## Revolver cylinder: what each chamber holds (CHAMBER_*), the one on the
+	## bore, and how far it has turned (degrees; `cyl_target` is where it's going).
+	var chambers: PackedInt32Array = PackedInt32Array()
+	var bore: int = 0
+	var cyl_angle: float = 0.0
+	var cyl_target: float = 0.0
 
 	func _init(p_data: WeaponData, p_rig: ViewmodelRig) -> void:
 		data = p_data
@@ -61,6 +77,8 @@ class Slot:
 		ads_xform = PlayerWeapon.ads_transform(data)
 		optic_xform = PlayerWeapon.eye_transform(data.optic_eye_position, data.optic_look_target)
 		build_rounds()
+		chambers.resize(data.cylinder_chambers)
+		chambers.fill(PlayerWeapon.CHAMBER_LIVE)
 
 	func build_rounds() -> void:
 		rounds.clear()
@@ -75,6 +93,11 @@ class Slot:
 		return data.ammo_types[index] if index >= 0 and index < data.ammo_types.size() else null
 
 
+## A cylinder chamber: empty, a live round, a spent case.
+const CHAMBER_EMPTY: int = 0
+const CHAMBER_LIVE: int = 1
+const CHAMBER_SPENT: int = 2
+
 ## Guns in switch order, and the viewmodel rig of each (same order).
 @export var loadout: Array[WeaponData] = [
 	preload("res://data/weapons/pistol_57.tres"),
@@ -84,10 +107,11 @@ class Slot:
 	preload("res://data/weapons/m14p.tres"),
 	preload("res://data/weapons/mp5.tres"),
 	preload("res://data/weapons/glock22.tres"),
+	preload("res://data/weapons/m32.tres"),
 ]
 @export var rig_paths: Array[NodePath] = [^"../Head/Camera3D/Viewmodel", ^"../Head/Camera3D/ViewmodelMG42",
 		^"../Head/Camera3D/ViewmodelSaiga", ^"../Head/Camera3D/ViewmodelRail", ^"../Head/Camera3D/ViewmodelM14",
-		^"../Head/Camera3D/ViewmodelMP5", ^"../Head/Camera3D/ViewmodelGlock"]
+		^"../Head/Camera3D/ViewmodelMP5", ^"../Head/Camera3D/ViewmodelGlock", ^"../Head/Camera3D/ViewmodelM32"]
 @export var input_enabled: bool = true
 @export var wheel_config: WeaponWheelConfig = preload("res://data/input/weapon_wheel.tres")
 
@@ -130,6 +154,20 @@ var trigger_held: bool = false
 ## The line of sight is on a live enemy; `enemy_amount` eases 0..1 for colour.
 var over_enemy: bool = false
 var enemy_amount: float = 0.0
+## Fire control (launchers, aimed): the rangefinder's point and range (-1:
+## no return), whether it's on a body, inside the arming distance, and whether
+## the solution is ready (aimed for `fcs_lock_time`).
+var fcs_point: Vector3 = Vector3.INF
+var fcs_range: float = -1.0
+var fcs_on_body: bool = false
+var fcs_too_close: bool = false
+var fcs_locked: bool = false
+## Launchers at the hip: where a round fired now would land (INF: nowhere
+## near) and how far it would fly to get there.
+var impact_point: Vector3 = Vector3.INF
+var impact_path: float = 0.0
+var _fcs_time: float = 0.0
+var _impact_tick: int = 0
 
 var _player: Player
 var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
@@ -633,6 +671,8 @@ func _physics_process(delta: float) -> void:
 	spread = r.spread_deg(ads, _move_fraction(), not _player.is_on_floor(), bloom, walk, _stat(&"stability")) / sqrt(proficiency())
 	reticle_spread = spread + (r.pattern_deg if r.pellets > 1 else 0.0)
 	_check_enemy()
+	if data.grenade:
+		_update_fire_control(delta)
 
 
 func _process(delta: float) -> void:
@@ -696,6 +736,8 @@ func _process(delta: float) -> void:
 	if data.belt_jiggle > 0.0:
 		_belt_shake.step(delta)
 		s.rig.set_belt_offset(_belt_shake.value)
+	if data.cylinder_chambers > 0:
+		_update_cylinder(delta, s)
 	_update_laser(s)
 
 
@@ -829,6 +871,14 @@ func _handle(ev: StringName) -> void:
 		GunMechanism.EV_MAG_OUT:
 			_play(&"mag_out")
 			motion.jolt(Vector3(0, -0.004, 0), Vector3(-3, 0, 2))
+			if data.cylinder_chambers > 0:
+				_cylinder_cases_out()
+		GunMechanism.EV_ROUND_IN:
+			_play(&"round_in")
+			motion.jolt(Vector3(0, 0.003, 0.002), Vector3(1.5, 0, 1.2))
+			_rumble(Vector3(0.0, 0.12, 0.03))
+			if data.cylinder_chambers > 0:
+				_cylinder_round_in()
 		GunMechanism.EV_MAG_IN:
 			_play(&"mag_in")
 			motion.jolt(Vector3(0, 0.01, 0), Vector3(4, 0, 5))
@@ -841,12 +891,16 @@ func _handle(ev: StringName) -> void:
 			var vel: Vector3 = gun.basis * (data.ejection_velocity * 0.6) + _player.velocity
 			Fx.eject_shell(gun * data.ejection_point, vel, gun.basis, spent.color if spent and data.shotshell else Color(0, 0, 0, 0))
 		GunMechanism.EV_SLIDE_RELEASE:
+			if data.cylinder_chambers > 0:
+				_cylinder_closed()
 			_play(&"slide_release")
 			motion.release_slide()
 			motion.jolt(Vector3(0, 0, 0.008), Vector3(-2, 0, 3))
 			_rumble(Vector3(0.15, 0.1, 0.04))
 		GunMechanism.EV_RELOAD_CANCEL:
 			_play(&"reload_cancel", -8.0)
+			if data.cylinder_chambers > 0:
+				_cylinder_closed()
 		GunMechanism.EV_CHARGED:
 			_play(&"ready", -6.0)
 		GunMechanism.EV_OVERHEAT:
@@ -875,14 +929,19 @@ func _fire() -> void:
 	var trail_from: Vector3 = muzzle.origin if tracer or r.embers else Vector3.INF
 	# Railguns: the capacitor's charge sets this shot's energy (1 for other guns).
 	var power: float = mechanism.last_power
-	# Pellets: a pattern around the aim point, all one volley (one shot in the stats).
-	var volley: int = 0
-	var phase: float = _rng.randf() * TAU
-	for i: int in r.pellets:
-		var pellet_dir: Vector3 = Ballistics.pattern_dir(dir, r.pattern_deg, i, r.pellets, phase, _rng)
-		var id: int = Ballistics.fire(r, eye.origin, pellet_dir, _player, trail_from, volley, power)
-		if volley == 0:
-			volley = id
+	if r.grenade:
+		_launch(r, muzzle.origin, forward)
+		if data.cylinder_chambers > 0:
+			_cylinder_fired()
+	else:
+		# Pellets: a pattern around the aim point, all one volley (one shot in the stats).
+		var volley: int = 0
+		var phase: float = _rng.randf() * TAU
+		for i: int in r.pellets:
+			var pellet_dir: Vector3 = Ballistics.pattern_dir(dir, r.pattern_deg, i, r.pellets, phase, _rng)
+			var id: int = Ballistics.fire(r, eye.origin, pellet_dir, _player, trail_from, volley, power)
+			if volley == 0:
+				volley = id
 	EventBus.shot_fired.emit(_player, eye.origin, dir)
 
 	var a: float = ads_visual()
@@ -938,3 +997,176 @@ func _rumble(r: Vector3) -> void:
 		return
 	for pad: int in Input.get_connected_joypads():
 		Input.start_joy_vibration(pad, r.x, r.y, r.z)
+
+
+# ------------------------------------------------------------------ grenade launchers
+
+## Launches a grenade from the muzzle (Grenades). Aimed with a fire-control
+## solution: on the arc through the lased point, fuzed to burst past it.
+## Otherwise toward what the view is on, and gravity takes it from there.
+func _launch(r: WeaponData, muzzle: Vector3, forward: Vector3) -> void:
+	var g: GrenadeData = r.grenade
+	var cam: Camera3D = _player.camera()
+	var eye: Vector3 = cam.global_position
+	var from: Vector3 = _launch_origin(eye, muzzle)
+	var gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity", 9.8)
+	var dir: Vector3
+	var fuze_at: float = -1.0
+	if fcs_locked and fcs_point.is_finite() and not fcs_too_close:
+		var target: Vector3 = fcs_point
+		if not fcs_on_body:
+			target += Vector3.UP * g.airburst_clearance
+		dir = g.solve_launch(from, target, gravity)
+		fuze_at = from.distance_to(target) + g.airburst_offset
+	else:
+		dir = (_view_point(eye, forward, 400.0) - from).normalized()
+	dir = Ballistics.random_in_cone(dir, spread, _rng)
+	Grenades.launch(g, r, from, dir * g.muzzle_velocity, _player, fuze_at)
+
+
+## Where a round leaves: the muzzle, or short of it if the muzzle is through a wall.
+func _launch_origin(eye: Vector3, muzzle: Vector3) -> Vector3:
+	var space: PhysicsDirectSpaceState3D = _player.get_world_3d().direct_space_state
+	var q: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(eye, muzzle, Ballistics.LAYER_WORLD | Ballistics.LAYER_PROPS)
+	var res: Dictionary = space.intersect_ray(q)
+	if res.is_empty():
+		return muzzle
+	var hit: Vector3 = res["position"]
+	return hit - (muzzle - eye).normalized() * 0.08
+
+
+## The first thing along the view (or `reach` metres out).
+func _view_point(eye: Vector3, forward: Vector3, reach: float) -> Vector3:
+	var space: PhysicsDirectSpaceState3D = _player.get_world_3d().direct_space_state
+	var q: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(eye, eye + forward * reach, Ballistics.BULLET_MASK)
+	var res: Dictionary = space.intersect_ray(q)
+	return eye + forward * reach if res.is_empty() else res["position"]
+
+
+## Aimed: lase the point under the sight. At the hip: where a round would land.
+func _update_fire_control(delta: float) -> void:
+	var g: GrenadeData = data.grenade
+	var cam: Camera3D = _player.camera()
+	if cam == null or not cam.is_inside_tree():
+		return
+	var eye: Vector3 = cam.global_position
+	var aimed: bool = ads_visual() > 0.85 and not stowed and not is_switching() and not is_reloading()
+	if aimed:
+		_fcs_time += delta
+		var space: PhysicsDirectSpaceState3D = cam.get_world_3d().direct_space_state
+		var q: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(eye, eye + aim_forward() * g.fcs_max_range,
+				Ballistics.BULLET_MASK)
+		var res: Dictionary = space.intersect_ray(q)
+		if res.is_empty():
+			fcs_point = Vector3.INF
+			fcs_range = -1.0
+			fcs_locked = false
+		else:
+			fcs_point = res["position"]
+			fcs_range = eye.distance_to(fcs_point)
+			fcs_on_body = res["collider"] is HitboxPart
+			fcs_too_close = fcs_range < g.arming_distance
+			fcs_locked = _fcs_time >= g.fcs_lock_time
+		impact_point = Vector3.INF
+		return
+	_fcs_time = 0.0
+	fcs_locked = false
+	fcs_range = -1.0
+	fcs_point = Vector3.INF
+	# The hip marker: every other tick is plenty.
+	_impact_tick += 1
+	if _impact_tick % 2 == 0:
+		_predict_impact(g, eye)
+
+
+## Steps a round fired now (no spread) until it hits something, ~2 s at most.
+func _predict_impact(g: GrenadeData, eye: Vector3) -> void:
+	impact_point = Vector3.INF
+	if stowed or is_switching() or not slots[current].rig.visible:
+		return
+	var muzzle: Vector3 = rig().global_transform * data.muzzle_point
+	var p: Vector3 = _launch_origin(eye, muzzle)
+	var v: Vector3 = (_view_point(eye, aim_forward(), 400.0) - p).normalized() * g.muzzle_velocity
+	var gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity", 9.8)
+	var space: PhysicsDirectSpaceState3D = _player.get_world_3d().direct_space_state
+	var dt: float = 1.0 / 15.0
+	var path: float = 0.0
+	for i: int in 30:
+		v = g.step_velocity(v, dt, gravity)
+		var np: Vector3 = p + v * dt
+		var q: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(p, np, Ballistics.BULLET_MASK)
+		var res: Dictionary = space.intersect_ray(q)
+		if not res.is_empty():
+			var hit: Vector3 = res["position"]
+			impact_point = hit
+			impact_path = path + p.distance_to(hit)
+			return
+		path += p.distance_to(np)
+		p = np
+
+
+## The cylinder turns toward its next chamber, swings out while reloading,
+## and shows a case head in every chamber that holds one.
+func _update_cylinder(delta: float, s: Slot) -> void:
+	var step: float = 360.0 / float(data.cylinder_chambers)
+	s.cyl_angle = move_toward(s.cyl_angle, s.cyl_target, step / maxf(data.cylinder_index_time, 0.01) * delta)
+	var swing: float = mechanism.open_amount() * data.crane_swing_deg
+	s.rig.set_cylinder(-s.cyl_angle, swing, data.cylinder_axis, data.crane_hinge)
+	for k: int in data.cylinder_chambers:
+		s.rig.set_round_visible(k, s.chambers[k] != CHAMBER_EMPTY)
+
+
+func _cylinder_fired() -> void:
+	var s: Slot = slots[current]
+	s.chambers[s.bore] = CHAMBER_SPENT
+	s.bore = (s.bore + 1) % data.cylinder_chambers
+	s.cyl_target += 360.0 / float(data.cylinder_chambers)
+
+
+## The cylinder is out: the spent cases fall from it.
+func _cylinder_cases_out() -> void:
+	var s: Slot = slots[current]
+	var gun: Transform3D = rig().global_transform
+	var swing: Basis = Basis(Vector3.RIGHT, deg_to_rad(data.crane_swing_deg))
+	var rear: Vector3 = data.crane_hinge + swing * (data.cylinder_axis + Vector3(0.06, 0.0, 0.0) - data.crane_hinge)
+	for k: int in data.cylinder_chambers:
+		if s.chambers[k] != CHAMBER_SPENT:
+			continue
+		s.chambers[k] = CHAMBER_EMPTY
+		var at: Vector3 = gun * (rear + Vector3(0.0, _rng.randf_range(-0.03, 0.03), _rng.randf_range(-0.03, 0.03)))
+		var vel: Vector3 = gun.basis * Vector3(_rng.randf_range(-1.6, -0.8), _rng.randf_range(-1.2, -0.4), _rng.randf_range(0.2, 0.9))
+		Fx.eject_shell(at, vel + _player.velocity, gun.basis, Color(0.6, 0.6, 0.58))
+
+
+## A round goes into the first empty chamber after the bore (firing order).
+func _cylinder_round_in() -> void:
+	var s: Slot = slots[current]
+	var n: int = data.cylinder_chambers
+	for i: int in n:
+		var k: int = (s.bore + i) % n
+		if s.chambers[k] == CHAMBER_EMPTY:
+			s.chambers[k] = CHAMBER_LIVE
+			return
+
+
+## Closed: the spring turns the next live chamber onto the bore.
+func _cylinder_closed() -> void:
+	var s: Slot = slots[current]
+	var n: int = data.cylinder_chambers
+	if s.chambers[s.bore] == CHAMBER_LIVE:
+		return
+	for i: int in range(1, n):
+		var k: int = (s.bore + i) % n
+		if s.chambers[k] == CHAMBER_LIVE:
+			s.bore = k
+			s.cyl_target += 360.0 / float(n) * float(i)
+			return
+
+
+## Chambers holding a live round (tests).
+func live_chambers() -> int:
+	var n: int = 0
+	for c: int in slots[current].chambers:
+		if c == CHAMBER_LIVE:
+			n += 1
+	return n

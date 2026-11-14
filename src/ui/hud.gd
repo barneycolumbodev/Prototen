@@ -10,6 +10,9 @@ extends CanvasLayer
 ## with slugs. A gun with a laser (the MP5) hides the hip reticle while the
 ## dot is on a surface: the dot is the reticle. Guns whose rounds follow the
 ## gun (`aim_follows_gun`) draw the reticle where the aim line points.
+## Grenade launchers (the M32A1): a ring at the hip plus a diamond where the
+## round would land and how far; aimed, the fire control's readout beside the
+## sight (range, AIRBURST +1.5 m / IMPACT / SAFE inside the arming distance).
 
 var bench: FrameBench
 ## Set by the level.
@@ -178,7 +181,7 @@ class ScopeView:
 
 class Reticle:
 	extends Control
-	enum Shape { CROSS, CIRCLE, DOT }
+	enum Shape { CROSS, CIRCLE, DOT, LAUNCHER }
 	var shape: Shape = Shape.CROSS
 	var color: Color = ReticleStyle.SEAGLASS
 	var gap_px: float = 6.0
@@ -189,6 +192,16 @@ class Reticle:
 	var reload: float = 0.0
 	## Aim point relative to the screen centre, pixels (guns whose rounds follow the gun).
 	var aim_offset: Vector2 = Vector2.ZERO
+	## Launchers: where the round would land (screen pixels; INF = none), its
+	## distance text, and whether it'd still be unarmed when it got there.
+	var impact_px: Vector2 = Vector2.INF
+	var impact_text: String = ""
+	var impact_safe: bool = false
+	## Launchers, aimed: the fire control's readout and how visible it is.
+	var fcs_text: String = ""
+	var fcs_sub: String = ""
+	var fcs_color: Color = Color.WHITE
+	var fcs_alpha: float = 0.0
 	const MARKER_SEC: float = 0.28
 
 	var _drawn: Array = []
@@ -196,7 +209,8 @@ class Reticle:
 	func _process(delta: float) -> void:
 		marker_time = maxf(0.0, marker_time - delta)
 		# Redrawn only when something it shows changed (optimization overhaul U-07).
-		var now: Array = [shape, color, gap_px, alpha, marker_time, marker_color, marker_scale, reload, aim_offset, size]
+		var now: Array = [shape, color, gap_px, alpha, marker_time, marker_color, marker_scale, reload, aim_offset, size,
+				impact_px, impact_text, impact_safe, fcs_text, fcs_sub, fcs_alpha]
 		if now != _drawn:
 			_drawn = now
 			queue_redraw()
@@ -218,6 +232,29 @@ class Reticle:
 					# Slugs: a single dot.
 					draw_circle(c, 3.6, shadow, true, -1.0, true)
 					draw_circle(c, 2.6, col, true, -1.0, true)
+				Shape.LAUNCHER:
+					# A broken ring the size of the spread, a centre dot, and the
+					# landing diamond: where it comes down, how far.
+					for k: int in 4:
+						var a0: float = PI * 0.5 * k + 0.32
+						draw_arc(c, g + 4.0, a0, a0 + PI * 0.5 - 0.64, 12, shadow, 3.4, true)
+						draw_arc(c, g + 4.0, a0, a0 + PI * 0.5 - 0.64, 12, col, 1.5, true)
+					draw_circle(c, 2.0, shadow, true, -1.0, true)
+					draw_circle(c, 1.2, col, true, -1.0, true)
+					if impact_px.is_finite():
+						var d: Vector2 = size * 0.5 + impact_px
+						var mc: Color = Color(0.7, 0.72, 0.74, 0.8 * alpha) if impact_safe else col
+						var pts: PackedVector2Array = PackedVector2Array([d + Vector2(0, -6), d + Vector2(6, 0), d + Vector2(0, 6),
+								d + Vector2(-6, 0), d + Vector2(0, -6)])
+						draw_polyline(pts, shadow, 3.4, true)
+						draw_polyline(pts, mc, 1.6, true)
+						if (d - c).length() > 14.0:
+							draw_dashed_line(c + (d - c).normalized() * (g + 6.0), d - (d - c).normalized() * 8.0,
+									Color(mc.r, mc.g, mc.b, mc.a * 0.45), 1.0, 4.0)
+						var font: Font = ThemeDB.fallback_font
+						draw_string_outline(font, d + Vector2(10, 5), impact_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 13, 3,
+								Color(0, 0, 0, 0.6 * alpha))
+						draw_string(font, d + Vector2(10, 5), impact_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 13, mc)
 				_:
 					# Four thin ticks whose gap shows the real spread cone, plus a small centre dot.
 					var l: float = 6.0
@@ -226,6 +263,17 @@ class Reticle:
 						draw_line(c + d * g, c + d * (g + l), col, 1.6, true)
 					draw_circle(c, 2.0, shadow, true, -1.0, true)
 					draw_circle(c, 1.2, col, true, -1.0, true)
+		if fcs_alpha > 0.01 and not fcs_text.is_empty():
+			var font: Font = ThemeDB.fallback_font
+			var at: Vector2 = size * 0.5 + Vector2(46, -4)
+			var fc: Color = Color(fcs_color.r, fcs_color.g, fcs_color.b, 0.95 * fcs_alpha)
+			for row: Array in [[fcs_text, 0.0, 15], [fcs_sub, 17.0, 12]]:
+				var txt: String = row[0]
+				var dy: float = row[1]
+				var px: int = row[2]
+				draw_string_outline(font, at + Vector2(0, dy), txt, HORIZONTAL_ALIGNMENT_LEFT, -1, px, 3, Color(0, 0, 0, 0.6 * fcs_alpha))
+				draw_string(font, at + Vector2(0, dy), txt, HORIZONTAL_ALIGNMENT_LEFT, -1, px, fc)
+			draw_line(at + Vector2(-8, -12), at + Vector2(-8, 20), Color(fc.r, fc.g, fc.b, fc.a * 0.6), 1.2)
 		if marker_time > 0.0:
 			var k: float = marker_time / MARKER_SEC
 			var m: Color = marker_color
@@ -318,6 +366,7 @@ func _process(delta: float) -> void:
 		_reticle.reload = weapon.mechanism.reload_progress()
 		_reticle.shape = reticle_shape(weapon)
 		_reticle.color = ReticleStyle.color(weapon.enemy_amount)
+		_update_launcher(cam)
 		_scope.lit_color = _reticle.color
 		_wheel.weapon = weapon
 		_gauge.visible = weapon.data.is_rail()
@@ -369,6 +418,48 @@ func _update_shell(delta: float) -> void:
 		_shell.modulate = loaded.color.lerp(Color.WHITE, 0.35)
 
 
+## Launchers: the landing marker at the hip, the fire control's readout aimed.
+func _update_launcher(cam: Camera3D) -> void:
+	var g: GrenadeData = weapon.data.grenade
+	if g == null or cam == null:
+		_reticle.impact_px = Vector2.INF
+		_reticle.fcs_alpha = 0.0
+		return
+	_reticle.impact_px = Vector2.INF
+	if weapon.impact_point.is_finite() and not cam.is_position_behind(weapon.impact_point):
+		var vp: Vector2 = get_viewport().get_visible_rect().size
+		var p: Vector2 = cam.unproject_position(weapon.impact_point) - vp * 0.5
+		_reticle.impact_px = p * (_reticle.size.y / maxf(vp.y, 1.0))
+		_reticle.impact_safe = weapon.impact_path < g.arming_distance
+		var dist: float = cam.global_position.distance_to(weapon.impact_point)
+		_reticle.impact_text = "SAFE" if _reticle.impact_safe else "%d m" % roundi(dist)
+	_reticle.fcs_alpha = clampf((weapon.ads_visual() - 0.6) / 0.3, 0.0, 1.0)
+	if weapon.fcs_range < 0.0:
+		_reticle.fcs_text = "RNG  ---"
+		_reticle.fcs_sub = "NO RETURN"
+		_reticle.fcs_color = Color(0.7, 0.72, 0.74)
+	else:
+		_reticle.fcs_text = "RNG  %.1f m" % weapon.fcs_range
+		if weapon.fcs_too_close:
+			_reticle.fcs_sub = "SAFE  < %d m" % roundi(g.arming_distance)
+			_reticle.fcs_color = Color(1.0, 0.62, 0.3)
+		elif not weapon.fcs_locked:
+			_reticle.fcs_sub = "LASING"
+			_reticle.fcs_color = ReticleStyle.SEAGLASS
+		elif weapon.fcs_on_body:
+			_reticle.fcs_sub = "IMPACT"
+			_reticle.fcs_color = _reticle.color
+		else:
+			_reticle.fcs_sub = "AIRBURST  +%.1f m" % g.airburst_offset
+			_reticle.fcs_color = _reticle.color
+
+
+## Launcher readout now (tests): the landing text and the fire control's lines.
+func launcher_state() -> Dictionary:
+	return {"impact": _reticle.impact_px, "impact_text": _reticle.impact_text, "fcs": _reticle.fcs_text,
+			"fcs_sub": _reticle.fcs_sub, "fcs_alpha": _reticle.fcs_alpha}
+
+
 ## Shell-type text shown (tests).
 func shell_text() -> String:
 	return _shell.text if _shell.visible else ""
@@ -377,6 +468,8 @@ func shell_text() -> String:
 ## Hip reticle for the gun in hand: a circle for shotgun pellets, a dot for
 ## slugs (a shell-type gun firing single projectiles), ticks for the rest.
 static func reticle_shape(w: PlayerWeapon) -> Reticle.Shape:
+	if w.data.grenade:
+		return Reticle.Shape.LAUNCHER
 	var r: WeaponData = w.round_data()
 	if r.pellets > 1:
 		return Reticle.Shape.CIRCLE
