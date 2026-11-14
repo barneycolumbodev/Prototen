@@ -45,20 +45,22 @@ func test_b_while_sprinting_slides_faster_and_lower() -> void:
 
 
 func test_a_tap_of_b_slides_the_whole_way() -> void:
-	# Owner, 2026-11-07: a longer slide. No holding B: a tap runs it out.
+	# Owner, 2026-11-07: no holding B, a tap runs it out. 2026-11-14: but
+	# shorter (about 7 m), a move for cover and shots, not for skating.
 	await _sprint()
 	var start: Vector3 = player.global_position
 	Input.action_press(&"slide")
 	await wait_physics_frames(2)
 	Input.action_release(&"slide")
-	await wait_physics_frames(60)
-	assert_true(player.is_sliding(), "still sliding a second after letting go")
+	await wait_physics_frames(20)
+	assert_true(player.is_sliding(), "still sliding after letting go")
 	var t: int = 0
 	while player.is_sliding() and t < 300:
 		await wait_physics_frames(1)
 		t += 1
 	var dist: float = Vector2(player.global_position.x - start.x, player.global_position.z - start.z).length()
-	assert_gt(dist, 14.0, "a long slide (%.1f m)" % dist)
+	assert_between(dist, 5.0, 10.0, "a short slide (%.1f m)" % dist)
+	assert_lt(t, 60, "over in under a second and a bit")
 
 
 func test_b_again_ends_the_slide() -> void:
@@ -72,7 +74,8 @@ func test_b_again_ends_the_slide() -> void:
 	assert_false(player.is_sliding(), "a second tap stands you up")
 
 
-func test_sliding_into_an_enemy_shoves_him() -> void:
+func test_sliding_into_an_enemy_launches_him() -> void:
+	# Owner, 2026-11-14 (after Dishonored): no damage, he goes up in the air.
 	var e: Enemy = room.shooting_range.targets[0]
 	await _sprint()
 	var fwd: Vector3 = -player.global_basis.z
@@ -87,13 +90,23 @@ func test_sliding_into_an_enemy_shoves_him() -> void:
 	Input.action_press(&"slide")
 	await wait_physics_frames(2)
 	Input.action_release(&"slide")
-	await wait_physics_frames(30)
-	assert_eq(hits.size(), 1, "one shove per slide")
+	var peak: float = 0.0
+	var was_launched: bool = false
+	for i: int in 60:
+		await wait_physics_frames(1)
+		peak = maxf(peak, e.global_position.y - before.y)
+		was_launched = was_launched or e.launched
+	assert_eq(hits.size(), 1, "one hit per slide")
+	assert_true(was_launched, "launched")
+	assert_gt(peak, 0.9, "up in the air (%.2f m)" % peak)
 	var moved: Vector3 = e.global_position - before
 	moved.y = 0.0
-	assert_gt(moved.dot(fwd), 0.6, "knocked back along the slide (%.2f m)" % moved.dot(fwd))
-	assert_lt(e.health, hp, "it hurts")
-	assert_true(e.alive, "but a shove alone doesn't kill")
+	assert_gt(moved.dot(fwd), 0.6, "and along the slide (%.2f m)" % moved.dot(fwd))
+	assert_eq(e.health, hp, "no damage")
+	assert_true(e.alive)
+	await wait_physics_frames(90)
+	assert_false(e.launched, "back on his feet")
+	assert_lt(e.global_position.y - before.y, 0.1, "on the ground")
 
 
 func test_jumping_out_of_a_slide_keeps_the_speed() -> void:

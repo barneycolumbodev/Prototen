@@ -54,5 +54,5 @@ heat_w = 0.0
 capacity = 2
 modifiers = Array[ExtResource("2")]([SubResource("mod_0"), SubResource("mod_1"), SubResource("mod_2"), SubResource("mod_3"), SubResource("mod_4")])
 requirements = Array[ExtResource("4")]([])
-synergy = "Impact multiplies slide and melee knockback: with mass and strength, slides break bodies."
+synergy = "Impact multiplies slide and melee knockback: with mass and strength, slides throw men higher and the ram charge breaks bodies."
 visuals = Array[ExtResource("3")]([SubResource("vis_0")])

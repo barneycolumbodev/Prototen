@@ -13,5 +13,5 @@
 [resource]
 script = ExtResource("1")
 display_name = "Juggernaut"
-description = "Tungsten bones, hydraulic muscle, trauma plating and the dorsal frame: the MG42 from the hip, slides that break bodies. No slow motion, no wall-running."
+description = "Tungsten bones, hydraulic muscle, trauma plating and the dorsal frame: the MG42 from the hip, slides that throw men high. No slow motion, no wall-running."
 parts = Array[ExtResource("2")]([ExtResource("p0"), ExtResource("p1"), ExtResource("p2"), ExtResource("p3"), ExtResource("p4"), ExtResource("p5"), ExtResource("p6")])

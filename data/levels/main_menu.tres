@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="MenuSceneConfig" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/ui/main_menu/menu_scene_config.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+figure_position = Vector3(-15.4, 0, -11.76)
+figure_yaw_deg = 0.0
+lean_deg = 12.0
+fov = 38.0
+main_cam_position = Vector3(-14.45, 1.45, -8.2)
+main_cam_target = Vector3(-16.1, 1.2, -11.9)
+loadout_cam_position = Vector3(-15.2, 1.15, -7.7)
+loadout_cam_target = Vector3(-13.6, 0.95, -11.8)
+cam_move_time = 0.7
+cam_drift = 0.03
+cycle_seconds = 10.0
+raise_seconds = 0.9
+drag_seconds = 1.3
+lower_seconds = 0.9
+exhale_seconds = 2.0
+ember_energy_idle = 0.12
+ember_energy_drag = 0.55
+ember_range = 0.6
+key_position = Vector3(-13.2, 2.6, -9.6)
+key_color = Color(0.62, 0.74, 1, 1)
+key_energy = 1.3

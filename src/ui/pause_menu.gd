@@ -10,6 +10,11 @@ var _root: Control
 var _list: VBoxContainer
 var _notice: Label
 var _buttons: Dictionary[String, Button] = {}
+var _title: Label
+## Opened from the main menu's Options: only the settings (owner, 2026-11-14).
+var options_only: bool = false
+## Buttons that only make sense in a running game.
+const GAME_ONLY: Array[String] = ["tuning", "map", "waves", "bench", "sweep", "main_menu"]
 
 
 func _ready() -> void:
@@ -24,6 +29,25 @@ func is_open() -> bool:
 
 
 func open() -> void:
+	options_only = false
+	_show_game_buttons(true)
+	_open()
+
+
+## The settings, from the main menu.
+func open_options() -> void:
+	options_only = true
+	_show_game_buttons(false)
+	_open()
+
+
+func _show_game_buttons(on: bool) -> void:
+	for id: String in GAME_ONLY:
+		_buttons[id].visible = on
+	_title.text = "PAUSED" if on else "OPTIONS"
+
+
+func _open() -> void:
 	_refresh()
 	_root.visible = true
 	get_tree().paused = true
@@ -42,6 +66,8 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed(&"pause"):
 		if is_open():
 			close()
+		elif get_tree().get_first_node_in_group(&"main_menu"):
+			open_options()
 		else:
 			open()
 		get_viewport().set_input_as_handled()
@@ -66,6 +92,7 @@ func _build() -> void:
 	_list.add_theme_constant_override("separation", 6)
 	center.add_child(_list)
 	var title: Label = Label.new()
+	_title = title
 	title.text = "PAUSED"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_font_size_override("font_size", 28)
@@ -91,6 +118,7 @@ func _build() -> void:
 	_add("overlay", func() -> void: Settings.set_overlay_visible(not Settings.overlay_visible))
 	_add("bench", _on_bench)
 	_add("sweep", _on_sweep)
+	_add("main_menu", _on_main_menu)
 	_add("quit", func() -> void: get_tree().quit())
 	_notice = Label.new()
 	_notice.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -113,7 +141,8 @@ func _label(id: String, text: String) -> void:
 
 
 func _refresh() -> void:
-	_label("resume", "Resume")
+	_label("resume", "Back" if options_only else "Resume")
+	_label("main_menu", "Main menu")
 	var wm: Node = get_tree().current_scene.get_node_or_null(^"WaveMode") if get_tree().current_scene else null
 	var running: Variant = wm.get(&"running") if wm else false
 	var on: bool = running == true
@@ -168,6 +197,13 @@ func _on_map() -> void:
 	var next: String = keys[(i + 1) % keys.size()]
 	close()
 	get_tree().change_scene_to_file.call_deferred(next)
+
+
+## Back to the main menu: Chinatown, opening on the menu again.
+func _on_main_menu() -> void:
+	close()
+	ChinatownMap.menu_on_load = true
+	get_tree().change_scene_to_file.call_deferred("res://src/levels/chinatown/chinatown.tscn")
 
 
 func _on_waves() -> void:

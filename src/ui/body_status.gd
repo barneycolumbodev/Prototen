@@ -18,6 +18,11 @@ extends CanvasLayer
 ## Touch: tap a tile to select it, tap it again (or the button under the
 ## card) to install or remove; tap a part named in the card to go to it.
 ##
+## Main-menu mode (`open_for_menu`, owner 2026-11-14): no player. The
+## loadout comes from LoadoutStore and goes back to it on close; the
+## screen's left third is left clear and `appearance` is the menu's own
+## figure leaning on the wall, so every change shows on him in the scene.
+##
 ## LB switches to the Colours page (docs/design.md §3.7): one row per suit
 ## piece and per installed part with hardware. Left/right steps through the
 ## palette, A opens the sliders (hue, saturation, brightness, finish), X
@@ -45,6 +50,13 @@ const C_FIX: String = "#ffd040"
 
 var player: Player
 var appearance: BodyAppearance
+## Main-menu mode: no player (see the header).
+var menu_mode: bool = false
+## Closed (either mode).
+signal closed
+const DEFAULT_BODY: PlayerBodyConfig = preload("res://data/player/body_default.tres")
+var _bg: ColorRect
+var _stage_box: SubViewportContainer
 var library: PartLibrary = LoadoutStore.LIBRARY
 ## The loadout being built (applied to the player on close).
 var working: BodyLoadout
@@ -109,6 +121,7 @@ func _ready() -> void:
 	bg.color = Color(0.02, 0.025, 0.03, 0.95)
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(bg)
+	_bg = bg
 	var row_box: HBoxContainer = HBoxContainer.new()
 	row_box.set_anchors_preset(Control.PRESET_FULL_RECT)
 	row_box.add_theme_constant_override("separation", 10)
@@ -119,6 +132,7 @@ func _ready() -> void:
 	svc.size_flags_stretch_ratio = 0.45
 	svc.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	row_box.add_child(svc)
+	_stage_box = svc
 	_viewport = SubViewport.new()
 	_viewport.own_world_3d = true
 	_viewport.transparent_bg = true
@@ -376,13 +390,68 @@ func is_open() -> bool:
 	return visible
 
 
+## The body the numbers are worked out for.
+func body_config() -> PlayerBodyConfig:
+	return player.body_config if player else DEFAULT_BODY
+
+
+## Opens over the main menu: `figure` is the menu's operative (he wears the
+## preview); the loadout and colours are the saved ones.
+func open_for_menu(figure: BodyAppearance, lo: BodyLoadout, colors: BodyColors) -> void:
+	menu_mode = true
+	appearance = figure
+	_menu_loadout = lo
+	_menu_colors = colors
+	# Leave the left of the screen to the scene: a fade instead of the panel.
+	_stage_box.size_flags_stretch_ratio = 0.6
+	var sub: SubViewport = _stage_box.get_child(0) as SubViewport
+	if sub:
+		sub.render_target_update_mode = SubViewport.UPDATE_DISABLED
+	_bg.anchor_left = 0.22
+	_bg.color = Color(0.02, 0.025, 0.03, 0.88)
+	if _fade == null:
+		_fade = TextureRect.new()
+		var g: Gradient = Gradient.new()
+		g.set_color(0, Color(0.02, 0.025, 0.03, 0.0))
+		g.set_color(1, Color(0.02, 0.025, 0.03, 0.88))
+		var gt: GradientTexture2D = GradientTexture2D.new()
+		gt.gradient = g
+		gt.width = 64
+		gt.height = 4
+		_fade.texture = gt
+		_fade.stretch_mode = TextureRect.STRETCH_SCALE
+		_fade.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_fade.anchor_left = 0.15
+		_fade.anchor_right = 0.22
+		_fade.anchor_bottom = 1.0
+		add_child(_fade)
+		move_child(_fade, _bg.get_index() + 1)
+	open()
+
+
+var _menu_loadout: BodyLoadout
+var _menu_colors: BodyColors
+var _fade: TextureRect
+
+
+## The loadout being shown in the menu (after close: what was built).
+func menu_loadout() -> BodyLoadout:
+	return _menu_loadout
+
+
+func menu_colors() -> BodyColors:
+	return _menu_colors
+
+
 func open() -> void:
-	if player == null:
+	if player == null and not menu_mode:
 		return
 	if appearance == null:
 		_build_stage()
-	working = player.loadout.copy()
-	working_colors = player.colors.copy() if player.colors else BodyColors.new()
+	var src_lo: BodyLoadout = player.loadout if player else _menu_loadout
+	var src_colors: BodyColors = player.colors if player else _menu_colors
+	working = src_lo.copy()
+	working_colors = src_colors.copy() if src_colors else BodyColors.new()
 	appearance.colors = working_colors
 	colors_changed = false
 	editing = false
@@ -390,7 +459,7 @@ func open() -> void:
 	page = Page.LOADOUT
 	# Start where the trouble is: an offline part (the HUD said it needs
 	# something), else the first active installed, else where we were.
-	var wb: BodyModel = BodyModel.new(player.body_config, working)
+	var wb: BodyModel = BodyModel.new(body_config(), working)
 	var start: StringName = selected
 	for p: PartData in working.parts:
 		if wb.offline.has(p.id):
@@ -400,9 +469,11 @@ func open() -> void:
 		var acts: Array[ActivePartData] = working.actives()
 		start = acts[0].id if not acts.is_empty() else library.actives()[0].id
 	visible = true
-	get_tree().paused = true
+	if not menu_mode:
+		get_tree().paused = true
 	select_part(start)
-	_pivot.rotation.y = 0.35
+	if _pivot:
+		_pivot.rotation.y = 0.35
 
 
 ## Holds the close-up (cloud captures; LT does it in play).
@@ -426,6 +497,22 @@ func toggle_helmet() -> void:
 
 func close() -> void:
 	visible = false
+	if menu_mode:
+		# The figure goes back to what was built (not the last tile browsed).
+		_menu_loadout = working
+		_menu_colors = working_colors
+		if changed:
+			LoadoutStore.save(working)
+		if colors_changed:
+			LoadoutStore.save_colors(working_colors)
+		if appearance:
+			appearance.loadout = working
+			appearance.colors = working_colors
+			appearance.rebuild()
+		changed = false
+		colors_changed = false
+		closed.emit()
+		return
 	get_tree().paused = false
 	if changed and player:
 		player.apply_loadout(working)
@@ -435,6 +522,7 @@ func close() -> void:
 		player.set_colors(working_colors)
 		LoadoutStore.save_colors(working_colors)
 	colors_changed = false
+	closed.emit()
 
 
 ## Whole body, or (zoom 1) close on the chest and shoulders.
@@ -470,7 +558,7 @@ func _input(event: InputEvent) -> void:
 	if event.is_action_pressed(&"body_status"):
 		if visible:
 			close()
-		elif not get_tree().paused:
+		elif not get_tree().paused and not menu_mode:
 			open()
 		get_viewport().set_input_as_handled()
 		return
@@ -710,7 +798,7 @@ func fix_target() -> StringName:
 			if not working.has_part(who.id):
 				lo.install(who)
 			lo.install(q)
-			var tb: BodyModel = BodyModel.new(player.body_config, lo)
+			var tb: BodyModel = BodyModel.new(body_config(), lo)
 			if r.met(tb.stat(r.stat)):
 				return q.id
 		if first != &"":
@@ -742,12 +830,12 @@ func _make_preview() -> BodyLoadout:
 
 
 func _refresh() -> void:
-	if working == null or player == null:
+	if working == null or (player == null and not menu_mode):
 		return
-	working_body = BodyModel.new(player.body_config, working)
+	working_body = BodyModel.new(body_config(), working)
 	preview = _make_preview()
-	preview_body = BodyModel.new(player.body_config, preview)
-	preview_body.heat_j = player.body.heat_j
+	preview_body = BodyModel.new(body_config(), preview)
+	preview_body.heat_j = player.body.heat_j if player else 0.0
 	if appearance:
 		appearance.loadout = preview
 		appearance.colors = working_colors
