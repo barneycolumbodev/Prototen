@@ -152,6 +152,10 @@ func _ready() -> void:
 			var gd: GoreDemo = GoreDemo.new()
 			gd.room = self
 			add_child(gd)
+		elif arg == "--demo=slide":
+			var sd: SlideDemo = SlideDemo.new()
+			sd.room = self
+			add_child(sd)
 		elif arg.begins_with("--demo="):
 			var demo: GunplayDemo = GunplayDemo.new()
 			demo.room = self

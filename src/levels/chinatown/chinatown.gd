@@ -99,6 +99,67 @@ func _ready() -> void:
 	atmos.map = self
 	add_child(atmos)
 	Sfx.set_room(0.25)
+	if wants_menu():
+		_open_menu()
+		return
+	_start_game()
+
+
+## The game opens on the main menu (owner, 2026-11-14): the first load of
+## the app, and after Pause → Main menu. Not under tests, cloud captures
+## (unless --menu) or the benchmark and perf runs.
+static var menu_on_load: bool = true
+var menu: MainMenu
+## Open on the menu whatever wants_menu says (tests).
+var force_menu: bool = false
+
+
+func wants_menu() -> bool:
+	var args: PackedStringArray = OS.get_cmdline_user_args()
+	if force_menu or "--menu" in args:
+		return true
+	if not menu_on_load or not LoadoutStore.enabled():
+		return false
+	for a: String in args:
+		for flag: String in ["--bench", "--sweep", "--perf", "--line-up", "--waves", "--nospawn", "--god"]:
+			if a.begins_with(flag):
+				return false
+	return true
+
+
+func _open_menu() -> void:
+	menu_on_load = false
+	menu = MainMenu.new()
+	menu.name = "MainMenu"
+	add_child(menu)
+	atmos.follow(menu.camera)
+	menu.begin_requested.connect(_on_begin)
+
+
+## Begin on the main menu: Chinatown starts here (the map is already
+## built), anything else loads its scene. Fades in from the menu's black.
+func _on_begin(scene_path: String) -> void:
+	if scene_path != scene_file_path and scene_path != "":
+		get_tree().change_scene_to_file.call_deferred(scene_path)
+		return
+	var black: CanvasLayer = CanvasLayer.new()
+	black.layer = 120
+	var rect: ColorRect = ColorRect.new()
+	rect.color = Color.BLACK
+	rect.set_anchors_preset(Control.PRESET_FULL_RECT)
+	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	black.add_child(rect)
+	add_child(black)
+	menu.queue_free()
+	menu = null
+	_start_game()
+	var tw: Tween = black.create_tween()
+	tw.tween_interval(0.1)
+	tw.tween_property(rect, "color:a", 0.0, 0.6)
+	tw.tween_callback(black.queue_free)
+
+
+func _start_game() -> void:
 	player = PLAYER_SCENE.instantiate() as Player
 	add_child(player)
 	player.global_position = player_start
@@ -433,6 +494,8 @@ func _build_navigation() -> void:
 # ------------------------------------------------------------------ benchmark (same as the test room)
 
 func _process(_delta: float) -> void:
+	if _bench == null:
+		return  # still on the main menu
 	if _bench.is_running() or sweep.is_running():
 		var t: float = _bench.progress() if _bench.is_running() else 0.0
 		player.set_view(_bench_yaw0 + TAU * t, -0.08 + 0.1 * sin(t * TAU * 2.0))

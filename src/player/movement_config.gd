@@ -96,29 +96,47 @@ extends Resource
 @export var slide_cooldown: float = 0.35
 @export var slide_tilt_deg: float = 5.0
 ## Off: a tap of B slides until the speed runs out (B again or A ends it
-## early; owner, 2026-11-07: "longer"). On: let go of B to stop.
+## early; owner, 2026-11-07). On: let go of B to stop. Owner, 2026-11-14:
+## shorter (about 7 m), a move for cover and setting up a shot, not for
+## skating round the map.
 @export var slide_hold: bool = false
 ## Pulling the stick back this far ends the slide.
 @export var slide_brake_stick: float = 0.6
 @export_group("Slide knockback")
-## Sliding into a living enemy shoves him away and staggers him (owner,
-## 2026-11-07). Speed given to him (m/s) for a 100 kg operative at strength
-## 1 sliding at slide_knock_ref_speed; scales with mass × strength × speed.
+## Sliding into a living enemy knocks him into the air (owner, 2026-11-07;
+## launch and no damage, 2026-11-14). Strength of the hit (m/s) for a 100 kg
+## operative at strength 1 sliding at slide_knock_ref_speed; scales with
+## mass × strength × impact × speed.
 @export var slide_knock_speed: float = 6.5
 @export var slide_knock_ref_speed: float = 12.0
 ## The player has to be sliding at least this fast.
 @export var slide_knock_min_speed: float = 5.0
 ## How close (m, centre to centre, horizontal) counts as hitting him.
 @export var slide_knock_reach: float = 1.05
-## Share of the player's slide speed lost per enemy hit.
+## Share of the player's slide speed lost per enemy hit (he goes up in front of you).
 @export var slide_knock_speed_loss: float = 0.2
-## Damage per hit at slide_knock_speed (grows with the square of the shove),
-## and how much it shakes his morale.
-@export var slide_knock_damage: float = 8.0
-## A shove this fast (m/s) breaks him: he dies and flies as a ragdoll. The
-## base operative gets ~6.5; a heavy, strong, plated one 14+ (docs/design.md §3.6).
-@export var slide_knock_lethal_speed: float = 16.0
 @export var slide_knock_morale: float = 0.15
+## Used by the RAM thrusters' charge only (the slide does no damage): damage
+## at slide_knock_speed (grows with the square of the shove), and the shove
+## that breaks a body.
+@export var slide_knock_damage: float = 8.0
+@export var slide_knock_lethal_speed: float = 16.0
+@export_group("Slide launch")
+## Speed (m/s) the base operative's slide sends a man up, and along the slide.
+@export var slide_launch_up: float = 4.6
+@export var slide_launch_forward: float = 4.0
+## Range of the body's effect (hit strength / slide_knock_speed); both speeds scale with its square root.
+## The Operator (125 kg, strength ×1.15) hits at about 1.5: ~1.4 m up, ~5 m along, ~1 s in the air.
+@export var slide_launch_scale_min: float = 0.75
+@export var slide_launch_scale_max: float = 1.6
+## Gravity (m/s²) on a launched man: lower than his normal 20 so he hangs for the shot.
+@export var slide_launch_gravity: float = 12.0
+## How far he tips back in the air (°), and how long (s) he needs on the ground to recover.
+@export var slide_launch_tumble_deg: float = 60.0
+@export var slide_launch_stun: float = 0.8
+## The slow beat right after the hit: real seconds, and the time scale.
+@export var slide_launch_slowmo_time: float = 0.35
+@export_range(0.05, 1.0) var slide_launch_slowmo_scale: float = 0.45
 @export_group("Wall-run")
 ## Airborne, pushing forward, at least this fast, with a wall at your side.
 @export var wallrun_min_speed: float = 5.5

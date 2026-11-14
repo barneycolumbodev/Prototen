@@ -82,6 +82,8 @@ const MOVE_PARAMS: Array = [
 	["Movement", "fall_gravity_scale", 0.8, 2.0, 0.05, "Fall weight"],
 	["Movement", "slide_friction", 1.0, 12.0, 0.1, "Slide friction"],
 	["Movement", "slide_boost", 0.0, 8.0, 0.1, "Slide boost (m/s)"],
+	["Movement", "slide_launch_up", 0.0, 10.0, 0.1, "Slide launch: up (m/s)"],
+	["Movement", "slide_launch_forward", 0.0, 10.0, 0.1, "Slide launch: along (m/s)"],
 	["Movement", "wallrun_time", 0.5, 3.0, 0.05, "Wall-run time (s)"],
 	["Movement", "land_dip_per_mps", 0.0, 0.03, 0.001, "Landing dip"],
 	["Movement", "sprint_fov_deg", 0.0, 12.0, 0.5, "Sprint FOV (°)"],
@@ -179,6 +181,7 @@ func save() -> void:
 		for p: Array in MOVE_PARAMS:
 			var prop: String = p[1]
 			cfg.set_value("movement", prop, _move.get(prop))
+		cfg.set_value("movement", MOVEMENT_VERSION_KEY, MOVEMENT_VERSION)
 	for p: Array in GORE_PARAMS:
 		var prop: String = p[1]
 		cfg.set_value("gore", prop, Gore.config.get(prop))
@@ -236,14 +239,38 @@ static func load_saved_gore() -> void:
 			Gore.config.set(prop, cfg.get_value("gore", prop))
 
 
+## Saving tuning writes every movement value, so a default changed in
+## data/player/movement_default.tres would never reach a phone that has
+## saved once. Each bump of the version drops the saved values it lists.
+const MOVEMENT_VERSION_KEY: String = "_version"
+const MOVEMENT_VERSION: int = 2
+## version -> the values saved before it that no longer apply.
+const MOVEMENT_RESETS: Dictionary[int, Array] = {
+	# Owner, 2026-11-14: a shorter slide (about 7 m instead of 18).
+	2: ["slide_friction", "slide_boost"],
+}
+
+
 ## Applies saved movement tuning (the player's MovementConfig).
 static func load_saved_movement(move: MovementConfig) -> void:
 	var cfg: ConfigFile = ConfigFile.new()
 	if move == null or cfg.load(SAVE_PATH) != OK or not cfg.has_section("movement"):
 		return
+	var saved_version: int = cfg.get_value("movement", MOVEMENT_VERSION_KEY, 1)
+	var dropped: Array[String] = stale_movement_keys(saved_version)
 	for prop: String in cfg.get_section_keys("movement"):
-		if prop in move:
+		if prop in move and not prop in dropped:
 			move.set(prop, cfg.get_value("movement", prop))
+
+
+## Movement values saved under `saved_version` that newer defaults replace.
+static func stale_movement_keys(saved_version: int) -> Array[String]:
+	var out: Array[String] = []
+	for v: int in MOVEMENT_RESETS:
+		if saved_version < v:
+			for k: String in MOVEMENT_RESETS[v]:
+				out.append(k)
+	return out
 
 
 ## Applies saved tuning to one gun and/or the aim assist. The section saved

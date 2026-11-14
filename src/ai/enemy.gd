@@ -104,6 +104,22 @@ var _pain_cooldown: float = 0.0
 ## Shove from a slide or a blast (m/s, world); decays on the ground.
 var _knock: Vector3 = Vector3.ZERO
 const KNOCK_DECAY: float = 13.0
+## Launched by a slide (owner, 2026-11-14: "knock them in the air and then
+## shoot them"): airborne, tumbling, out of the fight until he has landed
+## and found his feet again. See `launch`.
+var launched: bool = false
+var _launch_air: bool = false
+var _launch_time: float = 0.0
+var _launch_air_time: float = 1.0
+var _launch_gravity: float = 20.0
+var _launch_tumble: float = 0.0
+## Tumble axis in his own frame, and the tilt now (rad).
+var _launch_axis: Vector3 = Vector3.RIGHT
+var _launch_tilt: float = 0.0
+var _launch_stun: float = 0.0
+const GRAVITY: float = 20.0
+## Height (m) of the point his body tumbles about (about his hips).
+const TUMBLE_PIVOT: float = 1.0
 ## State when the killing blow landed (picks the death voice).
 var state_before_death: State = State.IDLE
 ## Seized by the mesh arm (NT-5): limp in its grip, alive until he's thrown
@@ -289,6 +305,71 @@ func knock_back(push: Vector3, from: Node, damage: float, morale_loss: float) ->
 		# Broken by the impact: he goes flying the way he was shoved.
 		velocity = Vector3(push.x, maxf(push.y, 2.0), push.z).limit_length(9.0)
 		die(null, &"chest", &"impact")
+
+
+## Knocked into the air by a slide (no damage): `v` (m/s, world) sends him
+## up and along; he falls under `gravity`, tumbling back up to `tumble_deg`
+## (feet swept out, head toward whoever hit him), can't shoot or think while
+## he's up, and needs `stun` seconds on the ground after he lands. A kill in
+## the air sends the ragdoll on with his flight (die() uses his velocity).
+func launch(v: Vector3, from: Node, morale_loss: float, gravity: float, tumble_deg: float, stun: float) -> void:
+	if not alive or held or _thrown_speed > 0.0:
+		return
+	launched = true
+	_launch_air = true
+	_launch_time = 0.0
+	_launch_gravity = maxf(gravity, 1.0)
+	_launch_air_time = 2.0 * maxf(v.y, 0.5) / _launch_gravity
+	_launch_tumble = deg_to_rad(tumble_deg) * _rng.randf_range(0.85, 1.15)
+	_launch_stun = stun
+	var flat: Vector3 = Vector3(v.x, 0.0, v.z)
+	var dir: Vector3 = flat.normalized() if flat.length() > 0.05 else -global_basis.z
+	# Top of the body toward -dir: about dir × up, a little skewed so no two
+	# launches look the same.
+	var axis_world: Vector3 = dir.cross(Vector3.UP).rotated(Vector3.UP, _rng.randf_range(-0.35, 0.35))
+	_launch_axis = (global_basis.inverse() * axis_world).normalized()
+	_knock = flat.limit_length(10.0)
+	velocity.y = v.y
+	_stop()
+	body.play_stumble()
+	body.flinch(-dir, 3.0, false)
+	suppression = 1.0
+	morale -= morale_loss
+	_alerted_by(from)
+	Sfx.play_at(&"body_fall", body.chest_position(), -4.0, 0.1)
+	if _pain_cooldown <= 0.0:
+		_pain_cooldown = 1.2
+		vocal(&"enemy_pain", -2.0, 0.1)
+
+
+## Flight, landing and getting up after a launch. True while he's out of the fight.
+func _update_launch(delta: float) -> bool:
+	if not launched:
+		return false
+	_launch_time += delta
+	if _launch_air:
+		var f: float = clampf(_launch_time / _launch_air_time, 0.0, 1.0)
+		_launch_tilt = _launch_tumble * pow(sin(PI * minf(f * 1.15, 1.0)), 0.6)
+		if _launch_time > 0.12 and is_on_floor() and velocity.y <= 0.0:
+			_launch_air = false
+			_launch_time = 0.0
+			body.play_stumble()
+			Sfx.play_at(&"body_fall", global_position + Vector3.UP * 0.3, -1.0, 0.1)
+	else:
+		_launch_tilt = move_toward(_launch_tilt, 0.0, delta * 4.0)
+		if _launch_time >= _launch_stun and _launch_tilt <= 0.0:
+			launched = false
+	_apply_tumble()
+	return launched
+
+
+func _apply_tumble() -> void:
+	if is_zero_approx(_launch_tilt):
+		body.transform = Transform3D.IDENTITY
+		return
+	var b: Basis = Basis(_launch_axis, _launch_tilt)
+	var pivot: Vector3 = Vector3.UP * TUMBLE_PIVOT
+	body.transform = Transform3D(b, pivot - b * pivot)
 
 
 ## Seized by the mesh arm: he goes limp in its grip (a ragdoll, still
@@ -690,6 +771,10 @@ func _physics_process(delta: float) -> void:
 	if _perceive <= 0.0:
 		_perceive = 0.15
 		_update_perception(0.15)
+	if _update_launch(delta):
+		# Up in the air or finding his feet: no thinking, no shooting.
+		_move(delta)
+		return
 	_think -= delta
 	if _think <= 0.0:
 		_think = _rng.randf_range(0.35, 0.7)
@@ -1117,10 +1202,15 @@ func _move(delta: float) -> void:
 	if _knock.length_squared() > 0.01:
 		# Shoved: the push wins over his own legs until it dies away.
 		horizontal = _knock
-		_knock = _knock.move_toward(Vector3.ZERO, KNOCK_DECAY * delta)
-	var vy: float = velocity.y - 20.0 * delta if (not is_on_floor() or velocity.y > 0.0) else -0.5
+		# In the air nothing but drag slows him.
+		_knock = _knock.move_toward(Vector3.ZERO, KNOCK_DECAY * (0.1 if _launch_air else 1.0) * delta)
+	var g: float = _launch_gravity if _launch_air else GRAVITY
+	var vy: float = velocity.y - g * delta if (not is_on_floor() or velocity.y > 0.0) else -0.5
 	velocity = Vector3(horizontal.x, vy, horizontal.z)
 	move_and_slide()
+	if launched:
+		body.set_motion(Vector3.ZERO)
+		return
 	if horizontal.length() > 0.3 and (run or state in [State.FLEE, State.CRAWL] or not sees_player):
 		_turn_toward(atan2(horizontal.x, horizontal.z), delta)
 	var local: Vector3 = global_basis.inverse() * horizontal

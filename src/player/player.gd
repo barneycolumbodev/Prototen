@@ -666,8 +666,12 @@ func _slide(delta: float, wish: Vector3, b_pressed: bool, b_held: bool, stick: V
 		_crouching = b_held and is_on_floor() and not b_pressed
 
 
-## Sliding into a living enemy: shove him along the slide, stagger him, lose
-## a little speed. Strength scales with the body's mass and `strength` stat.
+## Sliding into a living enemy knocks him into the air (owner, 2026-11-14,
+## after Dishonored: "I don't need it to do damage, I just need it to knock
+## them in the air"): no damage, he tumbles up in front of you, can't shoot
+## until he's back on his feet, and a short slow beat sells the hit and
+## gives you the shot. How high and far scales with the body's momentum ×
+## strength × impact (docs/design.md §3.6). The slide loses most of its speed.
 func _slide_knock(dir: Vector3, speed: float) -> void:
 	var cfg: MovementConfig = movement
 	if speed < cfg.slide_knock_min_speed:
@@ -675,7 +679,7 @@ func _slide_knock(dir: Vector3, speed: float) -> void:
 	var me: Vector3 = global_position
 	for n: Node in get_tree().get_nodes_in_group(&"enemies"):
 		var e: Enemy = n as Enemy
-		if e == null or not e.alive or n in _slide_hit:
+		if e == null or not e.alive or e.launched or n in _slide_hit:
 			continue
 		var to: Vector3 = e.global_position - me
 		if absf(to.y) > 1.2:
@@ -686,20 +690,31 @@ func _slide_knock(dir: Vector3, speed: float) -> void:
 		_slide_hit.append(n)
 		var push: float = slide_knock_strength(cfg, body.mass_kg, body.usable_strength() * body.stat(&"impact"), speed)
 		# Mostly along the slide, partly away from the line of contact.
-		var away: Vector3 = (dir * 0.7 + to.normalized() * 0.3).normalized() if to.length() > 0.05 else dir
-		var dmg: float = slide_knock_damage(cfg, push)
-		e.knock_back(away * push + Vector3.UP * push * 0.25, self, dmg, cfg.slide_knock_morale)
+		var away: Vector3 = (dir * 0.75 + to.normalized() * 0.25).normalized() if to.length() > 0.05 else dir
+		e.launch(slide_launch_velocity(cfg, push, away), self, cfg.slide_knock_morale,
+				cfg.slide_launch_gravity, cfg.slide_launch_tumble_deg, cfg.slide_launch_stun)
 		var keep: float = 1.0 - cfg.slide_knock_speed_loss
 		velocity.x *= keep
 		velocity.z *= keep
 		EventBus.slide_impact.emit(e, push)
-		# Feel it: a hard thump in the pads and a short hit-stop.
-		TimeControl.hitstop(0.05, 0.1)
+		# Feel it: a hard thump in the pads, then a slow beat to line up the shot.
+		TimeControl.hitstop(cfg.slide_launch_slowmo_time, cfg.slide_launch_slowmo_scale)
 		for pad: int in Input.get_connected_joypads():
 			Input.start_joy_vibration(pad, 0.6, 0.9, 0.16)
 		var w: PlayerWeapon = weapon()
 		if w and w.cam_recoil:
 			w.cam_recoil.kick(Vector3(-1.2, 0.0, 2.0 * signf(to.x if absf(to.x) > 0.01 else 1.0)))
+
+
+## Launch velocity (m/s, world) for a slide hit of strength `push` along
+## the horizontal `dir`: the base operative (push = slide_knock_speed) sends
+## a man slide_launch_up up and slide_launch_forward along (he arcs up in
+## front of you, not over your head); a stronger, heavier body more, by the
+## square root of the hit within slide_launch_scale_min..max.
+static func slide_launch_velocity(cfg: MovementConfig, push: float, dir: Vector3) -> Vector3:
+	var k: float = clampf(push / maxf(cfg.slide_knock_speed, 0.1), cfg.slide_launch_scale_min, cfg.slide_launch_scale_max)
+	var r: float = sqrt(k)
+	return (dir * cfg.slide_launch_forward + Vector3.UP * cfg.slide_launch_up) * r
 
 
 ## Speed (m/s) a slide gives the enemy it hits: momentum of the operative
@@ -708,8 +723,9 @@ static func slide_knock_strength(cfg: MovementConfig, mass_kg: float, strength: 
 	return cfg.slide_knock_speed * (mass_kg / 100.0) * strength * clampf(speed / cfg.slide_knock_ref_speed, 0.5, 1.4)
 
 
-## Damage of a slide hit: grows with the square of the shove (energy). At
-## slide_knock_lethal_speed and above it breaks the body (lethal).
+## Damage of a body hit of strength `push` (the RAM thrusters' charge; the
+## slide itself does none since 2026-11-14): grows with the square of the
+## shove (energy). At slide_knock_lethal_speed and above it breaks the body.
 static func slide_knock_damage(cfg: MovementConfig, push: float) -> float:
 	if push >= cfg.slide_knock_lethal_speed:
 		return 9999.0

@@ -628,3 +628,27 @@ Please try:
 - Measured:
 - Notes from the owner:
 - Follow-ups:
+
+## Main menu and the slide launch — 2026-11-14 (waiting for the owner)
+
+Owner (2026-11-14): open on a main menu with the operative leaning on a wall outside a Chinese restaurant in Chinatown, helmet off, smoking; customize options and the loadout there, with the loadout changing how he looks in the scene; then load in. And: the slide should work like Dishonored's (slide into a man and knock him into the air, no damage, for traversal and skill shots), and be shorter ("it gives it a really arena shooter vibe").
+
+What's in the APK:
+- **The game opens on the menu.** He leans on the window of the Sea View restaurant under the red lanterns, right boot on the wall, smoking: every ~10 s the cigarette goes to his lips, the ember flares and lights his face, then he breathes the smoke out. Menu on the left: **Begin**, **Loadout**, **Map** (◀ ▶: Chinatown docks / test range), **Options**, **Quit**. View also opens the loadout; Menu opens Options.
+- **Loadout** opens the same loadout screen as in the game, over the scene; the camera moves so he stands on the left, wearing whatever the cursor is on. B saves it and goes back; Begin plays with it. Y still takes the helmet on and off.
+- **Begin** fades to black and starts on the docks right there. **Pause → Main menu** goes back to it.
+- **Slide**: about 7 m from a sprint now (was about 18). Slide into a man and he goes up in front of you (about 1.2 m, a second in the air) with a short slow-motion beat; no damage; he can't shoot until he's landed and recovered. Shoot him in the air and he flies on as a ragdoll.
+- If you had saved gun tuning before, your saved slide friction and boost are dropped once so the shorter slide reaches your phone; everything else you tuned is kept.
+
+Cloud evidence: `tools/check.sh` with the new `tests/scene/test_main_menu.gd` (opens on the menu with no player; the filter is on his lips during a drag and the ember flares; boots on the pavement and the wall; browsing a preset dresses him and applying it keeps it; Begin starts the game on the same map; Options shows only settings), the slide tests in `tests/scene/test_movement.gd` and `tests/unit/test_stats_system.gd`. Captures (compatibility renderer on the cloud's software GL): `docs/previews/main_menu.png`, `main_menu_drag.png`, `main_menu_loadout.png` (the Juggernaut preset on him), `slide_launch.png` (top: what you see; bottom: from the side). Not checked in the cloud: frame rate of the menu scene on the phone, how the smoke reads at night on the real screen, and the slide by feel.
+
+Please try:
+1. Does he read as your character at a glance? Is the pose right, and is the smoking too fast, too slow, too often?
+2. In Loadout, flip through the presets. Is it clear on him what changes?
+3. Slide into a gunman, then shoot him in the air. Is he up long enough? Too high or too low? (Pause → Tuning → Movement: "Slide launch: up" and "along".)
+4. Is 7 m the right length for the slide, or should it be shorter still?
+
+- Device / renderer / settings:
+- Measured:
+- Notes from the owner:
+- Follow-ups:

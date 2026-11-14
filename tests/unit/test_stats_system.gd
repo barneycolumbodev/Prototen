@@ -161,16 +161,35 @@ func test_loadout_round_trips_through_ids() -> void:
 	assert_eq(back.ids(), lo.ids())
 
 
-func test_slide_knock_scales_with_momentum_and_kills_past_the_limit() -> void:
+func test_slide_launch_scales_with_momentum() -> void:
+	# Owner, 2026-11-14: the slide knocks men into the air and does no damage.
 	var cfg: MovementConfig = load("res://data/player/movement_default.tres")
 	var base: float = Player.slide_knock_strength(cfg, 100.0, 1.0, cfg.slide_knock_ref_speed)
 	assert_almost_eq(base, cfg.slide_knock_speed, 0.001)
-	assert_almost_eq(Player.slide_knock_damage(cfg, base), cfg.slide_knock_damage, 0.001)
-	assert_almost_eq(Player.slide_knock_damage(cfg, base * 2.0), cfg.slide_knock_damage * 4.0, 0.001, "energy: the square")
+	var v: Vector3 = Player.slide_launch_velocity(cfg, base, Vector3.FORWARD)
+	assert_almost_eq(v.y, cfg.slide_launch_up, 0.001, "the base operative: slide_launch_up")
+	assert_almost_eq(-v.z, cfg.slide_launch_forward, 0.001, "and slide_launch_forward along the slide")
 	var jug: BodyModel = BodyModel.new(frame, load("res://data/body/presets/juggernaut.tres") as BodyLoadout)
 	var push: float = Player.slide_knock_strength(cfg, jug.mass_kg, jug.usable_strength() * jug.stat(&"impact"), cfg.slide_knock_ref_speed)
-	assert_gt(push, cfg.slide_knock_lethal_speed, "a juggernaut slide breaks bodies")
-	assert_gt(Player.slide_knock_damage(cfg, push), 1000.0)
+	var vj: Vector3 = Player.slide_launch_velocity(cfg, push, Vector3.FORWARD)
+	assert_gt(vj.y, v.y, "a heavier, stronger body launches higher")
+	assert_lt(vj.y, cfg.slide_launch_up * sqrt(cfg.slide_launch_scale_max) + 0.001, "within the cap")
+	# The Operator (the default loadout) keeps a man up long enough to line up a shot.
+	var op: BodyModel = BodyModel.new(frame, load("res://data/body/loadout_default.tres") as BodyLoadout)
+	var op_push: float = Player.slide_knock_strength(cfg, op.mass_kg, op.usable_strength() * op.stat(&"impact"), cfg.slide_knock_ref_speed)
+	var vo: Vector3 = Player.slide_launch_velocity(cfg, op_push, Vector3.FORWARD)
+	assert_gt(2.0 * vo.y / cfg.slide_launch_gravity, 0.85, "air time")
+	var apex: float = vo.y * vo.y / (2.0 * cfg.slide_launch_gravity)
+	assert_between(apex, 0.9, 1.8, "up in front of you, not over your head (%.2f m)" % apex)
+
+
+func test_ram_hit_damage_is_energy() -> void:
+	# The RAM thrusters' charge still hurts (the slide hit model × 1.8).
+	var cfg: MovementConfig = load("res://data/player/movement_default.tres")
+	var base: float = cfg.slide_knock_speed
+	assert_almost_eq(Player.slide_knock_damage(cfg, base), cfg.slide_knock_damage, 0.001)
+	assert_almost_eq(Player.slide_knock_damage(cfg, base * 2.0), cfg.slide_knock_damage * 4.0, 0.001, "energy: the square")
+	assert_gt(Player.slide_knock_damage(cfg, cfg.slide_knock_lethal_speed), 1000.0, "past the limit it breaks the body")
 
 
 func test_requirement_text() -> void:
@@ -178,3 +197,9 @@ func test_requirement_text() -> void:
 	assert_eq(r.describe(), "structure ×1.25+")
 	assert_true(r.met(1.25))
 	assert_false(r.met(1.2))
+
+
+func test_old_saved_slide_tuning_is_dropped() -> void:
+	# A phone that saved tuning before 2026-11-14 holds the long-slide values.
+	assert_eq(TuningMenu.stale_movement_keys(1), ["slide_friction", "slide_boost"] as Array[String])
+	assert_true(TuningMenu.stale_movement_keys(TuningMenu.MOVEMENT_VERSION).is_empty(), "saved since: kept")
