@@ -91,7 +91,7 @@ static func make(player: Player, p_cfg: MeleeConfig) -> KnifeViewmodel:
 	k.cfg = p_cfg
 	k._build_keys()
 	var cam: Camera3D = player.camera() if player else null
-	k.rig = ArmRig.make(player, p_cfg.knife_scene, null, "KnifeRig")
+	k.rig = ArmRig.make(player, p_cfg.knife_scene, null, "KnifeRig", false)
 	if cam == null:
 		k.add_child(k.rig)
 	var tip: Node3D = k.rig.part("blade_tip")
@@ -104,6 +104,8 @@ static func make(player: Player, p_cfg: MeleeConfig) -> KnifeViewmodel:
 	k._trail.name = "KnifeTrail"
 	k._trail.mesh = k._im
 	k._trail.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	k._trail.ignore_occlusion_culling = true
+	k._trail.extra_cull_margin = 2.0
 	var mat: ShaderMaterial = ShaderMaterial.new()
 	var sh: Shader = Shader.new()
 	sh.code = TRAIL_SHADER

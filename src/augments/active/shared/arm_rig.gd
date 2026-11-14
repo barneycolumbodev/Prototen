@@ -25,7 +25,10 @@ var _bob_t: float = 0.0
 var _drive: Dictionary[String, StandardMaterial3D] = {}
 
 
-static func make(player: Player, scene: PackedScene, p_view: ViewmodelConfig, rig_name: String) -> ArmRig:
+## `merge`: draw the pieces as one skinned mesh (RigidMerge). The knife
+## doesn't: it's on screen for under a second, and as a merged mesh it never
+## showed on the phone (owner, 2026-11-14), while plain meshes (the guns) do.
+static func make(player: Player, scene: PackedScene, p_view: ViewmodelConfig, rig_name: String, merge: bool = true) -> ArmRig:
 	var r: ArmRig = ArmRig.new()
 	r.name = rig_name
 	r.view = p_view
@@ -46,9 +49,13 @@ static func make(player: Player, scene: PackedScene, p_view: ViewmodelConfig, ri
 			r.anim.play(r.clip)
 			r.anim.seek(0.0, true)
 	# One draw per material instead of one per piece (optimization overhaul C-07).
-	RigidMerge.apply(r.model)
+	if merge:
+		RigidMerge.apply(r.model)
 	for n: Node in r.model.find_children("*", "MeshInstance3D", true, false):
-		(n as MeshInstance3D).cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		var mi: MeshInstance3D = n as MeshInstance3D
+		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		# Held in front of the eyes: never hidden behind the map's occluders.
+		mi.ignore_occlusion_culling = true
 	r.add_to_group(&"suit_painted")
 	if player and player.colors:
 		r.repaint(player.colors)

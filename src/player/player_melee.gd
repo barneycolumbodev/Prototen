@@ -94,6 +94,8 @@ func _start() -> void:
 		w.cam_recoil.kick(cfg.windup_kick_deg)
 	if knife:
 		knife.play(player.body.stat(&"melee_speed"))
+	# In the log a bug report saves, in case the knife goes missing on a phone again.
+	print("melee: strike, knife %s" % ("playing" if knife and knife.playing() else "MISSING"))
 	Sfx.play_ui(&"mw7_swish", -7.0, 0.12)
 
 

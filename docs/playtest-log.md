@@ -652,3 +652,13 @@ Please try:
 - Measured:
 - Notes from the owner:
 - Follow-ups:
+
+## 2026-11-14 — R3 knife still missing on the phone
+
+Owner: after the slower-slash build, R3 still shows no knife on the phone ("I haven't seen a knife one time"). Wave mode in the test range felt like a strong core for a wave shooter.
+
+- Checked in the cloud: a real R3 button press, every preset loadout, a cut that kills a man (hit-stop included), both renderers, and the phone's 1604×720 screen. In all of them the knife is on screen for the whole 0.66 s slash. The fault doesn't reproduce in the cloud.
+- What differs on the phone: since the optimization overhaul (C-07) the knife was drawn as one merged skinned mesh that appears for under a second. The guns, which do show on the phone, are plain meshes. The knife now skips the merge (about 12 more draw calls, only while it's out) and, like the trail, opts out of occlusion culling.
+- Each strike now writes `melee: strike, knife playing|MISSING` to the log, so a bug report shows the knife's state if it's still missing.
+- Test: `tests/scene/test_knife_strike.gd` (knife drawn plain, not skinned). Screenshot: `docs/knife_unmerged_preview.png`.
+- To check on the phone: does the knife show now? If not, send a bug report right after an R3.
