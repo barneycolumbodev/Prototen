@@ -22,6 +22,11 @@ var boss: Enemy
 ## Plays his entrance (off in tests that drive the fight directly).
 var boss_intro: bool = true
 var _last_left: int = -2
+## How long each fighting man has gone without seeing the operative, once
+## the whole wave is in (stragglers, SurvivalConfig.straggler_*).
+var _out_of_touch: Dictionary[Enemy, float] = {}
+var _straggler_tick: float = 0.0
+const STRAGGLER_TICK: float = 0.5
 
 
 ## Sets up the squad and cover; no one comes until begin_wave().
@@ -46,6 +51,7 @@ func begin_wave(n: int) -> void:
 	in_wave = true
 	_timer = 1.2
 	_last_left = -2
+	_out_of_touch.clear()
 	# Looks for this wave's roles start baking now.
 	var seen: Array[String] = []
 	for r: String in queue:
@@ -108,6 +114,11 @@ func _process(delta: float) -> void:
 				_timer = config.spawn_gap
 			else:
 				_timer = 0.3
+	if queue.is_empty():
+		_straggler_tick -= delta
+		if _straggler_tick <= 0.0:
+			_straggler_tick = STRAGGLER_TICK
+			watch_stragglers(STRAGGLER_TICK)
 	var n: int = left()
 	if queue.is_empty() and fighting() == 0:
 		in_wave = false
@@ -120,10 +131,35 @@ func _process(delta: float) -> void:
 		EventBus.wave_changed.emit(wave, n)
 
 
-## End of a wave: the surrendered and crawling go, bodies beyond the cap go.
+## The last of a wave can't hold it up forever: whoever hasn't seen the
+## operative for a while is told where he is, and whoever stays lost (stuck
+## somewhere, or thrown off the map) comes back in out of sight. `dt`: the
+## seconds since the last look.
+func watch_stragglers(dt: float) -> void:
+	var space: PhysicsDirectSpaceState3D = level.get_world_3d().direct_space_state
+	var eye: Vector3 = player.camera().global_position
+	var seen: Dictionary[Enemy, float] = {}
+	for e: Enemy in enemies:
+		if not is_instance_valid(e) or not e.alive or e.boss or e.held or e.out_of_fight():
+			continue
+		var t: float = 0.0 if e.sees_player else _out_of_touch.get(e, 0.0) + dt
+		var fell: bool = e.global_position.y < survival.straggler_floor_y
+		if fell or (t >= survival.straggler_move_after and not sees(space, eye, e.global_position)):
+			var i: int = pick_spawn()
+			if i >= 0:
+				e.relocate(spawn_points[i])
+				t = survival.straggler_hunt_after
+		if t >= survival.straggler_hunt_after:
+			e.hunt(player.global_position)
+		seen[e] = t
+	_out_of_touch = seen
+
+
+## End of a wave: those out of the fight go (surrendered, crawling, fled
+## without a gun), bodies beyond the cap go.
 func clear_out() -> void:
 	for e: Enemy in enemies.duplicate():
-		if is_instance_valid(e) and e.alive and e.state in [Enemy.State.SURRENDER, Enemy.State.CRAWL]:
+		if is_instance_valid(e) and e.alive and e.out_of_fight():
 			enemies.erase(e)
 			e.queue_free()
 	_cleanup()

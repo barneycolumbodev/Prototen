@@ -552,9 +552,13 @@ func _build_navigation() -> void:
 	nav_region.navigation_mesh = nm
 	var source: NavigationMeshSourceGeometryData3D = NavigationMeshSourceGeometryData3D.new()
 	NavigationServer3D.parse_source_geometry_data(nm, source, self)
+	# The map can be gone before the bake finishes (back out of the kit screen).
+	var region: NavigationRegion3D = nav_region
 	NavigationServer3D.bake_from_source_geometry_data_async(nm, source, func() -> void:
-		nav_region.navigation_mesh = nm
-		nav_region.enabled = true)
+		if not is_instance_valid(region):
+			return
+		region.navigation_mesh = nm
+		region.enabled = true)
 
 
 # ------------------------------------------------------------------ benchmark (same as the test room)

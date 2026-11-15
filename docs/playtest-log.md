@@ -729,3 +729,25 @@ Please try:
 - Measured:
 - Notes from the owner:
 - Follow-ups:
+
+## S1 Fix: the last man of a wave could never be found — 2026-11-15 (waiting for the owner)
+
+Owner (2026-11-15): "I kill all the first enemies except for one, I can't find him anywhere, he's a blue lantern I can tell because it still plays voice lines for him but I can't find him on the map, I also don't take fire from him."
+
+Cause: when a hit knocks a man's gun out of his hand (or takes his gun hand), he runs or cowers. Getting back into the fight needs a gun, and nothing gives one back, so he kept running from you, 6–12 m at a time, for good. The wave still counted him as fighting, so it never ended. Blue Lanterns are the recruits with the least nerve, so they're the most likely to do it.
+
+What's in the APK:
+- A man who's lost his gun and runs or cowers is out of the fight, like one who surrenders. If he's the last one, the wave ends and he's cleared away. A man who runs with his gun still counts (he comes back when his nerve returns).
+- Backstop for anyone else who gets lost: once the whole wave is in, a man who hasn't seen you for 12 s is told where you are and comes looking. After 40 s still lost (stuck, or thrown somewhere he can't walk back from), he comes back in at a hidden spawn point. One who falls out of the map comes back at once.
+- The test range's wave mode clears unarmed runners at the end of a wave too.
+
+Cloud evidence: a reproduction on the old code (the last man of wave 1, a Blue Lantern, loses his gun and runs: 20 s later the wave is still on, 1 fighting, 25 m away); with the fix, `tests/scene/test_survival.gd` passes, including `test_a_man_who_lost_his_gun_does_not_hold_up_the_wave` (the wave ends into the drop and he's cleared; an armed runner still counts) and `test_a_lost_straggler_is_sent_back_in` (told where you are; back in at a spawn point when stuck out of sight; straight back after falling out of the map). `tools/check.sh`: 460 of 460 tests pass. Not checked in the cloud: whether 12 s and 40 s feel right in a real run.
+
+Please try:
+1. Play a few waves and shoot men in the arms and hands. Does every wave end when the last armed man is down?
+2. Does anyone ever still take too long to show up at the end of a wave?
+
+- Device / renderer / settings:
+- Measured:
+- Notes from the owner:
+- Follow-ups:

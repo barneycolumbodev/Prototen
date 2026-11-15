@@ -133,3 +133,83 @@ func test_wave_5_brings_the_incense_master_and_his_drop() -> void:
 	gut.p("boss drop: %s (%d offers)" % [o.title(), run.drop_screen.offers.size()])
 	run.drop_screen.take()
 	assert_true(map.player.loadout.has_part(&"gx4_gauss_arm"), "on the body")
+
+
+## Playtest 2026-11-15: the last Blue Lantern of wave 1 lost his gun and ran
+## (nothing gives it back), still counted as fighting: the wave never ended.
+func test_a_man_who_lost_his_gun_does_not_hold_up_the_wave() -> void:
+	var run: SurvivalRun = await _start()
+	await wait_until(func() -> bool: return run.director.in_wave and run.director.queue.is_empty(), 15.0)
+	var last: Enemy
+	for e: Enemy in run.director.enemies:
+		if is_instance_valid(e) and e.alive:
+			if last == null:
+				last = e
+			else:
+				e.die(null, &"chest")
+	assert_not_null(last)
+	last.has_gun = false
+	last.body.drop_gun(Vector3.UP)
+	last._enter(Enemy.State.FLEE)
+	assert_true(last.out_of_fight(), "unarmed and running: out of the fight")
+	assert_eq(run.director.fighting(), 0)
+	await wait_until(func() -> bool: return run.drop_screen.visible, 6.0)
+	assert_true(run.drop_screen.visible, "the wave ended")
+	assert_false(is_instance_valid(last) and last.is_inside_tree() and not last.is_queued_for_deletion(), "he's cleared away with the wave")
+	# Still armed, he's only rattled: he comes back, so he still counts.
+	var e2: Enemy = Enemy.new()
+	e2.config = load("res://data/enemies/blue_lantern.tres") as EnemyConfig
+	map.add_child(e2)
+	e2._enter(Enemy.State.FLEE)
+	assert_false(e2.out_of_fight(), "armed and fleeing: still in it")
+	e2.queue_free()
+
+
+## The last of a wave who lost the operative is told where he is; one who
+## stays lost (stuck, or fallen off the map) comes back in at a spawn point.
+func test_a_lost_straggler_is_sent_back_in() -> void:
+	var run: SurvivalRun = await _start()
+	var d: SurvivalDirector = run.director
+	await wait_until(func() -> bool: return d.in_wave and d.queue.is_empty(), 15.0)
+	var last: Enemy
+	for e: Enemy in d.enemies:
+		if is_instance_valid(e) and e.alive:
+			if last == null:
+				last = e
+			else:
+				e.die(null, &"chest")
+	assert_not_null(last)
+	var you: Vector3 = map.player.global_position
+	# Lost: hasn't seen the operative for straggler_hunt_after s.
+	last.sees_player = false
+	last.last_known = you + Vector3(30, 0, 30)
+	d.watch_stragglers(cfg.straggler_hunt_after)
+	assert_almost_eq(last.last_known.distance_to(you), 0.0, 0.01, "told where he is")
+	assert_eq(last.awareness, 1.0)
+	# Stuck somewhere out of sight (just off a hidden spawn point) for straggler_move_after s.
+	var space: PhysicsDirectSpaceState3D = map.get_world_3d().direct_space_state
+	var eye: Vector3 = map.player.camera().global_position
+	var stuck: Vector3 = Vector3.INF
+	for p: Vector3 in d.spawn_points:
+		var q: Vector3 = p + Vector3(0.6, 0.0, 0.0)
+		if not RollingSpawner.sees(space, eye, q) and _nearest_spawn(d, q) > 0.5:
+			stuck = q
+			break
+	assert_ne(stuck, Vector3.INF, "a hidden spot")
+	last.global_position = stuck
+	last.sees_player = false
+	d.watch_stragglers(cfg.straggler_move_after)
+	assert_lt(_nearest_spawn(d, last.global_position), 0.1, "back in at a spawn point")
+	# Fallen out of the map: back at once.
+	last.global_position = Vector3(0, -40.0, 0)
+	last.sees_player = true
+	d.watch_stragglers(0.5)
+	assert_gt(last.global_position.y, -1.0, "a fall out of the map brings him straight back")
+	assert_eq(d.fighting(), 1, "still the one man left")
+
+
+func _nearest_spawn(d: SurvivalDirector, at: Vector3) -> float:
+	var near: float = INF
+	for p: Vector3 in d.spawn_points:
+		near = minf(near, Vector2(p.x, p.z).distance_to(Vector2(at.x, at.z)))
+	return near

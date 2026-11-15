@@ -49,6 +49,14 @@ extends Resource
 ## start arriving `boss_escort_delay` s after his entrance begins.
 @export_range(0.0, 1.0) var boss_escort_budget: float = 0.45
 @export var boss_escort_delay: float = 6.0
+## Stragglers, once the whole wave is in: a man who hasn't seen the
+## operative for `straggler_hunt_after` s is told where he is and goes
+## looking; after `straggler_move_after` s (stuck, or thrown somewhere he
+## can't walk back from) he comes back in at a hidden spawn point. Below
+## `straggler_floor_y` he's fallen out of the map and comes back at once.
+@export var straggler_hunt_after: float = 12.0
+@export var straggler_move_after: float = 40.0
+@export var straggler_floor_y: float = -15.0
 ## Lieutenant waves: these roles first, the rest of the budget (× fraction) as usual.
 @export var lieutenant_roles: Array[String] = ["red_pole", "red_pole"]
 @export_range(0.0, 1.0) var lieutenant_budget: float = 0.7
