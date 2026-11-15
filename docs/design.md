@@ -666,7 +666,7 @@ Each map has a theme and its own roster. For Chinatown, the triad *(proposal; �
 |---|---|---|---|
 | **Blue Lantern** ✓ (built 2026-11-15) | Uninitiated recruits: Type 85 SMG, poor aim, slow to react, panic early. The bottom of the curve. | 1 | 1 |
 | **Gunman** ✓ | Rifleman. Holds cover, peeks, bursts. | 2 | 1 |
-| **Hatchet Man** | Melee. Cleaver or hatchet, sprints between cover, vaults low walls, comes from the side. Has to be killed or dodged, not out-shot from cover. | 2 | 3 |
+| **Hatchet Man** ✓ (built 2026-11-15, §8.8a) | Melee. Cleaver or hatchet, sprints between cover, vaults low walls, comes from the side. Has to be killed or dodged, not out-shot from cover. | 2 | 4 |
 | **Enforcer** ✓ | Plate carrier, pump shotgun, pushes in close. | 3 | 2 |
 | **Dao swordsman** | Melee elite: a long blade, a guard that turns rounds aside from the front (a grafted forearm plate, so hardware), a lunge. | 4 | 8 |
 | **Red Pole** ✓ | Lieutenant. SMG, steadies the men near him; his death breaks them. | 4 | 3 |
@@ -676,7 +676,22 @@ Each map has a theme and its own roster. For Chinatown, the triad *(proposal; �
 | **Gunner** | A belt-fed gun; suppresses a whole street. | 5 | 11 |
 | **Anti-augment specialist** | EMP grenades that stall your actives, armour-piercing rounds, a jammer that grounds the drone. | 6 | 13 |
 
-Melee men need new code: approach and strike states, a hit on the player, a block for the swordsman, and animations. They are the next enemy work.
+Melee men need their own code: the Hatchet Man's is built (§8.8a); the swordsman still needs a block. The Hatchet Man debuts on wave 4, not 3 as first proposed, so the Red Pole (wave 3) and he each get a wave of their own.
+
+### 8.8a The Hatchet Man (built 2026-11-15)
+
+Owner: "start work on the Hatchet Man melee focused enemy." What he does (`src/ai/melee_brain.gd`; tuning in `data/enemies/hatchet_man.tres`, the Melee group of `EnemyConfig`):
+
+- **Kit.** A hand hatchet or a Chinese cleaver, one picked per man (`raw_assets/weapons/enemy_melee/build.py` → `assets/weapons/enemy/hatchet.gltf`, `cleaver.gltf`, on the guns' weapon socket). Tank tops, vests and street clothes, so the tattoos show. 95 health, no armour, brave (courage 0.85), sprints at 6.8 m/s (the operative sprints at 11).
+- **Approach** (beyond 9 m): from cover to cover, each one nearer the operative and out of his sight, toward a point 75° off where the operative is looking, on the side the man is already on, with a short crouch (0.35–1.1 s) behind each.
+- **Charge** (inside 9 m): straight in, weaving across the operative's line when he's being looked at. Where the straight line only crosses low things (up to 1.25 m) and has ground all along, he takes it and **vaults** what's in the way (0.55 s, a speed vault) instead of following the nav path round.
+- **The chop.** Within 3 m, with nothing low between them, the blade goes up high over his right shoulder: **the tell**, with a grunt. He lunges (4.2 m/s) and turns after the operative at 200°/s at most. 0.46 s after the windup starts, the blow lands if the operative is within 2 m and 110° in front of him: 42 damage on the bare suit, scaled by armour (damage per kJ ÷ 7) and pushed back 3 m/s, with a shake and rumble. Then 0.55 s of recovery.
+- **Answers.** Dodge it (a sidestep, a slide, a jump or the ram thrusters past him in the windup: he can't turn fast enough); kill him first; stagger him with 20 damage in the windup (two quick Five-seveN rounds, one rifle round, a shotgun blast); the R3 knife kills him in one cut; the BW-6 fan shield turns the blade from the front for 3 integrity. Slides, the mesh arm and blasts knock him out of a chop or a vault.
+- **Morale.** He breaks like the others, but never fires blind: he runs, cowers or gives up.
+- **Animation** (new clips in `raw_assets/characters/triad/build.py`): `melee_ready`, `melee_run`, `melee_crouch`, `chop` (1.0 s, the blow at 0.46 s, played faster or slower to match `melee_windup`), `vault`. Preview: `docs/previews/hatchet_man_poses.png`.
+- **Where he appears.** Survival from wave 4 (cost 2, at most 3 per wave, 5 from wave 10). Sandbox rolling spawns on the docks: 18 % of arrivals.
+
+Not yet *(proposal)*: his own voice lines (a war cry; he uses "Rush him!" for now), a thrown hatchet when the operative is out of reach on a height, blood on the blade after a hit, a sound made for the chop (it uses the whip's swish and cut).
 
 ### 8.9 What was built first (2026-11-15)
 
@@ -689,7 +704,7 @@ The foundation, so the loop can be played on the phone before any of it is final
 - **The loop on Chinatown** (`SurvivalRun`, `SurvivalDirector`, `src/ui/survival/`): **Survival** is first on the main menu, and the old Begin is now **Sandbox**. The kit screen (D-pad ▲▼ row, ◀ ▶ change, A deploy) sits over the menu scene. Waves come in out of sight like the rolling spawns, at most 12 alive. The HUD shows the wave banner and how many are left. After a wave: health and charges refill, then the drop screen pauses the game (◀ ▶, A), then 3 s to the next wave. Lieutenant waves show the boss drop first, on a gold card. On death: the run-over screen (wave, kills, kit, what was taken), then A for the main menu. The pause menu hides the map switch, the enemy toggle and the map cost test during a run. `-- --survival=<doctrine>,<gun>,<active>` (indices) starts a run straight away for tests and captures.
 - **Evidence:** `tests/unit/test_run_marks.gd`, `test_run_state.gd`, `test_survival_waves.gd`; `tests/scene/test_survival.gd` plays the loop (kit on the player, wave 1 in and cleared, the choice of two, the item in the body or on the wheel, wave 2, death and the run-over screen, Survival from the menu).
 
-Not yet: bosses, melee enemies, theme waves, objective waves, an ammunition economy, any meta-progression, sounds for the drop screens beyond the UI ticks.
+Not yet: bosses, the Dao swordsman and the other new types (the Hatchet Man was built next, §8.8a), theme waves, objective waves, an ammunition economy, any meta-progression, sounds for the drop screens beyond the UI ticks.
 
 ### 8.10 Open questions
 

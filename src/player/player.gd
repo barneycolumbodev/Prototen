@@ -29,6 +29,9 @@ var hands: Dictionary[StringName, Node] = {}
 ## Running parts that take hits before the body does (the fan shield):
 ## func(hit: BallisticHit, amount: float) -> float, the damage left.
 var hit_interceptors: Array[Callable] = []
+## Melee blows go through these first: f(attacker: Node, amount: float,
+## direction: Vector3) -> float (direction: the way the blow travels).
+var melee_interceptors: Array[Callable] = []
 ## Speed multiplier from running parts (the shield slows you).
 var aug_move_scale: float = 1.0
 ## Suit and hardware colours (the loadout screen's Colours page).
@@ -41,6 +44,8 @@ signal died
 signal respawned
 
 var health: float = 200.0
+## The bare suit's damage per kJ (PlayerBodyConfig): melee damage is given for it.
+const BASE_DAMAGE_PER_KJ: float = 7.0
 var dead: bool = false
 ## Off in tests and benchmarks.
 var invulnerable: bool = false
@@ -224,6 +229,23 @@ func on_ballistic_hit(hit: BallisticHit) -> void:
 		amount = f.call(hit, amount)
 	if amount > 0.0:
 		take_damage(amount, -hit.direction)
+
+
+## A blade or a blow from an enemy (the Hatchet Man's chop): `amount` is
+## for the bare suit; armour scales it like a round (damage per kJ ÷ 7).
+## `direction`: the way the blow travels. Shoves the operative along it.
+## Returns the damage taken.
+func on_melee_hit(attacker: Node, amount: float, direction: Vector3, push: float = 0.0) -> float:
+	if dead or invulnerable:
+		return 0.0
+	var dmg: float = amount * body.stat(&"damage_per_kj") / BASE_DAMAGE_PER_KJ if body else amount
+	for f: Callable in melee_interceptors:
+		dmg = f.call(attacker, dmg, direction)
+	var flat: Vector3 = Vector3(direction.x, 0.0, direction.z).normalized()
+	if dmg > 0.0:
+		velocity += flat * push
+		take_damage(dmg, -direction)
+	return dmg
 
 
 func take_damage(amount: float, from_dir: Vector3) -> void:

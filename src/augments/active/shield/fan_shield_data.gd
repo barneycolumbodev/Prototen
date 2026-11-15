@@ -16,6 +16,8 @@ extends ActivePartData
 @export_range(10.0, 180.0) var arc_deg: float = 75.0
 ## Integrity lost per kJ stopped.
 @export var loss_per_kj: float = 1.0
+## Integrity a blade blow from the front costs (the Hatchet Man's chop: a heavy round's worth).
+@export var melee_loss: float = 3.0
 ## Part of a stopped round's damage that still gets through (blunt trauma).
 @export_range(0.0, 1.0) var leak: float = 0.0
 ## Structure at which `charge_max` applies; integrity scales with structure ÷ this.

@@ -677,3 +677,28 @@ Please try:
 - Measured:
 - Notes from the owner:
 - Follow-ups:
+
+## S1 The Hatchet Man — 2026-11-15 (waiting for the owner)
+
+Owner (2026-11-15): "start work on the Hatchet Man melee focused enemy." Design: `docs/design.md` §8.8a.
+
+What's in the APK:
+- **The Hatchet Man**: a triad man with a hand hatchet or a Chinese cleaver (one or the other per man), no gun. Fast (6.8 m/s sprint), 95 health, no armour, hard to scare.
+- **Far out** he sprints from cover to cover, each one nearer you and out of your sight, swinging round toward your side, and crouches a moment behind each.
+- **Inside about 9 m** he charges, weaving if you're looking straight at him, and **vaults** anything waist-high in the way instead of running round it.
+- **The chop**: about 3 m out the blade goes up high over his shoulder (that's your warning) and comes down about half a second later. It hits for about 40 on the bare suit (less with armour) and shoves you.
+- **How to beat it**: sidestep, slide or jump past him while the blade is up (he can't turn fast enough), kill him first, hit him twice with the Five-seveN in the windup to stagger him, knife him (R3, one cut), or raise the fan shield (BW-6) and let it ring off the front.
+- **Where**: Survival from **wave 4**. Sandbox on the docks: about one in six arrivals.
+
+Cloud evidence: `tools/check.sh` with the new `tests/scene/test_hatchet_man.gd` (he carries a blade; runs 8 m in and the chop lands for the armour-scaled damage; a sidestep in the windup makes him miss; two quick rounds in the windup break it off; he vaults the 1 m crate but not the 2.4 m one; he crosses the crate to reach you and strikes; the flank point is 75° off your facing) and `test_actives.gd` (the fan shield turns a blade from the front, not from behind). Captures: `docs/previews/hatchet_man.png` (top: your eyes; bottom: from the side; sprint, vault over the crate, the blade up, the blow), `hatchet_man_poses.png` (the new animations), `enemy_melee.png` (the two blades). Not checked in the cloud: how the timing feels with a controller, how many at once is fair, frame rate with several on the docks.
+
+Please try:
+1. Survival to wave 4 or later, or Sandbox on the docks. Can you see the chop coming in time? Is half a second right?
+2. Does dodging feel fair, and does staggering him with gunfire feel good?
+3. Does he come from the side often enough, or does he just run straight at you?
+4. Is about 40 damage per hit right, and are three at once in a wave too many?
+
+- Device / renderer / settings:
+- Measured:
+- Notes from the owner:
+- Follow-ups:

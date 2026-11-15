@@ -39,6 +39,8 @@ var look: TriadLook
 
 var squad: Squad
 var body: EnemyBody
+## A man with a blade (EnemyConfig.melee): how he fights instead of shooting.
+var melee: MeleeBrain
 var nav: NavigationAgent3D
 var state: State = State.IDLE
 var tactic: Tactic = Tactic.HOLD
@@ -195,6 +197,8 @@ func _ready() -> void:
 	_build_flash()
 	_build_mouth()
 	body.set_stance(&"idle")
+	if config.melee:
+		melee = MeleeBrain.new(self)
 	if not passive:
 		EventBus.shot_fired.connect(_on_shot_heard)
 
@@ -264,6 +268,8 @@ func on_part_hit(part: HitboxPart, hit: BallisticHit) -> void:
 	if hit.result == BallisticHit.Result.PENETRATED:
 		bleed_dps = minf(bleed_dps + 1.5, 6.0)
 	body.flinch(hit.direction, clampf(hit.damage.impulse / 3.0 * TimeControl.impact_multiplier(), 0.3, 3.5), head)
+	if melee:
+		melee.on_hurt(dmg)
 	_alerted_by(hit.shooter)
 	suppression = minf(suppression + 0.45, 1.0)
 	morale -= 0.08 + clampf(dmg / 300.0, 0.0, 0.2)
@@ -289,6 +295,8 @@ func on_part_hit(part: HitboxPart, hit: BallisticHit) -> void:
 func knock_back(push: Vector3, from: Node, damage: float, morale_loss: float) -> void:
 	if not alive:
 		return
+	if melee:
+		melee.reset()
 	_knock = Vector3(push.x, 0.0, push.z).limit_length(14.0)
 	velocity.y = maxf(velocity.y, minf(push.y, 6.0))
 	body.play_stumble()
@@ -315,6 +323,8 @@ func knock_back(push: Vector3, from: Node, damage: float, morale_loss: float) ->
 func launch(v: Vector3, from: Node, morale_loss: float, gravity: float, tumble_deg: float, stun: float) -> void:
 	if not alive or held or _thrown_speed > 0.0:
 		return
+	if melee:
+		melee.reset()
 	launched = true
 	_launch_air = true
 	_launch_time = 0.0
@@ -379,6 +389,8 @@ func seize(by: Node) -> bool:
 	if not alive or held:
 		return false
 	held = true
+	if melee:
+		melee.reset()
 	remove_from_group(&"enemies")
 	remove_from_group(&"aim_assist_targets")
 	remove_from_group(&"suppressible")
@@ -775,6 +787,8 @@ func _physics_process(delta: float) -> void:
 		# Up in the air or finding his feet: no thinking, no shooting.
 		_move(delta)
 		return
+	if melee and melee.update_vault(delta):
+		return
 	_think -= delta
 	if _think <= 0.0:
 		_think = _rng.randf_range(0.35, 0.7)
@@ -850,7 +864,7 @@ func _break() -> void:
 	if not has_gun or (d < 9.0 and r < 0.5):
 		_enter(State.SURRENDER)
 	elif _cover_point != Vector3.INF and global_position.distance_to(_cover_point) < 1.0 and r < 0.6:
-		_enter(State.BLIND if r < 0.35 else State.COWER)
+		_enter(State.BLIND if r < 0.35 and melee == null else State.COWER)
 	else:
 		_enter(State.FLEE)
 
@@ -863,11 +877,14 @@ func _enter(s: State) -> void:
 	var prev: State = state
 	state = s
 	_state_time = 0.0
+	if melee and s != State.COMBAT:
+		melee.reset()
 	match s:
 		State.COMBAT:
 			_tactic_time = 0.0
 			if prev == State.IDLE or prev == State.ALERT:
-				_callout(&"contact")
+				# A man with a blade doesn't shout "shoot him".
+				_callout(&"advance" if melee else &"contact")
 		State.FLEE:
 			_release_token()
 			body.set_stance(&"flee")
@@ -933,7 +950,13 @@ func _decide() -> void:
 			if not passive and (_move_target == Vector3.INF or global_position.distance_to(_move_target) < 1.0):
 				_pick_flee_point()
 		State.COMBAT:
-			_decide_combat()
+			if melee and not passive:
+				if not has_gun:
+					_enter(State.FLEE)
+				else:
+					melee.decide()
+			else:
+				_decide_combat()
 		_:
 			pass
 
@@ -1015,6 +1038,9 @@ func _act(delta: float) -> void:
 	_reloading = maxf(0.0, _reloading - delta)
 	_shot_timer -= delta
 	var aiming: bool = false
+	if melee and state == State.COMBAT and not passive:
+		melee.act(delta)
+		return
 	match state:
 		State.COMBAT:
 			match tactic:
@@ -1173,8 +1199,12 @@ func _move(delta: float) -> void:
 	if not passive and _move_target != Vector3.INF:
 		match state:
 			State.COMBAT, State.ALERT:
-				run = body.stance == &"run"
-				speed = config.run_speed if run else config.walk_speed
+				if melee:
+					run = true
+					speed = melee.speed() * (1.0 if state == State.COMBAT else 0.55)
+				else:
+					run = body.stance == &"run"
+					speed = config.run_speed if run else config.walk_speed
 			State.FLEE:
 				speed = config.run_speed * 1.1
 				run = true
@@ -1198,7 +1228,12 @@ func _move(delta: float) -> void:
 		to2.y = 0.0
 		if to2.length() > 0.8:
 			want = to2.normalized() * speed
-	var horizontal: Vector3 = Vector3(velocity.x, 0, velocity.z).move_toward(want, 14.0 * delta)
+	if melee and state == State.COMBAT and not passive:
+		# Straight over low walls, the lunge, standing still for the chop.
+		var mv: Vector3 = melee.want_velocity()
+		if mv != Vector3.INF:
+			want = mv
+	var horizontal: Vector3 = Vector3(velocity.x, 0, velocity.z).move_toward(want, (20.0 if melee else 14.0) * delta)
 	if _knock.length_squared() > 0.01:
 		# Shoved: the push wins over his own legs until it dies away.
 		horizontal = _knock
