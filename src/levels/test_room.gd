@@ -156,6 +156,11 @@ func _ready() -> void:
 			var hd: HatchetDemo = HatchetDemo.new()
 			hd.room = self
 			add_child(hd)
+		elif arg == "--demo=boss" or arg == "--demo=boss-intro":
+			var bd: BossDemo = BossDemo.new()
+			bd.room = self
+			bd.intro = arg == "--demo=boss-intro"
+			add_child(bd)
 		elif arg == "--demo=slide":
 			var sd: SlideDemo = SlideDemo.new()
 			sd.room = self

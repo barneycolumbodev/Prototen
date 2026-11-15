@@ -127,6 +127,44 @@ func test_boss_drop_upgrades_or_brings_an_active() -> void:
 	assert_eq(o3.item.kind(), RunItem.Kind.ACTIVE)
 
 
+func test_the_incense_master_drops_his_gauss_arm_or_its_next_mark() -> void:
+	var gx4: ActivePartData = lib.find(&"gx4_gauss_arm") as ActivePartData
+	var r: RunState = _run("Juggernaut", 3)
+	r.wave = 5
+	var d: Array[RunState.Offer] = r.roll_boss_drops(gx4)
+	assert_eq(d.size(), 1, "the Juggernaut has a free right arm and room on the D-pad: just the arm")
+	assert_eq(d[0].item.id(), &"gx4_gauss_arm")
+	assert_eq(d[0].mark, 1)
+	assert_false(d[0].upgrade)
+	r.take(d[0])
+	assert_eq(r.mark_of(&"gx4_gauss_arm"), 1)
+	var d2: Array[RunState.Offer] = r.roll_boss_drops(gx4)
+	assert_true(d2[0].upgrade, "has it: the next mark")
+	assert_eq(d2[0].mark, 2)
+	r.take(d2[0])
+	r.take(r.roll_boss_drops(gx4)[0])
+	assert_eq(r.mark_of(&"gx4_gauss_arm"), 3)
+	var d4: Array[RunState.Offer] = r.roll_boss_drops(gx4)
+	assert_false(d4.is_empty(), "at Mk III: the usual boss drop instead")
+	assert_ne(d4[0].item.id(), &"gx4_gauss_arm")
+
+
+func test_when_the_arm_would_cost_an_active_there_is_a_choice() -> void:
+	var gx4: ActivePartData = lib.find(&"gx4_gauss_arm") as ActivePartData
+	# Reaper with the whip: the whip is on the right arm too.
+	var r: RunState = RunState.new(cfg, 5)
+	var d: Doctrine = cfg.doctrine_named("Reaper")
+	r.start(d, cfg.starter_weapons[0], lib.find(&"mw7_monofilament_whip") as ActivePartData)
+	r.wave = 5
+	var offers: Array[RunState.Offer] = r.roll_boss_drops(gx4)
+	assert_eq(offers.size(), 2, "the arm, or the usual boss drop")
+	assert_eq(offers[0].item.id(), &"gx4_gauss_arm")
+	var ids: Array[StringName] = []
+	for p: PartData in offers[0].replaces:
+		ids.append(p.id)
+	assert_true(&"mw7_monofilament_whip" in ids, "the card says the whip comes off")
+
+
 func test_a_passive_that_would_push_out_an_active_never_drops() -> void:
 	# Ghost: SA-2 and RX-9 fill both nervous-system slots; ER-2 and MR-1 would push one out.
 	var r: RunState = _run("Ghost", 2)

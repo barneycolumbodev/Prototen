@@ -1,0 +1,29 @@
+[gd_resource type="Resource" script_class="Outfit" load_steps=8 format=3]
+
+[ext_resource type="Script" path="res://src/ai/outfit.gd" id="1"]
+[ext_resource type="Script" path="res://src/ai/garment.gd" id="2"]
+[ext_resource type="Resource" path="res://data/enemies/wardrobe/im_leather.tres" id="3"]
+[ext_resource type="Resource" path="res://data/enemies/wardrobe/im_slacks.tres" id="4"]
+[ext_resource type="Resource" path="res://data/enemies/wardrobe/im_boots.tres" id="5"]
+[ext_resource type="Resource" path="res://data/enemies/wardrobe/im_chain.tres" id="6"]
+[ext_resource type="Resource" path="res://data/enemies/wardrobe/im_watch.tres" id="7"]
+
+[resource]
+script = ExtResource("1")
+display_name = "Incense Master"
+weight = 1.0
+tops = Array[ExtResource("2")]([ExtResource("3")])
+inners = Array[ExtResource("2")]([])
+bottoms = Array[ExtResource("2")]([ExtResource("4")])
+shoes = Array[ExtResource("2")]([ExtResource("5")])
+hair = Array[ExtResource("2")]([])
+bald_chance = 1.0
+hats = Array[ExtResource("2")]([])
+hat_chance = 0.0
+accessories = Array[ExtResource("2")]([ExtResource("6"), ExtResource("7")])
+accessory_chance = 1.0
+tattoo_chance = 1.0
+bare_chest_chance = 1.0
+skin_tones = PackedColorArray(0.92, 0.86, 0.78, 1)
+stubble_chance = 1.0
+goatee_chance = 1.0

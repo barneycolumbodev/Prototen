@@ -101,9 +101,11 @@ const SEGMENT_ORDER: Array[StringName] = [&"head", &"upper_arm_L", &"forearm_L",
 		&"hand_R", &"thigh_L", &"shin_L", &"thigh_R", &"shin_R"]
 
 const STANCES: Array[StringName] = [&"loco", &"run", &"idle", &"cover", &"crouch_aim", &"blind_fire",
-		&"gut", &"crawl", &"surrender", &"flee", &"cower", &"melee_ready", &"melee_run", &"melee_crouch"]
+		&"gut", &"crawl", &"surrender", &"flee", &"cower", &"melee_ready", &"melee_run", &"melee_crouch",
+		&"brute_ready", &"brute_walk", &"brute_run", &"cannon", &"kneel_down"]
 const LOOPS: Array[StringName] = [&"aim", &"idle", &"walk_f", &"walk_b", &"walk_l", &"walk_r", &"run", &"cover",
-		&"crouch_aim", &"blind_fire", &"gut", &"crawl", &"surrender", &"flee", &"cower", &"melee_ready", &"melee_run", &"melee_crouch"]
+		&"crouch_aim", &"blind_fire", &"gut", &"crawl", &"surrender", &"flee", &"cower", &"melee_ready", &"melee_run", &"melee_crouch",
+		&"brute_ready", &"brute_walk", &"brute_run", &"cannon", &"kneel_down"]
 const UPPER_BONES: Array[StringName] = [&"spine", &"chest", &"neck", &"head", &"clavicle.L", &"clavicle.R",
 		&"upper_arm.L", &"upper_arm.R", &"forearm.L", &"forearm.R", &"hand.L", &"hand.R", &"fingers.L", &"fingers.R", &"weapon"]
 ## Clip speeds (raw_assets/characters/triad/build.py): walk 1.4 m/s, run 4.6 m/s, flee 5.2, crawl 0.45.
@@ -112,6 +114,14 @@ const UPPER_BONES: Array[StringName] = [&"spine", &"chest", &"neck", &"head", &"
 const CHOP_CLIP_TIME: float = 1.0
 const CHOP_CLIP_HIT: float = 0.46
 const VAULT_CLIP_TIME: float = 0.6
+## The boss's clips (raw_assets/characters/triad/build.py, "brute"): walk and
+## run speeds in rig metres (× body_scale in the world), the pound and the
+## haymaker with the moment the blow lands, the entrance.
+const BRUTE_WALK_SPEED: float = 1.3
+const BRUTE_RUN_SPEED: float = 4.0
+const POUND_CLIP_HIT: float = 1.0
+const SWING_CLIP_HIT: float = 0.52
+const INTRO_CLIP_TIME: float = 2.8
 const WALK_CLIP_SPEED: float = 1.4
 const RUN_CLIP_SPEED: float = 4.6
 const FLEE_CLIP_SPEED: float = 5.2
@@ -218,9 +228,24 @@ const MELEE_STANCES: Dictionary[StringName, StringName] = {
 }
 ## Melee man: the stance asked for was loco or run (set_motion picks ready or sprint).
 var _melee_loco: bool = false
+## A boss (EnemyConfig.boss) has no gun: standing he's in the brute stance,
+## moving he walks or charges (set_motion picks by speed); his own stances
+## (cannon, kneel_down) pass through.
+const BRUTE_STANCES: Dictionary[StringName, StringName] = {
+	&"idle": &"brute_ready", &"loco": &"brute_ready", &"run": &"brute_run",
+	&"cover": &"brute_ready", &"crouch_aim": &"brute_ready", &"blind_fire": &"brute_ready",
+}
+var _brute_loco: bool = false
 
 
 func set_stance(s: StringName) -> void:
+	if config and config.boss:
+		_brute_loco = s == &"loco" or s == &"run"
+		s = BRUTE_STANCES.get(s, s)
+		if _brute_loco and (stance == &"brute_walk" or stance == &"brute_run"):
+			return  # set_motion decides
+		_set_stance(s)
+		return
 	if config and config.melee:
 		_melee_loco = s == &"loco" or s == &"run"
 		s = MELEE_STANCES.get(s, s)
@@ -241,6 +266,13 @@ func set_motion(local_velocity: Vector3) -> void:
 	if ragdolling:
 		return
 	var speed: float = Vector2(local_velocity.x, local_velocity.z).length()
+	if _brute_loco:
+		var sc: float = config.body_scale
+		var running: bool = speed > (2.6 if stance == &"brute_run" else 3.2)
+		_set_stance(&"brute_run" if running else (&"brute_walk" if speed > (0.35 if stance == &"brute_walk" else 0.6) else &"brute_ready"))
+		_tree.set(&"parameters/brute_walk_speed/scale", clampf(speed / (BRUTE_WALK_SPEED * sc), 0.5, 1.8))
+		_tree.set(&"parameters/brute_run_speed/scale", clampf(speed / (BRUTE_RUN_SPEED * sc), 0.6, 1.6))
+		return
 	if _melee_loco:
 		_set_stance(&"melee_run" if speed > (1.6 if stance == &"melee_run" else 2.2) else &"melee_ready")
 	var dir: Vector2 = Vector2(local_velocity.x, local_velocity.z) / maxf(speed, 0.001)
@@ -271,6 +303,35 @@ func play_chop(hit_in: float) -> void:
 ## Breaks off a chop (he was staggered or knocked down).
 func cancel_chop() -> void:
 	_tree.set(&"parameters/chop/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FADE_OUT)
+
+
+## The boss's ground pound, timed so the fist lands `hit_in` s from now.
+func play_pound(hit_in: float) -> void:
+	_tree.set(&"parameters/pound_speed/scale", POUND_CLIP_HIT / maxf(hit_in, 0.05))
+	_tree.set(&"parameters/pound/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
+
+
+## The boss's haymaker, timed so the fist lands `hit_in` s from now.
+func play_swing(hit_in: float) -> void:
+	_tree.set(&"parameters/swing_speed/scale", SWING_CLIP_HIT / maxf(hit_in, 0.05))
+	_tree.set(&"parameters/swing/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
+
+
+## Breaks off the pound or the haymaker (staggered, downed).
+func cancel_boss_moves() -> void:
+	for one: StringName in [&"pound", &"swing", &"intro"]:
+		_tree.set(StringName("parameters/%s/request" % one), AnimationNodeOneShot.ONE_SHOT_REQUEST_FADE_OUT)
+
+
+## The entrance: starts on its first frame (the landing crouch) and holds it
+## at `speed` 0 while he falls; set_intro_speed(1) plays the rest.
+func play_intro() -> void:
+	_tree.set(&"parameters/intro_speed/scale", 0.0)
+	_tree.set(&"parameters/intro/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
+
+
+func set_intro_speed(scale_now: float) -> void:
+	_tree.set(&"parameters/intro_speed/scale", scale_now)
 
 
 ## A vault lasting `seconds`.
@@ -607,6 +668,38 @@ func sever(segment: StringName, velocity: Vector3, destroy: bool = false) -> boo
 	if gun and (&"hand_R" in group):
 		drop_gun(velocity * 0.3)
 	return true
+
+
+## The boss's prosthetic (BossHardware): his own right arm from the middle
+## of the upper arm down is hidden, as if cut there but without the gore,
+## and counts as gone (it can't be cut off again, its hitboxes are off).
+func replace_right_arm() -> void:
+	_split_mesh()
+	for seg: StringName in [&"upper_arm_R", &"forearm_R", &"hand_R"]:
+		severed[seg] = true
+		_severed_mask |= 1 << SEGMENT_ORDER.find(seg)
+		var sp: Array = SEGMENTS[seg]
+		for z: StringName in sp[6]:
+			if hitboxes.has(z):
+				hitboxes[z].collision_layer = 0
+	material.set_shader_parameter(&"severed_mask", _severed_mask)
+
+
+## The node that follows `bone` as shown (animation, aim layer, ragdoll); made if there isn't one.
+func bone_attachment(bone: StringName) -> BoneAttachment3D:
+	if _attach.has(bone):
+		return _attach[bone]
+	var att: BoneAttachment3D = BoneAttachment3D.new()
+	att.name = "Att_" + String(bone).replace(".", "_")
+	att.bone_name = bone
+	skeleton.add_child(att)
+	_attach[bone] = att
+	return att
+
+
+## Plates that stop rounds (the boss's prosthetic) count as his own body for his own shots.
+func add_plate(plate: StaticBody3D) -> void:
+	_plates.append(plate)
 
 
 ## `segment` and the segments still on it, outermost last.
@@ -1096,7 +1189,7 @@ func _setup_animation() -> void:
 		var clip_node: StringName = StringName("clip_" + String(s))
 		root.add_node(clip_node, _anim(s))
 		var src: StringName = clip_node
-		if s == &"run" or s == &"flee" or s == &"crawl" or s == &"melee_run":
+		if s == &"run" or s == &"flee" or s == &"crawl" or s == &"melee_run" or s == &"brute_walk" or s == &"brute_run":
 			var ts_name: StringName = &"crawl_speed" if s == &"crawl" else StringName(String(s) + "_speed")
 			if s == &"flee":
 				ts_name = &"run_speed_flee"
@@ -1109,11 +1202,12 @@ func _setup_animation() -> void:
 	react.fadeout_time = 0.25
 	root.add_node(&"react", react)
 	root.add_node(&"clip_stumble", _anim(&"stumble"))
-	# Melee one-shots (Hatchet Man): the chop and the vault, whole body, each with its own speed.
-	for one: StringName in [&"vault", &"chop"]:
+	# Melee one-shots (Hatchet Man): the chop and the vault; the boss's pound,
+	# haymaker and entrance. Whole body, each with its own speed.
+	for one: StringName in [&"vault", &"chop", &"pound", &"swing", &"intro"]:
 		var os: AnimationNodeOneShot = AnimationNodeOneShot.new()
-		os.fadein_time = 0.06 if one == &"chop" else 0.08
-		os.fadeout_time = 0.18
+		os.fadein_time = 0.0 if one == &"intro" else (0.06 if one == &"chop" else 0.1)
+		os.fadeout_time = 0.18 if one != &"intro" else 0.3
 		root.add_node(one, os)
 		root.add_node(StringName("clip_" + String(one)), _anim(one))
 		root.add_node(StringName(String(one) + "_speed"), AnimationNodeTimeScale.new())
@@ -1121,7 +1215,10 @@ func _setup_animation() -> void:
 		root.connect_node(one, 1, StringName(String(one) + "_speed"))
 	root.connect_node(&"vault", 0, &"stance")
 	root.connect_node(&"chop", 0, &"vault")
-	root.connect_node(&"react", 0, &"chop")
+	root.connect_node(&"pound", 0, &"chop")
+	root.connect_node(&"swing", 0, &"pound")
+	root.connect_node(&"intro", 0, &"swing")
+	root.connect_node(&"react", 0, &"intro")
 	root.connect_node(&"react", 1, &"clip_stumble")
 	var reload: AnimationNodeOneShot = AnimationNodeOneShot.new()
 	reload.fadein_time = 0.15

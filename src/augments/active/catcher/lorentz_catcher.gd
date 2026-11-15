@@ -31,18 +31,24 @@ const SLUG_SHADER: String = """
 shader_type spatial;
 render_mode unshaded, cull_back, shadows_disabled;
 uniform vec4 hot : source_color = vec4(1.0, 0.5, 0.16, 1.0);
+uniform vec4 gauss_hot : source_color = vec4(0.45, 0.8, 1.0, 1.0);
 varying float v_heat;
+varying float v_gauss;
 void vertex() {
 	v_heat = INSTANCE_CUSTOM.r;
+	v_gauss = INSTANCE_CUSTOM.g;
 }
 void fragment() {
 	// A copper jacket heated by the eddy currents: lit along its edges, the
 	// nose (UV.y near 0) glowing hottest. Kept under ~1.4 so bloom doesn't
-	// turn it into a white blob.
+	// turn it into a white blob. A Gauss slug (the Incense Master's) is dark
+	// tungsten crawling with the blue of the charge it still carries.
 	float rim = pow(1.0 - abs(dot(NORMAL, VIEW)), 1.5);
-	vec3 metal = vec3(0.5, 0.28, 0.14) * (0.45 + 0.75 * rim);
+	vec3 metal = mix(vec3(0.5, 0.28, 0.14), vec3(0.16, 0.17, 0.19), v_gauss) * (0.45 + 0.75 * rim);
 	float nose = smoothstep(0.55, 0.0, UV.y);
-	vec3 glow = hot.rgb * (0.35 + 0.95 * v_heat) * (0.6 + 0.6 * nose);
+	vec3 h = mix(hot.rgb, gauss_hot.rgb, v_gauss);
+	float crawl = v_gauss * (0.5 + 0.5 * sin(UV.y * 40.0 - TIME * 18.0));
+	vec3 glow = h * (0.35 + 0.95 * v_heat) * (0.6 + 0.6 * nose + crawl);
 	ALBEDO = metal * (1.0 - 0.6 * v_heat) + glow * (0.35 + 0.65 * v_heat);
 }
 """
@@ -51,14 +57,18 @@ const HALO_SHADER: String = """
 shader_type spatial;
 render_mode unshaded, blend_add, cull_disabled, depth_draw_never, shadows_disabled;
 uniform vec4 hot : source_color = vec4(1.0, 0.5, 0.16, 1.0);
+uniform vec4 gauss_hot : source_color = vec4(0.45, 0.8, 1.0, 1.0);
 varying float v_heat;
+varying float v_gauss;
 void vertex() {
 	v_heat = INSTANCE_CUSTOM.r;
+	v_gauss = INSTANCE_CUSTOM.g;
 }
 void fragment() {
 	float r = length(UV - 0.5) * 2.0;
-	float a = pow(max(1.0 - r, 0.0), 3.0) * (0.05 + 0.25 * v_heat);
-	ALBEDO = mix(hot.rgb, vec3(1.0, 0.8, 0.5), v_heat * v_heat * 0.4) * a;
+	float a = pow(max(1.0 - r, 0.0), 3.0) * (0.05 + 0.25 * v_heat) * (1.0 + 1.5 * v_gauss);
+	vec3 h = mix(hot.rgb, gauss_hot.rgb, v_gauss);
+	ALBEDO = mix(h, vec3(1.0, 0.8, 0.5) * (1.0 - v_gauss) + vec3(0.8, 0.95, 1.0) * v_gauss, v_heat * v_heat * 0.4) * a;
 }
 """
 
@@ -127,6 +137,8 @@ var last_power_scale: float = 1.0
 var release_reason: StringName = &""
 ## Rounds turned away because it was full, since it came up.
 var refused: int = 0
+## Gauss slugs caught since the part was built (tests).
+var gauss_caught: int = 0
 
 var _catcher: BulletCatcher
 var _glow: StandardMaterial3D
@@ -438,6 +450,11 @@ func _intercept(hit: BallisticHit, amount: float) -> float:
 	return amount
 
 
+## A Gauss slug (the Incense Master's, or a GX-4's): held big and blue, and thrown straight back.
+static func is_gauss(w: WeaponData) -> bool:
+	return w != null and w.gore_style == &"gauss"
+
+
 func _take(weapon: WeaponData, point: Vector3, velocity: Vector3) -> bool:
 	if weapon == null:
 		return false
@@ -472,6 +489,15 @@ func _take(weapon: WeaponData, point: Vector3, velocity: Vector3) -> bool:
 	var uv: Vector2 = Vector2(0.5 + rel.x / 0.4, 0.5 - rel.y / 0.4)
 	_field_mat.set_shader_parameter(&"pulse_at", uv)
 	_field_mat.set_shader_parameter(&"pulse", 1.0)
+	if is_gauss(weapon):
+		# A slug that size hits the field like a hammer.
+		gauss_caught += 1
+		Sfx.play_ui(&"gx4_zap", 0.0, 0.05)
+		Sfx.play_ui(&"lc6_catch", 0.0, 0.05)
+		rumble(0.8, 1.0, 0.3)
+		_flash = 1.0
+		if player:
+			player.add_shake(0.5)
 	if now - _last_catch_ms > 35:
 		_last_catch_ms = now
 		Sfx.play_ui(&"lc6_catch", -6.0, 0.12)
@@ -547,7 +573,17 @@ func _begin_release(reason: StringName) -> void:
 		var h: Held = held[order[k]]
 		h.launch_at = cfg.push_time + cfg.ripple * float(k) / maxf(order.size() - 1, 1)
 		var target: Vector3 = Vector3.INF
-		if not bodies.is_empty() and _rng.randf() < seek:
+		if is_gauss(h.weapon):
+			# A Gauss slug goes back the way it came: straight at the middle of the
+			# aim, or at the chest of whoever is nearest it.
+			target = last_aim
+			var best: float = INF
+			for e: Enemy in bodies:
+				var c: HitboxPart = e.parts.get(&"chest")
+				if c and c.global_position.distance_to(last_aim) < best:
+					best = c.global_position.distance_to(last_aim)
+					target = c.global_position
+		elif not bodies.is_empty() and _rng.randf() < seek:
 			var e: Enemy = bodies[_rng.randi() % bodies.size()]
 			var hb: HitboxPart = e.parts.get(zones[_rng.randi() % zones.size()])
 			if hb:
@@ -745,10 +781,13 @@ func _update_cloud(real: float) -> void:
 			nose = nose.slerp(out, clampf((_rel_t + 0.12 - h.launch_at) / 0.12, 0.0, 1.0)).normalized()
 		var up: Vector3 = Vector3.UP if absf(nose.y) < 0.95 else Vector3.RIGHT
 		var b: Basis = Basis.looking_at(nose, up) * Basis(Vector3.RIGHT, -PI * 0.5)
-		_slug_mm.set_instance_transform(n, Transform3D(b, pos))
-		_slug_mm.set_instance_custom_data(n, Color(h.heat, 0, 0, 0))
-		_halo_mm.set_instance_transform(n, Transform3D(Basis.IDENTITY, pos + at_eye * 0.004))
-		_halo_mm.set_instance_custom_data(n, Color(h.heat, 0, 0, 0))
+		# A Gauss slug is a fat tungsten rod, held bigger and burning blue.
+		var g: float = 1.0 if is_gauss(h.weapon) else 0.0
+		var sc: float = 1.0 + g * (cfg.gauss_scale - 1.0)
+		_slug_mm.set_instance_transform(n, Transform3D(b.scaled_local(Vector3(sc * 1.4, sc, sc * 1.4)) if g > 0.0 else b, pos))
+		_slug_mm.set_instance_custom_data(n, Color(h.heat, g, 0, 0))
+		_halo_mm.set_instance_transform(n, Transform3D(Basis.IDENTITY.scaled(Vector3.ONE * sc), pos + at_eye * 0.004))
+		_halo_mm.set_instance_custom_data(n, Color(h.heat, g, 0, 0))
 		n += 1
 	_slug_mm.visible_instance_count = n
 	_halo_mm.visible_instance_count = n

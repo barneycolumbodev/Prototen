@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="WeaponData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/weapons/weapon_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+display_name = "Incense Master's Gauss arm"
+caliber = "16 g tungsten slug"
+muzzle_velocity = 1100.0
+bullet_mass_g = 16.0
+drag_per_m = 0.0002
+gravity_scale = 0.3
+pellets = 1
+pattern_deg = 0.0
+penetration_scale = 3.0
+max_penetrations = 6
+max_ricochets = 0
+min_damage = 260.0
+damage_per_joule = 0.06
+impulse_scale = 2.5
+gore_style = &"gauss"
+sound_prefix = "gx4_"
+flash_color = Color(0.55, 0.78, 1, 1)
+flash_scale = 1.6
+shot_volume_db = 3.0
+max_range = 400.0

@@ -54,9 +54,19 @@ func test_red_pole_cap() -> void:
 		assert_lte(w.count("red_pole"), 1, "one Red Pole before wave 10")
 
 
-func test_lieutenant_wave() -> void:
-	var w: Array[String] = SurvivalWaves.compose(5, cfg, _rng(1))
+func test_wave_5_is_the_incense_master_with_escorts() -> void:
 	assert_true(cfg.is_boss_wave(5))
+	assert_false(cfg.is_boss_wave(4))
+	assert_eq(cfg.boss_for(5), "incense_master", "the triad map's first boss (owner, 2026-11-15)")
+	assert_eq(cfg.boss_for(4), "")
+	var w: Array[String] = SurvivalWaves.compose(5, cfg, _rng(1))
+	assert_false("incense_master" in w, "the director brings him in himself, with his entrance")
+	assert_lt(w.size(), SurvivalWaves.compose(4, cfg, _rng(1)).size(), "a lighter escort than a full wave")
+	assert_gt(w.size(), 0, "but not alone")
+
+
+func test_lieutenant_wave_after_the_last_boss() -> void:
+	assert_eq(cfg.boss_for(10), "", "no second boss yet")
+	var w: Array[String] = SurvivalWaves.compose(10, cfg, _rng(1))
 	assert_eq(w[0], "red_pole")
 	assert_eq(w[1], "red_pole")
-	assert_false(cfg.is_boss_wave(4))

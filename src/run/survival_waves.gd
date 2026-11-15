@@ -3,8 +3,10 @@ extends RefCounted
 ## Who comes in each Survival wave (docs/design.md §8.6): the wave's threat
 ## budget is spent on the roster types unlocked by then, each costing its
 ## `cost`. A type's first wave brings at least one of it, so every new man
-## gets a wave to be learned. Every `boss_every`-th wave is a boss wave;
-## until bosses exist it's a lieutenant wave (`lieutenant_roles` first).
+## gets a wave to be learned. Every `boss_every`-th wave is a boss wave:
+## the boss (SurvivalConfig.bosses; the director brings him in, not this
+## list) with escorts on `boss_escort_budget` of the budget, or, past the
+## last boss, a lieutenant wave (`lieutenant_roles` first).
 
 
 static func budget(wave: int, cfg: SurvivalConfig) -> float:
@@ -28,7 +30,10 @@ static func compose(wave: int, cfg: SurvivalConfig, rng: RandomNumberGenerator) 
 	var out: Array[String] = []
 	var left: float = budget(wave, cfg)
 	var counts: Dictionary[String, int] = {}
-	if cfg.is_boss_wave(wave):
+	var lieutenants: bool = cfg.is_boss_wave(wave) and cfg.boss_for(wave) == ""
+	if cfg.is_boss_wave(wave) and not lieutenants:
+		left *= cfg.boss_escort_budget
+	if lieutenants:
 		left *= cfg.lieutenant_budget
 		for r: String in cfg.lieutenant_roles:
 			out.append(r)
@@ -72,7 +77,7 @@ static func compose(wave: int, cfg: SurvivalConfig, rng: RandomNumberGenerator) 
 	var head: Array[String] = []
 	var tail: Array[String] = []
 	for r: String in out:
-		if r in cfg.lieutenant_roles and cfg.is_boss_wave(wave) and head.size() < cfg.lieutenant_roles.size():
+		if r in cfg.lieutenant_roles and lieutenants and head.size() < cfg.lieutenant_roles.size():
 			head.append(r)
 		else:
 			tail.append(r)

@@ -98,9 +98,9 @@ func _capture_setup() -> void:
 		elif a == "--capture-boss":
 			_wait = -1.0
 			state.wave = 5
-			var b: RunState.Offer = state.roll_boss_drop()
-			var one: Array[RunState.Offer] = [b]
-			drop_screen.show_offers(one, "LIEUTENANTS DOWN", "Boss drop  ·  wave 5", RunUi.C_GOLD)
+			var bc: BossConfig = _boss_config(5)
+			var bd: Array[RunState.Offer] = state.roll_boss_drops(bc.drop)
+			drop_screen.show_offers(bd, "%s IS DEAD" % bc.title, "Boss drop  ·  his %s" % bc.drop.display_name, RunUi.C_GOLD)
 		elif a == "--capture-over":
 			_wait = -1.0
 			state.kills = 57
@@ -137,15 +137,32 @@ func _on_wave_cleared(wave: int) -> void:
 	_refill()
 	_pending.clear()
 	if config.is_boss_wave(wave):
-		var b: RunState.Offer = state.roll_boss_drop()
-		if b:
-			var boss_one: Array[RunState.Offer] = [b]
-			_pending.append(PendingDrop.new(boss_one, "LIEUTENANTS DOWN", "Boss drop  ·  wave %d" % wave, RunUi.C_GOLD))
+		var boss_cfg: BossConfig = _boss_config(wave)
+		if boss_cfg:
+			# His own hardware: the active he carried, or its next mark (§8.7).
+			var bd: Array[RunState.Offer] = state.roll_boss_drops(boss_cfg.drop)
+			if not bd.is_empty():
+				var what: String = "his %s" % boss_cfg.drop.display_name if boss_cfg.drop else "his hardware"
+				_pending.append(PendingDrop.new(bd, "%s IS DEAD" % boss_cfg.title, "Boss drop  ·  %s%s" % [what, "  ·  choose one" if bd.size() > 1 else ""], RunUi.C_GOLD))
+		else:
+			var b: RunState.Offer = state.roll_boss_drop()
+			if b:
+				var boss_one: Array[RunState.Offer] = [b]
+				_pending.append(PendingDrop.new(boss_one, "LIEUTENANTS DOWN", "Boss drop  ·  wave %d" % wave, RunUi.C_GOLD))
 	var d: Array[RunState.Offer] = state.roll_drop()
 	if not d.is_empty():
 		var sub: String = "Choose one" if d.size() > 1 else "Delivered"
 		_pending.append(PendingDrop.new(d, "WAVE %d CLEARED" % wave, "Supply drop  ·  %s" % sub, RunUi.C_ACCENT))
 	_after(config.drop_delay, _show_next_drop)
+
+
+## The BossConfig of wave `wave`'s boss, or null (a lieutenant wave).
+func _boss_config(wave: int) -> BossConfig:
+	var role: String = config.boss_for(wave)
+	if role == "":
+		return null
+	var ec: EnemyConfig = load("res://data/enemies/%s.tres" % role) as EnemyConfig
+	return ec.boss if ec else null
 
 
 func _show_next_drop() -> void:

@@ -1024,6 +1024,207 @@ def _vault(t):
     return melee_pose(keyed(t, VAULT_KEYS))
 
 
+# ---------------------------------------------------------------- brute (the Incense Master, docs/design.md §8.7a)
+# No gun: two fists, the right one his Gauss prosthetic. Hands by IK in rig space (X = his left,
+# -Y = forward, Z = up): hand_matrix(pos, wrist -> knuckles, back of the hand).
+def brute_pose(k, breath=0.0):
+    p = {
+        "hips": euler(*k["hips"]), "hips_loc": k["hips_loc"],
+        "spine": euler(*k["spine"]), "chest": euler(*k["chest"]),
+        "neck": euler(x=k["head"][0] * 0.4), "head": euler(*k["head"]),
+    }
+    p.update(feet(V(k["foot_l"]), V(k["foot_r"]), l_yaw=k["yaw"][0], r_yaw=k["yaw"][1]))
+    lift = k.get("lift", (0.0, 0.0))
+    if lift[0] or lift[1]:
+        p["foot.L"] = ankle_target("L", V(k["foot_l"]) + V((0, 0, lift[0])), k["yaw"][0], -18 * lift[0] / 0.1)
+        p["foot.R"] = ankle_target("R", V(k["foot_r"]) + V((0, 0, lift[1])), k["yaw"][1], -18 * lift[1] / 0.1)
+    p["hand.R"] = hand_matrix(V(k["hand_r"]) + V((0, 0, 0.005 * breath)), k["r_along"], k["r_back"])
+    p["hand.L"] = hand_matrix(V(k["hand_l"]) + V((0, 0, 0.007 * breath)), k["l_along"], k["l_back"])
+    p["open.L"] = k.get("l_open", (0.0,))[0]
+    p["open.R"] = 0.0
+    p["poles"] = {"hand.L": V((0.8, 0.4, 0.9)), "hand.R": V((-0.8, 0.4, 0.9))}
+    return p
+
+
+# Wide and low, the prosthetic hanging heavy in front of the hip, the left fist up.
+BRUTE_READY = {
+    "hips": (8, 0, -10), "hips_loc": (0.0, 0.0, -0.07),
+    "spine": (10, 0, 4), "chest": (8, 0, 4), "head": (-14, 0, 0),
+    "foot_l": (0.21, -0.14, 0.088), "foot_r": (-0.21, 0.16, 0.088), "yaw": (-12, -28),
+    "hand_r": (-0.27, -0.28, 1.0), "r_along": (0.15, -0.55, -0.6), "r_back": (-1, -0.3, 0),
+    "hand_l": (0.17, -0.33, 1.26), "l_along": (-0.3, -0.5, 0.8), "l_back": (0.6, -0.6, 0.2),
+    "lift": (0.0, 0.0), "l_open": (0.0,),
+}
+
+
+@clip("brute_ready", 1.8)
+def _brute_ready(t):
+    b = math.sin(2 * math.pi * t / 1.8)
+    k = dict(BRUTE_READY)
+    k["hips_loc"] = (0.0, 0.0, -0.07 - 0.012 * b)
+    k["chest"] = (8 - 2 * b, 0, 4)
+    return brute_pose(k, b)
+
+
+BRUTE_WALK_T, BRUTE_WALK_SPEED = 1.0, 1.3
+
+
+@clip("brute_walk", BRUTE_WALK_T)
+def _brute_walk(t):
+    stride = BRUTE_WALK_SPEED * 0.62 * BRUTE_WALK_T
+    f, bob, sway = gait(t, BRUTE_WALK_T, (0, -1), stride, 0.62, 0.08, 0.17)
+    ph = (t / BRUTE_WALK_T) % 1.0
+    sw = math.sin(2 * math.pi * ph)
+    k = dict(BRUTE_READY)
+    k.update({
+        "hips": (8, 0, -10 * sway), "hips_loc": (0.02 * sway, 0.0, -0.05 - 0.025 * bob),
+        "spine": (10, 0, 8 * sway), "chest": (8, 0, 6 * sway), "head": (-14, 0, -3 * sway),
+        "hand_r": (-0.28, -0.22 - 0.12 * sw, 1.0 + 0.03 * abs(sw)),
+        "hand_l": (0.24, -0.12 + 0.18 * sw, 1.02 + 0.05 * abs(sw)), "l_along": (0.0, -0.4, -0.9), "l_back": (1, -0.2, 0),
+    })
+    p = brute_pose(k)
+    p.update(f)
+    return p
+
+
+BRUTE_RUN_T, BRUTE_RUN_SPEED = 0.72, 4.0
+
+
+@clip("brute_run", BRUTE_RUN_T)
+def _brute_run(t):
+    stride = BRUTE_RUN_SPEED * 0.4 * BRUTE_RUN_T
+    f, bob, sway = gait(t, BRUTE_RUN_T, (0, -1), stride, 0.4, 0.15, 0.16)
+    ph = (t / BRUTE_RUN_T) % 1.0
+    sw = math.sin(2 * math.pi * ph)
+    k = dict(BRUTE_READY)
+    k.update({
+        "hips": (16, 0, -12 * sway), "hips_loc": (0.015 * sway, -0.02, -0.06 - 0.04 * bob),
+        "spine": (12, 0, 12 * sway), "chest": (8, 0, 8 * sway), "head": (-16, 0, -4 * sway),
+        "hand_r": (-0.27, -0.2 - 0.25 * sw, 1.1 + 0.08 * sw), "r_along": (0.1, -0.7, 0.2), "r_back": (-1, 0, 0.3),
+        "hand_l": (0.26, -0.15 + 0.3 * sw, 1.1 - 0.08 * sw), "l_along": (-0.1, -0.7, 0.3), "l_back": (1, 0, 0.3),
+    })
+    p = brute_pose(k)
+    p.update(f)
+    return p
+
+
+# Ground pound: both fists up over his head (the tell), up on his toes, then the
+# prosthetic comes down into the ground in front of him from a deep crouch.
+POUND_T, POUND_HIT = 1.7, 1.0
+POUND_LAND = dict(BRUTE_READY, **{
+    "hips": (32, 0, -6), "hips_loc": (0.0, -0.06, -0.4), "spine": (20, 0, 4), "chest": (14, 0, 4), "head": (-30, 0, 0),
+    "foot_l": (0.22, -0.32, 0.088), "foot_r": (-0.24, 0.22, 0.088), "yaw": (-8, -25),
+    "hand_r": (-0.14, -0.56, 0.12), "r_along": (0.0, -0.25, -1), "r_back": (0, -1, 0.1),
+    "hand_l": (0.21, -0.4, 0.56), "l_along": (0, -0.4, -1), "l_back": (0.3, -1, 0), "l_open": (0.8,)})
+POUND_KEYS = [
+    (0.0, BRUTE_READY),
+    (0.38, dict(BRUTE_READY, **{
+        "hips": (-4, 0, -6), "hips_loc": (0.0, 0.06, -0.16), "spine": (-6, 0, 2), "chest": (-10, 0, 2), "head": (-6, 0, 0),
+        "hand_r": (-0.22, -0.02, 1.9), "r_along": (0.1, -0.2, 1), "r_back": (-0.3, -1, 0),
+        "hand_l": (0.22, -0.04, 1.86), "l_along": (-0.1, -0.2, 1), "l_back": (0.3, -1, 0)})),
+    (0.78, dict(BRUTE_READY, **{
+        "hips": (-6, 0, -6), "hips_loc": (0.0, 0.06, 0.03), "spine": (-8, 0, 2), "chest": (-12, 0, 2), "head": (-4, 0, 0),
+        "hand_r": (-0.2, 0.04, 1.98), "r_along": (0.1, 0.1, 1), "r_back": (-0.3, -1, 0),
+        "hand_l": (0.2, 0.02, 1.95), "l_along": (-0.1, 0.1, 1), "l_back": (0.3, -1, 0), "lift": (0.06, 0.06)})),
+    (POUND_HIT, POUND_LAND),
+    (1.25, dict(POUND_LAND, **{"hips_loc": (0.0, -0.06, -0.37)})),
+    (POUND_T, BRUTE_READY),
+]
+
+
+@clip("pound", POUND_T, loop=False)
+def _pound(t):
+    return brute_pose(keyed(t, POUND_KEYS))
+
+
+# The haymaker: the prosthetic cocked back by his right side, the body wound up,
+# then whipped across at head height and through.
+SWING_T, SWING_HIT = 1.2, 0.52
+SWING_KEYS = [
+    (0.0, BRUTE_READY),
+    (0.32, dict(BRUTE_READY, **{
+        "hips": (6, 0, -32), "hips_loc": (0.0, 0.05, -0.1), "spine": (6, 0, -18), "chest": (4, 0, -18), "head": (-12, 0, 20),
+        "hand_r": (-0.4, 0.22, 1.32), "r_along": (-0.2, -0.3, 0.9), "r_back": (-1, 0.3, 0),
+        "hand_l": (0.1, -0.46, 1.36), "l_along": (-0.2, -0.8, 0.4), "l_back": (0.6, -0.4, 0.5)})),
+    (SWING_HIT, dict(BRUTE_READY, **{
+        "hips": (10, 0, 18), "hips_loc": (0.0, -0.12, -0.12), "spine": (8, 0, 18), "chest": (6, 0, 16), "head": (-12, 0, -8),
+        "foot_l": (0.2, -0.34, 0.088),
+        "hand_r": (0.06, -0.6, 1.46), "r_along": (0.85, -0.45, 0.1), "r_back": (0, -0.2, 1),
+        "hand_l": (0.28, 0.08, 1.22), "l_along": (0.2, -0.4, 0.8), "l_back": (1, 0, 0)})),
+    (0.72, dict(BRUTE_READY, **{
+        "hips": (12, 0, 28), "hips_loc": (0.0, -0.12, -0.13), "spine": (10, 0, 24), "chest": (8, 0, 20), "head": (-10, 0, -12),
+        "foot_l": (0.2, -0.34, 0.088),
+        "hand_r": (0.32, -0.44, 1.26), "r_along": (0.8, 0.2, -0.3), "r_back": (0, -0.3, 1),
+        "hand_l": (0.3, 0.1, 1.2), "l_along": (0.2, -0.4, 0.8), "l_back": (1, 0, 0)})),
+    (SWING_T, BRUTE_READY),
+]
+
+
+@clip("swing", SWING_T, loop=False)
+def _swing(t):
+    return brute_pose(keyed(t, SWING_KEYS))
+
+
+# The Gauss shot: planted wide, the prosthetic straight out at shoulder height, the
+# left hand under the forearm bracing it. The game's aim layer turns the chest onto the target.
+CANNON = dict(BRUTE_READY, **{
+    "hips": (4, 0, -16), "hips_loc": (0.0, 0.03, -0.1), "spine": (2, 0, 8), "chest": (0, 0, 10), "head": (-4, 0, -4),
+    "foot_l": (0.24, -0.2, 0.088), "foot_r": (-0.22, 0.22, 0.088), "yaw": (-15, -40),
+    "hand_r": (-0.1, -0.56, 1.42), "r_along": (0.02, -1, 0.02), "r_back": (-0.3, 0, 1),
+    "hand_l": (-0.06, -0.33, 1.32), "l_along": (-0.9, -0.3, 0.25), "l_back": (0, 0.2, -1), "l_open": (0.7,)})
+
+
+@clip("cannon", 2.0)
+def _cannon(t):
+    b = math.sin(2 * math.pi * t / 2.0)
+    k = dict(CANNON)
+    k["hips_loc"] = (0.0, 0.03, -0.1 - 0.008 * b)
+    return brute_pose(k, b * 0.5)
+
+
+# Beaten: down on his right knee, hunched, the prosthetic hanging dead by his
+# side, the left hand on his knee, breathing hard.
+@clip("kneel_down", 2.4)
+def _kneel_down(t):
+    b = math.sin(2 * math.pi * t / 2.4 * 2)
+    p = kneel(0.5 + 0.012 * b, 26 + 3 * b)
+    p["hand.R"] = hand_matrix(V((-0.27, -0.16, 0.42)), (0.05, -0.25, -1), (-1, 0, 0))
+    p["hand.L"] = hand_matrix(V((0.17, -0.34, 0.6 + 0.006 * b)), (0.0, -0.6, -0.8), (0, -0.8, 0.6))
+    p["open.L"] = 0.8
+    p["poles"].update({"hand.L": V((0.7, 0.2, 0.9)), "hand.R": V((-0.8, 0.3, 0.9))})
+    return p
+
+
+# The entrance: lands in a crouch with the prosthetic in the ground (the game holds
+# frame 0 while he falls), rises, brings the fist up in front of his face as the
+# coils light, then spreads his arms and roars.
+INTRO_T = 2.8
+INTRO_FLEX = dict(BRUTE_READY, **{
+    "hips": (2, 0, -8), "hips_loc": (0.0, 0.0, -0.05), "spine": (2, 0, 2), "chest": (0, 0, 4), "head": (-4, 0, 6),
+    "hand_r": (-0.18, -0.3, 1.62), "r_along": (0.05, -0.15, 1), "r_back": (0, -1, 0.1),
+    "hand_l": (0.15, -0.3, 1.2), "l_along": (-0.3, -0.5, 0.8), "l_back": (0.6, -0.6, 0.2)})
+INTRO_ROAR = dict(BRUTE_READY, **{
+    "hips": (-2, 0, -4), "hips_loc": (0.0, 0.04, -0.09), "spine": (-6, 0, 0), "chest": (-14, 0, 0), "head": (24, 0, 0),
+    "foot_l": (0.24, -0.16, 0.088), "foot_r": (-0.24, 0.16, 0.088),
+    "hand_r": (-0.6, -0.18, 1.06), "r_along": (-0.6, -0.2, -0.6), "r_back": (-0.3, -1, 0.2),
+    "hand_l": (0.6, -0.18, 1.06), "l_along": (0.6, -0.2, -0.6), "l_back": (0.3, -1, 0.2), "l_open": (0.0,)})
+INTRO_KEYS = [
+    (0.0, POUND_LAND),
+    (0.18, dict(POUND_LAND, **{"hips_loc": (0.0, -0.06, -0.44)})),
+    (0.75, dict(BRUTE_READY, **{"hips_loc": (0.0, 0.0, -0.1)})),
+    (1.1, INTRO_FLEX),
+    (1.5, dict(INTRO_FLEX, **{"hand_r": (-0.17, -0.31, 1.64)})),
+    (1.85, INTRO_ROAR),
+    (2.4, dict(INTRO_ROAR, **{"chest": (-16, 0, 0), "head": (28, 0, 0)})),
+    (INTRO_T, BRUTE_READY),
+]
+
+
+@clip("intro", INTRO_T, loop=False)
+def _intro(t):
+    return brute_pose(keyed(t, INTRO_KEYS))
+
+
 def ss_f(t):
     t = min(max(t, 0.0), 1.0)
     return t * t * (3 - 2 * t)

@@ -93,3 +93,43 @@ func test_death_ends_the_run() -> void:
 	assert_true(run.director.queue.is_empty(), "no more men come")
 	await wait_until(func() -> bool: return run.over_screen.visible, 4.0)
 	assert_true(run.over_screen.visible, "run over")
+
+
+func test_wave_5_brings_the_incense_master_and_his_drop() -> void:
+	var run: SurvivalRun = await _start()
+	await wait_until(func() -> bool: return run.director.in_wave, 5.0)
+	# Skip to the end of wave 4.
+	run.director.queue.clear()
+	_kill_all(run)
+	run._wait = -1.0
+	run.drop_screen.visible = false
+	get_tree().paused = false
+	run.state.wave = 4
+	run._next_wave()
+	assert_eq(run.state.wave, 5)
+	var boss: Enemy = run.director.boss
+	assert_not_null(boss, "the boss came with wave 5")
+	assert_eq(boss.config.boss.title, "THE INCENSE MASTER")
+	assert_false(map.player.input_enabled, "his entrance is playing")
+	var landed: bool = await wait_until(func() -> bool: return boss.boss.phase == BossBrain.Phase.HUNT, 8.0)
+	assert_true(landed, "the entrance ends and he fights")
+	assert_true(map.player.input_enabled)
+	assert_gt(run.director.queue.size() + run.director.alive() - 1, 0, "with escorts")
+	# Beat him, execute him, clear the escorts.
+	run.director.queue.clear()
+	boss.die(null, &"chest")
+	assert_true(boss.alive and boss.boss.is_down(), "on his knee")
+	await wait_physics_frames(5)
+	assert_true(run.director.in_wave, "the wave isn't over while he kneels")
+	boss.boss.execution.script_start()
+	await wait_until(func() -> bool: return boss.boss.execution.done, 9.0)
+	assert_false(boss.alive)
+	_kill_all(run)
+	await wait_until(func() -> bool: return run.drop_screen.visible, 8.0)
+	assert_true(run.drop_screen.visible, "the boss drop")
+	var o: RunState.Offer = run.drop_screen.offers[0]
+	assert_eq(o.item.id(), &"gx4_gauss_arm", "his Gauss arm")
+	assert_eq(o.mark, 1)
+	gut.p("boss drop: %s (%d offers)" % [o.title(), run.drop_screen.offers.size()])
+	run.drop_screen.take()
+	assert_true(map.player.loadout.has_part(&"gx4_gauss_arm"), "on the body")

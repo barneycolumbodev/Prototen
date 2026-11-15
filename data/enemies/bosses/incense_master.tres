@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="BossConfig" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://src/ai/boss/boss_config.gd" id="1"]
+[ext_resource type="PackedScene" path="res://assets/characters/incense_master/hardware.gltf" id="2"]
+[ext_resource type="Resource" path="res://data/enemies/weapons/gauss_slug.tres" id="3"]
+[ext_resource type="Resource" path="res://data/body/parts/gx4_gauss_arm.tres" id="4"]
+
+[resource]
+script = ExtResource("1")
+title = "THE INCENSE MASTER"
+subtitle = "438  ·  Triad enforcer  ·  black-market Gauss arm"
+drop = ExtResource("4")
+hardware = ExtResource("2")
+cannon_round = ExtResource("3")

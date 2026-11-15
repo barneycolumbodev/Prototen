@@ -41,6 +41,8 @@ var squad: Squad
 var body: EnemyBody
 ## A man with a blade (EnemyConfig.melee): how he fights instead of shooting.
 var melee: MeleeBrain
+## A boss (EnemyConfig.boss): his attacks, his knee, his execution.
+var boss: BossBrain
 var nav: NavigationAgent3D
 var state: State = State.IDLE
 var tactic: Tactic = Tactic.HOLD
@@ -177,7 +179,7 @@ func _ready() -> void:
 	var cs: CollisionShape3D = CollisionShape3D.new()
 	cs.name = "Capsule"
 	var cap: CapsuleShape3D = CapsuleShape3D.new()
-	cap.radius = 0.3
+	cap.radius = 0.3 * maxf(config.body_scale / 1.12, 1.0)
 	cap.height = 1.75 * config.body_scale
 	cs.shape = cap
 	cs.position = Vector3(0, cap.height * 0.5, 0)
@@ -199,6 +201,10 @@ func _ready() -> void:
 	body.set_stance(&"idle")
 	if config.melee:
 		melee = MeleeBrain.new(self)
+	if config.boss:
+		boss = BossBrain.new(self)
+		boss.setup()
+		morale = 1.0
 	if not passive:
 		EventBus.shot_fired.connect(_on_shot_heard)
 
@@ -264,6 +270,9 @@ func on_part_hit(part: HitboxPart, hit: BallisticHit) -> void:
 	var mult: float = config.zone_multipliers.get(zone, 1.0)
 	var dmg: float = hit.damage.amount * mult
 	zone_damage[zone] = zone_damage.get(zone, 0.0) + dmg
+	if boss:
+		_boss_hit(zone, dmg, hit, head)
+		return
 	health -= dmg
 	if hit.result == BallisticHit.Result.PENETRATED:
 		bleed_dps = minf(bleed_dps + 1.5, 6.0)
@@ -289,11 +298,46 @@ func on_part_hit(part: HitboxPart, hit: BallisticHit) -> void:
 	EventBus.damage_applied.emit(hit.damage, self)
 
 
+## A round into the boss: no limb wounds or flight, no gore that takes him
+## apart; staggers and rage (BossBrain); at zero he goes down on one knee.
+func _boss_hit(zone: StringName, dmg: float, hit: BallisticHit, head: bool) -> void:
+	if boss.is_down() or boss.phase == BossBrain.Phase.INTRO:
+		body.flinch(hit.direction, 0.6, head)
+		EventBus.target_hit.emit(&"hit", hit)
+		return
+	health -= dmg
+	body.flinch(hit.direction, clampf(hit.damage.impulse / 9.0 * TimeControl.impact_multiplier(), 0.15, 1.6), head)
+	_alerted_by(hit.shooter)
+	boss.on_hurt(dmg, hit)
+	var kind: StringName = &"headshot" if head else &"hit"
+	if health <= 0.0:
+		kind = &"kill"
+		die(hit, zone)
+	elif _pain_cooldown <= 0.0 and dmg > 30.0:
+		_pain_cooldown = 1.6
+		vocal(&"enemy_pain", 2.0, 0.05)
+	EventBus.target_hit.emit(kind, hit)
+	EventBus.damage_applied.emit(hit.damage, self)
+
+
 ## Shoved by the operative (a slide into him): flies back along `push`,
 ## staggers, gets hurt a little and badly rattled. Dead men don't get shoved
 ## here (their ragdoll takes hits through push_bone).
 func knock_back(push: Vector3, from: Node, damage: float, morale_loss: float) -> void:
 	if not alive:
+		return
+	if boss:
+		# Too heavy to shove: it hurts (capped: a knife isn't a kill here) and may stagger.
+		if boss.is_down() or boss.phase == BossBrain.Phase.INTRO:
+			return
+		var dmg: float = minf(damage, 150.0)
+		health -= dmg
+		body.flinch(push.normalized(), 1.0, false)
+		Sfx.play_at(&"impact_flesh", body.chest_position(), -2.0, 0.1)
+		_alerted_by(from)
+		boss.on_hurt(dmg, null)
+		if health <= 0.0:
+			die(null, &"chest", &"impact")
 		return
 	if melee:
 		melee.reset()
@@ -321,7 +365,7 @@ func knock_back(push: Vector3, from: Node, damage: float, morale_loss: float) ->
 ## he's up, and needs `stun` seconds on the ground after he lands. A kill in
 ## the air sends the ragdoll on with his flight (die() uses his velocity).
 func launch(v: Vector3, from: Node, morale_loss: float, gravity: float, tumble_deg: float, stun: float) -> void:
-	if not alive or held or _thrown_speed > 0.0:
+	if not alive or held or _thrown_speed > 0.0 or boss:
 		return
 	if melee:
 		melee.reset()
@@ -386,7 +430,7 @@ func _apply_tumble() -> void:
 ## alive), drops his gun and leaves the fight. Returns false if he can't be
 ## taken (dead, already held).
 func seize(by: Node) -> bool:
-	if not alive or held:
+	if not alive or held or boss:
 		return false
 	held = true
 	if melee:
@@ -467,6 +511,8 @@ func on_plate_hit(_plate: Node, hit: BallisticHit) -> void:
 		_alerted_by(hit.shooter)
 		if hit.energy_in > 1500.0 and _rng.randf() < 0.6:
 			body.play_stumble()
+		if boss:
+			boss.on_hurt(hit.damage.amount * config.armor_blunt, hit)
 		if health <= 0.0:
 			die(hit, &"chest")
 			EventBus.target_hit.emit(&"kill", hit)
@@ -553,7 +599,7 @@ func _react(zone: StringName, dmg: float, hit: BallisticHit) -> void:
 ## volley is violent enough there, or enough has added up (GoreConfig).
 ## Returns whether something came off.
 func _try_sever(zone: StringName, hit: BallisticHit) -> bool:
-	if not Gore.is_maximum() or body.gibbed:
+	if not Gore.is_maximum() or body.gibbed or (boss and not boss.executed):
 		return false
 	var cfg: GoreConfig = Gore.config
 	var type: DamageInfo.Type = hit.damage.type if hit.damage else DamageInfo.Type.BALLISTIC
@@ -583,6 +629,8 @@ func _try_sever(zone: StringName, hit: BallisticHit) -> bool:
 ## Cuts `seg` off (and what's on it) and makes the man react. Also used by
 ## blasts. Returns whether it came off.
 func sever(seg: StringName, velocity_out: Vector3, destroy: bool, hit: BallisticHit = null, zone: StringName = &"chest") -> bool:
+	if boss and not boss.executed:
+		return false
 	var group: Array[StringName] = body.attached(seg)
 	if not body.sever(seg, velocity_out, destroy):
 		return false
@@ -612,7 +660,7 @@ func sever(seg: StringName, velocity_out: Vector3, destroy: bool, hit: Ballistic
 ## Maximum gore: enough into the torso in one volley (or into a corpse over
 ## time) blows the whole body apart. Returns whether it did.
 func _try_burst(zone: StringName, hit: BallisticHit) -> bool:
-	if not Gore.is_maximum() or body.gibbed or not zone in Dismemberment.TORSO:
+	if not Gore.is_maximum() or body.gibbed or not zone in Dismemberment.TORSO or (boss and not boss.executed):
 		return false
 	var cfg: GoreConfig = Gore.config
 	var type: DamageInfo.Type = hit.damage.type if hit.damage else DamageInfo.Type.BALLISTIC
@@ -627,7 +675,7 @@ func _try_burst(zone: StringName, hit: BallisticHit) -> bool:
 
 ## Blown apart (a huge hit, a blast up close, a corpse shot to pieces).
 func burst(push: Vector3, hit: BallisticHit = null, zone: StringName = &"chest") -> void:
-	if body.gibbed:
+	if body.gibbed or (boss and not boss.executed):
 		return
 	if alive:
 		health = 0.0
@@ -642,6 +690,10 @@ func burst(push: Vector3, hit: BallisticHit = null, zone: StringName = &"chest")
 ## `cause`: &"shot", &"bleed" (bled out) or &"burn" (burned to death).
 func die(hit: BallisticHit, zone: StringName, cause: StringName = &"shot") -> void:
 	if not alive:
+		return
+	if boss and not boss.executed:
+		# A boss doesn't die at zero: he goes down on one knee for the execution.
+		boss.go_down()
 		return
 	alive = false
 	state_before_death = state
@@ -750,6 +802,10 @@ func _physics_process(delta: float) -> void:
 			vocal(&"enemy_pain", -2.0, 0.15)
 		_pain_cooldown -= delta
 		return
+	if boss and (boss.phase == BossBrain.Phase.INTRO or boss.is_down()):
+		if boss.is_down():
+			boss.down_frame(delta)
+		return
 	_state_time += delta
 	_pain_cooldown -= delta
 	if state == State.CRAWL and _pain_cooldown <= 0.0:
@@ -845,6 +901,9 @@ func _update_perception(dt: float) -> void:
 
 
 func _update_morale(delta: float) -> void:
+	if boss:
+		morale = 1.0
+		return
 	if state in [State.SURRENDER, State.CRAWL, State.DEAD]:
 		return
 	var calm: bool = suppression < 0.2 and not sees_player
@@ -950,7 +1009,9 @@ func _decide() -> void:
 			if not passive and (_move_target == Vector3.INF or global_position.distance_to(_move_target) < 1.0):
 				_pick_flee_point()
 		State.COMBAT:
-			if melee and not passive:
+			if boss and not passive:
+				boss.decide()
+			elif melee and not passive:
 				if not has_gun:
 					_enter(State.FLEE)
 				else:
@@ -1038,6 +1099,9 @@ func _act(delta: float) -> void:
 	_reloading = maxf(0.0, _reloading - delta)
 	_shot_timer -= delta
 	var aiming: bool = false
+	if boss and state == State.COMBAT and not passive:
+		boss.act(delta)
+		return
 	if melee and state == State.COMBAT and not passive:
 		melee.act(delta)
 		return
@@ -1199,7 +1263,10 @@ func _move(delta: float) -> void:
 	if not passive and _move_target != Vector3.INF:
 		match state:
 			State.COMBAT, State.ALERT:
-				if melee:
+				if boss:
+					run = true
+					speed = boss.speed()
+				elif melee:
 					run = true
 					speed = melee.speed() * (1.0 if state == State.COMBAT else 0.55)
 				else:
@@ -1233,6 +1300,10 @@ func _move(delta: float) -> void:
 		var mv: Vector3 = melee.want_velocity()
 		if mv != Vector3.INF:
 			want = mv
+	if boss and state == State.COMBAT and not passive:
+		var bv: Vector3 = boss.want_velocity()
+		if bv != Vector3.INF:
+			want = bv
 	var horizontal: Vector3 = Vector3(velocity.x, 0, velocity.z).move_toward(want, (20.0 if melee else 14.0) * delta)
 	if _knock.length_squared() > 0.01:
 		# Shoved: the push wins over his own legs until it dies away.
@@ -1246,7 +1317,7 @@ func _move(delta: float) -> void:
 	if launched:
 		body.set_motion(Vector3.ZERO)
 		return
-	if horizontal.length() > 0.3 and (run or state in [State.FLEE, State.CRAWL] or not sees_player):
+	if horizontal.length() > 0.3 and (run or state in [State.FLEE, State.CRAWL] or not sees_player) and not (boss and boss.is_busy()):
 		_turn_toward(atan2(horizontal.x, horizontal.z), delta)
 	var local: Vector3 = global_basis.inverse() * horizontal
 	body.set_motion(local)
