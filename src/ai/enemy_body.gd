@@ -101,12 +101,17 @@ const SEGMENT_ORDER: Array[StringName] = [&"head", &"upper_arm_L", &"forearm_L",
 		&"hand_R", &"thigh_L", &"shin_L", &"thigh_R", &"shin_R"]
 
 const STANCES: Array[StringName] = [&"loco", &"run", &"idle", &"cover", &"crouch_aim", &"blind_fire",
-		&"gut", &"crawl", &"surrender", &"flee", &"cower"]
+		&"gut", &"crawl", &"surrender", &"flee", &"cower", &"melee_ready", &"melee_run", &"melee_crouch"]
 const LOOPS: Array[StringName] = [&"aim", &"idle", &"walk_f", &"walk_b", &"walk_l", &"walk_r", &"run", &"cover",
-		&"crouch_aim", &"blind_fire", &"gut", &"crawl", &"surrender", &"flee", &"cower"]
+		&"crouch_aim", &"blind_fire", &"gut", &"crawl", &"surrender", &"flee", &"cower", &"melee_ready", &"melee_run", &"melee_crouch"]
 const UPPER_BONES: Array[StringName] = [&"spine", &"chest", &"neck", &"head", &"clavicle.L", &"clavicle.R",
 		&"upper_arm.L", &"upper_arm.R", &"forearm.L", &"forearm.R", &"hand.L", &"hand.R", &"fingers.L", &"fingers.R", &"weapon"]
 ## Clip speeds (raw_assets/characters/triad/build.py): walk 1.4 m/s, run 4.6 m/s, flee 5.2, crawl 0.45.
+## The melee sprint (melee_run) is cut like flee.
+## The chop: 1.0 s long, the blow lands at 0.46 s (CHOP_T, CHOP_HIT there). Vault: 0.6 s.
+const CHOP_CLIP_TIME: float = 1.0
+const CHOP_CLIP_HIT: float = 0.46
+const VAULT_CLIP_TIME: float = 0.6
 const WALK_CLIP_SPEED: float = 1.4
 const RUN_CLIP_SPEED: float = 4.6
 const FLEE_CLIP_SPEED: float = 5.2
@@ -203,7 +208,28 @@ func _notification(what: int) -> void:
 
 # ------------------------------------------------------------------ public
 
+## A man with a blade (EnemyConfig.melee) has his own clips for the gun
+## stances: standing or moving (loco, run) he's in the fighting stance or
+## the sprint, chosen by his speed in set_motion; behind cover he kneels
+## with the blade up.
+const MELEE_STANCES: Dictionary[StringName, StringName] = {
+	&"idle": &"melee_ready", &"loco": &"melee_ready", &"run": &"melee_run",
+	&"cover": &"melee_crouch", &"crouch_aim": &"melee_crouch", &"blind_fire": &"melee_crouch",
+}
+## Melee man: the stance asked for was loco or run (set_motion picks ready or sprint).
+var _melee_loco: bool = false
+
+
 func set_stance(s: StringName) -> void:
+	if config and config.melee:
+		_melee_loco = s == &"loco" or s == &"run"
+		s = MELEE_STANCES.get(s, s)
+		if _melee_loco and stance == &"melee_run" and s == &"melee_ready":
+			return  # set_motion decides between these two
+	_set_stance(s)
+
+
+func _set_stance(s: StringName) -> void:
 	if ragdolling or (s == stance and _tree.get(&"parameters/stance/current_state") == String(s)):
 		return
 	stance = s
@@ -215,13 +241,16 @@ func set_motion(local_velocity: Vector3) -> void:
 	if ragdolling:
 		return
 	var speed: float = Vector2(local_velocity.x, local_velocity.z).length()
+	if _melee_loco:
+		_set_stance(&"melee_run" if speed > (1.6 if stance == &"melee_run" else 2.2) else &"melee_ready")
 	var dir: Vector2 = Vector2(local_velocity.x, local_velocity.z) / maxf(speed, 0.001)
 	var amount: float = clampf(speed / WALK_CLIP_SPEED, 0.0, 1.0)
 	_tree.set(&"parameters/walk/blend_position", dir * amount)
 	_tree.set(&"parameters/walk_speed/scale", clampf(speed / WALK_CLIP_SPEED, 0.6, 1.6) if speed > 0.2 else 1.0)
-	var run_scale: float = speed / (FLEE_CLIP_SPEED if stance == &"flee" else RUN_CLIP_SPEED)
+	var run_scale: float = speed / (FLEE_CLIP_SPEED if stance == &"flee" or stance == &"melee_run" else RUN_CLIP_SPEED)
 	_tree.set(&"parameters/run_speed/scale", clampf(run_scale, 0.5, 1.4))
 	_tree.set(&"parameters/run_speed_flee/scale", clampf(run_scale, 0.5, 1.4))
+	_tree.set(&"parameters/melee_run_speed/scale", clampf(run_scale, 0.5, 1.6))
 	_tree.set(&"parameters/crawl_speed/scale", clampf(speed / CRAWL_CLIP_SPEED, 0.2, 1.6) if speed > 0.05 else 0.25)
 
 
@@ -231,6 +260,23 @@ func play_reload() -> void:
 
 func play_stumble() -> void:
 	_tree.set(&"parameters/react/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
+
+
+## The melee chop (whole body), timed so the blow lands `hit_in` s from now.
+func play_chop(hit_in: float) -> void:
+	_tree.set(&"parameters/chop_speed/scale", CHOP_CLIP_HIT / maxf(hit_in, 0.05))
+	_tree.set(&"parameters/chop/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
+
+
+## Breaks off a chop (he was staggered or knocked down).
+func cancel_chop() -> void:
+	_tree.set(&"parameters/chop/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FADE_OUT)
+
+
+## A vault lasting `seconds`.
+func play_vault(seconds: float) -> void:
+	_tree.set(&"parameters/vault_speed/scale", VAULT_CLIP_TIME / maxf(seconds, 0.1))
+	_tree.set(&"parameters/vault/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
 
 
 func set_aim(yaw: float, pitch: float, weight: float = 1.0) -> void:
@@ -1011,8 +1057,11 @@ func _setup_gun() -> void:
 	_gun_socket.bone_name = &"weapon"
 	skeleton.add_child(_gun_socket)
 	_attach[&"weapon"] = _gun_socket
-	if config.gun_scene:
-		gun = config.gun_scene.instantiate() as Node3D
+	var scene: PackedScene = config.gun_scene
+	if config.melee and not config.melee_scenes.is_empty():
+		scene = config.melee_scenes[randi() % config.melee_scenes.size()]
+	if scene:
+		gun = scene.instantiate() as Node3D
 		# Gun model: +X muzzle, +Y up, +Z its right. Weapon bone: +Y along the barrel, +Z up, +X right.
 		gun.transform = Transform3D(Basis(Vector3(0, 1, 0), Vector3(0, 0, 1), Vector3(1, 0, 0)), Vector3.ZERO)
 		_gun_socket.add_child(gun)
@@ -1047,7 +1096,7 @@ func _setup_animation() -> void:
 		var clip_node: StringName = StringName("clip_" + String(s))
 		root.add_node(clip_node, _anim(s))
 		var src: StringName = clip_node
-		if s == &"run" or s == &"flee" or s == &"crawl":
+		if s == &"run" or s == &"flee" or s == &"crawl" or s == &"melee_run":
 			var ts_name: StringName = &"crawl_speed" if s == &"crawl" else StringName(String(s) + "_speed")
 			if s == &"flee":
 				ts_name = &"run_speed_flee"
@@ -1060,7 +1109,19 @@ func _setup_animation() -> void:
 	react.fadeout_time = 0.25
 	root.add_node(&"react", react)
 	root.add_node(&"clip_stumble", _anim(&"stumble"))
-	root.connect_node(&"react", 0, &"stance")
+	# Melee one-shots (Hatchet Man): the chop and the vault, whole body, each with its own speed.
+	for one: StringName in [&"vault", &"chop"]:
+		var os: AnimationNodeOneShot = AnimationNodeOneShot.new()
+		os.fadein_time = 0.06 if one == &"chop" else 0.08
+		os.fadeout_time = 0.18
+		root.add_node(one, os)
+		root.add_node(StringName("clip_" + String(one)), _anim(one))
+		root.add_node(StringName(String(one) + "_speed"), AnimationNodeTimeScale.new())
+		root.connect_node(StringName(String(one) + "_speed"), 0, StringName("clip_" + String(one)))
+		root.connect_node(one, 1, StringName(String(one) + "_speed"))
+	root.connect_node(&"vault", 0, &"stance")
+	root.connect_node(&"chop", 0, &"vault")
+	root.connect_node(&"react", 0, &"chop")
 	root.connect_node(&"react", 1, &"clip_stumble")
 	var reload: AnimationNodeOneShot = AnimationNodeOneShot.new()
 	reload.fadein_time = 0.15

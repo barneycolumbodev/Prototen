@@ -466,6 +466,46 @@ func _check_enemy() -> void:
 		n = n.get_parent()
 
 
+## Carries only these guns (Survival, docs/design.md §8.2: you start with
+## one and pick up more). Each keeps its viewmodel rig; the first is drawn.
+## Guns that aren't in `loadout` are skipped.
+func set_guns(guns: Array[WeaponData]) -> void:
+	if wheel_open:
+		_close_wheel(false)
+	_stop_charge_whine()
+	slots.clear()
+	for i: int in loadout.size():
+		(get_node(rig_paths[i]) as ViewmodelRig).visible = false
+	for g: WeaponData in guns:
+		var i: int = loadout.find(g)
+		if i >= 0:
+			slots.append(Slot.new(g, get_node(rig_paths[i]) as ViewmodelRig))
+	if slots.is_empty():
+		return
+	current = 0
+	switching_to = -1
+	_activate(0)
+	previous = -1
+	select_now(0)
+
+
+## Adds a gun (a supply drop) and draws it. Returns its slot, or -1.
+func give_gun(g: WeaponData) -> int:
+	for i: int in slots.size():
+		if slots[i].data == g:
+			return i
+	var at: int = loadout.find(g)
+	if at < 0:
+		return -1
+	var rig_node: ViewmodelRig = get_node(rig_paths[at]) as ViewmodelRig
+	rig_node.visible = false
+	slots.append(Slot.new(g, rig_node))
+	var idx: int = slots.size() - 1
+	if not stowed:
+		request_switch(idx)
+	return idx
+
+
 ## Switches to gun `index` immediately, already drawn (tests, demos, spawn).
 func select_now(index: int) -> void:
 	if index < 0 or index >= slots.size():

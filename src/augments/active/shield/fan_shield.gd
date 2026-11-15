@@ -68,6 +68,8 @@ func _on_start() -> void:
 	if player:
 		if not player.hit_interceptors.has(_intercept):
 			player.hit_interceptors.append(_intercept)
+		if not player.melee_interceptors.has(_intercept_melee):
+			player.melee_interceptors.append(_intercept_melee)
 		player.aug_move_scale = cfg.move_scale
 		if player.melee:
 			player.melee.push_bonus = cfg.bash_bonus
@@ -83,6 +85,7 @@ func _on_stop() -> void:
 func _release() -> void:
 	if player and is_instance_valid(player):
 		player.hit_interceptors.erase(_intercept)
+		player.melee_interceptors.erase(_intercept_melee)
 		player.aug_move_scale = 1.0
 		if player.melee:
 			player.melee.push_bonus = 1.0
@@ -122,6 +125,30 @@ func _intercept(hit: BallisticHit, amount: float) -> float:
 	rig.kick_pos.kick(Vector3(0.0, 0.0, 0.035))
 	rig.kick_rot.kick(Vector3(deg_to_rad(3.0), 0.0, deg_to_rad(randf_range(-2.0, 2.0))))
 	rumble(0.5, 0.7, 0.1)
+	if charge <= 0.0:
+		charge = 0.0
+		broken = true
+		_break_left = cfg.break_cooldown
+		Sfx.play_ui(&"bw6_break", 0.0, 0.0)
+		rumble(1.0, 1.0, 0.35)
+		stop()
+	return amount * cfg.leak
+
+
+## A blade from the front (the Hatchet Man's chop) rings off the fan: it
+## costs `melee_loss` of integrity, and only `leak` of it gets through.
+func _intercept_melee(_attacker: Node, amount: float, direction: Vector3) -> float:
+	if not covers(direction):
+		return amount
+	stopped += 1
+	charge -= cfg.melee_loss
+	_flash = 1.0
+	var cam: Camera3D = player.camera()
+	Fx._emit(&"sparks", cam.global_position - direction * 0.5, -direction, Color(1.0, 0.8, 0.5, 1.0), 6, 1.0)
+	Sfx.play_ui(&"bw6_hit", 0.0, 0.08)
+	rig.kick_pos.kick(Vector3(0.0, -0.02, 0.06))
+	rig.kick_rot.kick(Vector3(deg_to_rad(6.0), 0.0, deg_to_rad(randf_range(-4.0, 4.0))))
+	rumble(0.7, 0.9, 0.15)
 	if charge <= 0.0:
 		charge = 0.0
 		broken = true

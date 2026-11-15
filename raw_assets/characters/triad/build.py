@@ -38,6 +38,9 @@ Run (about 25 minutes at --tex 4096 on 4 cores):
   tools/blender.sh raw_assets/characters/triad/build.py --out assets/characters/triad/triad.gltf --tex 4096 \
       --preview docs/previews/triad
   Fast check (no bakes, flat textures): add --fast --tex 512
+  Animation only (new or changed clips): --fast --tex 512 --out <scratch>/triad.gltf, then copy
+  triad.gltf and triad.bin into assets/characters/triad/ (the mesh comes out the same; keep the
+  textures and the wardrobe as they are). docs/tooling-status.md, 2026-11-15.
 """
 import argparse
 import math
@@ -857,6 +860,170 @@ def _cower(t):
     return p
 
 
+# ---------------------------------------------------------------- melee (Hatchet Man, docs/design.md §8.8)
+# A one-handed blade (raw_assets/weapons/enemy_melee) on the same weapon bone as the guns:
+# the gun frame's origin is the right hand's web, and the handle runs through the fist
+# along the pistol-grip line, BLADE_TILT forward of the frame's up axis.
+BLADE_TILT = math.atan2(0.045, 0.105)
+
+
+def blade_frame(origin, handle, edge):
+    """Gun-frame matrix for a blade held at `origin` (hand web, rig space) with its
+    handle pointing along `handle` (fist -> head) and its edge facing `edge`."""
+    u = V(handle).normalized()
+    e = V(edge)
+    e = (e - u * e.dot(u)).normalized()
+    c, s = math.cos(BLADE_TILT), math.sin(BLADE_TILT)
+    return gun_frame(origin, e * c + u * s, u * c - e * s)
+
+
+def keyed(t, keys):
+    """Smoothstepped interpolation of numeric tuples between (time, {name: tuple}) keys."""
+    if t <= keys[0][0]:
+        return dict(keys[0][1])
+    for (t0, a), (t1, b) in zip(keys, keys[1:]):
+        if t <= t1:
+            u = ss_f((t - t0) / max(t1 - t0, 1e-6))
+            return {k: tuple(x + (y - x) * u for x, y in zip(a[k], b[k])) for k in a}
+    return dict(keys[-1][1])
+
+
+def melee_pose(k, breath=0.0):
+    """Builds a pose from keyed melee parameters (all rig space)."""
+    p = {
+        "hips": euler(*k["hips"]), "hips_loc": k["hips_loc"],
+        "spine": euler(*k["spine"]), "chest": euler(*k["chest"]),
+        "neck": euler(x=k["head"][0] * 0.4), "head": euler(*k["head"]),
+    }
+    p.update(feet(V(k["foot_l"]), V(k["foot_r"]), l_yaw=k["yaw"][0], r_yaw=k["yaw"][1]))
+    if "lift" in k:
+        p["foot.L"] = ankle_target("L", V(k["foot_l"]) + V((0, 0, k["lift"][0])), k["yaw"][0], -18 * k["lift"][0] / 0.1)
+        p["foot.R"] = ankle_target("R", V(k["foot_r"]) + V((0, 0, k["lift"][1])), k["yaw"][1], -18 * k["lift"][1] / 0.1)
+    p["gun"] = blade_frame(V(k["hand_r"]) + V((0, 0, 0.004 * breath)), k["handle"], k["edge"])
+    p["hand.L"] = hand_matrix(V(k["hand_l"]) + V((0, 0, 0.006 * breath)), k["l_along"], k["l_back"])
+    p["open.L"] = k["l_open"][0]
+    p["poles"] = {"hand.L": V((0.7, 0.2, 0.9)), "hand.R": V((-0.7, 0.5, 0.9))}
+    return p
+
+
+# Fighting stance: weight forward, left foot leading, blade cocked by the right ear,
+# the left hand up in front as a guard.
+MELEE_READY = {
+    "hips": (10, 0, -14), "hips_loc": (0.0, -0.03, -0.1),
+    "spine": (8, 0, 6), "chest": (6, 0, 6), "head": (-6, 0, 0),
+    "foot_l": (0.15, -0.24, 0.088), "foot_r": (-0.16, 0.2, 0.088), "yaw": (-10, -35),
+    "hand_r": (-0.33, -0.12, 1.36), "handle": (-0.3, 0.15, 1.0), "edge": (0, -1, 0.2),
+    "hand_l": (0.1, -0.36, 1.24), "l_along": (-0.15, -0.5, 0.85), "l_back": (0.35, -0.85, 0.1), "l_open": (0.35,),
+    "lift": (0.0, 0.0),
+}
+
+
+@clip("melee_ready", 1.6)
+def _melee_ready(t):
+    b = math.sin(2 * math.pi * t / 1.6 * 2)
+    k = dict(MELEE_READY)
+    k["hips_loc"] = (0.0, -0.03, -0.1 - 0.012 * b)
+    return melee_pose(k, b)
+
+
+# Waiting behind cover: down on one knee, the blade up by the right shoulder, the
+# left hand on the knee, ready to go again.
+@clip("melee_crouch", 2.4)
+def _melee_crouch(t):
+    b = math.sin(2 * math.pi * t / 2.4)
+    p = kneel(0.52 + 0.006 * b)
+    p["gun"] = blade_frame(V((-0.27, -0.14, 1.02 + 0.004 * b)), (-0.25, 0.2, 1.0), (0, -1, 0.2))
+    p["hand.L"] = hand_matrix(V((0.17, -0.36, 0.6 + 0.004 * b)), (0.0, -0.6, -0.8), (0, -0.8, 0.6))
+    p["open.L"] = 0.8
+    p["poles"].update({"hand.L": V((0.7, 0.2, 0.9)), "hand.R": V((-0.7, 0.5, 0.9))})
+    return p
+
+
+# The chop: cock the blade high over the right shoulder (the tell), lunge on the
+# left foot and bring it down through the target, follow through low, recover.
+# The blow lands at CHOP_HIT s (EnemyConfig.melee_windup is matched to it in game).
+CHOP_T, CHOP_HIT = 1.0, 0.46
+CHOP_KEYS = [
+    (0.0, MELEE_READY),
+    (0.3, dict(MELEE_READY, **{
+        "hips": (2, 0, -24), "hips_loc": (0.0, 0.04, -0.06), "spine": (-6, 0, 14), "chest": (-8, 0, 14), "head": (-10, 0, -4),
+        "hand_r": (-0.2, 0.14, 1.8), "handle": (0.1, 1.0, -0.15), "edge": (0, 0.25, 1),
+        "hand_l": (0.16, -0.48, 1.42), "l_along": (0.0, -1, 0.2), "l_back": (0.2, 0, 1), "l_open": (0.6,),
+        "lift": (0.07, 0.0)})),
+    (0.4, dict(MELEE_READY, **{
+        "hips": (10, 0, -6), "hips_loc": (0.0, -0.14, -0.13), "spine": (8, 0, 0), "chest": (6, 0, -4), "head": (-10, 0, 0),
+        "foot_l": (0.15, -0.44, 0.088),
+        "hand_r": (-0.12, -0.42, 1.48), "handle": (0.0, -0.4, 1.0), "edge": (0, -1, -0.3),
+        "hand_l": (0.2, -0.2, 1.2), "l_along": (0.0, -0.6, 0.6), "l_back": (0.7, 0, 0.3), "l_open": (0.2,)})),
+    (CHOP_HIT, dict(MELEE_READY, **{
+        "hips": (12, 0, 4), "hips_loc": (0.0, -0.2, -0.17), "spine": (10, 0, -6), "chest": (8, 0, -10), "head": (-12, 0, 0),
+        "foot_l": (0.15, -0.46, 0.088),
+        "hand_r": (-0.06, -0.64, 1.24), "handle": (0.05, -1.0, 0.1), "edge": (0, 0, -1),
+        "hand_l": (0.22, -0.05, 1.08), "l_along": (0.0, -0.4, -0.6), "l_back": (0.8, 0, 0.2), "l_open": (0.0,)})),
+    (0.56, dict(MELEE_READY, **{
+        "hips": (16, 0, 8), "hips_loc": (0.0, -0.2, -0.19), "spine": (12, 0, -10), "chest": (8, 0, -12), "head": (-8, 0, 0),
+        "foot_l": (0.15, -0.46, 0.088),
+        "hand_r": (0.02, -0.44, 0.92), "handle": (0.3, -0.5, -0.8), "edge": (0, 0.7, -0.6),
+        "hand_l": (0.22, -0.02, 1.05), "l_along": (0.0, -0.4, -0.6), "l_back": (0.8, 0, 0.2), "l_open": (0.0,)})),
+    (0.72, dict(MELEE_READY, **{"hips_loc": (0.0, -0.1, -0.14), "foot_l": (0.15, -0.36, 0.088)})),
+    (CHOP_T, MELEE_READY),
+]
+
+
+@clip("chop", CHOP_T, loop=False)
+def _chop(t):
+    return melee_pose(keyed(t, CHOP_KEYS))
+
+
+# The sprint: a flat-out run with the blade held high by the right ear, the left arm pumping.
+@clip("melee_run", RUN_T)
+def _melee_run(t):
+    stride = (RUN_SPEED + 0.6) * 0.38 * RUN_T
+    f, bob, sway = gait(t, RUN_T, (0, -1), stride, 0.38, 0.17)
+    ph = (t / RUN_T) % 1.0
+    p = {
+        "hips": euler(x=16, z=-10 * sway), "hips_loc": (0.012 * sway, -0.03, -0.05 - 0.03 * bob),
+        "spine": euler(x=10, z=12 * sway), "chest": euler(x=5, z=6 * sway), "neck": euler(x=-10), "head": euler(x=-10),
+    }
+    p.update(f)
+    set_fk(p)
+    bpy.context.view_layer.update()
+    ch = bone_pose("chest")
+    sw = math.sin(2 * math.pi * ph + math.pi)
+    # Chest bone space: X = his left, Y = up, Z = forward.
+    p["hand.L"] = ch @ hand_matrix(V((0.19, -0.12 + 0.12 * sw, 0.04 + 0.22 * sw)), (-0.25, 0.55, 0.8), (1, 0, 0))
+    rs = math.sin(2 * math.pi * ph)
+    hand_r = ch @ V((-0.24, 0.2 + 0.03 * rs, 0.06 + 0.07 * rs))
+    to_rig = ch.to_3x3()
+    p["gun"] = blade_frame(hand_r, to_rig @ V((-0.05, 1.0, -0.4)), to_rig @ V((0, 0.35, 1)))
+    p["poles"] = {"hand.L": V((0.5, 0.6, 0.9)), "hand.R": V((-0.7, 0.5, 0.9))}
+    return p
+
+
+# A speed vault over something waist-high, in place (the game lifts and carries the
+# body): the left hand plants low in front, the knees tuck up and swing through.
+VAULT_T = 0.6
+VAULT_KEYS = [
+    (0.0, dict(MELEE_READY, **{"hips": (16, 0, -8), "hips_loc": (0.0, -0.05, -0.08)})),
+    (0.16, dict(MELEE_READY, **{
+        "hips": (30, 0, 10), "hips_loc": (0.04, -0.1, 0.0), "spine": (18, 0, 0), "chest": (10, 0, 0), "head": (-14, 0, 0),
+        "foot_l": (0.2, 0.05, 0.4), "foot_r": (0.0, 0.15, 0.36), "yaw": (20, 10),
+        "hand_r": (-0.3, -0.05, 1.5), "handle": (-0.2, 0.4, 1.0), "edge": (0, -1, 0.1),
+        "hand_l": (0.18, -0.42, 0.78), "l_along": (0.0, -0.8, -0.6), "l_back": (0, -0.5, 0.8), "l_open": (0.9,)})),
+    (0.34, dict(MELEE_READY, **{
+        "hips": (22, 0, 18), "hips_loc": (0.06, -0.08, 0.06), "spine": (12, 0, -4), "chest": (6, 0, 0), "head": (-12, 0, 0),
+        "foot_l": (0.3, -0.25, 0.5), "foot_r": (0.12, -0.1, 0.44), "yaw": (30, 20),
+        "hand_r": (-0.32, -0.05, 1.55), "handle": (-0.2, 0.4, 1.0), "edge": (0, -1, 0.1),
+        "hand_l": (0.24, -0.15, 0.8), "l_along": (0.0, -0.8, -0.6), "l_back": (0, -0.5, 0.8), "l_open": (0.9,)})),
+    (VAULT_T, dict(MELEE_READY, **{"hips_loc": (0.0, -0.05, -0.16), "hips": (16, 0, -10)})),
+]
+
+
+@clip("vault", VAULT_T, loop=False)
+def _vault(t):
+    return melee_pose(keyed(t, VAULT_KEYS))
+
+
 def ss_f(t):
     t = min(max(t, 0.0), 1.0)
     return t * t * (3 - 2 * t)
@@ -1576,7 +1743,7 @@ if args.out:
 # ====================================================================== previews
 def import_guns():
     guns = {}
-    for name in ("type56", "pump", "smg"):
+    for name in ("type56", "pump", "smg", "hatchet", "cleaver"):
         path = os.path.join(args.guns, f"{name}.gltf")
         if not os.path.exists(path):
             continue
@@ -1653,7 +1820,9 @@ def sheet(paths, cols, out):
 POSE_SHOTS = [("aim", 0, "type56"), ("idle", 0, "type56"), ("walk_f", 6, "type56"), ("run", 5, "type56"),
               ("crouch_aim", 0, "pump"), ("cover", 0, "type56"), ("blind_fire", 0, "smg"), ("reload", 30, "type56"),
               ("stumble", 12, "type56"), ("gut", 0, "smg"), ("crawl", 18, None), ("surrender", 0, None),
-              ("flee", 5, None), ("cower", 0, None)]
+              ("flee", 5, None), ("cower", 0, None), ("melee_ready", 0, "hatchet"), ("melee_run", 5, "hatchet"),
+              ("chop", 9, "hatchet"), ("chop", 14, "hatchet"), ("chop", 17, "cleaver"), ("vault", 10, "cleaver"),
+              ("melee_crouch", 0, "cleaver")]
 
 
 PREVIEW_OUTFIT = ("bomber", "cargo", "sneakers", "hair_fade")
@@ -1676,7 +1845,7 @@ def preview_poses(prefix, guns):
             g.hide_render = False
             g.matrix_world = ARM.matrix_world @ PB["weapon"].matrix @ GUN_TO_BONE
         camera((1.9, -2.6, 1.25), (0, -0.1, 0.8), 50)
-        tmp.append(render(f"{prefix}_pose_{name}.png"))
+        tmp.append(render(f"{prefix}_pose_{name}_{frame_no}.png"))
     sheet(tmp, 7, f"{prefix}_poses.png")
     for p in tmp:
         os.remove(p)

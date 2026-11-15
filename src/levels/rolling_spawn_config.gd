@@ -22,15 +22,19 @@ extends Resource
 @export var gunman_weight: float = 0.62
 @export var enforcer_weight: float = 0.26
 @export var red_pole_weight: float = 0.12
+## Hatchet Men (docs/design.md §8.8), 2026-11-15.
+@export var hatchet_man_weight: float = 0.0
 ## How aware a new arrival is (0..1) and whether it knows where you are.
 @export var arrival_awareness: float = 0.6
 
 
 func pick_role(r: float) -> String:
-	var total: float = gunman_weight + enforcer_weight + red_pole_weight
+	var total: float = gunman_weight + enforcer_weight + red_pole_weight + hatchet_man_weight
 	var x: float = r * total
 	if x < gunman_weight:
 		return "gunman"
 	if x < gunman_weight + enforcer_weight:
 		return "enforcer"
+	if x < gunman_weight + enforcer_weight + hatchet_man_weight:
+		return "hatchet_man"
 	return "red_pole"

@@ -2,17 +2,21 @@ class_name MainMenu
 extends Node3D
 ## The main menu (owner, 2026-11-14): the game opens on the operative,
 ## helmet off, leaning on the front of the Sea View restaurant on the
-## Chinatown docks at night, smoking. Left: Begin, Loadout, Map, Options,
-## Quit. Loadout opens the loadout screen over the scene with him in the
-## clear left quarter, wearing every part as it's browsed and installed;
-## what's built is saved and goes into the game. Begin fades to black and
-## starts the chosen map (Chinatown starts right here, on this map).
+## Chinatown docks at night, smoking. Left: Survival, Sandbox, Loadout,
+## Map, Options, Quit. Survival (docs/design.md §8) opens the kit screen
+## and starts a run on this map. Sandbox is the open mode: Loadout opens the
+## loadout screen over the scene with him in the clear left quarter, wearing
+## every part as it's browsed and installed; what's built is saved and goes
+## into Sandbox. Sandbox fades to black and starts the chosen map (Chinatown
+## starts right here, on this map).
 ##
 ## Lives under ChinatownMap (which builds the map, the atmosphere and the
 ## lights first and holds the game back until Begin). Staging values in
 ## data/levels/main_menu.tres.
 
 signal begin_requested(scene_path: String)
+## Survival (docs/design.md §8): the kit picked on the kit screen.
+signal survival_requested(doctrine: Doctrine, gun: WeaponData, active: ActivePartData)
 
 const CONFIG_PATH: String = "res://data/levels/main_menu.tres"
 const DEFAULT_LOADOUT: BodyLoadout = preload("res://data/body/loadout_default.tres")
@@ -79,8 +83,21 @@ func _ready() -> void:
 	# Cloud captures: --capture-menu-loadout opens the loadout screen;
 	# --capture-menu-preset=N also puts the cursor on preset N (he wears it);
 	# --pose-t=<s> holds his cigarette cycle at that time.
+	# --capture-kit=<row>,<doctrine>,<gun>,<active> opens the Survival kit screen.
 	for a: String in OS.get_cmdline_user_args():
-		if a == "--capture-menu-loadout":
+		if a.begins_with("--capture-kit"):
+			var k: PackedStringArray = a.get_slice("=", 1).split(",") if a.contains("=") else PackedStringArray()
+			(func() -> void:
+				open_kit()
+				if k.size() > 1:
+					kit.doctrine_i = k[1].to_int()
+				if k.size() > 2:
+					kit.gun_i = k[2].to_int()
+				if k.size() > 3:
+					kit.active_i = k[3].to_int()
+				kit.row = k[0].to_int() if k.size() > 0 else 0
+				kit.move(0)).call_deferred()
+		elif a == "--capture-menu-loadout":
 			open_loadout.call_deferred()
 		elif a.begins_with("--pose-t="):
 			smoker.hold_t = a.get_slice("=", 1).to_float()
@@ -187,7 +204,8 @@ func _build_ui() -> void:
 	_list = VBoxContainer.new()
 	_list.add_theme_constant_override("separation", 2)
 	box.add_child(_list)
-	_add("begin", "BEGIN", begin)
+	_add("survival", "SURVIVAL", open_kit)
+	_add("begin", "SANDBOX", begin)
 	_add("loadout", "LOADOUT", open_loadout)
 	_add("map", "MAP", func() -> void: cycle_map(1))
 	_buttons["map"].gui_input.connect(_on_map_input)
@@ -246,7 +264,7 @@ func _add(id: String, text: String, cb: Callable) -> void:
 
 func _focus() -> void:
 	if _panel.visible and is_inside_tree():
-		_buttons["begin"].grab_focus()
+		_buttons["survival"].grab_focus()
 
 
 func map_path() -> String:
@@ -308,6 +326,54 @@ func _on_loadout_closed() -> void:
 	_framing_to = 0.0
 	_refresh()
 	_focus()
+
+
+## Survival: the kit screen over the scene (a doctrine, a gun, an active).
+var kit: KitScreen
+
+
+func open_kit() -> void:
+	if _starting or (kit and kit.visible):
+		return
+	if kit == null:
+		kit = KitScreen.new()
+		kit.confirmed.connect(_on_kit_confirmed)
+		kit.cancelled.connect(_on_kit_cancelled)
+		kit.preview.connect(_dress)
+		add_child(kit)
+	kit.visible = true
+	_dress(kit.start_body())
+	_panel.visible = false
+	get_viewport().gui_release_focus()
+
+
+## The operative wears `body` (the kit screen's pick; back to the Sandbox loadout after).
+var _dressed: BodyLoadout
+
+
+func _dress(body: BodyLoadout) -> void:
+	if body == _dressed:
+		return
+	_dressed = body
+	smoker.appearance.loadout = body
+	smoker.appearance.rebuild()
+
+
+func _on_kit_cancelled() -> void:
+	_dress(loadout)
+	kit.visible = false
+	_panel.visible = true
+	_focus()
+
+
+func _on_kit_confirmed(doctrine: Doctrine, gun: WeaponData, active: ActivePartData) -> void:
+	if _starting:
+		return
+	_starting = true
+	kit.visible = false
+	var tw: Tween = create_tween()
+	tw.tween_property(_black, "color:a", 1.0, 0.45)
+	tw.tween_callback(func() -> void: survival_requested.emit(doctrine, gun, active))
 
 
 func begin() -> void:

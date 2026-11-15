@@ -85,3 +85,45 @@ extends Resource
 @export_group("Morale")
 @export_range(0.0, 1.0) var courage: float = 0.6
 @export_range(0.0, 1.0) var suppression_resist: float = 0.4
+
+@export_group("Melee")
+## A blade instead of a gun (the Hatchet Man, docs/design.md §8.8): no
+## shooting, no cover-to-cover firefight. He flanks, sprints from cover to
+## cover, vaults what's low enough, and closes in for a telegraphed chop
+## (MeleeBrain). `gun_scene` is then unused: one of `melee_scenes` is
+## picked per man.
+@export var melee: bool = false
+@export var melee_scenes: Array[PackedScene] = []
+## Damage of a chop that lands, before armour: scaled by the operative's
+## damage per kJ over the bare suit's 7 (armour parts lower it).
+@export_range(0.0, 500.0) var melee_damage: float = 42.0
+## Seconds from the start of the chop to the blow (the tell: the blade goes
+## up high over his shoulder), and from the blow until he can move again.
+@export_range(0.15, 1.5) var melee_windup: float = 0.46
+@export_range(0.1, 2.0) var melee_recovery: float = 0.55
+## The blow lands if the operative is within this reach (m, flat, from his
+## feet) and this arc (degrees, full) in front of him when it falls.
+@export_range(0.8, 4.0) var melee_reach: float = 2.0
+@export_range(20.0, 240.0) var melee_arc_deg: float = 110.0
+## He starts the chop this close (m), and lunges (m/s) through the windup,
+## turning toward the operative at most this fast (deg/s): a sidestep, a
+## slide or a jump at the right moment leaves him swinging at air.
+@export_range(1.0, 6.0) var melee_commit_range: float = 3.0
+@export_range(0.0, 10.0) var melee_lunge_speed: float = 4.2
+@export_range(30.0, 720.0) var melee_track_deg: float = 200.0
+## This much damage taken during the windup (added up) breaks off the chop:
+## two quick Five-seveN rounds (about 13 each to the body), one rifle round.
+@export_range(1.0, 200.0) var melee_interrupt: float = 20.0
+## Shove (m/s) and view kick (degrees) the operative takes from a chop.
+@export_range(0.0, 10.0) var melee_push: float = 3.0
+@export_range(0.0, 20.0) var melee_kick_deg: float = 7.0
+## Inside this range (m) he stops hopping between covers and charges.
+@export_range(2.0, 30.0) var charge_range: float = 9.0
+## Approach angle (degrees) off the operative's facing: he runs wide to come
+## in from the side, and switches sides when he's looked at.
+@export_range(0.0, 150.0) var flank_angle_deg: float = 75.0
+## Seconds crouched at each cover on the way in (min, max).
+@export var cover_pause: Vector2 = Vector2(0.35, 1.1)
+## Highest obstacle (m) he vaults, and how long a vault takes (s).
+@export_range(0.4, 1.6) var vault_height: float = 1.25
+@export_range(0.25, 1.5) var vault_time: float = 0.55

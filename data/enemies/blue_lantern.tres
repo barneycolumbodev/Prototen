@@ -1,0 +1,36 @@
+[gd_resource type="Resource" script_class="EnemyConfig" load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://src/ai/enemy_config.gd" id="1"]
+[ext_resource type="PackedScene" path="res://assets/weapons/enemy/smg.gltf" id="2"]
+[ext_resource type="Resource" path="res://data/enemies/weapons/smg.tres" id="3"]
+[ext_resource type="Script" path="res://src/ai/outfit.gd" id="o0"]
+[ext_resource type="Resource" path="res://data/enemies/outfits/street.tres" id="o1"]
+[ext_resource type="Resource" path="res://data/enemies/outfits/summer.tres" id="o2"]
+
+[resource]
+script = ExtResource("1")
+outfits = Array[ExtResource("o0")]([ExtResource("o1"), ExtResource("o2")])
+display_name = "Blue Lantern"
+callsign = "BLUE LANTERN"
+plate_carrier = false
+gun_scene = ExtResource("2")
+weapon = ExtResource("3")
+muzzle = Vector3(0.355, 0.045, 0)
+health = 85.0
+burst_min = 4
+burst_max = 9
+fire_interval = 0.075
+burst_pause = 1.3
+magazine = 30
+reload_time = 2.9
+aim_error_deg = 6.5
+aim_settle_time = 1.8
+reaction_time = 0.95
+preferred_range = 12.0
+max_range = 32.0
+aggressive = false
+officer = false
+courage = 0.3
+suppression_resist = 0.15
+walk_speed = 1.4
+run_speed = 4.6

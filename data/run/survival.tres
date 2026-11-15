@@ -1,0 +1,752 @@
+[gd_resource type="Resource" script_class="SurvivalConfig" load_steps=131 format=3]
+
+[ext_resource type="Script" path="res://src/run/survival_config.gd" id="e1"]
+[ext_resource type="Script" path="res://src/run/run_item.gd" id="e2"]
+[ext_resource type="Script" path="res://src/run/doctrine.gd" id="e3"]
+[ext_resource type="Script" path="res://src/run/wave_enemy.gd" id="e4"]
+[ext_resource type="Script" path="res://src/body/part_data.gd" id="e5"]
+[ext_resource type="Script" path="res://src/augments/active_part_data.gd" id="e6"]
+[ext_resource type="Script" path="res://src/weapons/weapon_data.gd" id="e7"]
+[ext_resource type="Resource" path="res://data/player/body_default.tres" id="e8"]
+[ext_resource type="Resource" path="res://data/weapons/pistol_57.tres" id="e9"]
+[ext_resource type="Resource" path="res://data/weapons/mp5.tres" id="e10"]
+[ext_resource type="Resource" path="res://data/weapons/saiga12k.tres" id="e11"]
+[ext_resource type="Resource" path="res://data/weapons/glock22.tres" id="e12"]
+[ext_resource type="Resource" path="res://data/weapons/m14p.tres" id="e13"]
+[ext_resource type="Resource" path="res://data/weapons/mg42.tres" id="e14"]
+[ext_resource type="Resource" path="res://data/weapons/m32.tres" id="e15"]
+[ext_resource type="Resource" path="res://data/weapons/rail_carbine.tres" id="e16"]
+[ext_resource type="Resource" path="res://data/body/parts/rx9_reflex_overclock.tres" id="e17"]
+[ext_resource type="Resource" path="res://data/body/parts/sx8_urticating_setae.tres" id="e18"]
+[ext_resource type="Resource" path="res://data/body/parts/mw7_monofilament_whip.tres" id="e19"]
+[ext_resource type="Resource" path="res://data/body/parts/kr5_ram_thrusters.tres" id="e20"]
+[ext_resource type="Resource" path="res://data/body/parts/tc4_thermoptic_shroud.tres" id="e21"]
+[ext_resource type="Resource" path="res://data/body/parts/bw6_fan_shield.tres" id="e22"]
+[ext_resource type="Resource" path="res://data/body/parts/nt5_mesh_arm.tres" id="e23"]
+[ext_resource type="Resource" path="res://data/body/parts/sd3_shrike_drone.tres" id="e24"]
+[ext_resource type="Resource" path="res://data/body/parts/ad2_arc_projector.tres" id="e25"]
+[ext_resource type="Resource" path="res://data/body/parts/gx4_gauss_arm.tres" id="e26"]
+[ext_resource type="Resource" path="res://data/body/parts/lc6_lorentz_catcher.tres" id="e27"]
+[ext_resource type="Resource" path="res://data/body/parts/nl3_cortical_uplink.tres" id="e28"]
+[ext_resource type="Resource" path="res://data/body/parts/tg6_threat_graph.tres" id="e29"]
+[ext_resource type="Resource" path="res://data/body/parts/ob5_ocular_ballistics.tres" id="e30"]
+[ext_resource type="Resource" path="res://data/body/parts/ir3_thermographic_retinas.tres" id="e31"]
+[ext_resource type="Resource" path="res://data/body/parts/vs1_vestibular_stabilizer.tres" id="e32"]
+[ext_resource type="Resource" path="res://data/body/parts/sa2_synaptic_accelerator.tres" id="e33"]
+[ext_resource type="Resource" path="res://data/body/parts/er2_reflex_bypass.tres" id="e34"]
+[ext_resource type="Resource" path="res://data/body/parts/mr1_mesh_relay.tres" id="e35"]
+[ext_resource type="Resource" path="res://data/body/parts/tl3_titanium_skeleton.tres" id="e36"]
+[ext_resource type="Resource" path="res://data/body/parts/cb1_carbon_sheathing.tres" id="e37"]
+[ext_resource type="Resource" path="res://data/body/parts/tn9_tungsten_cores.tres" id="e38"]
+[ext_resource type="Resource" path="res://data/body/parts/em2_myofibrils.tres" id="e39"]
+[ext_resource type="Resource" path="res://data/body/parts/hm5_hydraulic_myomer.tres" id="e40"]
+[ext_resource type="Resource" path="res://data/body/parts/ft1_fast_twitch.tres" id="e41"]
+[ext_resource type="Resource" path="res://data/body/parts/hp4_hyperoxic_lungs.tres" id="e42"]
+[ext_resource type="Resource" path="res://data/body/parts/ch2_cardiac_pump.tres" id="e43"]
+[ext_resource type="Resource" path="res://data/body/parts/pc3_power_cell.tres" id="e44"]
+[ext_resource type="Resource" path="res://data/body/parts/fb1_fuel_bladder.tres" id="e45"]
+[ext_resource type="Resource" path="res://data/body/parts/nw4_nanoweave.tres" id="e46"]
+[ext_resource type="Resource" path="res://data/body/parts/ct7_trauma_plating.tres" id="e47"]
+[ext_resource type="Resource" path="res://data/body/parts/rp2_ram_plating.tres" id="e48"]
+[ext_resource type="Resource" path="res://data/body/parts/ab1_ablative_shell.tres" id="e49"]
+[ext_resource type="Resource" path="res://data/body/parts/sr3_recoil_struts.tres" id="e50"]
+[ext_resource type="Resource" path="res://data/body/parts/ks2_striker_rams.tres" id="e51"]
+[ext_resource type="Resource" path="res://data/body/parts/fc1_fire_control.tres" id="e52"]
+[ext_resource type="Resource" path="res://data/body/parts/dg3_dexterity_grafts.tres" id="e53"]
+[ext_resource type="Resource" path="res://data/body/parts/gp1_setal_pads.tres" id="e54"]
+[ext_resource type="Resource" path="res://data/body/parts/kd2_kinetic_dampers.tres" id="e55"]
+[ext_resource type="Resource" path="res://data/body/parts/sp6_sprint_pistons.tres" id="e56"]
+[ext_resource type="Resource" path="res://data/body/parts/lf8_leg_frame.tres" id="e57"]
+[ext_resource type="Resource" path="res://data/body/parts/dl1_dorsal_load_frame.tres" id="e58"]
+[ext_resource type="Resource" path="res://data/body/parts/sb2_spinal_bus.tres" id="e59"]
+[ext_resource type="Resource" path="res://data/body/parts/hs5_heat_sinks.tres" id="e60"]
+[ext_resource type="Resource" path="res://data/body/parts/cm1_chromatophore_mesh.tres" id="e61"]
+[ext_resource type="Resource" path="res://data/body/parts/ds2_dermal_lattice.tres" id="e62"]
+[ext_resource type="Resource" path="res://data/body/parts/hn1_hemostatic_nanites.tres" id="e63"]
+[ext_resource type="Resource" path="res://data/body/parts/oc2_respirocytes.tres" id="e64"]
+
+[sub_resource type="Resource" id="item_0"]
+script = ExtResource("e2")
+item = ExtResource("e9")
+tags = Array[StringName]([&"stealth", &"precision"])
+weight = 1.0
+min_wave = 1
+boss_only = false
+blurb = "Suppressed 5.7 mm. Quiet, precise, fast follow-ups; rounds go through one man into the next."
+
+[sub_resource type="Resource" id="item_1"]
+script = ExtResource("e2")
+item = ExtResource("e10")
+tags = Array[StringName]([&"mobility", &"stealth", &"close"])
+weight = 1.0
+min_wave = 1
+boss_only = false
+blurb = "Suppressed 9 mm with a green laser: the tightest hip fire on the run, even mid-jump."
+
+[sub_resource type="Resource" id="item_2"]
+script = ExtResource("e2")
+item = ExtResource("e11")
+tags = Array[StringName]([&"close", &"heavy"])
+weight = 1.0
+min_wave = 1
+boss_only = false
+blurb = "Semi-auto 12-gauge. Buck, slugs or Dragon's Breath on D-pad up."
+
+[sub_resource type="Resource" id="item_3"]
+script = ExtResource("e2")
+item = ExtResource("e12")
+tags = Array[StringName]([&"close", &"mobility"])
+weight = 1.0
+min_wave = 2
+boss_only = false
+blurb = "A switched Glock: .40 at 1,200 rpm, 22 rounds gone in a second. Climbs hard."
+
+[sub_resource type="Resource" id="item_4"]
+script = ExtResource("e2")
+item = ExtResource("e13")
+tags = Array[StringName]([&"precision", &"stealth"])
+weight = 1.0
+min_wave = 2
+boss_only = false
+blurb = "Suppressed 7.62 mm battle rifle. Heavy, controllable, kills in one or two."
+
+[sub_resource type="Resource" id="item_5"]
+script = ExtResource("e2")
+item = ExtResource("e14")
+tags = Array[StringName]([&"heavy"])
+weight = 0.9
+min_wave = 4
+boss_only = false
+blurb = "1,200 rpm of 7.62 mm from a 150-round box. Loose from the hip, slows you down."
+
+[sub_resource type="Resource" id="item_6"]
+script = ExtResource("e2")
+item = ExtResource("e15")
+tags = Array[StringName]([&"heavy", &"tech"])
+weight = 0.8
+min_wave = 5
+boss_only = false
+blurb = "Six 40 mm grenades. Lase a wall with LT and they burst over the men behind it."
+
+[sub_resource type="Resource" id="item_7"]
+script = ExtResource("e2")
+item = ExtResource("e16")
+tags = Array[StringName]([&"precision", &"tech"])
+weight = 0.7
+min_wave = 7
+boss_only = false
+blurb = "A personal railgun. Any torso hit kills; the slug goes on through walls and men."
+
+[sub_resource type="Resource" id="item_8"]
+script = ExtResource("e2")
+item = ExtResource("e17")
+tags = Array[StringName]([&"precision", &"mobility"])
+weight = 1.0
+min_wave = 1
+boss_only = false
+mk1 = Dictionary[StringName, Variant]({
+&"charge_max": 4.0,
+&"world_scale": 0.4,
+&"regen_per_s": 0.3
+})
+mk2 = Dictionary[StringName, Variant]({
+&"charge_max": 6.0,
+&"world_scale": 0.32,
+&"regen_per_s": 0.38
+})
+
+[sub_resource type="Resource" id="item_9"]
+script = ExtResource("e2")
+item = ExtResource("e18")
+tags = Array[StringName]([&"precision", &"tech"])
+weight = 1.0
+min_wave = 1
+boss_only = false
+mk1 = Dictionary[StringName, Variant]({
+&"base_marks": 2,
+&"max_marks": 2,
+&"strength_ref": 1.5,
+&"cavity_damage": 240.0,
+&"regen_per_s": 0.06
+})
+mk2 = Dictionary[StringName, Variant]({
+&"base_marks": 3,
+&"max_marks": 4,
+&"strength_ref": 1.3,
+&"cavity_damage": 290.0,
+&"regen_per_s": 0.07
+})
+
+[sub_resource type="Resource" id="item_10"]
+script = ExtResource("e2")
+item = ExtResource("e19")
+tags = Array[StringName]([&"close", &"mobility"])
+weight = 1.0
+min_wave = 1
+boss_only = false
+mk1 = Dictionary[StringName, Variant]({
+&"length": 4.2,
+&"damage": 70.0
+})
+mk2 = Dictionary[StringName, Variant]({
+&"length": 5.4,
+&"damage": 85.0
+})
+
+[sub_resource type="Resource" id="item_11"]
+script = ExtResource("e2")
+item = ExtResource("e20")
+tags = Array[StringName]([&"mobility", &"heavy"])
+weight = 1.0
+min_wave = 1
+boss_only = false
+mk1 = Dictionary[StringName, Variant]({
+&"charge_max": 1.0,
+&"dash_speed": 21.0,
+&"ram_multiplier": 1.3,
+&"regen_per_s": 0.16
+})
+mk2 = Dictionary[StringName, Variant]({
+&"charge_max": 2.0,
+&"dash_speed": 24.0,
+&"ram_multiplier": 1.55,
+&"regen_per_s": 0.19
+})
+
+[sub_resource type="Resource" id="item_12"]
+script = ExtResource("e2")
+item = ExtResource("e21")
+tags = Array[StringName]([&"stealth"])
+weight = 1.0
+min_wave = 1
+boss_only = false
+mk1 = Dictionary[StringName, Variant]({
+&"charge_max": 4.0,
+&"reveal_m": 5.0,
+&"shot_reveal_time": 1.8
+})
+mk2 = Dictionary[StringName, Variant]({
+&"charge_max": 7.0,
+&"reveal_m": 4.0,
+&"shot_reveal_time": 1.4
+})
+
+[sub_resource type="Resource" id="item_13"]
+script = ExtResource("e2")
+item = ExtResource("e22")
+tags = Array[StringName]([&"heavy", &"close"])
+weight = 1.0
+min_wave = 1
+boss_only = false
+mk1 = Dictionary[StringName, Variant]({
+&"charge_max": 7.0,
+&"break_cooldown": 8.0,
+&"bash_bonus": 1.2
+})
+mk2 = Dictionary[StringName, Variant]({
+&"charge_max": 10.5,
+&"break_cooldown": 6.5,
+&"bash_bonus": 1.4
+})
+
+[sub_resource type="Resource" id="item_14"]
+script = ExtResource("e2")
+item = ExtResource("e23")
+tags = Array[StringName]([&"close", &"tech"])
+weight = 1.0
+min_wave = 1
+boss_only = false
+mk1 = Dictionary[StringName, Variant]({
+&"reach": 10.0,
+&"charge_max": 2.0,
+&"max_throw": 22.0
+})
+mk2 = Dictionary[StringName, Variant]({
+&"reach": 14.0,
+&"charge_max": 3.0,
+&"max_throw": 28.0
+})
+
+[sub_resource type="Resource" id="item_15"]
+script = ExtResource("e2")
+item = ExtResource("e24")
+tags = Array[StringName]([&"tech", &"stealth"])
+weight = 1.0
+min_wave = 2
+boss_only = false
+mk1 = Dictionary[StringName, Variant]({
+&"charge_max": 1.0,
+&"battery": 12.0,
+&"blast_radius": 4.5,
+&"blast_damage": 220.0
+})
+mk2 = Dictionary[StringName, Variant]({
+&"charge_max": 2.0,
+&"battery": 17.0,
+&"blast_radius": 5.5,
+&"blast_damage": 260.0
+})
+
+[sub_resource type="Resource" id="item_16"]
+script = ExtResource("e2")
+item = ExtResource("e25")
+tags = Array[StringName]([&"tech", &"close"])
+weight = 1.0
+min_wave = 2
+boss_only = false
+mk1 = Dictionary[StringName, Variant]({
+&"chains": 0,
+&"max_chains": 2,
+&"charge_max": 1.0,
+&"damage": 100.0
+})
+mk2 = Dictionary[StringName, Variant]({
+&"chains": 1,
+&"max_chains": 4,
+&"damage": 115.0
+})
+
+[sub_resource type="Resource" id="item_17"]
+script = ExtResource("e2")
+item = ExtResource("e26")
+tags = Array[StringName]([&"heavy", &"tech"])
+weight = 1.0
+min_wave = 1
+boss_only = true
+mk1 = Dictionary[StringName, Variant]({
+&"charge_max": 4.0,
+&"regen_per_s": 0.18
+})
+mk2 = Dictionary[StringName, Variant]({
+&"charge_max": 7.0,
+&"regen_per_s": 0.22
+})
+
+[sub_resource type="Resource" id="item_18"]
+script = ExtResource("e2")
+item = ExtResource("e27")
+tags = Array[StringName]([&"heavy", &"tech"])
+weight = 1.0
+min_wave = 1
+boss_only = true
+mk1 = Dictionary[StringName, Variant]({
+&"base_capacity": 15,
+&"min_capacity": 10,
+&"max_capacity": 30,
+&"charge_max": 3.0
+})
+mk2 = Dictionary[StringName, Variant]({
+&"base_capacity": 26,
+&"min_capacity": 15,
+&"max_capacity": 60,
+&"charge_max": 4.5
+})
+
+[sub_resource type="Resource" id="item_19"]
+script = ExtResource("e2")
+item = ExtResource("e28")
+tags = Array[StringName]([&"tech"])
+weight = 1.0
+min_wave = 1
+boss_only = false
+
+[sub_resource type="Resource" id="item_20"]
+script = ExtResource("e2")
+item = ExtResource("e29")
+tags = Array[StringName]([&"precision", &"tech"])
+weight = 1.0
+min_wave = 3
+boss_only = false
+
+[sub_resource type="Resource" id="item_21"]
+script = ExtResource("e2")
+item = ExtResource("e30")
+tags = Array[StringName]([&"precision"])
+weight = 1.0
+min_wave = 1
+boss_only = false
+
+[sub_resource type="Resource" id="item_22"]
+script = ExtResource("e2")
+item = ExtResource("e31")
+tags = Array[StringName]([&"precision", &"stealth"])
+weight = 1.0
+min_wave = 1
+boss_only = false
+
+[sub_resource type="Resource" id="item_23"]
+script = ExtResource("e2")
+item = ExtResource("e32")
+tags = Array[StringName]([&"mobility", &"precision"])
+weight = 1.0
+min_wave = 1
+boss_only = false
+
+[sub_resource type="Resource" id="item_24"]
+script = ExtResource("e2")
+item = ExtResource("e33")
+tags = Array[StringName]([&"precision", &"tech"])
+weight = 1.0
+min_wave = 1
+boss_only = false
+
+[sub_resource type="Resource" id="item_25"]
+script = ExtResource("e2")
+item = ExtResource("e34")
+tags = Array[StringName]([&"close", &"mobility"])
+weight = 1.0
+min_wave = 1
+boss_only = false
+
+[sub_resource type="Resource" id="item_26"]
+script = ExtResource("e2")
+item = ExtResource("e35")
+tags = Array[StringName]([&"tech"])
+weight = 1.0
+min_wave = 1
+boss_only = false
+
+[sub_resource type="Resource" id="item_27"]
+script = ExtResource("e2")
+item = ExtResource("e36")
+tags = Array[StringName]([&"heavy"])
+weight = 1.0
+min_wave = 1
+boss_only = false
+
+[sub_resource type="Resource" id="item_28"]
+script = ExtResource("e2")
+item = ExtResource("e37")
+tags = Array[StringName]([&"heavy", &"mobility"])
+weight = 1.0
+min_wave = 1
+boss_only = false
+
+[sub_resource type="Resource" id="item_29"]
+script = ExtResource("e2")
+item = ExtResource("e38")
+tags = Array[StringName]([&"heavy"])
+weight = 0.8
+min_wave = 6
+boss_only = false
+
+[sub_resource type="Resource" id="item_30"]
+script = ExtResource("e2")
+item = ExtResource("e39")
+tags = Array[StringName]([&"mobility", &"close"])
+weight = 1.0
+min_wave = 1
+boss_only = false
+
+[sub_resource type="Resource" id="item_31"]
+script = ExtResource("e2")
+item = ExtResource("e40")
+tags = Array[StringName]([&"heavy", &"close"])
+weight = 0.9
+min_wave = 4
+boss_only = false
+
+[sub_resource type="Resource" id="item_32"]
+script = ExtResource("e2")
+item = ExtResource("e41")
+tags = Array[StringName]([&"mobility", &"close"])
+weight = 1.0
+min_wave = 1
+boss_only = false
+
+[sub_resource type="Resource" id="item_33"]
+script = ExtResource("e2")
+item = ExtResource("e42")
+tags = Array[StringName]([&"mobility"])
+weight = 1.0
+min_wave = 1
+boss_only = false
+
+[sub_resource type="Resource" id="item_34"]
+script = ExtResource("e2")
+item = ExtResource("e43")
+tags = Array[StringName]([&"heavy", &"close"])
+weight = 1.0
+min_wave = 1
+boss_only = false
+
+[sub_resource type="Resource" id="item_35"]
+script = ExtResource("e2")
+item = ExtResource("e44")
+tags = Array[StringName]([&"tech"])
+weight = 1.0
+min_wave = 1
+boss_only = false
+
+[sub_resource type="Resource" id="item_36"]
+script = ExtResource("e2")
+item = ExtResource("e45")
+tags = Array[StringName]([&"tech"])
+weight = 0.8
+min_wave = 3
+boss_only = false
+
+[sub_resource type="Resource" id="item_37"]
+script = ExtResource("e2")
+item = ExtResource("e46")
+tags = Array[StringName]([&"stealth", &"close"])
+weight = 1.0
+min_wave = 1
+boss_only = false
+
+[sub_resource type="Resource" id="item_38"]
+script = ExtResource("e2")
+item = ExtResource("e47")
+tags = Array[StringName]([&"heavy"])
+weight = 0.9
+min_wave = 3
+boss_only = false
+
+[sub_resource type="Resource" id="item_39"]
+script = ExtResource("e2")
+item = ExtResource("e48")
+tags = Array[StringName]([&"heavy", &"close"])
+weight = 1.0
+min_wave = 2
+boss_only = false
+
+[sub_resource type="Resource" id="item_40"]
+script = ExtResource("e2")
+item = ExtResource("e49")
+tags = Array[StringName]([&"stealth", &"heavy"])
+weight = 1.0
+min_wave = 2
+boss_only = false
+
+[sub_resource type="Resource" id="item_41"]
+script = ExtResource("e2")
+item = ExtResource("e50")
+tags = Array[StringName]([&"heavy", &"precision"])
+weight = 1.0
+min_wave = 1
+boss_only = false
+
+[sub_resource type="Resource" id="item_42"]
+script = ExtResource("e2")
+item = ExtResource("e51")
+tags = Array[StringName]([&"close"])
+weight = 1.0
+min_wave = 1
+boss_only = false
+
+[sub_resource type="Resource" id="item_43"]
+script = ExtResource("e2")
+item = ExtResource("e52")
+tags = Array[StringName]([&"precision"])
+weight = 1.0
+min_wave = 1
+boss_only = false
+
+[sub_resource type="Resource" id="item_44"]
+script = ExtResource("e2")
+item = ExtResource("e53")
+tags = Array[StringName]([&"precision", &"close"])
+weight = 1.0
+min_wave = 1
+boss_only = false
+
+[sub_resource type="Resource" id="item_45"]
+script = ExtResource("e2")
+item = ExtResource("e54")
+tags = Array[StringName]([&"mobility"])
+weight = 1.0
+min_wave = 1
+boss_only = false
+
+[sub_resource type="Resource" id="item_46"]
+script = ExtResource("e2")
+item = ExtResource("e55")
+tags = Array[StringName]([&"stealth", &"mobility"])
+weight = 1.0
+min_wave = 1
+boss_only = false
+
+[sub_resource type="Resource" id="item_47"]
+script = ExtResource("e2")
+item = ExtResource("e56")
+tags = Array[StringName]([&"mobility"])
+weight = 1.0
+min_wave = 1
+boss_only = false
+
+[sub_resource type="Resource" id="item_48"]
+script = ExtResource("e2")
+item = ExtResource("e57")
+tags = Array[StringName]([&"heavy"])
+weight = 1.0
+min_wave = 2
+boss_only = false
+
+[sub_resource type="Resource" id="item_49"]
+script = ExtResource("e2")
+item = ExtResource("e58")
+tags = Array[StringName]([&"heavy"])
+weight = 0.8
+min_wave = 4
+boss_only = false
+
+[sub_resource type="Resource" id="item_50"]
+script = ExtResource("e2")
+item = ExtResource("e59")
+tags = Array[StringName]([&"tech"])
+weight = 0.7
+min_wave = 5
+boss_only = false
+
+[sub_resource type="Resource" id="item_51"]
+script = ExtResource("e2")
+item = ExtResource("e60")
+tags = Array[StringName]([&"tech", &"heavy"])
+weight = 1.0
+min_wave = 1
+boss_only = false
+
+[sub_resource type="Resource" id="item_52"]
+script = ExtResource("e2")
+item = ExtResource("e61")
+tags = Array[StringName]([&"stealth"])
+weight = 1.0
+min_wave = 1
+boss_only = false
+
+[sub_resource type="Resource" id="item_53"]
+script = ExtResource("e2")
+item = ExtResource("e62")
+tags = Array[StringName]([&"heavy"])
+weight = 1.0
+min_wave = 1
+boss_only = false
+
+[sub_resource type="Resource" id="item_54"]
+script = ExtResource("e2")
+item = ExtResource("e63")
+tags = Array[StringName]([&"close", &"heavy"])
+weight = 1.0
+min_wave = 2
+boss_only = false
+
+[sub_resource type="Resource" id="item_55"]
+script = ExtResource("e2")
+item = ExtResource("e64")
+tags = Array[StringName]([&"mobility", &"stealth"])
+weight = 1.0
+min_wave = 1
+boss_only = false
+
+[sub_resource type="Resource" id="doctrine_0"]
+script = ExtResource("e3")
+display_name = "Ghost"
+description = "Quiet and quick: the synaptic accelerator, chromatophore skin, respirocytes. Drops lean to stealth and mobility."
+parts = Array[ExtResource("e5")]([ExtResource("e33"), ExtResource("e61"), ExtResource("e64")])
+starter_actives = Array[ExtResource("e6")]([ExtResource("e17"), ExtResource("e21"), ExtResource("e18")])
+primary_tag = &"stealth"
+secondary_tag = &"mobility"
+
+[sub_resource type="Resource" id="doctrine_1"]
+script = ExtResource("e3")
+display_name = "Reaper"
+description = "Close work: a titanium frame, myofibrils, the accelerator. Drops lean to close quarters and mobility."
+parts = Array[ExtResource("e5")]([ExtResource("e36"), ExtResource("e39"), ExtResource("e33")])
+starter_actives = Array[ExtResource("e6")]([ExtResource("e19"), ExtResource("e20"), ExtResource("e23")])
+primary_tag = &"close"
+secondary_tag = &"mobility"
+
+[sub_resource type="Resource" id="doctrine_2"]
+script = ExtResource("e3")
+display_name = "Juggernaut"
+description = "Takes the hits: carbon sheathing, trauma plating, the leg frame. Drops lean to heavy hardware."
+parts = Array[ExtResource("e5")]([ExtResource("e37"), ExtResource("e47"), ExtResource("e57")])
+starter_actives = Array[ExtResource("e6")]([ExtResource("e22"), ExtResource("e20")])
+primary_tag = &"heavy"
+secondary_tag = &"close"
+
+[sub_resource type="Resource" id="doctrine_3"]
+script = ExtResource("e3")
+display_name = "Marksman"
+description = "Every round placed: the accelerator, ballistic eyes, the threat graph. Drops lean to precision."
+parts = Array[ExtResource("e5")]([ExtResource("e33"), ExtResource("e30"), ExtResource("e29")])
+starter_actives = Array[ExtResource("e6")]([ExtResource("e17"), ExtResource("e18")])
+primary_tag = &"precision"
+secondary_tag = &"tech"
+
+[sub_resource type="Resource" id="doctrine_4"]
+script = ExtResource("e3")
+display_name = "Handler"
+description = "Fights through machines: the cortical uplink, a power cell, the mesh relay. Drops lean to tech."
+parts = Array[ExtResource("e5")]([ExtResource("e28"), ExtResource("e44"), ExtResource("e35")])
+starter_actives = Array[ExtResource("e6")]([ExtResource("e24"), ExtResource("e25")])
+primary_tag = &"tech"
+secondary_tag = &"precision"
+
+[sub_resource type="Resource" id="enemy_0"]
+script = ExtResource("e4")
+role = "blue_lantern"
+cost = 1.0
+first_wave = 1
+weight = 3.0
+weight_per_wave = -0.15
+min_weight = 0.4
+max_count = 0
+max_count_late = 0
+late_wave = 10
+
+[sub_resource type="Resource" id="enemy_1"]
+script = ExtResource("e4")
+role = "gunman"
+cost = 2.0
+first_wave = 1
+weight = 2.0
+weight_per_wave = 0.0
+min_weight = 0.05
+max_count = 0
+max_count_late = 0
+late_wave = 10
+
+[sub_resource type="Resource" id="enemy_2"]
+script = ExtResource("e4")
+role = "enforcer"
+cost = 3.0
+first_wave = 2
+weight = 0.8
+weight_per_wave = 0.06
+min_weight = 0.05
+max_count = 0
+max_count_late = 0
+late_wave = 10
+
+[sub_resource type="Resource" id="enemy_3"]
+script = ExtResource("e4")
+role = "hatchet_man"
+cost = 2.0
+first_wave = 4
+weight = 1.1
+weight_per_wave = 0.04
+min_weight = 0.05
+max_count = 3
+max_count_late = 5
+late_wave = 10
+
+[sub_resource type="Resource" id="enemy_4"]
+script = ExtResource("e4")
+role = "red_pole"
+cost = 4.0
+first_wave = 3
+weight = 0.35
+weight_per_wave = 0.02
+min_weight = 0.05
+max_count = 1
+max_count_late = 2
+late_wave = 10
+
+[resource]
+script = ExtResource("e1")
+frame = ExtResource("e8")
+doctrines = Array[ExtResource("e3")]([SubResource("doctrine_0"), SubResource("doctrine_1"), SubResource("doctrine_2"), SubResource("doctrine_3"), SubResource("doctrine_4")])
+starter_weapons = Array[ExtResource("e7")]([ExtResource("e9"), ExtResource("e10"), ExtResource("e11")])
+pool = Array[ExtResource("e2")]([SubResource("item_0"), SubResource("item_1"), SubResource("item_2"), SubResource("item_3"), SubResource("item_4"), SubResource("item_5"), SubResource("item_6"), SubResource("item_7"), SubResource("item_8"), SubResource("item_9"), SubResource("item_10"), SubResource("item_11"), SubResource("item_12"), SubResource("item_13"), SubResource("item_14"), SubResource("item_15"), SubResource("item_16"), SubResource("item_17"), SubResource("item_18"), SubResource("item_19"), SubResource("item_20"), SubResource("item_21"), SubResource("item_22"), SubResource("item_23"), SubResource("item_24"), SubResource("item_25"), SubResource("item_26"), SubResource("item_27"), SubResource("item_28"), SubResource("item_29"), SubResource("item_30"), SubResource("item_31"), SubResource("item_32"), SubResource("item_33"), SubResource("item_34"), SubResource("item_35"), SubResource("item_36"), SubResource("item_37"), SubResource("item_38"), SubResource("item_39"), SubResource("item_40"), SubResource("item_41"), SubResource("item_42"), SubResource("item_43"), SubResource("item_44"), SubResource("item_45"), SubResource("item_46"), SubResource("item_47"), SubResource("item_48"), SubResource("item_49"), SubResource("item_50"), SubResource("item_51"), SubResource("item_52"), SubResource("item_53"), SubResource("item_54"), SubResource("item_55")])
+roster = Array[ExtResource("e4")]([SubResource("enemy_0"), SubResource("enemy_1"), SubResource("enemy_2"), SubResource("enemy_3"), SubResource("enemy_4")])

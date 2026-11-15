@@ -42,8 +42,10 @@ func open_options() -> void:
 
 
 func _show_game_buttons(on: bool) -> void:
+	# A Survival run (docs/design.md §8) has no map switch or enemy toggle.
+	var survival: bool = get_tree().current_scene != null and get_tree().current_scene.get_node_or_null(^"Survival") != null
 	for id: String in GAME_ONLY:
-		_buttons[id].visible = on
+		_buttons[id].visible = on and not (survival and id in ["map", "waves", "sweep"])
 	_title.text = "PAUSED" if on else "OPTIONS"
 
 

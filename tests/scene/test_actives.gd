@@ -184,6 +184,23 @@ func test_the_shield_stops_rounds_from_the_front_only() -> void:
 	assert_lt(player.health, health, "from behind it isn't")
 
 
+func test_the_shield_turns_a_blade_from_the_front() -> void:
+	# The Hatchet Man's chop (docs/design.md §8.8) rings off the fan.
+	player.invulnerable = false
+	var shield: FanShield = await _equip([&"bw6_fan_shield"]) as FanShield
+	await _deploy(shield)
+	var fwd: Vector3 = -player.camera().global_basis.z
+	var health: float = player.health
+	var full: float = shield.charge
+	var taken: float = player.on_melee_hit(null, 42.0, -fwd)
+	assert_almost_eq(taken, 42.0 * player.body.stat(&"damage_per_kj") / Player.BASE_DAMAGE_PER_KJ * shield.cfg.leak, 0.01,
+			"only the leak gets through")
+	assert_eq(shield.stopped, 1)
+	assert_almost_eq(shield.charge, full - shield.cfg.melee_loss, 0.01, "paid for in integrity")
+	assert_gt(player.on_melee_hit(null, 42.0, fwd), 0.0, "from behind it isn't")
+	assert_lt(player.health, health)
+
+
 func test_the_shield_breaks_and_needs_time() -> void:
 	player.invulnerable = false
 	var shield: FanShield = await _equip([&"bw6_fan_shield"]) as FanShield

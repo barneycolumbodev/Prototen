@@ -39,18 +39,19 @@ Commit after each step.
 
 ## 2. The game
 
-- **Player and enemies.** You are augmented. For now, enemies are ordinary unaugmented humans: triad members (owner, 2026-11-03), in waves in the test range and on a rolling clock on the Chinatown docks map (8 at the start, 3 more whenever fewer than 4 are fighting, out of sight; owner, 2026-11-04). Each is dressed at random from a wardrobe bank, with tattoos, and speaks his callouts (owner, 2026-11-11; design §5.6). The difference between you and them should show everywhere: speed, strength, durability, perception, what you can carry, and how they react to you. It's a power fantasy, but fights should still take skill.
+- **Player and enemies.** You are augmented. For now, enemies are ordinary unaugmented humans: triad members (owner, 2026-11-03), in waves in the test range and on a rolling clock on the Chinatown docks map (8 at the start, 3 more whenever fewer than 4 are fighting, out of sight; owner, 2026-11-04). Each is dressed at random from a wardrobe bank, with tattoos, and speaks his callouts (owner, 2026-11-11; design §5.6). The first melee type, the Hatchet Man, came 2026-11-15 (design §8.8a). The difference between you and them should show everywhere: speed, strength, durability, perception, what you can carry, and how they react to you. It's a power fantasy, but fights should still take skill.
+- **Main mode: Survival** (owner, 2026-11-15; design §8). Waves on a map, getting harder. You start with a doctrine (a baseline body), one gun (Five-seveN, MP5 or Saiga-12K) and one active at Mk I, a tuned-down version; the actives as built are Mk III, the ceiling. After every wave a supply drop brings one item or a choice of two (guns, actives, passives, marks); the doctrine and what you already own steer the odds, so a run can aim at a build. A boss every fifth wave drops the active he carries or a mark for it. Many more enemy types per map, themed (triad on Chinatown), melee ones included. "A power fantasy that you have to earn." Death ends the run. Today's open mode (every gun and part, the loadout screen) stays as **Sandbox**.
 - **Simulation.** Simulate as much as an immersive sim would (bodies, damage, ballistics, enemy behavior), but keep combat fast. Every system has to work at full speed, without menus or pauses.
 - **Gunplay.** The goal is the best gunplay in any mobile shooter. References: Call of Duty for gun handling, Doom for speed and aggression, Halo for readable weapons and enemies, F.E.A.R. and Trepang2 for slow motion and hit reactions, S.T.A.L.K.E.R. for weapon weight, Soldier of Fortune for locational damage and gore.
 - **Tone.** Warhammer 40,000's hardware and industrial scale without its supernatural side. Deus Ex's augmentation. Halo's military hardware. Soldier of Fortune's grounded, violent military action.
 - **Visuals.** Realistic enough that weapons and violence look convincing. Beyond that, the look relies on color, lighting, atmosphere and effects more than on detailed geometry and textures.
-- **Not decided yet:** story, world, factions, mission structure, progression, release platform.
+- **Not decided yet:** story, world, factions, meta-progression between runs, release platform.
 
 ---
 
 ## 3–6. Game design
 
-Augmentation (§3; the actives in §3.4, §3.4b, §3.4c and §3.4d, the passive library in §3.6, colours in §3.7), test loadouts (§4), combat simulation (§5), art direction (§6) and maps (§7) live in [`docs/design.md`](docs/design.md).
+Augmentation (§3; the actives in §3.4, §3.4b, §3.4c and §3.4d, the passive library in §3.6, colours in §3.7), test loadouts (§4), combat simulation (§5), art direction (§6), maps (§7) and the Survival mode (§8: runs, marks, drops, doctrines, waves, bosses, the enemy roster) live in [`docs/design.md`](docs/design.md). Survival tuning: `tools/run/gen_pool.py` → `data/run/survival.tres` (don't hand-edit the .tres).
 
 ---
 
@@ -161,7 +162,7 @@ Put an empty `.gdignore` file in `raw_assets/`, `tools/` and `docs/` so Godot do
 | X | Reload (hold to interact; the M32A1 loads a round at a time, RT shuts it and fires) |
 | Y | Tap: previous weapon. Hold: weapon wheel (owner, 2026-11-02; the MG barrel change needs another input in M3) |
 | D-pad | Left / down / right: select active part 1 / 2 / 3 for LB, in the order they were installed (default: RX-9 / GX-4 arm / empty; 2026-11-10: any three of nine; 2026-11-13: of ten; 2026-11-14: of eleven). Up: shell type on guns that take several (Saiga-12K) (owner, 2026-11-07) |
-| Menu / View | Pause / body status and loadout (built 2026-11-05; loadout 2026-11-08; LB there: colours, 2026-11-10; 2026-11-11: every part on one grid, A installs or removes, RB jumps to the part that supplies a missing requirement) |
+| Menu / View | Pause / body status and loadout (in Survival the body can be viewed, not changed) (built 2026-11-05; loadout 2026-11-08; LB there: colours, 2026-11-10; 2026-11-11: every part on one grid, A installs or removes, RB jumps to the part that supplies a missing requirement) |
 
 Aiming: response-curve presets, acceleration on full tilt, radial deadzones, aim assist in layers (slowdown near targets, slight pull while aiming down sights). Gyro aiming from the phone if the controller holds it.
 
@@ -275,6 +276,11 @@ Each milestone ends with an APK on the owner's phone and an entry in `docs/playt
    Done when sustained fire tears up a room and the phone holds its frame rate.
    2026-11-14 (Claude's choice; owner: "find something missing and add it"): the M32A1 six-shot 40 mm grenade launcher, the first explosive gun. Rounds fly an arc, arm after 9 m, and burst on impact or, aimed, in the air past the point the fire-control sight lased (over cover). Real fragments that cover stops, a revolving cylinder that loads a round at a time, and a new look for every blast (fireball, smoke, dust ring, scorch), the drone's included (design §4.8).
 5. **M4 – Look and sound.** Art direction applied to two or three test areas, lighting, an audio pass.
+6. **S1 – Survival foundation** (owner, 2026-11-15: the direction for the main mode; design §8). Now the current focus.
+   Built 2026-11-15: the design (§8); Mk I/II/III for all eleven actives; the run (doctrines as baseline bodies, supply drops with doctrine and affinity bias, threat-budget waves, lieutenant waves standing in for bosses); the Blue Lantern recruit; Survival on the main menu with the kit screen, the drop screen and the run-over screen. Today's mode is Sandbox.
+   2026-11-15 (owner): the Hatchet Man, the first melee enemy: hatchet or cleaver, flanks from cover to cover, vaults low walls, a telegraphed chop to dodge, stagger or block (design §8.8a). Survival from wave 4; Sandbox spawns too.
+   Next: melee enemies (Hatchet Man first), the first boss (the Straw Sandal), theme waves, more triad types (design §8.8), then tuning from the owner's runs.
+   Done when a run has a difficulty curve the owner wants to replay and builds that play differently.
 
 What comes after the prototype gets decided then.
 
@@ -287,4 +293,5 @@ What comes after the prototype gets decided then.
 - ~~How far gore goes at the maximum setting.~~ Owner, 2026-11-11: Soldier of Fortune style: decapitation, dismemberment and gibbing, driven by ballistic impact and hit location (design §5.5).
 - Real gun names (Five-seveN, MG42, SPAS-12) are fine in a prototype. Selling the game with them might need licenses, so decide before any release.
 - Budget for Meshy and ElevenLabs, if any.
+- Survival: meta-progression between runs, run length (endless or a final wave), health and ammunition between waves (design §8.10).
 - Public or private repo.
