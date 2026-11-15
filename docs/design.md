@@ -538,3 +538,161 @@ Three loops connect it all: quay ↔ west alley or market ↔ street; street ↔
 **Main menu (owner, 2026-11-14).** The game opens here, not in the fight: "load into a main menu that shows your character leaning against a wall... his helmet off... smoking a cigarette... customize your loadout, and as you customize the loadout, it will change what he looks like in that scene... outside a Chinese restaurant in Chinatown." The operative (`MenuSmoker`) leans on the window of the Sea View restaurant under its red lanterns, helmet off (the owner's face), right boot flat on the wall, left arm folded under his right elbow. Every ~10 s the cigarette goes to his lips, the ember flares and lights his face, and he breathes the smoke out; smoke curls off the tip the whole time. The pose is procedural on the operative's skeleton (FK in the rest frame plus two-bone IK for arms and legs), no clip. The menu: Begin, Loadout, Map (◀ ▶: Chinatown docks or the test range), Options (the pause menu's settings), Quit. Loadout opens the loadout screen over the scene with the camera moved so he stands in the clear left quarter, wearing whatever is under the cursor; what's built is saved and goes into the game. Begin fades to black and the game starts on the same map (the map, lights and rain are already built). Pause → Main menu comes back to it. Staging (his spot, the lean, both camera framings, the cigarette's timing, the ember and key light) in `data/levels/main_menu.tres`; code in `src/ui/main_menu/`. Captures: `docs/previews/main_menu.png`, `main_menu_loadout.png`; the pose on its own: `src/levels/lookdev/menu_pose_lookdev.tscn` (`-- --pose-t=<s>` holds the cycle).
 
 **Pipeline.** Materials are a tileable texture array (`raw_assets/env/materials`, `raw_assets/env/atlases`); the map is one generator (`build.py`, with `props.py` and `buildings.py`) and one bake/export step (`bake.py`). Everything rebuilds from scratch.
+
+---
+
+## 8. Survival: the main mode (owner, 2026-11-15)
+
+Owner: "we have an insanely expressive, fun-to-play, dynamic base... but there's no game rules to really bound them or any kind of progression. It's just a mindless power fantasy at this point." The main mode is **wave-based survival with a run that builds up**: you start with little, every wave gets harder, and between waves you get new hardware. It should be "a power fantasy that you have to earn working with the tools you have available instead of just instantly having the best tools." The power fantasy can break through late in a run.
+
+What exists today stays as a second mode, **Sandbox**: every gun, the full loadout screen, every active at its full strength, rolling spawns or waves (§7.1, §12 M1).
+
+### 8.1 Why waves (Claude's view, asked for by the owner)
+
+The owner asked whether the mechanics would suit an arena shooter or a campaign with a story better. Claude's answer: **waves are the right base.**
+
+- The actives are expressive because they combine. A run that hands them out one at a time makes every combination a decision, and every run shows a different set. A campaign would hand them out in a fixed order, and a pure arena shooter has no place to hand them out at all.
+- The simulation (ragdolls, gore, morale, suppression) is at its best with many men on one map. Waves give a steady supply of them, and the map can be learned like a Zombies map.
+- One map with rising pressure is the cheapest content per hour of play. It suits a team of one owner and Claude, and a phone.
+- The roguelite rule (power comes from choices made in this run) answers the owner's complaint directly.
+
+Two things from the other formats are worth taking, both later: **a light frame around the run** (a handler on the radio, a reason the docks are hot, a few lines between waves), which gives a campaign's sense of place without a campaign's cost; and **objective waves** (hold the restaurant, stop the boat leaving, recover a case from the cold store) every so often, so a run isn't only "kill everyone". *(proposal)*
+
+### 8.2 A run
+
+1. **Main menu → Survival.** Pick the starting kit:
+   - **A doctrine: the baseline character.** Each is the graft suit plus two or three passives, and it tilts what the supply drops bring (§8.5). On the bare suit no active comes online (every one needs a stat a passive supplies; checked 2026-11-15), so the baseline body is what decides which actives you can start with.
+   - **One gun** from three: the Five-seveN, the MP5/SD-L or the Saiga-12K (owner's list).
+   - **One active** at **Mk I** (§8.3), from the two or three that doctrine's body can run (owner: "only some of them will be listed as choices"). Ghost: RX-9, TC-4 or SX-8. Reaper: MW-7, KR-5 or NT-5. Juggernaut: BW-6 or KR-5. Marksman: RX-9 or SX-8. Handler: SD-3 or AD-2. The GX-4 and the LC-6 are never starters: bosses carry them (§8.7).
+2. **The body grows from there.** More passives come from drops. The loadout screen can be opened to look at the body and to reorder the actives on the D-pad, but not to install or remove parts.
+3. **Waves** on the Chinatown docks (§8.6). A wave ends when nobody is left fighting.
+4. **A supply drop after every wave** (§8.4): either one item picked for you, or a choice between two.
+5. **A boss every fifth wave** (§8.7). Bosses drop the active they carry, or an upgrade for it if you already have it.
+6. **Death ends the run.** A summary screen: waves survived, kills, what you had. Back to the menu.
+
+Between waves *(proposal, to tune)*: health and active charges refill. A break of a few seconds plus the drop screen. Pressure inside a wave comes from the enemies, not from attrition between them. An ammunition economy can come later if runs feel too safe.
+
+### 8.3 Active marks (Mk I, Mk II, Mk III)
+
+Every active has three marks. Owner: "it's not going to be like the full version of the active ability that we have now. It's going to be tuned down... the needle throwing thing, the first version of it might only have 2 needles... a higher strength requirement for damage. The slowdown time might only last 4 seconds at a full charge when you first get it." And: "most of them right now would work out best as the highest ceiling level of that augmentation in order to maintain tension."
+
+- **Mk III is the active as built** (everything in §3.4–§3.4d). It's the ceiling.
+- **Mk I and Mk II change the tuning values only.** They don't add or remove behaviour. Each mark is a list of property overrides on the active's resource (`ActivePartData.marks`, in the part's `.tres`), so marks are tuned like everything else, in data.
+- A new active drops at Mk I. A boss drop or a rare supply-drop upgrade raises it one mark.
+- Sandbox always uses Mk III.
+
+First pass at the marks *(proposal; values in the part files)*:
+
+| Active | Mk I | Mk II | Mk III (as built) |
+|---|---|---|---|
+| RX-9 Reflex Overclock | 4 s of charge, world at 40 %, slow refill | 6 s, world at 32 % | 8 s, world at 24 % |
+| SX-8 Urticating Setae | 2 marks, needs more strength for full damage (ref 1.5), weaker cavitation | 3 marks (4 with perception), ref 1.3 | 4 marks (5 with perception), ref 1.15 |
+| GX-4 Gauss Arm | 4 rounds, slow refill | 7 rounds | 10 rounds |
+| MW-7 Monofilament Whip | 4.2 m, lighter cuts | 5.4 m | 6.5 m |
+| SD-3 Shrike Drone | 1 drone, 12 s battery, smaller blast | 2 drones, 17 s | 3 drones, 22 s |
+| NT-5 Mesh Arm | 10 m reach, 2 grabs, weaker throw | 14 m, 3 grabs | 18 m, 4 grabs |
+| KR-5 Ram Thrusters | 1 burn, slower, a softer ram | 2 burns | 2 burns, full speed and ram |
+| TC-4 Thermoptic Shroud | 4 s, seen from 5 m, a shot shows you longer | 7 s, 4 m | 10 s, 3 m |
+| BW-6 Fan Shield | 50 % integrity, longer to recover from a break | 75 % | as built |
+| AD-2 Arc Projector | no chaining, 1 discharge | 1 chain, 2 discharges | 2 chains (more with power), 2 discharges |
+| LC-6 Lorentz Catcher | holds 15 rounds, 3 s | 26 rounds, 4.5 s | 40 rounds, 6 s |
+
+### 8.4 Supply drops (the reward table)
+
+After each wave a supply drop comes in *(Claude's framing: the operative's handler sends it; grounded, no loot falling out of bodies)*. Owner: "after every wave, you either get something just automatically selected by the loot table, or you get a choice between 2 things, like for example, a gun or an active augmentation, and you pick it."
+
+- **What can drop:** a gun you don't have; an active you don't have (at Mk I); a passive part; rarely, a mark for an active you have.
+- **Choice or pick.** Each drop is either a choice of two (A or B on the drop screen) or one item delivered for you. The first drop of a run is always a choice. The odds are in `data/run/survival.tres`.
+- **The two offers differ:** never the same item, and the second is drawn without the doctrine's bias, so there's always a way to pivot.
+- **Passives and the body's limits.** Passives install into their location; if it's full, the card says what comes out. A part never drops if it would push out an active, knock an active offline (ER-2 replacing the SA-2 that RX-9 needs), or go over the capacity budget. Power and heat (§3.6) still apply, so a run that takes everything runs hot and slow, which is the point of the parts system. A part that wouldn't come online on your body yet drops less often and its card says what it needs.
+- **Actives:** three at most, one per D-pad direction; no new ones drop once you have three (marks still do).
+- **Guns:** the wheel holds what you own. *(proposal)* Guns stop dropping once you carry four.
+- **Ammunition:** reserves are unlimited for now (as in Sandbox).
+- Every entry is a `RewardData` resource in `data/run/rewards/` with a weight, the wave it can first appear on, and tags.
+
+### 8.5 Steering a build: doctrine and affinity
+
+Owner: "There also needs to be a way for you to influence the general likelihood of you getting things... on this playthrough, you're gonna get more stuff that's kitted towards high mobility and stealth... or this is like a juggernaut playthrough."
+
+Every reward has **tags**: `mobility`, `stealth`, `heavy`, `precision`, `close`, `tech`. Three layers bend the odds *(proposal)*:
+
+1. **Doctrine**, picked at the start of a run (it is also the baseline body, §8.2). It multiplies the weight of matching tags (×3 for its main tag, ×2 for its second):
+   - **Ghost** (stealth, mobility): SA-2 synaptic accelerator, CM-1 chromatophore mesh, OC-2 respirocytes.
+   - **Reaper** (close, mobility): TL-3 titanium skeleton, EM-2 myofibrils, SA-2.
+   - **Juggernaut** (heavy, close): CB-1 carbon sheathing, CT-7 trauma plating, LF-8 leg frame.
+   - **Marksman** (precision, tech): SA-2, OB-5 ocular ballistics, TG-6 threat graph.
+   - **Handler** (tech, precision): NL-3 cortical uplink, PC-3 power cell, MR-1 mesh relay.
+   Names reuse the loadout presets. Of the first drops at wave 8, Ghost is offered a stealth item about 4.7 times as often as Juggernaut (`test_doctrine_bends_the_odds`).
+2. **Affinity.** Every item you own adds to the weight of its tags (+35 % per item, capped at ×3), so a build that starts pulling one way keeps going that way, as in Hades or Slay the Spire.
+3. **Later:** drops that change the doctrine mid-run (a "requisition priority" order from the handler), and boss drops that bias the next few drops.
+
+### 8.6 Waves and the difficulty curve
+
+Each wave has a **threat budget** that grows with the wave number. Each enemy type has a cost and a first wave, and the director spends the budget on the types it has unlocked (`data/run/survival.tres`, `SurvivalWaves.compose`):
+
+- Wave 1 is a handful of the cheapest men. New types arrive one at a time over the first waves, so each one gets a wave to be learned.
+- At most 12 alive at once (CLAUDE.md §8). A wave bigger than that comes in as reinforcements while it's being fought, out of sight, like the rolling spawns (§7.1).
+- **Crescendo** *(proposal)*: waves build in fives. Waves 1–4 of a block rise, wave 5 is the boss, and the next block starts a little lower than the boss wave and climbs past it.
+- **Theme waves** *(proposal, after wave 6)*: now and then a wave is drawn mostly from one family: a rush of melee men and shotguns, a wave of marksmen on the heights, a wave led by two Red Poles.
+- What the player gets and what the enemies get have to climb together. The target is that a good player with a sensible build reaches wave 15–20 and a strong build feels like a god by wave 20.
+
+### 8.7 Bosses
+
+Owner: "every so many waves, a unique special boss will come down. I want them to have mechanics... some augmentations could be great counter to certain bosses... bosses, when you defeat them, could drop either an active augmentation that they carry, or if you already have it, an upgrade for it."
+
+- Every fifth wave. A boss arrives with escorts, has a health bar and a name on screen, and at least one mechanic you have to answer, not just more health.
+- **Bosses are the exception to "enemies are unaugmented"** (§2): they carry black-market hardware, which is why they drop it.
+- Each has a counter among the actives, and none needs one.
+
+Triad bosses for Chinatown *(proposal; ranks are real triad ranks)*:
+
+| Boss | Mechanic | Counters | Drops |
+|---|---|---|---|
+| **The Straw Sandal** (432, the messenger) | A knife fighter under a thermoptic shroud. Shimmers in and out, flanks, strikes from behind. Visible in the rain and when hit. | Setae marks him through the shroud; thermographic retinas; the fan shield blocks the strike | TC-4 Thermoptic Shroud |
+| **The White Paper Fan** (415, the counsellor) | Stays back and runs his men: a drone over the street that spots you for them, and he calls flanks. Kill the drone and the squads go blind. | The arc projector or the Shrike for the drone; the shroud | SD-3 Shrike Drone |
+| **The Vanguard** (426, the Red Pole of Red Poles) | Bomb-suit armour and a belt-fed gun; rounds glance off the front plates. Turns slowly. | The LC-6 throws his own rounds back; the Gauss arm goes through the plate; ram thrusters get you behind him | LC-6 Lorentz Catcher |
+| **The Incense Master** (438) | A grafted right arm (a Gauss-type prosthetic). Charges it with a glow and a whine you can see and hear; the shot goes through cover. | Break line of sight; the mesh arm pulls a man in front of you; the fan shield | GX-4 Gauss Arm |
+| **The Mountain Master** (489, the head) | Late in a run. Several of the above at once, in phases. | Whatever the build is | A mark for every active you own |
+
+Not built yet. Until they are, every fifth wave is a **lieutenant wave**: two Red Poles and a heavy escort, with a boss drop at the end, so the upgrade path can be played.
+
+### 8.8 The enemy roster
+
+Owner: "There also needs to be way more unique enemies, there needs to be melee-focused enemies, there needs to be a wide bank and variety of them per level, even if per level they all fit a certain theme... so you can truly achieve a crescendo of different waves and a smooth difficulty curve."
+
+Each map has a theme and its own roster. For Chinatown, the triad *(proposal; ✓ = built)*:
+
+| Type | Role | Cost | From wave |
+|---|---|---|---|
+| **Blue Lantern** ✓ (built 2026-11-15) | Uninitiated recruits: Type 85 SMG, poor aim, slow to react, panic early. The bottom of the curve. | 1 | 1 |
+| **Gunman** ✓ | Rifleman. Holds cover, peeks, bursts. | 2 | 1 |
+| **Hatchet Man** | Melee. Cleaver or hatchet, sprints between cover, vaults low walls, comes from the side. Has to be killed or dodged, not out-shot from cover. | 2 | 3 |
+| **Enforcer** ✓ | Plate carrier, pump shotgun, pushes in close. | 3 | 2 |
+| **Dao swordsman** | Melee elite: a long blade, a guard that turns rounds aside from the front (a grafted forearm plate, so hardware), a lunge. | 4 | 8 |
+| **Red Pole** ✓ | Lieutenant. SMG, steadies the men near him; his death breaks them. | 4 | 3 |
+| **Firebomber** | Throws molotovs to flush you out of cover and close off streets. | 3 | 6 |
+| **Marksman** | A scoped rifle from the gallery and the container stack; a laser and a glint before the shot. | 4 | 7 |
+| **Shield man** | A ballistic shield and a pistol; covers others as they advance. | 4 | 9 |
+| **Gunner** | A belt-fed gun; suppresses a whole street. | 5 | 11 |
+| **Anti-augment specialist** | EMP grenades that stall your actives, armour-piercing rounds, a jammer that grounds the drone. | 6 | 13 |
+
+Melee men need new code: approach and strike states, a hit on the player, a block for the swordsman, and animations. They are the next enemy work.
+
+### 8.9 What was built first (2026-11-15)
+
+The foundation, so the loop can be played on the phone before any of it is final:
+
+- **Marks** (`ActivePartData.marks`, `at_mark()`): Mk I and Mk II overrides for all eleven actives in their part files, as in the table in §8.3.
+- **The run** (`src/run/`): `RunState` (what you own, at which mark, the doctrine, the wave), `RewardData` and the reward table with doctrine and affinity weighting, `SurvivalWaves` (threat budget, unlock waves, lieutenant waves), `SurvivalConfig` (`data/run/survival.tres`).
+- **The Blue Lantern**, the first new enemy type (data only: `data/enemies/blue_lantern.tres`).
+- **The loop on Chinatown**: Survival on the main menu, the kit picks, waves with spawns out of sight, the drop screen, the guns limited to what you own, and the run-over screen.
+
+Not yet: bosses, melee enemies, theme waves, the ammunition economy, objective waves, any meta-progression.
+
+### 8.10 Open questions
+
+- **Meta-progression.** Does anything carry over between runs (unlocking guns and actives for the pool, starting doctrines, cosmetics)? Most roguelites need some. Claude's suggestion: unlocks that widen the pool, never raw power.
+- **More maps.** One map per enemy theme? What comes after the triad?
+- **Health and ammo between waves.** Full refill (now) or partial?
+- **Run length.** Endless, or a final boss at wave 25 or 30 with an endless mode after?
+- **Passives you didn't choose.** Should auto-picks ever be passives that need a part you don't have yet?
