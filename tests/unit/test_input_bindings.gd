@@ -16,6 +16,7 @@ const EXPECTED: Dictionary[StringName, JoyButton] = {
 	&"pause": JOY_BUTTON_START,
 	&"body_status": JOY_BUTTON_BACK,
 	&"menu_jump": JOY_BUTTON_RIGHT_SHOULDER,
+	&"execute": JOY_BUTTON_RIGHT_SHOULDER,
 }
 
 

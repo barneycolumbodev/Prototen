@@ -129,6 +129,21 @@ func spawn(at: Vector3, normal: Vector3, radius: float, airburst: bool) -> void:
 			_scorch(ground, gn, r * 1.6, 0.25 + 0.4 * k)
 
 
+## A shockwave with no fire (the Incense Master's ground pound and landing):
+## a ring of dust thrown out along the ground, two low clouds of grit,
+## and a faint scorch where the fist went in. `radius`: how far the ring goes.
+func shockwave(at: Vector3, normal: Vector3, radius: float) -> void:
+	bursts += 1
+	var n: Vector3 = normal.normalized() if normal.length() > 0.01 else Vector3.UP
+	var seed: float = _rng.randf() * 10.0
+	_puff(at + n * 0.05, _flat_basis(n, radius * 0.9, 0.18), 0.0, 2.0, seed, 1.3)
+	_puff(at + n * 0.03, _flat_basis(n, radius * 0.45, 0.28), 0.04, 2.0, seed + 3.3, 1.0)
+	for i: int in 2:
+		var side: Vector3 = Vector3(_rng.randf_range(-1, 1), 0.0, _rng.randf_range(-1, 1)).normalized() * radius * 0.12
+		_puff(at + n * 0.3 + side, Basis.from_scale(Vector3(1.0, 0.6, 1.0) * radius * 0.17), 0.04, 2.0, seed + 1.9 * float(i + 1), 1.6)
+	_scorch(at - n * 0.03, n, radius * 0.3, 0.12)
+
+
 ## Puffs alive now or about to be born (tests).
 func live_puffs() -> int:
 	var n: int = 0

@@ -235,6 +235,32 @@ func roll_boss_drop() -> Offer:
 	return null
 
 
+## A boss's drop when he carries something (§8.7, BossConfig.drop): his
+## active at Mk I if you don't have it, or its next mark if you do. If
+## taking it would cost you an active (the arm it mounts on, or a full
+## D-pad) or it's at Mk III already, the usual boss drop comes with it as a
+## choice. Empty if nothing at all can be offered.
+func roll_boss_drops(carried: ActivePartData) -> Array[Offer]:
+	var out: Array[Offer] = []
+	var it: RunItem = config.item_for(carried) if carried else null
+	if it == null:
+		it = config.item_by_id(carried.id) if carried else null
+	if it:
+		if owns(it):
+			if mark_of(it.id()) < RunItem.MAX_MARK:
+				out.append(make_offer(it, true))
+		else:
+			var o: Offer = make_offer(it)
+			var lo: BodyLoadout = loadout.copy()
+			o.replaces = lo.install(it.active_at(1))
+			out.append(o)
+	if out.is_empty() or not out[0].replaces.is_empty():
+		var alt: Offer = roll_boss_drop()
+		if alt and (out.is_empty() or alt.item != out[0].item):
+			out.append(alt)
+	return out
+
+
 ## Kind keys: RunItem.Kind for new items, 3 for a mark.
 const MARK_KEY: int = 3
 

@@ -41,6 +41,14 @@ extends Resource
 @export_range(0.0, 1.0) var after_boss_dip: float = 0.2
 ## Every n-th wave is a boss wave (until bosses exist: a lieutenant wave).
 @export var boss_every: int = 5
+## The bosses in order (data/enemies/<role>.tres with a BossConfig): the
+## first boss wave brings the first, and so on. A boss wave past the end of
+## the list is a lieutenant wave.
+@export var bosses: Array[String] = []
+## A boss comes with escorts worth this share of the wave's budget; they
+## start arriving `boss_escort_delay` s after his entrance begins.
+@export_range(0.0, 1.0) var boss_escort_budget: float = 0.45
+@export var boss_escort_delay: float = 6.0
 ## Lieutenant waves: these roles first, the rest of the budget (× fraction) as usual.
 @export var lieutenant_roles: Array[String] = ["red_pole", "red_pole"]
 @export_range(0.0, 1.0) var lieutenant_budget: float = 0.7
@@ -72,3 +80,11 @@ func item_by_id(id: StringName) -> RunItem:
 
 func is_boss_wave(wave: int) -> bool:
 	return boss_every > 0 and wave > 0 and wave % boss_every == 0
+
+
+## The boss role for wave `wave`, or "" (not a boss wave, or no boss left: lieutenants).
+func boss_for(wave: int) -> String:
+	if not is_boss_wave(wave):
+		return ""
+	var i: int = wave / boss_every - 1
+	return bosses[i] if i >= 0 and i < bosses.size() else ""

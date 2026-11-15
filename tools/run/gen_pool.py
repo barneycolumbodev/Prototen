@@ -11,6 +11,8 @@ rather than editing the .tres by hand.
 - DOCTRINES: the baseline characters (§8.2): starting passives, the actives they can start with, the
   tags they favour.
 - ROSTER: Chinatown's enemy types for the wave director (§8.6, §8.8).
+- BOSSES: who comes on each boss wave, in order (§8.7): wave 5 the first, wave 10 the second... Past the
+  end of the list a boss wave is a lieutenant wave.
 """
 import os
 
@@ -135,6 +137,9 @@ ROSTER = [
     ("red_pole", 4.0, 3, 0.35, 0.02, 0.05, 1, 2, 10),
 ]
 
+# Boss roles, in order (data/enemies/<role>.tres, each with a BossConfig).
+BOSSES = ["incense_master"]
+
 
 def f(x):
     if isinstance(x, bool):
@@ -212,6 +217,9 @@ def main():
                  'primary_tag = &"%s"' % prim, 'secondary_tag = &"%s"' % sec]
         subs.append("\n".join(lines))
         doc_ids.append(sid)
+    for b in BOSSES:
+        if not os.path.exists(os.path.join(ROOT, "data", "enemies", b + ".tres")):
+            raise SystemExit("missing boss " + b)
     ros_ids = []
     for i, (role, cost, first, w, wpw, wmin, cap, cap_late, late) in enumerate(ROSTER):
         if not os.path.exists(os.path.join(ROOT, "data", "enemies", role + ".tres")):
@@ -227,7 +235,8 @@ def main():
                   'doctrines = Array[ExtResource("%s")]([' % s_doc + ", ".join('SubResource("%s")' % d for d in doc_ids) + "])",
                   'starter_weapons = Array[ExtResource("%s")]([' % s_weapon + ", ".join('ExtResource("%s")' % w for w in starters) + "])",
                   'pool = Array[ExtResource("%s")]([' % s_item + ", ".join('SubResource("%s")' % p for p in pool_ids) + "])",
-                  'roster = Array[ExtResource("%s")]([' % s_enemy + ", ".join('SubResource("%s")' % r for r in ros_ids) + "])"]
+                  'roster = Array[ExtResource("%s")]([' % s_enemy + ", ".join('SubResource("%s")' % r for r in ros_ids) + "])",
+                  "bosses = Array[String]([" + ", ".join(esc(b) for b in BOSSES) + "])"]
     out = ['[gd_resource type="Resource" script_class="SurvivalConfig" load_steps=%d format=3]' % (len(ext) + len(subs) + 1), ""]
     for typ, path, eid in ext:
         out.append('[ext_resource type="%s" path="%s" id="%s"]' % (typ, path, eid))

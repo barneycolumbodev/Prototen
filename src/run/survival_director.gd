@@ -9,12 +9,18 @@ extends RollingSpawner
 ## SurvivalRun ends the run.
 
 signal wave_cleared(wave: int)
+## A boss wave's boss arrived (his entrance starts now).
+signal boss_arrived(boss: Enemy)
 
 var survival: SurvivalConfig
 var wave: int = 0
 ## Men still to come in this wave.
 var queue: Array[String] = []
 var in_wave: bool = false
+## This wave's boss (docs/design.md §8.7), or null.
+var boss: Enemy
+## Plays his entrance (off in tests that drive the fight directly).
+var boss_intro: bool = true
 var _last_left: int = -2
 
 
@@ -30,6 +36,8 @@ func start() -> void:
 	for e: WaveEnemy in survival.roster:
 		if e.first_wave <= 2:
 			_fill_looks(e.role, LOOKS_AHEAD + 2)
+	for b: String in survival.bosses:
+		_fill_looks(b, 1)
 
 
 func begin_wave(n: int) -> void:
@@ -45,6 +53,42 @@ func begin_wave(n: int) -> void:
 			seen.append(r)
 			_fill_looks(r, LOOKS_AHEAD + mini(queue.count(r), 4))
 	EventBus.wave_changed.emit(wave, -1)
+	var role: String = survival.boss_for(n)
+	if role != "":
+		_bring_boss(role)
+
+
+## The boss drops in front of the operative (his entrance, BossIntro); his
+## escorts come in after it.
+func _bring_boss(role: String) -> void:
+	var e: Enemy = Enemy.new()
+	e.config = load("res://data/enemies/%s.tres" % role) as EnemyConfig
+	e.look = _take_look(role)
+	squad.add(e)
+	level.add_child(e)
+	var at: Vector3 = BossIntro.pick_landing(player, e.config.boss)
+	e.global_position = at + Vector3.UP * 0.05
+	var to: Vector3 = player.global_position - at
+	e.face(atan2(to.x, to.z))
+	e.awareness = 1.0
+	e.last_known = player.global_position
+	blobs.track(e)
+	e.died.connect(func(_x: Enemy) -> void:
+		kills += 1)
+	enemies.append(e)
+	spawned_total += 1
+	boss = e
+	if boss_intro:
+		var intro: BossIntro = BossIntro.new()
+		intro.name = "BossIntro"
+		intro.boss = e
+		intro.player = player
+		intro.landing = at
+		level.add_child(intro)
+	else:
+		e._enter(Enemy.State.COMBAT)
+	_timer = survival.boss_escort_delay if boss_intro else 1.2
+	boss_arrived.emit(e)
 
 
 func left() -> int:

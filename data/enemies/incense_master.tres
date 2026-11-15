@@ -1,0 +1,54 @@
+[gd_resource type="Resource" script_class="EnemyConfig" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://src/ai/enemy_config.gd" id="1"]
+[ext_resource type="Script" path="res://src/ai/outfit.gd" id="o0"]
+[ext_resource type="Resource" path="res://data/enemies/outfits/incense_master.tres" id="o1"]
+[ext_resource type="Resource" path="res://data/enemies/bosses/incense_master.tres" id="b1"]
+
+[resource]
+script = ExtResource("1")
+outfits = Array[ExtResource("o0")]([ExtResource("o1")])
+display_name = "The Incense Master"
+callsign = "INCENSE MASTER"
+plate_carrier = false
+body_scale = 1.38
+rim_color = Color(1, 0.78, 0.55, 1)
+rim_strength = 1.2
+fill_light = 0.55
+health = 2600.0
+zone_multipliers = Dictionary[StringName, float]({
+&"chest": 1.0,
+&"head": 2.0,
+&"l_foot": 0.35,
+&"l_forearm": 0.5,
+&"l_hand": 0.35,
+&"l_shin": 0.5,
+&"l_thigh": 0.65,
+&"l_upper_arm": 0.55,
+&"neck": 1.6,
+&"pelvis": 0.9,
+&"r_foot": 0.35,
+&"r_forearm": 0.5,
+&"r_hand": 0.35,
+&"r_shin": 0.5,
+&"r_thigh": 0.65,
+&"r_upper_arm": 0.55,
+&"stomach": 1.0
+})
+armor_blunt = 0.08
+limb_cripple = 200.0
+walk_speed = 2.3
+run_speed = 5.0
+turn_speed_deg = 150.0
+reaction_time = 0.3
+preferred_range = 3.0
+max_range = 70.0
+aggressive = true
+officer = true
+sight_range = 80.0
+sight_fov_deg = 170.0
+hearing_range = 70.0
+footstep_hearing = 25.0
+courage = 1.0
+suppression_resist = 1.0
+boss = ExtResource("b1")

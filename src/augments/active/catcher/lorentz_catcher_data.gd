@@ -65,6 +65,8 @@ extends ActivePartData
 ## Drawn size of a held round (m): rounds are tiny; this is about 2× real so they read.
 @export var slug_length: float = 0.04
 @export var slug_width: float = 0.0115
+## A caught Gauss slug (the Incense Master's) is drawn this much bigger.
+@export var gauss_scale: float = 2.4
 
 @export_group("Look")
 @export var glow_color: Color = Color(0.48, 0.78, 1.0)

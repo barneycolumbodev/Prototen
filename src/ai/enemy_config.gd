@@ -16,7 +16,7 @@ extends Resource
 ## Whole-body scale (model, hitboxes, capsule). Owner, 2026-11-05: enemies read
 ## too small on the phone screen; 1.08 made a 1.75 m man about 1.89 m.
 ## 2026-11-11 ("they are quite small"): 1.12, about 1.96 m.
-@export_range(0.8, 1.3) var body_scale: float = 1.12
+@export_range(0.8, 1.6) var body_scale: float = 1.12
 ## Rim light that outlines the body against a dark background, stronger with
 ## distance (owner: "they need to stand out against the environment, think
 ## Halo CE"). 0 = off. Fades out when he dies.
@@ -127,3 +127,9 @@ extends Resource
 ## Highest obstacle (m) he vaults, and how long a vault takes (s).
 @export_range(0.4, 1.6) var vault_height: float = 1.25
 @export_range(0.25, 1.5) var vault_time: float = 0.55
+
+@export_group("Boss")
+## A boss (docs/design.md §8.7): his attacks, entrance and execution
+## (BossBrain). He doesn't die at zero health: he goes down on one knee and
+## waits for the execution. Null for everyone else.
+@export var boss: BossConfig

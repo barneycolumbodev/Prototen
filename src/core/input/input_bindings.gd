@@ -72,6 +72,8 @@ static func defaults() -> Array[Binding]:
 		_button(&"pause", JOY_BUTTON_START, [KEY_ESCAPE]),
 		_button(&"body_status", JOY_BUTTON_BACK, [KEY_TAB]),
 		_button(&"toggle_overlay", JOY_BUTTON_INVALID, [KEY_F3]),
+		# Owner, 2026-11-15: RB executes a boss who is down on one knee (BossExecution).
+		_button(&"execute", JOY_BUTTON_RIGHT_SHOULDER, [KEY_F]),
 		# Menus only (2026-11-11): RB on the loadout screen goes to the part
 		# that supplies what the selected one needs.
 		_button(&"menu_jump", JOY_BUTTON_RIGHT_SHOULDER, [KEY_G]),

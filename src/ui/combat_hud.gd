@@ -125,6 +125,79 @@ class HealthBar:
 		draw_rect(Rect2(0, 0, W, H), Color(1, 1, 1, 0.35), false, 1.0)
 
 
+## A boss's name and health across the top (docs/design.md §8.7a), and
+## the execution prompt when he's down on one knee. Reads the "boss" group.
+class BossBar:
+	extends Control
+	const W_SHARE: float = 0.46
+	var boss: Enemy
+	var shown: float = 1.0
+	var font: Font
+	var t: float = 0.0
+
+	func step(delta: float) -> void:
+		t += delta
+		if boss == null or not is_instance_valid(boss) or not boss.is_in_group(&"boss"):
+			boss = get_tree().get_first_node_in_group(&"boss") as Enemy
+		visible = boss != null and boss.boss != null and boss.boss.phase != BossBrain.Phase.INTRO
+		if not visible:
+			return
+		var f: float = boss.boss.health_fraction()
+		shown = move_toward(shown, f, delta * 0.35) if shown > f else f
+		queue_redraw()
+
+	func _draw() -> void:
+		if boss == null or boss.boss == null:
+			return
+		var vp: Vector2 = get_viewport_rect().size
+		var b: BossBrain = boss.boss
+		var w: float = vp.x * W_SHARE
+		var x0: float = (vp.x - w) * 0.5
+		var y0: float = 40.0
+		var gold: Color = Color(1.0, 0.82, 0.42)
+		draw_string(font, Vector2(x0 + 1.0, 33.0), b.cfg.title, HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color(0, 0, 0, 0.7))
+		draw_string(font, Vector2(x0, 32.0), b.cfg.title, HORIZONTAL_ALIGNMENT_LEFT, -1, 18, gold)
+		var f: float = b.health_fraction()
+		draw_rect(Rect2(x0 - 2.0, y0 - 2.0, w + 4.0, 14.0), Color(0, 0, 0, 0.55))
+		draw_rect(Rect2(x0, y0, w * shown, 10.0), Color(0.85, 0.25, 0.2, 0.75))
+		var col: Color = Color(1.0, 0.42, 0.18) if b.enraged else gold
+		draw_rect(Rect2(x0, y0, w * f, 10.0), col)
+		# Notches every tenth, and the rage mark.
+		for k: int in range(1, 10):
+			draw_line(Vector2(x0 + w * k / 10.0, y0), Vector2(x0 + w * k / 10.0, y0 + 10.0), Color(0, 0, 0, 0.35), 1.0)
+		var rx: float = x0 + w * b.cfg.rage_at
+		draw_line(Vector2(rx, y0 - 3.0), Vector2(rx, y0 + 13.0), Color(1.0, 0.5, 0.3, 0.9), 2.0)
+		draw_rect(Rect2(x0 - 2.0, y0 - 2.0, w + 4.0, 14.0), Color(1, 1, 1, 0.3), false, 1.0)
+		var tag: String = ""
+		if b.is_down():
+			tag = "ON HIS KNEES"
+		elif b.phase == BossBrain.Phase.STAGGER:
+			tag = "STAGGERED"
+		elif b.enraged:
+			tag = "ENRAGED"
+		if tag != "":
+			var a: float = 0.6 + 0.4 * sin(t * 6.0)
+			draw_string(font, Vector2(x0, y0 + 30.0), tag, HORIZONTAL_ALIGNMENT_RIGHT, w, 13, Color(1.0, 0.55, 0.35, a))
+		var ex: BossExecution = b.execution
+		if ex and ex.prompt and not ex.running:
+			# The prompt, under the crosshair.
+			var cy: float = vp.y * 0.62
+			var label: String = "EXECUTE"
+			var tw: float = font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, 22).x
+			var bw: float = 46.0
+			var total: float = bw + 12.0 + tw
+			var cx: float = (vp.x - total) * 0.5
+			var pulse: float = 0.75 + 0.25 * sin(t * 8.0)
+			draw_rect(Rect2(cx, cy - 20.0, bw, 28.0), Color(0, 0, 0, 0.6))
+			draw_rect(Rect2(cx, cy - 20.0, bw, 28.0), Color(gold, pulse), false, 2.0)
+			draw_string(font, Vector2(cx, cy + 1.0), "RB", HORIZONTAL_ALIGNMENT_CENTER, bw, 18, Color(gold, pulse))
+			draw_string(font, Vector2(cx + bw + 13.0, cy + 3.0), label, HORIZONTAL_ALIGNMENT_LEFT, -1, 22, Color(0, 0, 0, 0.7))
+			draw_string(font, Vector2(cx + bw + 12.0, cy + 2.0), label, HORIZONTAL_ALIGNMENT_LEFT, -1, 22, Color(1, 1, 1, pulse))
+
+
+var _boss_bar: BossBar
+
+
 func _ready() -> void:
 	layer = 5
 	_root = Control.new()
@@ -148,6 +221,12 @@ func _ready() -> void:
 	_down = _label(40)
 	_down.text = "DOWN"
 	_down.visible = false
+	_boss_bar = BossBar.new()
+	_boss_bar.font = ThemeDB.fallback_font
+	_boss_bar.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_boss_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_boss_bar.visible = false
+	_root.add_child(_boss_bar)
 	EventBus.callout.connect(_on_callout)
 	EventBus.player_damaged.connect(_on_damaged)
 	EventBus.player_died.connect(func() -> void: _down.visible = true)
@@ -171,9 +250,12 @@ func _process(delta: float) -> void:
 	_health.position = Vector2(26.0, vp.y - 34.0)
 	_callouts.position = Vector2(vp.x * 0.5 - 320.0, vp.y - 170.0)
 	_callouts.size = Vector2(640.0, 120.0)
-	_wave.position = Vector2(0, 54)
+	_boss_bar.step(delta)
+	# Under the boss's bar while he's up.
+	var drop: float = 52.0 if _boss_bar.visible else 0.0
+	_wave.position = Vector2(0, 54 + drop)
 	_wave.size = Vector2(vp.x, 40)
-	_wave_sub.position = Vector2(0, 90)
+	_wave_sub.position = Vector2(0, 90 + drop)
 	_wave_sub.size = Vector2(vp.x, 24)
 	_down.position = Vector2(0, vp.y * 0.42)
 	_down.size = Vector2(vp.x, 50)

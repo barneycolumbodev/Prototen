@@ -702,3 +702,30 @@ Please try:
 - Measured:
 - Notes from the owner:
 - Follow-ups:
+
+## S1 The Incense Master, the first boss — 2026-11-15 (waiting for the owner)
+
+Owner (2026-11-15): "It's time for the first boss of the triad map... he should spawn on wave 5... a massive triad enforcer with a bald head, a leather jacket, and a gold and diamond necklace... a powerful prosthetic arm that he uses both in ground pound and melee attacks, but can also launch something similar to the gauss cannon... the boss drop should be a gauss cannon upgrade or the original item... if you use the active that lets you hold projectiles it should work... a badass very short cutscene... when his health goes to zero, instead of dying he falls to one knee... a prompt to hit the right bumper... a first person execution... brutal head punches that ends up gibbing his head... examines his bloody fist and shakes off the blood." Design: `docs/design.md` §8.7a, §8.7b.
+
+What's in the APK:
+- **Wave 5 in Survival is his.** It opens with a 4-second entrance: he drops out of the sky in front of you, lands in a crouch with his fist in the street, rises, flexes the Gauss arm as it lights up, spreads his arms and roars; his name comes up. Then it's your eyes again, facing him. His escorts start arriving a few seconds later (about half a normal wave).
+- **Him**: about 2.4 m, bald, goatee, tattoos, an open black leather jacket on a bare chest, a gold medallion with diamonds on a heavy chain, and a Gauss prosthetic where his right arm was (copper coils lit blue, rails, a gold knuckle duster). His name and a gold health bar across the top.
+- **Close: the haymaker.** The arm cocks back by his side, then swings across at head height (about 48 and a big throw). Sidestep, slide or back off while it's cocked.
+- **Close for a while: the ground pound.** Both fists go up over his head with a scream, then the arm goes into the ground: a shockwave out to 8 m (up to 55, and you're thrown). **Jump as it lands** and it misses you. It throws his own men too.
+- **Far: the Gauss shot.** He plants and raises the arm; it charges for 1.5 s with a whine and a thin blue line pointing at you, which stops following you just before he fires. A real slug: about 64, and it goes through thin cover. Below half health he fires two.
+- **The LC-6 catches it.** Hold LB in front of the shot: the slug hangs in the field as a fat blue-glowing rod; let go and it goes straight back at him. A Gauss slug staggers him (so does a lot of damage at once).
+- **At zero he goes down on one knee** and stays there; the wave doesn't end until you finish him. Walk up and look at him: **RB EXECUTE**. You grab his collar, punch him in the face three times, the fourth (in slow motion) takes his head apart, he goes over backwards; then you lift the bloody fist, look at it, and shake the blood off.
+- **His drop**: the GX-4 Gauss Arm at Mk I, or its next mark if you have it. If it would push out one of your actives (the whip is on the same arm, or your D-pad is full), you get a choice of it or the usual boss drop.
+
+Cloud evidence: `tools/check.sh` with the new `tests/scene/test_incense_master.gd` (his hardware and bald, leathered, chained look; the haymaker lands for its armour-scaled damage and a sidestep makes him miss; the pound hurts on the ground and misses in the air; the Gauss shot is one Ballistics round that took 64 off the operative; the LC-6 holds his slug as a Gauss slug and throwing it back hurts and staggers him; at zero he kneels and gunfire, bursting and severing don't finish him; the execution needs you close and facing him, lands four punches, takes the head, counts the kill, shakes off the blood, hands control back and ends the slow motion; the rage; the entrance lands him in front of you and hands back control), `tests/scene/test_survival.gd` (wave 5 brings him with his entrance and escorts, the wave holds while he kneels, executing him and clearing the escorts brings the GX-4 boss drop, and it goes on the body), `test_run_state.gd` (his drop: the arm, then Mk II, then Mk III, then the usual drop; a choice when it would cost the whip), `test_survival_waves.gd`. Captures: `docs/previews/incense_master_intro.png` (the entrance), `incense_master_moves.png` (your eyes and from the side: standing, the shot charging and firing, fists up and the pound, the haymaker, on his knee), `incense_master_execution.png` (the grab, a punch, the head, the fist examined and shaken), `incense_master_arm.png` (the hardware). Not checked in the cloud: how the fight feels and how long it lasts with each starting gun, whether 1.5 s of charge is readable on the phone, frame rate on the docks with him and his escorts, how the sounds sound (synthesized, never listened to).
+
+Please try:
+1. Reach wave 5 with each gun. How long does he take? Too tanky, too soft, about right (he has 2,600)?
+2. Can you read each attack in time: the arm cocked back, the fists up, the blue line?
+3. With the LC-6: catch a slug and throw it back. Does it feel like it should?
+4. The entrance and the execution: too long, too short, anything you'd add?
+
+- Device / renderer / settings:
+- Measured:
+- Notes from the owner:
+- Follow-ups:
