@@ -564,7 +564,7 @@ Two things from the other formats are worth taking, both later: **a light frame 
    - **A doctrine: the baseline character.** Each is the graft suit plus two or three passives, and it tilts what the supply drops bring (§8.5). On the bare suit no active comes online (every one needs a stat a passive supplies; checked 2026-11-15), so the baseline body is what decides which actives you can start with.
    - **One gun** from three: the Five-seveN, the MP5/SD-L or the Saiga-12K (owner's list).
    - **One active** at **Mk I** (§8.3), from the two or three that doctrine's body can run (owner: "only some of them will be listed as choices"). Ghost: RX-9, TC-4 or SX-8. Reaper: MW-7, KR-5 or NT-5. Juggernaut: BW-6 or KR-5. Marksman: RX-9 or SX-8. Handler: SD-3 or AD-2. The GX-4 and the LC-6 are never starters: bosses carry them (§8.7).
-2. **The body grows from there.** More passives come from drops. The loadout screen can be opened to look at the body and to reorder the actives on the D-pad, but not to install or remove parts.
+2. **The body grows from there.** More passives come from drops. The loadout screen (View) shows the body and what each part does, but can't install, remove or reorder parts (`BodyStatus.locked`); the colours still work. The actives sit on the D-pad in the order they came.
 3. **Waves** on the Chinatown docks (§8.6). A wave ends when nobody is left fighting.
 4. **A supply drop after every wave** (§8.4): either one item picked for you, or a choice between two.
 5. **A boss every fifth wave** (§8.7). Bosses drop the active they carry, or an upgrade for it if you already have it.
@@ -682,12 +682,14 @@ Melee men need new code: approach and strike states, a hit on the player, a bloc
 
 The foundation, so the loop can be played on the phone before any of it is final:
 
-- **Marks** (`ActivePartData.marks`, `at_mark()`): Mk I and Mk II overrides for all eleven actives in their part files, as in the table in §8.3.
-- **The run** (`src/run/`): `RunState` (what you own, at which mark, the doctrine, the wave), `RewardData` and the reward table with doctrine and affinity weighting, `SurvivalWaves` (threat budget, unlock waves, lieutenant waves), `SurvivalConfig` (`data/run/survival.tres`).
-- **The Blue Lantern**, the first new enemy type (data only: `data/enemies/blue_lantern.tres`).
-- **The loop on Chinatown**: Survival on the main menu, the kit picks, waves with spawns out of sight, the drop screen, the guns limited to what you own, and the run-over screen.
+- **Data** (`tools/run/gen_pool.py` → `data/run/survival.tres`, the source of truth; `src/run/`): `RunItem` (a gun or a part, its tags, weight, first wave, boss-only flag, Mk I and Mk II overrides for actives), `Doctrine` (baseline body, starting actives, favoured tags), `WaveEnemy` (the roster), `SurvivalConfig`. Every gun and part is in the pool. The parts' own `.tres` files are untouched, so Sandbox plays exactly as before.
+- **Marks**: Mk I and Mk II for all eleven actives as in the table in §8.3. `RunItem.active_at(mark)` copies the part and sets the overrides; Mk III is the part itself.
+- **The run** (`RunState`): the body as a `BodyLoadout`, the guns, the marks, the drops (§8.4, §8.5) and the boss drop. `SurvivalWaves`: the threat budget, debuts (a new type always shows up on its first wave), caps, lieutenant waves on every fifth wave, the dip after them. First numbers: wave 1 is 3–5 men; waves 1/4/8/12/16/20 bring about 3/8/13/17/20/22 men.
+- **The Blue Lantern**, the first new enemy type (data only: `data/enemies/blue_lantern.tres`; SMG, 85 health, wide aim, slow to react, low courage).
+- **The loop on Chinatown** (`SurvivalRun`, `SurvivalDirector`, `src/ui/survival/`): **Survival** is first on the main menu, and the old Begin is now **Sandbox**. The kit screen (D-pad ▲▼ row, ◀ ▶ change, A deploy) sits over the menu scene. Waves come in out of sight like the rolling spawns, at most 12 alive. The HUD shows the wave banner and how many are left. After a wave: health and charges refill, then the drop screen pauses the game (◀ ▶, A), then 3 s to the next wave. Lieutenant waves show the boss drop first, on a gold card. On death: the run-over screen (wave, kills, kit, what was taken), then A for the main menu. The pause menu hides the map switch, the enemy toggle and the map cost test during a run. `-- --survival=<doctrine>,<gun>,<active>` (indices) starts a run straight away for tests and captures.
+- **Evidence:** `tests/unit/test_run_marks.gd`, `test_run_state.gd`, `test_survival_waves.gd`; `tests/scene/test_survival.gd` plays the loop (kit on the player, wave 1 in and cleared, the choice of two, the item in the body or on the wheel, wave 2, death and the run-over screen, Survival from the menu).
 
-Not yet: bosses, melee enemies, theme waves, the ammunition economy, objective waves, any meta-progression.
+Not yet: bosses, melee enemies, theme waves, objective waves, an ammunition economy, any meta-progression, sounds for the drop screens beyond the UI ticks.
 
 ### 8.10 Open questions
 

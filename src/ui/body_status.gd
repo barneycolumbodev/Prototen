@@ -52,6 +52,9 @@ var player: Player
 var appearance: BodyAppearance
 ## Main-menu mode: no player (see the header).
 var menu_mode: bool = false
+## Survival (docs/design.md §8.2): the body is looked at, not changed. A, X
+## and presets do nothing; RB and the colours still work.
+var locked: bool = false
 ## Closed (either mode).
 signal closed
 const DEFAULT_BODY: PlayerBodyConfig = preload("res://data/player/body_default.tres")
@@ -514,7 +517,7 @@ func close() -> void:
 		closed.emit()
 		return
 	get_tree().paused = false
-	if changed and player:
+	if changed and player and not locked:
 		player.apply_loadout(working)
 		LoadoutStore.save(working)
 	changed = false
@@ -665,6 +668,9 @@ func _on_meta(meta: Variant) -> void:
 ## A: install the selected part, or take it out if it's in; on a preset,
 ## apply the preset.
 func activate() -> void:
+	if locked:
+		Sfx.play_ui(&"wheel_tick", -14.0)
+		return
 	if selected_preset >= 0:
 		working = _presets[selected_preset].copy()
 		changed = true
@@ -688,6 +694,8 @@ func activate() -> void:
 ## X: an installed active moves to the next D-pad direction; any other
 ## installed part comes out.
 func secondary() -> void:
+	if locked:
+		return
 	var p: PartData = selected_part()
 	if p == null or not working.has_part(p.id):
 		return
@@ -706,6 +714,8 @@ func secondary() -> void:
 
 ## Takes the selected part out (tests and X).
 func remove_selected() -> bool:
+	if locked:
+		return false
 	var p: PartData = selected_part()
 	if p and working.remove(p.id):
 		working.display_name = "Custom"
@@ -853,7 +863,9 @@ func _refresh() -> void:
 	_header.text = _header_text()
 	_text.text = describe(preview_body, working_body, _card())
 	var p: PartData = selected_part()
-	if selected_preset >= 0:
+	if locked:
+		_act_button.text = "Survival: parts come from drops"
+	elif selected_preset >= 0:
 		_act_button.text = "A  Apply preset"
 	elif p and working.has_part(p.id):
 		_act_button.text = "A  Remove" if not p.fixed else "Built in"

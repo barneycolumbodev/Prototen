@@ -48,6 +48,19 @@ func start() -> void:
 	if running:
 		return
 	running = true
+	_build_squad()
+	kills = 0
+	spawned_total = 0
+	_queue = config.start_count
+	# The first wave: enough of each role in the oven for the opening spawns.
+	for role: String in ["gunman", "enforcer", "red_pole"]:
+		_fill_looks(role, LOOKS_AHEAD + (config.start_count if role == "gunman" else 1))
+	_timer = 0.5
+	_emit()
+
+
+## The squad every spawn joins, with cover sampled over `cover_regions`.
+func _build_squad() -> void:
 	squad = Squad.new()
 	squad.name = "Squad"
 	add_child(squad)
@@ -58,14 +71,6 @@ func start() -> void:
 		var half: float = region[1]
 		squad.build_cover(origin, half, level.get_world_3d(), not first)
 		first = false
-	kills = 0
-	spawned_total = 0
-	_queue = config.start_count
-	# The first wave: enough of each role in the oven for the opening spawns.
-	for role: String in ["gunman", "enforcer", "red_pole"]:
-		_fill_looks(role, LOOKS_AHEAD + (config.start_count if role == "gunman" else 1))
-	_timer = 0.5
-	_emit()
 
 
 func stop() -> void:

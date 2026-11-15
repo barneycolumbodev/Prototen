@@ -652,3 +652,28 @@ Please try:
 - Measured:
 - Notes from the owner:
 - Follow-ups:
+
+## S1 Survival foundation — 2026-11-15 (waiting for the owner)
+
+Owner (2026-11-15): the action base is there, but there are no rules or progression; the main mode is wave-based survival. Pick a baseline character, one gun (Five-seveN, MP5 or Saiga) and one active, tuned down; get harder waves and, after each, a drop or a choice of two; be able to steer a run toward a build; bosses later. Keep today's mode. Design: `docs/design.md` §8.
+
+What's in the APK:
+- **Main menu: SURVIVAL** first. Today's mode is now **SANDBOX** (Loadout and Map still go with Sandbox).
+- **Kit screen** (D-pad ▲▼ row, ◀ ▶ change, A deploy, B back): **doctrine** (Ghost, Reaper, Juggernaut, Marksman, Handler: the baseline body, and what the drops favour), **gun**, **active at Mk I** (only the ones that doctrine's body can run). He wears the doctrine's body in the scene as you flip through.
+- **Waves** on the docks: wave 1 is 3–5 men, mostly the new **Blue Lantern** recruits (SMG, poor aim, panic early) and Gunmen; Enforcers from wave 2, a Red Pole from wave 3. They come in out of sight; the banner shows the wave and how many are left.
+- **After every wave**: health and active charges refill, then the **supply drop** (the game pauses): a choice of two (◀ ▶, A) or one item delivered. Guns go on the wheel, parts into the body (the card says if something comes out or if it won't come online yet).
+- **Every fifth wave** is a lieutenant wave (two Red Poles leading) standing in for a boss; it ends with a gold **boss drop**: your active goes up a mark (Mk I → II → III), or a new active.
+- **Death ends the run**: the run-over screen, then A for the menu. The loadout screen (View) shows your body but can't change it.
+
+Cloud evidence: `tools/check.sh` with `tests/unit/test_run_marks.gd`, `test_run_state.gd`, `test_survival_waves.gd`, `tests/scene/test_survival.gd`, `test_survival_menu.gd`. Captures (compatibility renderer, software GL): `docs/previews/survival_kit.png`, `survival_kit_juggernaut.png`, `survival_drop.png`, `survival_boss_drop.png`, `survival_run_over.png`. Not checked in the cloud: how it plays and how fast it gets hard, frame rate in late waves.
+
+Please try:
+1. A few runs with different doctrines. Which wave do you reach? Does it get hard too fast, too slow, or about right?
+2. Do the Mk I actives feel weak enough that the upgrade means something, without feeling useless? (RX-9 Mk I: 4 s, SX-8 Mk I: 2 marks.)
+3. Do the drops feel like decisions? Is a choice of two the right amount, and how often should it be one item?
+4. Could you tell your doctrine was steering the drops?
+
+- Device / renderer / settings:
+- Measured:
+- Notes from the owner:
+- Follow-ups:

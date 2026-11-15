@@ -9,7 +9,8 @@ extends Node3D
 ##
 ## Enemies arrive on a rolling clock (RollingSpawner, data/levels/
 ## chinatown_spawns.tres): 8 at the start, 3 more whenever fewer than 4 are
-## still fighting, always out of sight.
+## still fighting, always out of sight. That's Sandbox; Survival (docs/
+## design.md §8) runs waves here instead (SurvivalRun, `start_survival`).
 ##
 ## Layout coordinates are Blender's (x east, y north, z up); Godot's are
 ## (x, z, -y). See `b2g`.
@@ -31,6 +32,8 @@ const DETAIL_RANGE: float = 42.0
 var layout: Dictionary = {}
 var player: Player
 var wave_mode: RollingSpawner
+## The Survival run, when the game was started as one (null in Sandbox).
+var survival: SurvivalRun
 var combat_hud: CombatHud
 var atmos: NightAtmosphere
 var spawn_points: Array[Vector3] = []
@@ -99,6 +102,16 @@ func _ready() -> void:
 	atmos.map = self
 	add_child(atmos)
 	Sfx.set_room(0.25)
+	for a: String in OS.get_cmdline_user_args():
+		if a.begins_with("--survival"):
+			# Cloud captures and tests: --survival[=doctrine,gun,active] (indices).
+			var k: PackedStringArray = a.get_slice("=", 1).split(",") if a.contains("=") else PackedStringArray()
+			var cfg: SurvivalConfig = preload("res://data/run/survival.tres")
+			var d: Doctrine = cfg.doctrines[k[0].to_int() if k.size() > 0 else 0]
+			var g: WeaponData = cfg.starter_weapons[k[1].to_int() if k.size() > 1 else 0]
+			var act: ActivePartData = d.starter_actives[k[2].to_int() if k.size() > 2 else 0]
+			start_survival.call_deferred(d, g, act)
+			return
 	if wants_menu():
 		_open_menu()
 		return
@@ -134,6 +147,7 @@ func _open_menu() -> void:
 	add_child(menu)
 	atmos.follow(menu.camera)
 	menu.begin_requested.connect(_on_begin)
+	menu.survival_requested.connect(_on_survival)
 
 
 ## Begin on the main menu: Chinatown starts here (the map is already
@@ -159,7 +173,58 @@ func _on_begin(scene_path: String) -> void:
 	tw.tween_callback(black.queue_free)
 
 
-func _start_game() -> void:
+## Survival on the main menu: the menu goes, the run starts here.
+func _on_survival(doctrine: Doctrine, gun: WeaponData, active: ActivePartData) -> void:
+	var black: CanvasLayer = CanvasLayer.new()
+	black.layer = 120
+	var rect: ColorRect = ColorRect.new()
+	rect.color = Color.BLACK
+	rect.set_anchors_preset(Control.PRESET_FULL_RECT)
+	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	black.add_child(rect)
+	add_child(black)
+	menu.queue_free()
+	menu = null
+	start_survival(doctrine, gun, active)
+	var tw: Tween = black.create_tween()
+	tw.tween_interval(0.1)
+	tw.tween_property(rect, "color:a", 0.0, 0.6)
+	tw.tween_callback(black.queue_free)
+
+
+## Starts a Survival run (docs/design.md §8) with this kit.
+func start_survival(doctrine: Doctrine, gun: WeaponData, active: ActivePartData, seed_value: int = 0) -> void:
+	if player == null:
+		_start_game(true)
+	else:
+		# Already playing Sandbox here (tests): its spawner goes, the operative stays.
+		if wave_mode:
+			if EventBus.wave_mode_requested.is_connected(wave_mode.toggle):
+				EventBus.wave_mode_requested.disconnect(wave_mode.toggle)
+			wave_mode.stop()
+			wave_mode.queue_free()
+			wave_mode = null
+		player.respawn()
+	survival = SurvivalRun.new()
+	survival.name = "Survival"
+	survival.level = self
+	survival.player = player
+	survival.spawn_config = load(SPAWN_CONFIG) as RollingSpawnConfig
+	survival.spawn_points = spawn_points
+	survival.cover_regions = cover_regions()
+	add_child(survival)
+	# Physics needs a frame to register the colliders before cover sampling.
+	await get_tree().physics_frame
+	await get_tree().physics_frame
+	survival.begin(doctrine, gun, active, seed_value)
+
+
+## Cover: the whole ground level, and the gallery on the east tenement.
+static func cover_regions() -> Array:
+	return [[Vector3(0, 0, 5), 47.0], [Vector3(35, 3.95, 14.1), 11.0]]
+
+
+func _start_game(survival_mode: bool = false) -> void:
 	player = PLAYER_SCENE.instantiate() as Player
 	add_child(player)
 	player.global_position = player_start
@@ -190,19 +255,20 @@ func _start_game() -> void:
 	combat_hud = CombatHud.new()
 	combat_hud.player = player
 	add_child(combat_hud)
+	EventBus.benchmark_requested.connect(start_benchmark)
+	EventBus.feature_sweep_requested.connect(start_feature_sweep)
+	_build_navigation()
+	if survival_mode:
+		return
 	wave_mode = RollingSpawner.new()
 	wave_mode.name = "WaveMode"
 	wave_mode.config = load(SPAWN_CONFIG) as RollingSpawnConfig
 	wave_mode.level = self
 	wave_mode.player = player
 	wave_mode.spawn_points = spawn_points
-	# Cover: the whole ground level, and the gallery on the east tenement.
-	wave_mode.cover_regions = [[Vector3(0, 0, 5), 47.0], [Vector3(35, 3.95, 14.1), 11.0]]
+	wave_mode.cover_regions = cover_regions()
 	add_child(wave_mode)
 	EventBus.wave_mode_requested.connect(wave_mode.toggle)
-	EventBus.benchmark_requested.connect(start_benchmark)
-	EventBus.feature_sweep_requested.connect(start_feature_sweep)
-	_build_navigation()
 	var spawns_on: bool = autostart_spawns and not CaptureDirector.is_capturing()
 	for arg: String in OS.get_cmdline_user_args():
 		if arg == "--waves":
@@ -517,7 +583,7 @@ func start_feature_sweep() -> void:
 	player.global_position = b2g([-8.0, 7.0, -0.15])
 	player.velocity = Vector3.ZERO
 	_bench_yaw0 = 0.0
-	if wave_mode.running:
+	if wave_mode and wave_mode.running:
 		wave_mode.stop()
 	sweep.start()
 
