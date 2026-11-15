@@ -293,6 +293,11 @@ func capacity() -> int:
 
 
 ## Share of a release that goes for bodies inside the area.
+## Fixes the throw's spread (tests: the same volley every run).
+func seed_spread(value: int) -> void:
+	_rng.seed = value
+
+
 func seek_share() -> float:
 	var p: float = body.stat(&"perception") if body else 1.0
 	return clampf(cfg.seek_per_perception * p, 0.0, cfg.seek_max)

@@ -131,6 +131,9 @@ func test_letting_go_throws_back_exactly_what_it_caught() -> void:
 	var c: LorentzCatcher = await _equip([&"lc6_lorentz_catcher"])
 	var shooter: Enemy = _target(0, Vector3(-3.0, 0.0, -4.0))
 	var victim: Enemy = _target(2, Vector3(0.5, 0.0, -8.0))
+	# The spread is random; fix it and the shuffle so the volley is the same every run.
+	c.seed_spread(4242)
+	seed(4242)
 	player.set_view(0.0, deg_to_rad(-3.0))
 	await wait_physics_frames(3)
 	await _hold(c)
