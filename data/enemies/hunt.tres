@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="HuntConfig" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/ai/hunt_config.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+intel_refresh = 5.0
+intel_noise = 7.0
+last_count = 2
+last_refresh = 2.0
+last_noise = 2.0
+search_radius = 6.0
+run_beyond = 10.0
+role_interval = 1.0
+contact_fresh = 4.0
+pin_count = 2
+pin_fire_time = 3.5
+pin_error_scale = 1.6
+flank_count = 2
+flank_angle_deg = 95.0
+flank_distance = 11.0
+flank_timeout = 12.0
+push_after = 5.0
+push_step = 4.0
+cornered_after = 5.0
+stuck_after = 6.0
+mark_when_left = 1

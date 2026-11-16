@@ -141,6 +141,18 @@ var voice: StringName = &""
 var mouth: AudioStreamPlayer3D
 ## Said "where'd he go" since he last saw the operative.
 var _said_lost: bool = false
+## What the squad has him doing while there's contact (Squad.assign_roles,
+## docs/design.md §5.6a): pin, flank or push. NONE: his own judgment.
+var squad_role: Squad.Role = Squad.Role.NONE
+## Where a flanker is running to, and when his last flank ended (-1: never).
+var flank_target: Vector3 = Vector3.INF
+var flank_done_at: float = -1.0
+var _role_time: float = 0.0
+var _in_cover_for: float = 0.0
+var _said_suppress: bool = false
+var _stuck_check: float = 1.0
+var _stuck_from: Vector3 = Vector3.INF
+var _stuck_for: float = 0.0
 const MOUTH_UNIT_SIZE: float = 10.0
 
 
@@ -231,6 +243,17 @@ func is_threat() -> bool:
 
 func state_name() -> String:
 	return State.keys()[state]
+
+
+func set_squad_role(r: Squad.Role) -> void:
+	if r == squad_role:
+		return
+	squad_role = r
+	_role_time = 0.0
+
+
+func _hunting() -> bool:
+	return squad != null and squad.hunt != null
 
 
 # ------------------------------------------------------------------ hits
@@ -851,6 +874,29 @@ func _physics_process(delta: float) -> void:
 		_decide()
 	_act(delta)
 	_move(delta)
+	if _hunting() and boss == null and squad.hunt.stuck_after > 0.0:
+		_check_stuck(delta)
+
+
+## Hunting and getting nowhere (caught on something, or thrown where
+## there's no way back): after `stuck_after` the squad moves him to a spawn
+## point out of the operative's sight.
+func _check_stuck(delta: float) -> void:
+	_stuck_check -= delta
+	if _stuck_check > 0.0:
+		return
+	_stuck_check = 1.0
+	var moved: float = global_position.distance_to(_stuck_from) if _stuck_from != Vector3.INF else 99.0
+	_stuck_from = global_position
+	var wants: bool = state in [State.ALERT, State.COMBAT] and not sees_player and not launched \
+			and _move_target != Vector3.INF and global_position.distance_to(_move_target) > 2.5
+	if wants and moved < 0.5:
+		_stuck_for += 1.0
+	else:
+		_stuck_for = 0.0
+	if _stuck_for >= squad.hunt.stuck_after:
+		_stuck_for = 0.0
+		squad.unstick(self)
 
 
 func _update_perception(dt: float) -> void:
@@ -912,8 +958,13 @@ func _update_morale(delta: float) -> void:
 	morale = clampf(morale, 0.0, 1.0)
 	if morale < 0.18 and state == State.COMBAT and not passive:
 		_break()
-	elif state in [State.FLEE, State.COWER, State.BLIND] and morale > 0.45 and _state_time > 6.0 and has_gun:
-		_enter(State.COMBAT)
+	elif state in [State.FLEE, State.COWER, State.BLIND] and has_gun:
+		if morale > 0.45 and _state_time > 6.0:
+			_enter(State.COMBAT)
+		elif squad and squad.cornered() and _state_time > squad.hunt.cornered_after:
+			# The last of them: nowhere left to run, so he comes back.
+			morale = maxf(morale, 0.35)
+			_enter(State.COMBAT)
 
 
 func _break() -> void:
@@ -991,10 +1042,16 @@ func _decide() -> void:
 			if passive:
 				body.set_stance(&"loco")
 				return
-			body.set_stance(&"loco")
+			# Hunting (wave modes): run where the squad says he is, never
+			# stand down (docs/design.md §5.6a).
+			var hunting: bool = _hunting()
+			if hunting and (last_known == Vector3.INF or global_position.distance_to(last_known) <= 2.0):
+				last_known = squad.search_point(self)
+			var far: bool = last_known != Vector3.INF and global_position.distance_to(last_known) > (squad.hunt.run_beyond if hunting else INF)
+			body.set_stance(&"run" if far and not limping else &"loco")
 			if last_known != Vector3.INF and global_position.distance_to(last_known) > 2.0:
 				_go(last_known)
-			elif _state_time > 6.0:
+			elif _state_time > 6.0 and not hunting:
 				_enter(State.IDLE)
 		State.GUT:
 			if _state_time > 3.5 and health > config.health * 0.3 and has_gun and not passive:
@@ -1035,9 +1092,28 @@ func _decide_combat() -> void:
 		return
 	var d: float = global_position.distance_to(p.global_position)
 	_tactic_time += _think
-	# Lost him: go look where he was.
+	_role_time += _think
+	var hunting: bool = _hunting()
+	if sees_player:
+		_said_suppress = false
+	# Flanking: run round to his side while the pinners hold him.
+	if squad_role == Squad.Role.FLANK and hunting:
+		var there: bool = flank_target == Vector3.INF or global_position.distance_to(flank_target) < 1.5
+		if there or (sees_player and d < 9.0) or _role_time > squad.hunt.flank_timeout:
+			flank_done_at = squad.clock
+			set_squad_role(Squad.Role.PUSH)
+			_cover_point = Vector3.INF
+			tactic = Tactic.HOLD
+		else:
+			tactic = Tactic.MOVE
+			_cover_point = Vector3.INF
+			_go(flank_target)
+			return
+	# Lost him: go look where he was (hunting: and keep looking).
 	if _unseen_for > 4.0 and last_known != Vector3.INF:
 		tactic = Tactic.MOVE
+		if hunting and global_position.distance_to(last_known) < 2.5:
+			last_known = squad.search_point(self)
 		_go(last_known)
 		if not _said_lost:
 			_said_lost = true
@@ -1056,8 +1132,21 @@ func _decide_combat() -> void:
 			_stop()
 		return
 	var in_cover: bool = _cover_point != Vector3.INF and global_position.distance_to(_cover_point) < 0.9
+	_in_cover_for = _in_cover_for + _think if in_cover else 0.0
 	if tactic == Tactic.MOVE and _move_target != Vector3.INF and global_position.distance_to(_move_target) > 0.9:
 		return
+	# Pushing: don't sit in one spot, move up cover by cover.
+	if in_cover and hunting and squad_role == Squad.Role.PUSH and _in_cover_for > squad.hunt.push_after \
+			and suppression < 0.5 and _reloading <= 0.0:
+		var nearer: Vector3 = squad.find_cover_nearer(self, p.global_position, squad.hunt.push_step)
+		_in_cover_for = 0.0
+		if nearer != Vector3.INF:
+			_cover_point = nearer
+			tactic = Tactic.MOVE
+			_go(nearer)
+			if _rng.randf() < 0.4:
+				_callout(&"advance")
+			return
 	if in_cover:
 		_stop()
 		if tactic != Tactic.HIDE and tactic != Tactic.PEEK:
@@ -1066,12 +1155,13 @@ func _decide_combat() -> void:
 			_tactic_len = _rng.randf_range(1.0, 2.5)
 		if _tactic_time > _tactic_len:
 			_tactic_time = 0.0
-			if tactic == Tactic.HIDE and suppression < 0.6 and _reloading <= 0.0:
+			var pinning: bool = squad_role == Squad.Role.PIN
+			if tactic == Tactic.HIDE and suppression < (0.75 if pinning else 0.6) and _reloading <= 0.0:
 				tactic = Tactic.PEEK
-				_tactic_len = _rng.randf_range(1.8, 3.8)
+				_tactic_len = _rng.randf_range(1.8, 3.8) * (1.5 if pinning else 1.0)
 			else:
 				tactic = Tactic.HIDE
-				_tactic_len = _rng.randf_range(1.2, 3.0) * (1.0 + suppression * 1.5)
+				_tactic_len = _rng.randf_range(1.2, 3.0) * (1.0 + suppression * 1.5) * (0.6 if pinning else 1.0)
 				if _rng.randf() < 0.2:
 					_cover_point = Vector3.INF  # move on to another spot next time
 		# Cover no longer between us: find another.
@@ -1156,7 +1246,15 @@ func _try_fire(p: Player, _delta: float) -> void:
 	if ammo <= 0:
 		_start_reload()
 		return
-	if not sees_player or _seen_for < config.reaction_time:
+	# A pinner keeps firing where he went for a while: rounds into his
+	# cover keep his head down while the flankers go round.
+	var pin_fire: bool = false
+	if not sees_player:
+		if squad_role != Squad.Role.PIN or not _hunting() or last_known == Vector3.INF \
+				or _unseen_for > squad.hunt.pin_fire_time or _rounds_this_engagement == 0:
+			return
+		pin_fire = true
+	elif _seen_for < config.reaction_time:
 		return
 	if not _has_token:
 		_has_token = squad.request_token(self) if squad else true
@@ -1166,7 +1264,13 @@ func _try_fire(p: Player, _delta: float) -> void:
 		return
 	if _burst_left <= 0:
 		_burst_left = _rng.randi_range(config.burst_min, config.burst_max)
-	_fire_at(p.camera().global_position - Vector3.UP * _rng.randf_range(0.15, 0.55), _aim_error(p))
+	if pin_fire:
+		if not _said_suppress:
+			_said_suppress = true
+			_callout(&"suppress")
+		_fire_at(last_known + Vector3.UP * _rng.randf_range(0.9, 1.7), _aim_error(p) * squad.hunt.pin_error_scale)
+	else:
+		_fire_at(p.camera().global_position - Vector3.UP * _rng.randf_range(0.15, 0.55), _aim_error(p))
 	_burst_left -= 1
 	_shot_timer = config.fire_interval
 	if _burst_left <= 0:

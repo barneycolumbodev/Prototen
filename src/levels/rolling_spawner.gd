@@ -65,6 +65,9 @@ func _build_squad() -> void:
 	squad.name = "Squad"
 	add_child(squad)
 	squad.set_player(player)
+	# They come to him: lookouts, pin and flank (docs/design.md §5.6a).
+	squad.enable_hunt()
+	squad.relocate = _relocate
 	var first: bool = true
 	for region: Array in cover_regions:
 		var origin: Vector3 = region[0]
@@ -223,6 +226,21 @@ func _spawn(role: String, at: Vector3) -> Enemy:
 
 
 ## The next look for `role` (picked ahead), and another put in the oven.
+## A stuck man (Squad.unstick): moved to a spawn point the player can't
+## see, if he can't see the man where he is now either.
+func _relocate(e: Enemy) -> bool:
+	var space: PhysicsDirectSpaceState3D = level.get_world_3d().direct_space_state
+	if sees(space, player.camera().global_position, e.global_position):
+		return false
+	var i: int = pick_spawn()
+	if i < 0:
+		return false
+	e.global_position = spawn_points[i] + Vector3(0, 0.05, 0)
+	e.velocity = Vector3.ZERO
+	e._stop()
+	return true
+
+
 func _take_look(role: String) -> TriadLook:
 	_fill_looks(role, LOOKS_AHEAD + 1)
 	var list: Array = _looks[role]

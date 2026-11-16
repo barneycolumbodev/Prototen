@@ -2,6 +2,9 @@ class_name CombatHud
 extends CanvasLayer
 ## Combat layer of the HUD: health, where hits come from, suppression,
 ## enemy callouts (subtitles), the wave banner and the "down" screen.
+## Near the end of a wave the last men are marked: a chevron over each one
+## (through walls) and an arrow at the screen edge when he's off screen
+## (owner, 2026-11-16; HuntConfig.mark_when_left).
 
 const CALLOUT_TIME: float = 2.6
 const MAX_CALLOUTS: int = 3
@@ -198,6 +201,90 @@ class BossBar:
 var _boss_bar: BossBar
 
 
+## Marks the last hostiles of a wave: a chevron and the distance over each
+## one on screen, an arrow on the screen edge pointing at each one off it.
+class HostileMarker:
+	extends Control
+	const MARGIN: float = 70.0
+	const COLOR: Color = Color(1.0, 0.16, 0.12)
+	const TEXT: Color = Color(1.0, 0.94, 0.9)
+	var cam: Camera3D
+	var targets: Array[Enemy] = []
+	var font: Font
+	var t: float = 0.0
+
+	## Where the marker for `e` goes: [screen point, on screen, edge direction].
+	func place(e: Enemy, vp: Vector2) -> Array:
+		var at: Vector3 = e.body.head_position() + Vector3.UP * 0.45
+		var local: Vector3 = cam.global_transform.affine_inverse() * at
+		var sp: Vector2 = cam.unproject_position(at)
+		var inner: Rect2 = Rect2(Vector2(MARGIN, MARGIN), vp - Vector2(MARGIN, MARGIN) * 2.0)
+		if local.z < -0.1 and inner.has_point(sp):
+			return [sp, true, Vector2.ZERO]
+		var dir: Vector2 = Vector2(local.x, -local.y)
+		if local.z > -0.1:
+			# Behind him: the arrow goes to the bottom edge, on his side.
+			dir = Vector2(local.x, maxf(-local.y, 0.0) + local.z * 0.8)
+		if dir.length_squared() < 0.0001:
+			dir = Vector2(0.0, 1.0)
+		dir = dir.normalized()
+		var half: Vector2 = vp * 0.5 - Vector2(MARGIN, MARGIN)
+		var kx: float = half.x / absf(dir.x) if absf(dir.x) > 0.0001 else INF
+		var ky: float = half.y / absf(dir.y) if absf(dir.y) > 0.0001 else INF
+		return [vp * 0.5 + dir * minf(kx, ky), false, dir]
+
+	func _draw() -> void:
+		if cam == null:
+			return
+		var vp: Vector2 = get_viewport_rect().size
+		var pulse: float = 0.85 + 0.15 * sin(t * 6.0)
+		var col: Color = Color(COLOR, pulse)
+		var shade: Color = Color(0, 0, 0, 0.75)
+		for e: Enemy in targets:
+			if not is_instance_valid(e) or not e.alive:
+				continue
+			var where: Array = place(e, vp)
+			var pos: Vector2 = where[0]
+			var dist: String = "%d m" % roundi(cam.global_position.distance_to(e.global_position))
+			var tw: float = font.get_string_size(dist, HORIZONTAL_ALIGNMENT_LEFT, -1, FONT).x
+			var on_screen: bool = where[1]
+			if on_screen:
+				# A chevron over his head, bobbing, with the distance above it.
+				var s: float = 17.0
+				var tip: Vector2 = pos + Vector2(0.0, sin(t * 4.0) * 4.0)
+				var pts: PackedVector2Array = PackedVector2Array([tip + Vector2(-s, -s * 1.5), tip + Vector2(0.0, -s * 0.9), tip + Vector2(s, -s * 1.5), tip])
+				_shape(pts, col, shade)
+				_label(dist, tip + Vector2(-tw * 0.5, -s * 1.5 - 10.0), col, shade)
+			else:
+				# An arrow on the screen edge pointing at him, the distance inside it.
+				var dir: Vector2 = where[2]
+				var perp: Vector2 = Vector2(-dir.y, dir.x)
+				var tip2: Vector2 = pos + dir * 26.0
+				var arrow: PackedVector2Array = PackedVector2Array([tip2, pos - dir * 12.0 + perp * 22.0, pos - dir * 3.0, pos - dir * 12.0 - perp * 22.0])
+				_shape(arrow, col, shade)
+				var label_at: Vector2 = pos - dir * 44.0 + Vector2(-tw * 0.5, FONT * 0.35)
+				_label(dist, label_at, col, shade)
+
+	const FONT: int = 22
+
+	func _shape(pts: PackedVector2Array, col: Color, shade: Color) -> void:
+		var ring: PackedVector2Array = pts.duplicate()
+		ring.append(pts[0])
+		draw_polyline(ring, shade, 6.0, true)
+		draw_colored_polygon(pts, col)
+		draw_polyline(ring, Color(TEXT, col.a), 2.0, true)
+
+	func _label(text: String, at: Vector2, col: Color, shade: Color) -> void:
+		draw_string_outline(font, at, text, HORIZONTAL_ALIGNMENT_LEFT, -1, FONT, 6, shade)
+		draw_string(font, at, text, HORIZONTAL_ALIGNMENT_LEFT, -1, FONT, Color(TEXT, col.a))
+
+
+var _marker: HostileMarker
+var _hunt: HuntConfig = preload("res://data/enemies/hunt.tres")
+var _left: int = 0
+var _scan: float = 0.0
+
+
 func _ready() -> void:
 	layer = 5
 	_root = Control.new()
@@ -227,6 +314,11 @@ func _ready() -> void:
 	_boss_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_boss_bar.visible = false
 	_root.add_child(_boss_bar)
+	_marker = HostileMarker.new()
+	_marker.font = ThemeDB.fallback_font
+	_marker.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_marker.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_root.add_child(_marker)
 	EventBus.callout.connect(_on_callout)
 	EventBus.player_damaged.connect(_on_damaged)
 	EventBus.player_died.connect(func() -> void: _down.visible = true)
@@ -270,6 +362,7 @@ func _process(delta: float) -> void:
 	_banner_time -= delta
 	_wave.modulate.a = clampf(_banner_time, 0.25, 1.0) if _banner_time > -999.0 else 1.0
 	_update_arcs(delta)
+	_update_marker(delta)
 	for c: Node in _callouts.get_children():
 		var l: Label = c as Label
 		var age: float = l.get_meta(&"age", 0.0)
@@ -296,6 +389,35 @@ func _update_arcs(delta: float) -> void:
 	_hits = still
 	_vignette.arcs = arcs
 	_vignette.redraw_if_changed()
+
+
+## The last few of a wave: who to mark.
+func _update_marker(delta: float) -> void:
+	_scan -= delta
+	if _scan <= 0.0:
+		_scan = 0.25
+		_marker.targets = marked_hostiles()
+	_marker.cam = player.camera() if player else null
+	_marker.visible = not _marker.targets.is_empty() and _marker.cam != null and not (player and player.dead)
+	if _marker.visible:
+		_marker.t += delta
+		_marker.queue_redraw()
+
+
+## The men still fighting, once a wave is down to `mark_when_left` or fewer.
+func marked_hostiles() -> Array[Enemy]:
+	var out: Array[Enemy] = []
+	if _left <= 0 or _left > _hunt.mark_when_left:
+		return out
+	for n: Node in get_tree().get_nodes_in_group(&"enemies"):
+		var e: Enemy = n as Enemy
+		if e and e.alive and not e.passive and e.state not in [Enemy.State.SURRENDER, Enemy.State.CRAWL]:
+			out.append(e)
+	return out
+
+
+func marker() -> HostileMarker:
+	return _marker
 
 
 func _on_damaged(amount: float, from_dir: Vector3) -> void:
@@ -330,11 +452,13 @@ func callout_count() -> int:
 ## Rolling spawns: a quiet counter instead of the wave banner.
 func _on_score(kills: int, hostiles: int) -> void:
 	_banner_time = -1000.0
+	_left = 0
 	_wave.text = ""
 	_wave_sub.text = "KILLS %d    HOSTILES %d" % [kills, hostiles]
 
 
 func _on_wave(wave: int, left: int) -> void:
+	_left = left if wave > 0 else 0
 	if wave <= 0:
 		_wave.text = ""
 		_wave_sub.text = ""
@@ -347,5 +471,7 @@ func _on_wave(wave: int, left: int) -> void:
 		_wave.text = "WAVE %d CLEARED" % wave
 		_wave_sub.text = ""
 		_banner_time = 3.0
+	elif left <= _hunt.mark_when_left:
+		_wave_sub.text = "LAST HOSTILE" if left == 1 else "LAST %d" % left
 	else:
 		_wave_sub.text = "%d left" % left
