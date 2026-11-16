@@ -182,7 +182,7 @@ func _cleanup(all_out: bool) -> void:
 			continue
 		if not e.alive:
 			bodies.append(e)
-		elif all_out and e.state in [Enemy.State.SURRENDER, Enemy.State.CRAWL]:
+		elif all_out and e.out_of_fight():
 			e.queue_free()
 			continue
 		keep.append(e)

@@ -80,7 +80,7 @@ func fighting_count() -> int:
 	_prune()
 	var n: int = 0
 	for e: Enemy in members:
-		if is_instance_valid(e) and e.alive and e.state not in [Enemy.State.SURRENDER, Enemy.State.CRAWL]:
+		if is_instance_valid(e) and e.alive and not e.out_of_fight():
 			n += 1
 	return n
 

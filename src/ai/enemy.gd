@@ -1240,6 +1240,38 @@ func _release_token() -> void:
 	_has_token = false
 
 
+## Out of the fight for good: surrendered, crawling, or broken with nothing
+## left to fight with (his gun knocked away or his gun hand gone: nothing
+## brings it back, so he'd run or cower forever). Waves don't wait for him.
+## Never a boss: his wave waits for the execution.
+func out_of_fight() -> bool:
+	if boss:
+		return false
+	if state in [State.SURRENDER, State.CRAWL]:
+		return true
+	return not has_gun and state in [State.FLEE, State.COWER, State.GUT]
+
+
+## Told where the operative is (the last of a wave who lost him, by radio):
+## he goes looking there. Fleeing men keep running until their nerve returns.
+func hunt(at: Vector3) -> void:
+	if not alive or passive or held or out_of_fight():
+		return
+	awareness = 1.0
+	last_known = at
+	if state == State.IDLE:
+		_enter(State.ALERT)
+
+
+## Put somewhere else: a straggler the wave lost track of (stuck, or thrown
+## off the map) comes back in at a spawn point.
+func relocate(at: Vector3) -> void:
+	global_position = at + Vector3.UP * 0.05
+	velocity = Vector3.ZERO
+	_knock = Vector3.ZERO
+	_stop()
+
+
 # ------------------------------------------------------------------ movement
 
 func _go(target: Vector3) -> void:
