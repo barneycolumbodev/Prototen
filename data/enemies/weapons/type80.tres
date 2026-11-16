@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="WeaponData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/weapons/weapon_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+display_name = "Type 80 machine gun"
+caliber = "7.62×54mmR"
+muzzle_velocity = 825.0
+bullet_mass_g = 9.6
+drag_per_m = 0.0009
+pellets = 1
+pattern_deg = 0.0
+penetration_scale = 1.2
+max_penetrations = 6
+max_ricochets = 1
+min_damage = 16.0
+damage_per_joule = 0.14
+impulse_scale = 14.0
+sound_prefix = "t80_"
+flash_scale = 1.4
+shot_volume_db = 0.0
+max_range = 700.0
+player_damage_scale = 0.65

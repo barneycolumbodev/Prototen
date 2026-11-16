@@ -124,6 +124,30 @@ func explosion(at: Vector3, normal: Vector3, radius: float, airburst: bool) -> v
 	explosion_fx().spawn(at, normal, radius, airburst)
 
 
+## A scorch mark (the molotov's pool, docs/design.md §8.8c): ExplosionFx's.
+func scorch(at: Vector3, normal: Vector3, size: float, strength: float) -> void:
+	if not enabled:
+		return
+	explosion_fx()._scorch(at, normal, size, strength)
+
+
+## The fire look shared by burning bodies and burning ground (FirePatch).
+func fire_material() -> StandardMaterial3D:
+	return _particle_material(&"fire")
+
+
+func fire_ramp() -> Gradient:
+	if _fire_ramp == null:
+		_new_fire().queue_free()
+	return _fire_ramp
+
+
+func fire_shrink_curve() -> Curve:
+	if _fire_shrink == null:
+		_new_fire().queue_free()
+	return _fire_shrink
+
+
 func explosion_fx() -> ExplosionFx:
 	if _explosions == null:
 		_explosions = ExplosionFx.new()

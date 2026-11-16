@@ -1,0 +1,71 @@
+[gd_resource type="Resource" script_class="EnemyConfig" load_steps=8 format=3]
+
+[ext_resource type="Script" path="res://src/ai/enemy_config.gd" id="1"]
+[ext_resource type="Script" path="res://src/ai/outfit.gd" id="o0"]
+[ext_resource type="Resource" path="res://data/enemies/outfits/muscle.tres" id="of1"]
+[ext_resource type="Resource" path="res://data/enemies/outfits/summer.tres" id="of2"]
+[ext_resource type="PackedScene" path="res://assets/weapons/enemy/dao.gltf" id="g"]
+[ext_resource type="PackedScene" path="res://assets/characters/triad_gear/gear_dao.gltf" id="gear"]
+[ext_resource type="Script" path="res://src/ai/roles/dao_config.gd" id="dc"]
+
+[sub_resource type="Resource" id="dao"]
+script = ExtResource("dc")
+guard_size = Vector3(0.5, 0.86, 0.05)
+guard_center = Vector3(0.02, 0.12, 0.44)
+deflect_max = 6000.0
+guard_energy = 7000.0
+guard_regen = 1500.0
+broken_time = 2.2
+guard_speed = 2.2
+slash_windup = 0.42
+slash_reach = 2.3
+slash_arc_deg = 130.0
+slash_damage = 48.0
+slash_range = 2.8
+lunge_windup = 0.48
+lunge_reach = 2.2
+lunge_arc_deg = 60.0
+lunge_damage = 60.0
+lunge_speed = 9.0
+lunge_range = 5.2
+
+[resource]
+script = ExtResource("1")
+outfits = Array[ExtResource("o0")]([ExtResource("of1"), ExtResource("of2")])
+display_name = "Dao Swordsman"
+callsign = "SWORDSMAN"
+gear = ExtResource("gear")
+health = 140.0
+walk_speed = 1.6
+run_speed = 6.4
+turn_speed_deg = 420.0
+burst_min = 1
+burst_max = 1
+magazine = 1
+reaction_time = 0.3
+preferred_range = 2.0
+max_range = 3.0
+aggressive = true
+sight_fov_deg = 150.0
+footstep_hearing = 16.0
+courage = 0.95
+suppression_resist = 0.8
+melee = true
+melee_scenes = Array[PackedScene]([ExtResource("g")])
+melee_damage = 48.0
+melee_windup = 0.42
+melee_recovery = 0.6
+melee_reach = 2.3
+melee_arc_deg = 130.0
+melee_commit_range = 2.8
+melee_lunge_speed = 3.5
+melee_track_deg = 170.0
+melee_interrupt = 45.0
+melee_push = 4.0
+melee_kick_deg = 9.0
+charge_range = 14.0
+flank_angle_deg = 45.0
+cover_pause = Vector2(0.3, 0.8)
+vault_height = 1.25
+vault_time = 0.55
+dao = SubResource("dao")

@@ -1,0 +1,35 @@
+[gd_resource type="Resource" script_class="Outfit" load_steps=17 format=3]
+
+[ext_resource type="Script" path="res://src/ai/outfit.gd" id="1"]
+[ext_resource type="Script" path="res://src/ai/garment.gd" id="2"]
+[ext_resource type="Resource" path="res://data/enemies/wardrobe/bomber.tres" id="3"]
+[ext_resource type="Resource" path="res://data/enemies/wardrobe/hoodie.tres" id="4"]
+[ext_resource type="Resource" path="res://data/enemies/wardrobe/track.tres" id="5"]
+[ext_resource type="Resource" path="res://data/enemies/wardrobe/tee.tres" id="6"]
+[ext_resource type="Resource" path="res://data/enemies/wardrobe/cargo.tres" id="7"]
+[ext_resource type="Resource" path="res://data/enemies/wardrobe/jeans.tres" id="8"]
+[ext_resource type="Resource" path="res://data/enemies/wardrobe/boots.tres" id="9"]
+[ext_resource type="Resource" path="res://data/enemies/wardrobe/sneakers.tres" id="10"]
+[ext_resource type="Resource" path="res://data/enemies/wardrobe/hair_buzz.tres" id="11"]
+[ext_resource type="Resource" path="res://data/enemies/wardrobe/hair_fade.tres" id="12"]
+[ext_resource type="Resource" path="res://data/enemies/wardrobe/hair_slick.tres" id="13"]
+[ext_resource type="Resource" path="res://data/enemies/wardrobe/cap.tres" id="14"]
+[ext_resource type="Resource" path="res://data/enemies/wardrobe/beanie.tres" id="15"]
+[ext_resource type="Resource" path="res://data/enemies/wardrobe/watch.tres" id="16"]
+
+[resource]
+script = ExtResource("1")
+display_name = "Marksman"
+weight = 1.0
+tops = Array[ExtResource("2")]([ExtResource("3"), ExtResource("4"), ExtResource("5")])
+inners = Array[ExtResource("2")]([ExtResource("6")])
+bottoms = Array[ExtResource("2")]([ExtResource("7"), ExtResource("8")])
+shoes = Array[ExtResource("2")]([ExtResource("9"), ExtResource("10")])
+hair = Array[ExtResource("2")]([ExtResource("11"), ExtResource("12"), ExtResource("13")])
+hats = Array[ExtResource("2")]([ExtResource("14"), ExtResource("15")])
+accessories = Array[ExtResource("2")]([ExtResource("16")])
+bald_chance = 0.1
+hat_chance = 0.6
+accessory_chance = 0.2
+tattoo_chance = 0.5
+bare_chest_chance = 0.0

@@ -132,6 +132,14 @@ enum WeaponClass { HANDGUN, SHOTGUN, RIFLE, HEAVY }
 @export_range(0.0, 1.0) var damage_per_joule: float = 0.14
 ## Every hit deals at least this much (temporary cavity, shock).
 @export_range(0.0, 500.0) var min_damage: float = 10.0
+## Multiplies what a round from this gun does to the operative (Player.on_ballistic_hit:
+## kJ × the body's damage per kJ). The Marksman's round is made to count (docs/design.md §8.8d),
+## the Gunner's spray to wear you down rather than delete you (§8.8f).
+@export_range(0.0, 5.0) var player_damage_scale: float = 1.0
+## How much of the operative's armour this round ignores (0..1): armour that
+## lowers the damage per kJ below the bare suit's is pulled back toward it.
+## The anti-augment specialist's AP rounds (docs/design.md §8.8g).
+@export_range(0.0, 1.0) var armour_piercing: float = 0.0
 ## Multiplies real bullet momentum for physics pushes (props, plates, ragdolls).
 @export_range(0.0, 200.0) var impulse_scale: float = 30.0
 

@@ -667,7 +667,20 @@ func _contact(p: Projectile, res: Dictionary, space: PhysicsDirectSpaceState3D) 
 	var graze_deg: float = 90.0 - rad_to_deg(dir.angle_to(-normal))
 	var can_ricochet: bool = surface.ricochet_chance > 0.0 and p.ricochets < w.max_ricochets \
 			and graze_deg < surface.ricochet_max_angle_deg
-	if can_ricochet and _rng.randf() < surface.ricochet_chance * (1.0 - graze_deg / maxf(surface.ricochet_max_angle_deg, 0.01)):
+	# A deflector (the Dao swordsman's guard, docs/design.md §8.8b) turns aside
+	# anything up to its limit (J), whatever the angle; past it, the surface decides.
+	var deflect_max: float = -1.0
+	if collider is Node and (collider as Node).has_meta(&"deflects"):
+		deflect_max = (collider as Node).get_meta(&"deflects")
+	var deflects: bool = deflect_max >= 0.0 and p.ricochets < 3 and hit.energy_in <= deflect_max
+	if deflects:
+		hit.result = BallisticHit.Result.RICOCHET
+		var out: Vector3 = dir.bounce(normal).normalized()
+		out = _scatter((out + normal * 0.4 + Vector3.UP * 0.15).normalized(), 25.0).normalized()
+		hit.energy_out = hit.energy_in * 0.3
+		p.velocity = out * sqrt(2.0 * hit.energy_out / p.mass_kg)
+		p.ricochets += 1
+	elif can_ricochet and _rng.randf() < surface.ricochet_chance * (1.0 - graze_deg / maxf(surface.ricochet_max_angle_deg, 0.01)):
 		hit.result = BallisticHit.Result.RICOCHET
 		var out_dir: Vector3 = dir.bounce(normal).normalized()
 		out_dir = _scatter(out_dir, 4.0).normalized()

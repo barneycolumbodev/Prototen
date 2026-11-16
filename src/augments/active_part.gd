@@ -30,6 +30,8 @@ var blend: float = 0.0
 
 var _t: float = 0.0
 var _since_stop: float = 99.0
+## Seconds an EMP still holds it down (jam()).
+var jammed: float = 0.0
 
 
 func setup(p_data: ActivePartData, p_body: BodyModel, p_player: Player) -> void:
@@ -108,6 +110,8 @@ func regen_scale() -> float:
 ## Why it can't run at all: its requirements aren't met (docs/design.md
 ## §3.6), or the power reserve is empty and it draws power. "" = fine.
 func offline_reason() -> String:
+	if jammed > 0.0:
+		return "jammed (EMP)"
 	if body == null:
 		return ""
 	if body.offline.has(data.id):
@@ -147,6 +151,13 @@ func stop() -> void:
 		_enter(State.RECOVERING)
 
 
+## An EMP: forced off, half its charge gone, and it can't start for `seconds`.
+func jam(seconds: float) -> void:
+	interrupt()
+	jammed = maxf(jammed, seconds)
+	charge *= 0.5
+
+
 ## Forced off (EMP, downed): straight to cooldown, no ease-out.
 func interrupt() -> void:
 	if state != State.IDLE and state != State.COOLDOWN:
@@ -158,6 +169,7 @@ func interrupt() -> void:
 func _process(delta: float) -> void:
 	var real: float = TimeControl.real_delta(delta)
 	_t += real
+	jammed = maxf(0.0, jammed - real)
 	match state:
 		State.DEPLOYING:
 			_drain(real)

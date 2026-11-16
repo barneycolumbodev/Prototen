@@ -1,19 +1,27 @@
-"""Hatchet Man blades (third person): a hand hatchet and a Chinese cleaver (docs/design.md §8.8).
+"""Enemy blades and throwables (third person), rebuilt 2026-11-16 with baked textures.
 
-Held in the right hand on the same weapon socket as the enemy guns
-(raw_assets/weapons/enemy_guns): the origin is the right hand's web, and the
-handle runs through the fist along the pistol-grip line, so the triad rig's
-grip (common.GRIP_R) closes on it. The head sits above the thumb with the
-edge forward, the way the knuckles point.
+Owner, 2026-11-16: "Don't hesitate to make more or more detailed 3d models for enemy weapons."
+Each model is built twice from the same code (HIGH with bevels and small parts, LOW) and HIGH is
+baked onto LOW (base colour with cavity grime, ORM, normal; raw_assets/_lib/bakeutil.py).
+
+  hatchet   hand hatchet: ash haft with a swelled pommel, forged head with a ground edge (Hatchet Man).
+  cleaver   Chinese cleaver: taped grip, bolster, rivet (Hatchet Man).
+  dao       willow-leaf dao (liuyedao): a 0.68 m curved blade with a fuller, a brass guard,
+            a cord-wrapped grip in red, a ring pommel (the Dao swordsman, docs/design.md §8.8b).
+  molotov   a baijiu bottle with a soaked rag in the mouth, held by the neck (the Firebomber).
+  emp       an EMP grenade: steel body, copper coil bands, a pin and spoon, a status lamp (the
+            anti-augment specialist). Origin at its centre (thrown, never held on the socket).
+
+Held in the right hand on the same weapon socket as the enemy guns (raw_assets/weapons/enemy_guns):
+the origin is the right hand's web, and the handle runs through the fist along the pistol-grip line,
+so the triad rig's grip (common.GRIP_R) closes on it. The head sits above the thumb with the edge
+forward, the way the knuckles point.
 Axes: +X = forward (where the edge faces), +Z = up, +Y = the blade's LEFT side, metres.
-Handle line U = (0.39, 0, 0.92) from the pommel up through the fist; edge
-direction E = (0.92, 0, -0.39). Real sizes: hatchet 0.40 m overall with a
-0.10 m bit; cleaver 0.32 m overall, blade 0.20 x 0.10 m.
+Handle line U = (0.39, 0, 0.92) from the pommel up through the fist; edge direction E = (0.92, 0, -0.39).
+Real sizes: hatchet 0.40 m overall with a 0.10 m bit; cleaver 0.32 m overall, blade 0.20 x 0.10 m;
+dao 0.92 m overall; molotov 0.25 m (a 500 ml bottle); EMP grenade 0.13 x 0.055 m.
 
-Plain PBR factors (no textures): forged steel with a ground bright edge,
-oiled ash, a cloth-taped grip.
-
-Run:
+Run (about 3 minutes with bakes):
   tools/blender.sh raw_assets/weapons/enemy_melee/build.py --out assets/weapons/enemy \
       --preview docs/previews/enemy_melee.png
 """
@@ -27,6 +35,7 @@ import bmesh
 from mathutils import Matrix, Vector
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "_lib"))
+import bakeutil  # noqa: E402
 import hardsurface as hs  # noqa: E402
 
 argv = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
@@ -34,15 +43,28 @@ ap = argparse.ArgumentParser()
 ap.add_argument("--out", default="assets/weapons/enemy")
 ap.add_argument("--preview", default="")
 ap.add_argument("--samples", type=int, default=48)
+ap.add_argument("--tex", type=int, default=512)
+ap.add_argument("--only", default="")
+ap.add_argument("--fast", action="store_true", help="HIGH only, no bake/export")
 args = ap.parse_args(argv)
 
 bpy.ops.wm.read_factory_settings(use_empty=True)
-hs.set_detail(hs.LOW)
 
-STEEL = hs.material("melee_steel", (0.06, 0.058, 0.055), 0.5, 0.9, wear=(0.42, 0.42, 0.43), wear_rough=0.3)
-EDGE = hs.material("melee_edge", (0.62, 0.63, 0.65), 0.22, 1.0)
-WOOD = hs.material("melee_wood", (0.22, 0.13, 0.065), 0.58, 0.0)
-TAPE = hs.material("melee_tape", (0.09, 0.08, 0.07), 0.85, 0.0)
+STEEL = hs.material("melee_steel", (0.06, 0.058, 0.055), 0.5, 0.9, wear=(0.42, 0.42, 0.43), wear_rough=0.3,
+                    bump_scale=700.0, bump_strength=0.15)
+EDGE = hs.material("melee_edge", (0.62, 0.63, 0.65), 0.22, 1.0, brushed=0.08)
+WOOD = hs.material("melee_wood", (0.22, 0.13, 0.065), 0.58, 0.0, wear=(0.36, 0.24, 0.14), bump_scale=400.0,
+                   bump_strength=0.3)
+TAPE = hs.material("melee_tape", (0.09, 0.08, 0.07), 0.85, 0.0, bump_scale=1600.0, bump_strength=0.4)
+BRASS = hs.material("melee_brass", (0.62, 0.42, 0.16), 0.32, 1.0, wear=(0.9, 0.72, 0.4), wear_rough=0.18)
+CORD = hs.material("melee_cord", (0.38, 0.03, 0.025), 0.8, 0.0, bump_scale=2500.0, bump_strength=0.6)
+GLASS = hs.material("melee_glass", (0.07, 0.17, 0.07), 0.06, 0.0)
+LABEL = hs.material("melee_label", (0.62, 0.08, 0.05), 0.6, 0.0)
+RAG = hs.material("melee_rag", (0.42, 0.36, 0.26), 0.9, 0.0, bump_scale=900.0, bump_strength=0.6)
+COPPER = hs.material("melee_copper", (0.8, 0.38, 0.18), 0.3, 1.0)
+LAMP = hs.material("melee_lamp", (0.1, 0.5, 0.9), 0.3, 0.0, emission=((0.3, 0.7, 1.0), 4.0))
+OLIVE = hs.material("melee_olive", (0.08, 0.09, 0.06), 0.55, 0.3, wear=(0.3, 0.3, 0.28))
+MATERIALS = [STEEL, EDGE, WOOD, TAPE, BRASS, CORD, GLASS, LABEL, RAG, COPPER, LAMP, OLIVE]
 
 # The handle's line in the hand: pistol-grip axis (raw_assets/weapons/enemy_guns, grip
 # from (0.005, 0) down to (-0.04, -0.105)), its middle where the fist closes.
@@ -58,6 +80,9 @@ def tri(ob):
 
 
 def place(ob):
+    """Into the gun frame: the object's own placement first (primitives keep theirs on the object)."""
+    ob.data.transform(ob.matrix_basis)
+    ob.matrix_basis = Matrix.Identity(4)
     ob.data.transform(TO_GUN)
     return ob
 
@@ -132,40 +157,138 @@ def cleaver():
     hs.finish(place(hs.cyl_y("rivet", 0.008, 0.0068, (x0 + 0.018, 0.0, z1 - 0.022), verts=10)), STEEL, bevel=0.0)
 
 
+
+def dao():
+    """Willow-leaf dao: the blade curves back toward the tip with the edge on the convex side."""
+    # Grip: cord-wrapped in red over wood, 0.2 m, with a steel ferrule and a ring pommel.
+    hs.finish(place(handle("grip", -0.1, 0.06, 0.015, 0.0155, CORD, verts=12, flare=(-0.06, 0.0165))), CORD, bevel=0.0)
+    if hs.D is hs.HIGH:
+        for i in range(10):
+            z = -0.09 + i * 0.016
+            hs.finish(place(hs.box("wrap", (0.036, 0.034, 0.004), (0.0, 0.0, z), rot=(0.0, 0.35, 0.0))), CORD,
+                      bevel=0.001)
+    hs.finish(place(handle("ferrule", 0.055, 0.075, 0.0165, 0.016, BRASS, verts=12)), BRASS, bevel=0.0)
+    hs.finish(place(handle("pommel", -0.122, -0.098, 0.017, 0.017, BRASS, verts=12)), BRASS, bevel=0.0)
+    ring = hs.cyl_y("ring", 0.016, 0.006, (0.0, 0.0, -0.135), verts=16)
+    hs.cut(ring, hs.cyl_y("ring_in", 0.0105, 0.05, (0.0, 0.0, -0.135), verts=16))
+    hs.finish(place(ring), BRASS, bevel=0.0008)
+    # Guard: an oval brass disc.
+    g = hs.cyl_z("guard", 0.034, 0.008, (0.0, 0.0, 0.08), verts=24)
+    g.scale = (1.0, 0.72, 1.0)
+    bpy.ops.object.transform_apply(scale=True)
+    hs.finish(place(g), BRASS, bevel=0.0015)
+    # Blade: spine and edge as curves from the guard to the tip, thick at the spine.
+    n = 16
+    L0, L1 = 0.086, 0.72
+    spine, edge = [], []
+    for i in range(n + 1):
+        t = i / n
+        z = L0 + (L1 - L0) * t
+        back = -0.012 - 0.048 * t ** 2.4          # the curve sweeps back toward the tip
+        width = 0.034 + 0.008 * math.sin(math.pi * min(t * 1.1, 1.0))
+        if t > 0.86:
+            width *= max(0.0, (1.0 - t) / 0.14) ** 0.7
+        spine.append((back, z))
+        edge.append((back + width, z))
+    outline = edge + list(reversed(spine))
+    th = [0.0022] * len(edge) + [0.0062] * len(spine)
+    hs.finish(place(tapered_plate("blade", outline, th)), STEEL, bevel=0.0006, segments=1)
+    bevel_band = [(x - 0.008, z) for x, z in edge]
+    hs.finish(place(tapered_plate("edge", edge + list(reversed(bevel_band)),
+                                  [0.0024] * len(edge) + [0.004] * len(edge))), EDGE, bevel=0.0)
+    if hs.D is hs.HIGH:
+        # The fuller: a groove along the blade near the spine (a strip of darker steel standing in).
+        fuller = [(x + 0.006, z) for x, z in spine[1:-4]]
+        fuller2 = [(x + 0.012, z) for x, z in spine[1:-4]]
+        hs.finish(place(tapered_plate("fuller", fuller + list(reversed(fuller2)), [0.0066] * (2 * len(fuller)))),
+                  OLIVE, bevel=0.0)
+
+
+def molotov():
+    """A 500 ml baijiu bottle held by the neck: the body above the fist, the rag hanging from the mouth."""
+    prof = [(-0.085, 0.0), (-0.084, 0.0105), (-0.072, 0.011), (-0.068, 0.0125), (-0.04, 0.0135), (0.02, 0.016),
+            (0.05, 0.03), (0.07, 0.036), (0.17, 0.036), (0.178, 0.034), (0.18, 0.0)]
+    n = 24 if hs.D is hs.HIGH else 48  # nverts() halves LOW: the same 24 sides in both (see the bake)
+    b = hs.lathe_x("bottle", prof, verts=n)
+    b.data.transform(Matrix.Rotation(-math.pi / 2, 4, "Y"))
+    hs.finish(place(b), GLASS, bevel=0.0)
+    lab = hs.lathe_x("label", [(0.09, 0.0367), (0.15, 0.0367)], verts=n)
+    lab.data.transform(Matrix.Rotation(-math.pi / 2, 4, "Y"))
+    hs.finish(place(lab), LABEL, bevel=0.0)
+    # The rag: stuffed in the mouth (under the fist), its tail hanging down.
+    hs.finish(place(hs.cyl_z("rag_plug", 0.011, 0.03, (0.0, 0.0, -0.09), verts=10)), RAG, bevel=0.0)
+    tail = hs.tube_path("rag_tail", [(0.0, 0.0, -0.1), (0.012, 0.004, -0.13), (0.01, -0.006, -0.16),
+                                     (0.02, 0.0, -0.19)], 0.009, width_scale=0.45)
+    hs.finish(place(tail), RAG, bevel=0.0)
+
+
+def emp():
+    """EMP grenade, centred on its origin, axis along Z."""
+    hs.finish(hs.cyl_z("body", 0.026, 0.1, (0.0, 0.0, 0.0), verts=24), OLIVE, bevel=0.002)
+    for z in (-0.03, -0.01, 0.01, 0.03):
+        hs.finish(hs.cyl_z("coil", 0.0285, 0.012, (0.0, 0.0, z), verts=24), COPPER, bevel=0.0008)
+    hs.finish(hs.cyl_z("cap", 0.02, 0.016, (0.0, 0.0, 0.058), verts=20), STEEL, bevel=0.0015)
+    hs.finish(hs.cyl_z("base", 0.024, 0.01, (0.0, 0.0, -0.055), verts=20), STEEL, bevel=0.0015)
+    hs.finish(hs.box("spoon", (0.012, 0.006, 0.075), (0.031, 0.0, 0.02), rot=(0.0, -0.08, 0.0)), STEEL, bevel=0.001)
+    ring = hs.cyl_y("pin_ring", 0.012, 0.003, (0.03, 0.0, 0.074), verts=16)
+    hs.cut(ring, hs.cyl_y("pin_in", 0.009, 0.02, (0.03, 0.0, 0.074), verts=16))
+    hs.finish(ring, STEEL, bevel=0.0)
+    hs.finish(hs.cyl_z("lamp", 0.006, 0.006, (0.0, 0.0, 0.068), verts=12), LAMP, bevel=0.0)
+
+
+BLADES = {"hatchet": hatchet, "cleaver": cleaver, "dao": dao, "molotov": molotov, "emp": emp}
+
+
+def build(name, fn, detail):
+    hs.set_detail(detail)
+    fn()
+    return hs.join_parts(f"{name}_{detail['name']}")
+
+
 os.makedirs(args.out, exist_ok=True)
 blades = {}
-for name, fn in (("hatchet", hatchet), ("cleaver", cleaver)):
-    fn()
-    ob = hs.join_parts(name)
-    blades[name] = ob
-    print(f"{name}: {tri(ob)} tris")
-    bpy.ops.object.select_all(action="DESELECT")
-    ob.select_set(True)
-    bpy.context.view_layer.objects.active = ob
-    bpy.ops.export_scene.gltf(filepath=os.path.join(args.out, f"{name}.gltf"), export_format="GLTF_SEPARATE",
-                              use_selection=True, export_apply=True)
+for name, fn in BLADES.items():
+    if args.only and name not in args.only.split(","):
+        continue
+    hi = build(name, fn, hs.HIGH)
+    if args.fast:
+        blades[name] = hi
+        print(f"{name}: HIGH {tri(hi)} tris")
+        continue
+    lo = build(name, fn, hs.LOW)
+    lo.name = name
+    print(f"{name}: HIGH {tri(hi)} / LOW {tri(lo)} tris", flush=True)
+    bakeutil.unwrap(lo, angle_deg=78.0, margin=0.006)
+    tex = bakeutil.bake_textures(hi, lo, MATERIALS, args.tex, os.path.join(args.out, "textures"), f"em_{name}",
+                                 cage=0.0006, ray=0.0015, ao_distance=0.02, grime=0.5)
+    bakeutil.apply_baked_material(lo, tex, f"em_{name}", emission_strength=1.0)
+    bakeutil.export_gltf(lo, os.path.join(args.out, f"{name}.gltf"))
+    bpy.data.objects.remove(hi)
+    blades[name] = lo
 
 if args.preview:
     scene = bpy.context.scene
     for i, ob in enumerate(blades.values()):
-        ob.location = (0.32 * i, 0, 0)
+        ob.location = (0.3 * i, 0, 0)
     scene.render.engine = "CYCLES"
     scene.cycles.device = "CPU"
     scene.cycles.samples = args.samples
-    scene.render.resolution_x, scene.render.resolution_y = 1200, 900
+    scene.render.resolution_x, scene.render.resolution_y = 1600, 900
     world = bpy.data.worlds.new("w")
-    world.color = (0.5, 0.52, 0.55)
+    world.color = (0.32, 0.33, 0.35)
     scene.world = world
     cam = bpy.data.objects.new("cam", bpy.data.cameras.new("cam"))
     scene.collection.objects.link(cam)
-    cam.location = (0.2, -1.05, 0.12)
+    cam.location = (0.3 * (len(blades) - 1) / 2, -2.0, 0.3)
     cam.rotation_euler = (math.radians(88), 0, 0)
-    cam.data.lens = 50
+    cam.data.type = "ORTHO"
+    cam.data.ortho_scale = 0.3 * len(blades) + 0.15
     scene.camera = cam
-    sun = bpy.data.objects.new("sun", bpy.data.lights.new("sun", "SUN"))
-    sun.data.energy = 4.0
-    sun.rotation_euler = (math.radians(50), math.radians(-20), math.radians(30))
-    scene.collection.objects.link(sun)
+    for rot, e in (((50, -20, 30), 3.5), ((70, 30, -140), 1.5)):
+        sun = bpy.data.objects.new("sun", bpy.data.lights.new("sun", "SUN"))
+        sun.data.energy = e
+        sun.rotation_euler = tuple(math.radians(a) for a in rot)
+        scene.collection.objects.link(sun)
     scene.render.filepath = args.preview
     bpy.ops.render.render(write_still=True)
     print("preview:", args.preview)

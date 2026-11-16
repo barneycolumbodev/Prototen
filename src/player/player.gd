@@ -224,7 +224,10 @@ func weapon() -> PlayerWeapon:
 func on_ballistic_hit(hit: BallisticHit) -> void:
 	if dead or invulnerable or hit.shooter == self:
 		return
-	var amount: float = hit.energy_in * 0.001 * body.stat(&"damage_per_kj")
+	var per_kj: float = body.stat(&"damage_per_kj")
+	if hit.weapon and hit.weapon.armour_piercing > 0.0 and per_kj < BASE_DAMAGE_PER_KJ:
+		per_kj = lerpf(per_kj, BASE_DAMAGE_PER_KJ, hit.weapon.armour_piercing)
+	var amount: float = hit.energy_in * 0.001 * per_kj * (hit.weapon.player_damage_scale if hit.weapon else 1.0)
 	for f: Callable in hit_interceptors:
 		amount = f.call(hit, amount)
 	if amount > 0.0:

@@ -54,6 +54,15 @@ var _vault_rise: float = 0.0
 var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
 var _side_picked: bool = false
 var _windup_damage: float = 0.0
+## The attack under way (set when it starts): seconds to the blow, reach (m),
+## arc (deg), damage, lunge speed (m/s) and recovery. The Hatchet Man's chop
+## takes them from EnemyConfig; DaoBrain's slash and lunge from DaoConfig.
+var atk_windup: float = 0.46
+var atk_reach: float = 2.0
+var atk_arc: float = 110.0
+var atk_damage: float = 42.0
+var atk_lunge: float = 4.2
+var atk_recovery: float = 0.55
 
 const LOW_PROBE: float = 0.45
 const PROBE_AHEAD: float = 0.9
@@ -264,7 +273,7 @@ func act(delta: float) -> void:
 	var to_p: Vector3 = _flat(p.global_position - e.global_position)
 	var d: float = to_p.length()
 	# The chop: close, in sight, on about the same level, nothing low between (else over it first).
-	if d <= cfg.melee_commit_range and e.sees_player and absf(p.global_position.y - e.global_position.y) < 1.6 \
+	if _attack_ready(d) and e.sees_player and absf(p.global_position.y - e.global_position.y) < 1.6 \
 			and _clear_between(p):
 		_start_chop()
 		return
@@ -280,8 +289,8 @@ func want_velocity() -> Vector3:
 	match phase:
 		Phase.WINDUP:
 			var p: Player = _player()
-			if p and _flat(p.global_position - e.global_position).length() > cfg.melee_reach * 0.55 and _t < cfg.melee_windup:
-				return e.global_basis.z * cfg.melee_lunge_speed
+			if p and _flat(p.global_position - e.global_position).length() > atk_reach * 0.55 and _t < atk_windup:
+				return e.global_basis.z * atk_lunge
 			return Vector3.ZERO
 		Phase.RECOVER, Phase.HOLD, Phase.VAULT:
 			return Vector3.ZERO
@@ -310,6 +319,25 @@ func _look(p: Player, weight: float, delta: float, turn: bool) -> void:
 
 # ------------------------------------------------------------------ the chop
 
+## Close enough to start an attack (`d`: flat distance to the operative).
+## Sets up the atk_* values for the attack it picks.
+func _attack_ready(d: float) -> bool:
+	if d > cfg.melee_commit_range:
+		return false
+	atk_windup = cfg.melee_windup
+	atk_reach = cfg.melee_reach
+	atk_arc = cfg.melee_arc_deg
+	atk_damage = cfg.melee_damage
+	atk_lunge = cfg.melee_lunge_speed
+	atk_recovery = cfg.melee_recovery
+	return true
+
+
+## Starts the clip for the attack picked by _attack_ready.
+func _play_attack() -> void:
+	e.body.play_chop(atk_windup)
+
+
 func _start_chop() -> void:
 	strikes += 1
 	_enter(Phase.WINDUP, 0.0)
@@ -317,7 +345,7 @@ func _start_chop() -> void:
 	_swished = false
 	_windup_damage = 0.0
 	e._stop()
-	e.body.play_chop(cfg.melee_windup)
+	_play_attack()
 	if _rng.randf() < 0.5:
 		e.vocal(&"enemy_pain", 1.0, 0.2)  # a grunt as the blade goes up
 
@@ -330,13 +358,13 @@ func _windup(p: Player, delta: float) -> void:
 		e._yaw = rotate_toward(e._yaw, want_yaw, deg_to_rad(cfg.melee_track_deg) * delta)
 		e.rotation.y = e._yaw
 		e.body.set_aim(0.0, 0.0, 0.0)
-	if not _swished and _t >= cfg.melee_windup * 0.78:
+	if not _swished and _t >= atk_windup * 0.78:
 		_swished = true
 		Sfx.play_at(&"mw7_swish", e.body.chest_position(), -2.0, 0.12)
-	if not _struck and _t >= cfg.melee_windup:
+	if not _struck and _t >= atk_windup:
 		_struck = true
 		_resolve(p)
-	if _t >= cfg.melee_windup + cfg.melee_recovery:
+	if _t >= atk_windup + atk_recovery:
 		_enter(Phase.CHARGE, 0.0)
 		e._think = 0.0
 
@@ -348,7 +376,7 @@ func _resolve(p: Player) -> void:
 		whiffs += 1
 		return
 	var dir: Vector3 = _flat(p.global_position - e.global_position).normalized()
-	last_damage = p.on_melee_hit(e, cfg.melee_damage, dir, cfg.melee_push)
+	last_damage = p.on_melee_hit(e, atk_damage, dir, cfg.melee_push)
 	hits += 1
 	var at: Vector3 = p.camera().global_position - Vector3.UP * 0.35
 	if last_damage > 0.0:
@@ -372,10 +400,10 @@ func _clear_between(p: Player) -> bool:
 ## and nothing solid is between them.
 func lands_on(p: Player) -> bool:
 	var to: Vector3 = _flat(p.global_position - e.global_position)
-	if to.length() > cfg.melee_reach or absf(p.global_position.y - e.global_position.y) > 1.5:
+	if to.length() > atk_reach or absf(p.global_position.y - e.global_position.y) > 1.5:
 		return false
 	var fwd: Vector3 = _flat(e.global_basis.z).normalized()
-	if to.length() > 0.4 and rad_to_deg(fwd.angle_to(to.normalized())) > cfg.melee_arc_deg * 0.5:
+	if to.length() > 0.4 and rad_to_deg(fwd.angle_to(to.normalized())) > atk_arc * 0.5:
 		return false
 	var q: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(e.body.chest_position(), p.camera().global_position - Vector3.UP * 0.4, Ballistics.LAYER_WORLD)
 	return e.get_world_3d().direct_space_state.intersect_ray(q).is_empty()

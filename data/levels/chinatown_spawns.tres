@@ -17,4 +17,12 @@ gunman_weight = 0.5
 enforcer_weight = 0.22
 red_pole_weight = 0.1
 hatchet_man_weight = 0.18
+extra_roles = Dictionary[String, float]({
+"anti_augment": 0.04,
+"dao_swordsman": 0.06,
+"firebomber": 0.07,
+"gunner": 0.05,
+"marksman": 0.05,
+"shield_man": 0.06
+})
 arrival_awareness = 0.6

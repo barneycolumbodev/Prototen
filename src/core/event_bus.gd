@@ -42,3 +42,8 @@ signal wave_mode_requested
 ## Rolling spawns (open maps): kills so far, enemies in the fight or on their way.
 @warning_ignore("unused_signal")
 signal score_changed(kills: int, hostiles: int)
+
+## An EMP grenade went off (the anti-augment specialist, docs/design.md §8.8g).
+signal emp_pulse(at: Vector3, radius: float)
+## The operative's actives were knocked out for `seconds` (EMP).
+signal player_jammed(seconds: float)

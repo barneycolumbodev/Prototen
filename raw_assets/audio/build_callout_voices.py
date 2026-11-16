@@ -58,6 +58,11 @@ LINES = {
     "man_down": ["Man down!", "They got Ah-Keung!", "He's dead! He's dead!", "Brother's down!"],
     "officer_down": ["They got the Red Pole!", "The Red Pole is down!"],
     "pinned": ["I'm pinned!", "Keep your heads down!", "He's got us pinned!"],
+    # 2026-11-16: the new roles (docs/design.md §8.8b-g).
+    "fire": ["Burn him!", "Light him up!", "Fire! Fire!"],
+    "emp": ["EMP out!", "Kill his implants!", "Fry his wires!"],
+    "shield": ["Behind the shield!", "Stay on me!", "Push up behind me!"],
+    "challenge": ["Come here!", "Face me!", "Fight me, machine!"],
     "lost": ["Where'd he go?", "I lost him!", "Find him!"],
     "advance": ["Move up!", "Rush him!", "Go, go, go!"],
     "burning": ["I'm burning!", "Put it out!"],

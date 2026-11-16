@@ -356,6 +356,13 @@ func detonate() -> void:
 	stop()
 
 
+## A jammer (the anti-augment specialist's pack, docs/design.md §8.8g) cut
+## the link: the drone drops out of the air, unexploded.
+func jam_link() -> void:
+	if state == State.ACTIVE and craft:
+		_lose(&"jammed")
+
+
 ## The link is gone: the drone drops out of the air, unexploded.
 func _lose(why: StringName) -> void:
 	last_end = why

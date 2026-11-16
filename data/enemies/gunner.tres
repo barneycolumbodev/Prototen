@@ -1,0 +1,39 @@
+[gd_resource type="Resource" script_class="EnemyConfig" load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://src/ai/enemy_config.gd" id="1"]
+[ext_resource type="Script" path="res://src/ai/outfit.gd" id="o0"]
+[ext_resource type="Resource" path="res://data/enemies/outfits/gunner.tres" id="of1"]
+[ext_resource type="PackedScene" path="res://assets/weapons/enemy/type80.gltf" id="g"]
+[ext_resource type="Resource" path="res://data/enemies/weapons/type80.tres" id="w"]
+[ext_resource type="PackedScene" path="res://assets/characters/triad_gear/gear_gunner.gltf" id="gear"]
+
+[resource]
+script = ExtResource("1")
+outfits = Array[ExtResource("o0")]([ExtResource("of1")])
+display_name = "Gunner"
+callsign = "GUNNER"
+gear = ExtResource("gear")
+gun_scene = ExtResource("g")
+weapon = ExtResource("w")
+muzzle = Vector3(0.79, 0.058, 0)
+health = 170.0
+walk_speed = 1.0
+run_speed = 3.2
+turn_speed_deg = 150.0
+burst_min = 12
+burst_max = 28
+fire_interval = 0.092
+burst_pause = 0.8
+magazine = 100
+reload_time = 5.5
+aim_error_deg = 4.6
+aim_settle_time = 1.6
+reaction_time = 0.7
+preferred_range = 20.0
+max_range = 50.0
+aggressive = false
+courage = 0.75
+suppression_resist = 0.7
+limb_cripple = 26.0
+suppress_memory = 5.0
+suppress_error_deg = 6.0

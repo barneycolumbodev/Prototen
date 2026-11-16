@@ -161,6 +161,10 @@ func _ready() -> void:
 			bd.room = self
 			bd.intro = arg == "--demo=boss-intro"
 			add_child(bd)
+		elif arg == "--demo=roster":
+			var rl: RosterLineup = RosterLineup.new()
+			rl.room = self
+			add_child(rl)
 		elif arg == "--demo=slide":
 			var sd: SlideDemo = SlideDemo.new()
 			sd.room = self

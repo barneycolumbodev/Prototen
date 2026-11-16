@@ -698,15 +698,15 @@ Each map has a theme and its own roster. For Chinatown, the triad *(proposal; �
 | **Gunman** ✓ | Rifleman. Holds cover, peeks, bursts. | 2 | 1 |
 | **Hatchet Man** ✓ (built 2026-11-15, §8.8a) | Melee. Cleaver or hatchet, sprints between cover, vaults low walls, comes from the side. Has to be killed or dodged, not out-shot from cover. | 2 | 4 |
 | **Enforcer** ✓ | Plate carrier, pump shotgun, pushes in close. | 3 | 2 |
-| **Dao swordsman** | Melee elite: a long blade, a guard that turns rounds aside from the front (a grafted forearm plate, so hardware), a lunge. | 4 | 8 |
+| **Dao swordsman** ✓ (built 2026-11-16, §8.8b) | Melee elite: a long blade, a guard that turns rounds aside from the front (a grafted forearm plate, so hardware), a lunge. | 4 | 8 |
 | **Red Pole** ✓ | Lieutenant. SMG, steadies the men near him; his death breaks them. | 4 | 3 |
-| **Firebomber** | Throws molotovs to flush you out of cover and close off streets. | 3 | 6 |
-| **Marksman** | A scoped rifle from the gallery and the container stack; a laser and a glint before the shot. | 4 | 7 |
-| **Shield man** | A ballistic shield and a pistol; covers others as they advance. | 4 | 9 |
-| **Gunner** | A belt-fed gun; suppresses a whole street. | 5 | 11 |
-| **Anti-augment specialist** | EMP grenades that stall your actives, armour-piercing rounds, a jammer that grounds the drone. | 6 | 13 |
+| **Firebomber** ✓ (§8.8c) | Throws molotovs to flush you out of cover and close off streets. | 3 | 6 |
+| **Marksman** ✓ (§8.8d) | A scoped rifle from the gallery and the container stack; a laser and a glint before the shot. | 4 | 7 |
+| **Shield man** ✓ (§8.8e) | A ballistic shield and a pistol; covers others as they advance. | 4 | 9 |
+| **Gunner** ✓ (§8.8f) | A belt-fed gun; suppresses a whole street. | 5 | 11 |
+| **Anti-augment specialist** ✓ (§8.8g) | EMP grenades that stall your actives, armour-piercing rounds, a jammer that grounds the drone. | 6 | 13 |
 
-Melee men need their own code: the Hatchet Man's is built (§8.8a); the swordsman still needs a block. The Hatchet Man debuts on wave 4, not 3 as first proposed, so the Red Pole (wave 3) and he each get a wave of their own.
+Melee men need their own code: the Hatchet Man's is built (§8.8a), and the swordsman's guard (§8.8b). The whole Chinatown roster above was built by 2026-11-16 (owner: "start working on the next enemies... Enemies and how they look is the absolute weakest part of the game so far"), with a new look for all of them (§8.8h). The Hatchet Man debuts on wave 4, not 3 as first proposed, so the Red Pole (wave 3) and he each get a wave of their own.
 
 ### 8.8a The Hatchet Man (built 2026-11-15)
 
@@ -722,6 +722,68 @@ Owner: "start work on the Hatchet Man melee focused enemy." What he does (`src/a
 - **Where he appears.** Survival from wave 4 (cost 2, at most 3 per wave, 5 from wave 10). Sandbox rolling spawns on the docks: 18 % of arrivals.
 
 Not yet *(proposal)*: his own voice lines (a war cry; he uses "Rush him!" for now), a thrown hatchet when the operative is out of reach on a height, blood on the blade after a hit, a sound made for the chop (it uses the whip's swish and cut).
+
+### 8.8b The Dao swordsman (built 2026-11-16)
+
+Code: `src/ai/roles/dao_brain.gd` (a MeleeBrain); tuning: `data/enemies/dao_swordsman.tres` (Melee group and `DaoConfig`).
+
+- **Kit.** A willow-leaf dao (0.92 m: a curved blade with a fuller, a brass guard, a red cord-wrapped grip, a ring pommel; `raw_assets/weapons/enemy_melee`). The graft: a steel guard plate bolted into the outside of his left forearm from the elbow to the wrist, with a raised spine, ribs, bolts into the bone with scar tissue round them, and a hydraulic brace at the elbow (`raw_assets/characters/triad_gear`, kit `dao`). Muscle and summer outfits, so the tattoos and the graft show. 140 health, courage 0.95.
+- **Approach.** Like the Hatchet Man (cover to cover, then straight in, over low walls), but from 14 m he charges, and **once he's looked at he walks in behind his guard** (2.2 m/s): the plate comes up across his face, back of the hand to you (`guard`, `guard_walk` clips).
+- **The guard.** A hitbox in front of him from the hips up, on only while he holds it. Rounds from the front that hit it are **turned aside** (Ballistics: a collider with the `deflects` meta ricochets anything up to 6,000 J at any angle; sparks, a clang). It takes 7,000 J of rounds before it breaks (about four rifle rounds, two MG42 rounds, fifteen Five-seveN rounds), comes back at 1,500 J/s, and a round past 6,000 J (the GX-4's slug) goes straight through the plate and breaks it. Broken: he staggers and fights without it for 2.2 s.
+- **What it doesn't cover:** his legs, his sides and his back. Flank him, shoot low, or make him attack: his cuts drop the guard.
+- **The slash** (inside 2.8 m): the blade cocked over his right shoulder, a step in, a diagonal cut across you at 0.42 s; 2.3 m reach, 130° arc, 48 damage on the bare suit. **The lunge** (2.8–5.2 m): he drops low and drives in at 9 m/s, the point straight out; 0.48 s, a narrow 60° arc, 60 damage. The lunge is the one to sidestep.
+- **Answers** besides flanking: the knife kills him in one cut like anyone; slides, blasts and the mesh arm knock him out of it; 45 damage in a windup breaks it off.
+
+### 8.8c The Firebomber (built 2026-11-16)
+
+Code: `src/ai/roles/thrower_brain.gd`, `thrown_projectile.gd`, `fire_patch.gd`; tuning: `data/enemies/firebomber.tres` (`ThrowerConfig`).
+
+- **Kit.** A lit molotov in his hand (a green baijiu bottle with a red label and a soaked rag; `raw_assets/weapons/enemy_melee`), a canvas satchel of bottles at his left hip on a strap over the right shoulder, a dark red bandana over his nose and mouth (`triad_gear`, kit `firebomber`). 90 health, no gun.
+- **How he fights.** From cover at 7–26 m. He pops up, lights the rag, and throws overhand (`throw` clip; the bottle leaves the hand at 0.56 s) at where you'll be when it lands (he leads you), or where he last saw you: **the arc goes over cover**, he doesn't need to see you. 4–6.5 s between throws, six bottles; out of bottles, he runs.
+- **The fire.** The bottle breaks on whatever it hits first and the fuel spills under it: a pool 2.4 m across that burns 8 s (flames, embers, a flickering light, a scorch, its own crackle). Standing in it: 22 a second on the bare suit (armour scales it). A man in it catches fire. **Enemies won't walk into it**: it closes a street for them too. At most three burn at once.
+- **The answer.** Shoot him in the windup: 25 damage and he drops it, lit, at his own feet.
+
+### 8.8d The Marksman (built 2026-11-16)
+
+Code: `src/ai/roles/marksman_sight.gd`; tuning: `data/enemies/marksman.tres` (`MarksmanConfig`).
+
+- **Kit.** A Type 79 (Dragunov pattern) with a side-mounted 4× scope: skeleton thumbhole stock, cheek rest, slotted flash hider. Jackets and caps.
+- **The tell.** Before every shot a red laser from his scope finds you and a glint flashes off the lens (bright when the scope points at you, kept readable at range). The dot follows you at 55°/s and **locks 0.3 s before the shot**: a step sideways then, or into cover, and the round goes where you were. Losing sight of you cancels the aim. 1.6 s of aim per shot.
+- **The round.** 7.62×54R, 830 m/s, counted double against the operative (`WeaponData.player_damage_scale` 2.0): about 46 on the bare suit. Sight 90 m.
+- **Height.** He picks cover with a bonus per metre above you (the gallery, the container stacks), and moves on after two shots from one spot.
+
+### 8.8e The Shield man (built 2026-11-16)
+
+Code: `src/ai/roles/shield_brain.gd`, `Squad.stack_point`; tuning: `data/enemies/shield_man.tres` (`ShieldConfig`).
+
+- **Kit.** A stolen Hong Kong police ballistic shield (0.56 × 0.95 m, curved, a viewport, rubber edging, "警察 POLICE" in white, lead splashes on the face), a riot helmet with the smoked visor down, a Type 54 pistol (`raw_assets/weapons/enemy_guns`). New clips: `shield_ready`, `shield_walk` (the shield on his chest, the left hand on its handle, the pistol out past its right edge).
+- **How he fights.** He walks the shield at you to 7 m and holds there, turning it after you at 120°/s, and fires the pistol round its edge. Too close (2.2 m) and he bashes you back with it (14 damage, a hard shove). **Men with guns within 12 m fall in behind him**, two to a shield, one off each shoulder, and shoot from there.
+- **The shield.** Its own hitbox and surface (`data/surfaces/ballistic_shield.tres`: about 8 kJ to get through, so the GX-4's slug does and nothing else carried does). A round over 2,600 J (an MG42 round, a slug) knocks it aside and he staggers for 0.9 s, open. It takes 30 kJ before it cracks and he throws it down; with it gone his nerve goes too.
+- **Answers.** His feet and legs, his sides and back; anything over the top (the M32's airburst, the drone, the setae's marks); the slide launches him shield and all; the mesh arm tears him away from it.
+
+### 8.8f The Gunner (built 2026-11-16)
+
+Tuning: `data/enemies/gunner.tres` (`suppress_memory`, `suppress_error_deg`).
+
+- **Kit.** A Type 80 (PK pattern) belt-fed: fluted barrel, carry handle, folded bipod, a 100-round box with the belt running up into the feed. Two belts of linked 7.62 crossed over a singlet (`triad_gear`, kit `gunner`). 170 health, slow (1.0 m/s walking).
+- **How he fights.** Long bursts (12–28 rounds at 650 rpm), wide (4.6°), each round worth 0.65 of its energy against you, so he wears you down and pins you rather than deleting you. **He keeps firing where you were for 5 s after losing sight of you** (`Enemy._try_suppress`): the corner you ducked behind gets chewed up. The window is his belt change: 5.5 s.
+
+### 8.8g The anti-augment specialist (built 2026-11-16)
+
+Code: `src/ai/roles/jammer.gd`, `thrower_brain.gd` (EMP), `ActivePart.jam`; tuning: `data/enemies/anti_augment.tres`.
+
+- **Kit.** A QBZ-95 bullpup with a yellow-banded armour-piercing magazine; a jammer backpack (two whip antennas, a phased panel, a cooling grille, lamps), a chest rig of three EMP grenades, a full-face respirator with a side filter (`triad_gear`, kit `antiaug`). 130 health.
+- **AP rounds** ignore 60 % of whatever armour lowers your damage per kJ (`WeaponData.armour_piercing`): the heavy builds feel him.
+- **EMP grenades.** Every 9–13 s, three in all, lobbed (`lob`: the upper body only, the rifle at low ready). It lands, its lamp blinks 0.7 s, then pulses 7.5 m: if you're in it with nothing solid between, **every active goes down at once**, loses half its charge and can't start for 5 s (it shows "jammed (EMP)"). A drone in flight is lost.
+- **The jammer.** Within 16 m of him the Shrike drone loses its link and drops, and the thermoptic shroud can't hold. The pack is a hitbox of its own on his back: about three rifle rounds kill it (sparks, lamps out) and the jamming stops; so does his death.
+
+### 8.8h How they look (2026-11-16)
+
+Owner: "Enemies and how they look is the absolute weakest part of the game so far."
+
+- **A new head for every triad man** (`raw_assets/characters/triad/head.py`): a signed-distance sculpt built from the skull out (cranium, brow ridge, orbits, cheekbones and arches, maxilla, a square jaw and chin, a nose with a bridge, a tip, alar wings and nostrils, lips with a mouth line, lidded eyes in their sockets, ears with a helix and lobe, the neck's muscles and Adam's apple) in place of the metaball egg that read as a mannequin. The face painting follows it (darker brows, a lid crease, iris and lips).
+- **Every enemy gun rebuilt with real detail and baked textures** (`raw_assets/weapons/enemy_guns`): the Type 56 (milled receiver, hooded front sight, folded spike bayonet, laminated wood, ribbed magazine), the pump, the Type 85, and the four new guns. The blades and throwables likewise (`enemy_melee`).
+- **A silhouette per role**: gear on the bones (`EnemyGear`), so a player reads what a man does before he does it.
 
 ### 8.9 What was built first (2026-11-15)
 

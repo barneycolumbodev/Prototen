@@ -1,0 +1,66 @@
+[gd_resource type="Resource" script_class="EnemyConfig" load_steps=11 format=3]
+
+[ext_resource type="Script" path="res://src/ai/enemy_config.gd" id="1"]
+[ext_resource type="Script" path="res://src/ai/outfit.gd" id="o0"]
+[ext_resource type="Resource" path="res://data/enemies/outfits/antiaug.tres" id="of1"]
+[ext_resource type="PackedScene" path="res://assets/weapons/enemy/qbz95.gltf" id="g"]
+[ext_resource type="Resource" path="res://data/enemies/weapons/qbz95_ap.tres" id="w"]
+[ext_resource type="PackedScene" path="res://assets/characters/triad_gear/gear_antiaug.gltf" id="gear"]
+[ext_resource type="PackedScene" path="res://assets/weapons/enemy/emp.gltf" id="emp"]
+[ext_resource type="Script" path="res://src/ai/roles/thrower_config.gd" id="tc"]
+[ext_resource type="Script" path="res://src/ai/roles/jammer_config.gd" id="jc"]
+
+[sub_resource type="Resource" id="thrower"]
+script = ExtResource("tc")
+kind = 1
+model = ExtResource("emp")
+min_range = 6.0
+max_range = 24.0
+cooldown = Vector2(9.0, 13.0)
+count = 3
+first_delay = 3.0
+release_time = 0.66
+flight_per_10m = 0.85
+spread = 1.0
+lead = 0.5
+interrupt = 30.0
+emp_radius = 7.5
+emp_stall = 5.0
+emp_fuse = 0.7
+
+[sub_resource type="Resource" id="jammer"]
+script = ExtResource("jc")
+radius = 16.0
+box_size = Vector3(0.3, 0.38, 0.14)
+box_center = Vector3(0, 0.005, -0.215)
+health = 60.0
+
+[resource]
+script = ExtResource("1")
+outfits = Array[ExtResource("o0")]([ExtResource("of1")])
+display_name = "Anti-Augment Specialist"
+callsign = "SPECIALIST"
+gear = ExtResource("gear")
+plate_carrier = false
+gun_scene = ExtResource("g")
+weapon = ExtResource("w")
+muzzle = Vector3(0.445, 0.058, 0)
+health = 130.0
+walk_speed = 1.4
+run_speed = 4.4
+burst_min = 2
+burst_max = 4
+fire_interval = 0.085
+burst_pause = 0.9
+magazine = 30
+reload_time = 2.5
+aim_error_deg = 2.4
+aim_settle_time = 1.0
+reaction_time = 0.45
+preferred_range = 16.0
+max_range = 45.0
+aggressive = false
+courage = 0.8
+suppression_resist = 0.6
+thrower = SubResource("thrower")
+jammer = SubResource("jammer")

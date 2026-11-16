@@ -53,7 +53,10 @@ func start() -> void:
 	spawned_total = 0
 	_queue = config.start_count
 	# The first wave: enough of each role in the oven for the opening spawns.
-	for role: String in ["gunman", "enforcer", "red_pole", "hatchet_man"]:
+	var roles: Array[String] = ["gunman", "enforcer", "red_pole", "hatchet_man"]
+	for k: String in config.extra_roles:
+		roles.append(k)
+	for role: String in roles:
 		_fill_looks(role, LOOKS_AHEAD + (config.start_count if role == "gunman" else 1))
 	_timer = 0.5
 	_emit()

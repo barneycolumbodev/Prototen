@@ -187,6 +187,15 @@ func _process(_delta: float) -> void:
 		use_selected()
 
 
+## An EMP caught the operative (docs/design.md §8.8g): every active goes
+## down at once and none can start again for `seconds`.
+func jam(seconds: float) -> void:
+	for p: ActivePart in parts.values():
+		p.jam(seconds)
+	if hud:
+		hud.flash_selection()
+
+
 func _on_died() -> void:
 	for p: ActivePart in parts.values():
 		p.interrupt()

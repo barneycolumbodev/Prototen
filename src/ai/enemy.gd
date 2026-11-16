@@ -43,6 +43,16 @@ var body: EnemyBody
 var melee: MeleeBrain
 ## A boss (EnemyConfig.boss): his attacks, his knee, his execution.
 var boss: BossBrain
+## What his role wears (EnemyConfig.gear): the shield, the graft, the pack...
+var gear: EnemyGear
+## The new roles (docs/design.md §8.8b-g, 2026-11-16): the Shield man's
+## shield, the Firebomber's and the specialist's throws, the Marksman's
+## laser and glint, the specialist's jammer. Null unless his role has one.
+## (The Dao swordsman's guard lives in his MeleeBrain, a DaoBrain.)
+var shield: ShieldBrain
+var thrower: ThrowerBrain
+var sight: MarksmanSight
+var jammer: Jammer
 var nav: NavigationAgent3D
 var state: State = State.IDLE
 var tactic: Tactic = Tactic.HOLD
@@ -199,8 +209,26 @@ func _ready() -> void:
 	_build_flash()
 	_build_mouth()
 	body.set_stance(&"idle")
+	if config.gear:
+		gear = EnemyGear.fit(body, config.gear)
 	if config.melee:
-		melee = MeleeBrain.new(self)
+		if config.dao:
+			var d: DaoBrain = DaoBrain.new(self)
+			d.build_guard()
+			melee = d
+		else:
+			melee = MeleeBrain.new(self)
+	if config.shield:
+		shield = ShieldBrain.new(self)
+		shield.build()
+	if config.thrower:
+		thrower = ThrowerBrain.new(self)
+	if config.marksman:
+		sight = MarksmanSight.new(self)
+		sight.build()
+	if config.jammer:
+		jammer = Jammer.new(self)
+		jammer.build()
 	if config.boss:
 		boss = BossBrain.new(self)
 		boss.setup()
@@ -279,6 +307,8 @@ func on_part_hit(part: HitboxPart, hit: BallisticHit) -> void:
 	body.flinch(hit.direction, clampf(hit.damage.impulse / 3.0 * TimeControl.impact_multiplier(), 0.3, 3.5), head)
 	if melee:
 		melee.on_hurt(dmg)
+	if thrower:
+		thrower.on_hurt(dmg)
 	_alerted_by(hit.shooter)
 	suppression = minf(suppression + 0.45, 1.0)
 	morale -= 0.08 + clampf(dmg / 300.0, 0.0, 0.2)
@@ -341,6 +371,7 @@ func knock_back(push: Vector3, from: Node, damage: float, morale_loss: float) ->
 		return
 	if melee:
 		melee.reset()
+	_role_upset()
 	_knock = Vector3(push.x, 0.0, push.z).limit_length(14.0)
 	velocity.y = maxf(velocity.y, minf(push.y, 6.0))
 	body.play_stumble()
@@ -369,6 +400,7 @@ func launch(v: Vector3, from: Node, morale_loss: float, gravity: float, tumble_d
 		return
 	if melee:
 		melee.reset()
+	_role_upset()
 	launched = true
 	_launch_air = true
 	_launch_time = 0.0
@@ -435,6 +467,9 @@ func seize(by: Node) -> bool:
 	held = true
 	if melee:
 		melee.reset()
+	_role_upset()
+	if shield:
+		shield.throw_down(Vector3.UP * 2.0)
 	remove_from_group(&"enemies")
 	remove_from_group(&"aim_assist_targets")
 	remove_from_group(&"suppressible")
@@ -500,8 +535,26 @@ func _update_thrown(delta: float) -> void:
 
 
 ## A round hit a plate in the carrier (stopped or not: Ballistics decided).
-func on_plate_hit(_plate: Node, hit: BallisticHit) -> void:
+func on_plate_hit(plate: Node, hit: BallisticHit) -> void:
 	if not alive:
+		return
+	# The new roles' own hitboxes: the dao's guard, the shield, the jammer pack.
+	if plate.has_meta(&"guard"):
+		if melee is DaoBrain:
+			(melee as DaoBrain).on_guard_hit(hit)
+		_alerted_by(hit.shooter)
+		EventBus.target_hit.emit(&"armor", hit)
+		return
+	if plate.has_meta(&"shield"):
+		if shield:
+			shield.on_shield_hit(hit)
+		EventBus.target_hit.emit(&"armor", hit)
+		return
+	if plate.has_meta(&"jammer"):
+		if jammer:
+			jammer.on_hit(hit)
+		_alerted_by(hit.shooter)
+		EventBus.target_hit.emit(&"armor", hit)
 		return
 	body.flinch(hit.direction, clampf(hit.damage.impulse / 2.5, 0.4, 2.5), false)
 	if hit.result == BallisticHit.Result.STOPPED:
@@ -634,6 +687,14 @@ func sever(seg: StringName, velocity_out: Vector3, destroy: bool, hit: Ballistic
 	var group: Array[StringName] = body.attached(seg)
 	if not body.sever(seg, velocity_out, destroy):
 		return false
+	if gear:
+		var off: Array[StringName] = []
+		for g: StringName in group:
+			off.append(EnemyGear.bone_name(String(g)))
+		off.append(EnemyGear.bone_name(String(seg)))
+		if seg == &"head":
+			off.append(&"neck")
+		gear.on_severed(off)
 	_bleeders.append(Bleeder.new(seg))
 	set_physics_process(true)
 	Sfx.play_at(&"gore_sever", body.cut_point(seg), 0.0, 0.1)
@@ -683,6 +744,10 @@ func burst(push: Vector3, hit: BallisticHit = null, zone: StringName = &"chest")
 		if hit:
 			EventBus.target_hit.emit(&"kill", hit)
 	_bleeders.clear()
+	if gear:
+		if shield:
+			shield.throw_down(push * 0.5 + Vector3.UP * 3.0)
+		gear.hide_all()
 	body.burst(push)
 	Sfx.play_at(&"gore_sever", body.global_position + Vector3.UP, 3.0, 0.1)
 
@@ -697,6 +762,9 @@ func die(hit: BallisticHit, zone: StringName, cause: StringName = &"shot") -> vo
 		return
 	alive = false
 	state_before_death = state
+	_role_upset()
+	if shield:
+		shield.throw_down(velocity + (hit.direction if hit else Vector3.ZERO) * 2.0 + Vector3.UP * 1.5)
 	_enter(State.DEAD)
 	remove_from_group(&"enemies")
 	remove_from_group(&"aim_assist_targets")
@@ -815,6 +883,10 @@ func _physics_process(delta: float) -> void:
 	_update_flash(delta)
 	_update_burn(delta)
 	_update_bleeders(delta)
+	if melee is DaoBrain:
+		(melee as DaoBrain).update_guard(delta)
+	if jammer:
+		jammer.update(delta)
 	if bleed_dps > 0.0:
 		health -= bleed_dps * delta
 		_drip_dist += global_position.distance_to(_last_pos)
@@ -1011,6 +1083,13 @@ func _decide() -> void:
 		State.COMBAT:
 			if boss and not passive:
 				boss.decide()
+			elif shield and shield.has_shield and not passive:
+				shield.decide()
+			elif config.throw_only and thrower and not passive:
+				if thrower.out_of_throws():
+					_enter(State.FLEE)
+				elif not thrower.is_busy():
+					_decide_combat()
 			elif melee and not passive:
 				if not has_gun:
 					_enter(State.FLEE)
@@ -1045,6 +1124,16 @@ func _decide_combat() -> void:
 		return
 	if sees_player:
 		_said_lost = false
+	# Behind a Shield man if there's one close (docs/design.md §8.8e).
+	var stack: Vector3 = squad.stack_point(self, p) if squad else Vector3.INF
+	if stack != Vector3.INF:
+		if global_position.distance_to(stack) > 1.0:
+			tactic = Tactic.MOVE
+			_go(stack)
+		else:
+			tactic = Tactic.PEEK
+			_stop()
+		return
 	if config.aggressive:
 		if d > 7.0 or not sees_player:
 			if tactic != Tactic.ADVANCE and _rng.randf() < 0.35:
@@ -1105,6 +1194,13 @@ func _act(delta: float) -> void:
 	if melee and state == State.COMBAT and not passive:
 		melee.act(delta)
 		return
+	if shield and shield.has_shield and state == State.COMBAT and not passive:
+		shield.act(delta)
+		return
+	if thrower and state == State.COMBAT and not passive and _reloading <= 0.0 and thrower.update(delta):
+		if sight:
+			sight.cancel()
+		return
 	match state:
 		State.COMBAT:
 			match tactic:
@@ -1146,8 +1242,15 @@ func _act(delta: float) -> void:
 		body.set_aim(rel, pitch, 1.0 if aiming else 0.35)
 	else:
 		body.set_aim(0.0, 0.0, 0.0)
+	if sight and not (aiming and sees_player and state == State.COMBAT):
+		sight.cancel()
+	if config.throw_only:
+		return
 	if aiming and p and state == State.COMBAT and not passive and has_gun:
 		_try_fire(p, delta)
+	elif config.suppress_memory > 0.0 and p and state == State.COMBAT and not passive and has_gun and not sees_player \
+			and _unseen_for < config.suppress_memory and last_known != Vector3.INF and tactic != Tactic.HIDE:
+		_try_suppress(delta)
 
 
 func _try_fire(p: Player, _delta: float) -> void:
@@ -1164,6 +1267,18 @@ func _try_fire(p: Player, _delta: float) -> void:
 			return
 	if _shot_timer > 0.0:
 		return
+	if sight:
+		# The Marksman: laser and glint first; the round goes where the dot was when it locked.
+		if not sight.update(p, _delta, true):
+			return
+		_fire_at(sight.target(), config.aim_error_deg * (2.2 if suppression > 0.5 else 1.0))
+		_shot_timer = config.burst_pause * _rng.randf_range(0.85, 1.2)
+		_release_token()
+		if sight.wants_to_move():
+			_cover_point = Vector3.INF
+			tactic = Tactic.HOLD
+			_tactic_time = 99.0
+		return
 	if _burst_left <= 0:
 		_burst_left = _rng.randi_range(config.burst_min, config.burst_max)
 	_fire_at(p.camera().global_position - Vector3.UP * _rng.randf_range(0.15, 0.55), _aim_error(p))
@@ -1173,6 +1288,26 @@ func _try_fire(p: Player, _delta: float) -> void:
 		_shot_timer = config.burst_pause * _rng.randf_range(0.7, 1.4) * (1.0 + suppression)
 		if squad and _rng.randf() < 0.4:
 			_release_token()
+
+
+## The Gunner (EnemyConfig.suppress_memory): bursts into where the operative
+## was, for a while after he's out of sight, to keep his head down.
+func _try_suppress(_delta: float) -> void:
+	if _reloading > 0.0 or _shot_timer > 0.0:
+		return
+	if ammo <= 0:
+		_start_reload()
+		return
+	if _burst_left <= 0:
+		_burst_left = _rng.randi_range(config.burst_min, config.burst_max)
+		if _rng.randf() < 0.3:
+			_callout(&"pinned" if suppression > 0.5 else &"advance")
+	var spot: Vector3 = last_known + Vector3.UP * _rng.randf_range(0.6, 1.6)
+	_fire_at(spot, config.suppress_error_deg)
+	_burst_left -= 1
+	_shot_timer = config.fire_interval
+	if _burst_left <= 0:
+		_shot_timer = config.burst_pause * _rng.randf_range(0.8, 1.5)
 
 
 func _aim_error(p: Player) -> float:
@@ -1266,6 +1401,8 @@ func _move(delta: float) -> void:
 				if boss:
 					run = true
 					speed = boss.speed()
+				elif shield and shield.has_shield:
+					speed = shield.speed()
 				elif melee:
 					run = true
 					speed = melee.speed() * (1.0 if state == State.COMBAT else 0.55)
@@ -1304,6 +1441,17 @@ func _move(delta: float) -> void:
 		var bv: Vector3 = boss.want_velocity()
 		if bv != Vector3.INF:
 			want = bv
+	if not passive and state != State.DEAD:
+		# Burning fuel on the ground (FirePatch): step out of it, don't walk into it.
+		var fire: FirePatch = FirePatch.burning_at(global_position, 0.4)
+		if fire:
+			var out: Vector3 = global_position - fire.global_position
+			out.y = 0.0
+			if out.length() < 0.05:
+				out = global_basis.z
+			want = out.normalized() * maxf(config.run_speed, 3.0)
+		elif want.length() > 0.1 and FirePatch.burning_at(global_position + want.normalized() * 1.0, 0.2):
+			want = Vector3.ZERO
 	var horizontal: Vector3 = Vector3(velocity.x, 0, velocity.z).move_toward(want, (20.0 if melee else 14.0) * delta)
 	if _knock.length_squared() > 0.01:
 		# Shoved: the push wins over his own legs until it dies away.
@@ -1317,7 +1465,9 @@ func _move(delta: float) -> void:
 	if launched:
 		body.set_motion(Vector3.ZERO)
 		return
-	if horizontal.length() > 0.3 and (run or state in [State.FLEE, State.CRAWL] or not sees_player) and not (boss and boss.is_busy()):
+	var shielded: bool = shield != null and shield.has_shield and state == State.COMBAT
+	if horizontal.length() > 0.3 and (run or state in [State.FLEE, State.CRAWL] or not sees_player) and not (boss and boss.is_busy()) \
+			and not shielded and not (thrower and thrower.is_busy()):
 		_turn_toward(atan2(horizontal.x, horizontal.z), delta)
 	var local: Vector3 = global_basis.inverse() * horizontal
 	body.set_motion(local)
@@ -1335,6 +1485,35 @@ func face(yaw: float) -> void:
 
 
 # ------------------------------------------------------------------ fire, bleeding, flash
+
+## Set alight (a molotov's fire, FirePatch): burns for `seconds` at `dps`.
+func ignite(seconds: float, dps: float, from: Node = null) -> void:
+	if not alive:
+		return
+	if burn_left <= 0.0:
+		var part: HitboxPart = parts.get(&"chest")
+		var on: Node3D = self
+		if part:
+			on = part
+		Fx.burn_at(on, body.chest_position(), Vector3.UP, seconds, true)
+		if _rng.randf() < 0.6:
+			speak(&"burning")
+		elif Sfx.claim_death_voice():
+			vocal(&"death_scream", -2.0)
+	burn_left = maxf(burn_left, seconds)
+	burn_dps = maxf(burn_dps, dps)
+	morale -= 0.15
+	_alerted_by(from if from != self else null)
+
+
+## Knocked out of what his role was doing (shoved, launched, seized, killed):
+## a throw in his hand goes wrong, the laser goes off.
+func _role_upset() -> void:
+	if thrower and thrower.is_busy():
+		thrower.drop_it()
+	if sight:
+		sight.cancel()
+
 
 func _update_burn(delta: float) -> void:
 	if burn_left <= 0.0:

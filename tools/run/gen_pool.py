@@ -135,6 +135,13 @@ ROSTER = [
     ("enforcer", 3.0, 2, 0.8, 0.06, 0.05, 0, 0, 10),
     ("hatchet_man", 2.0, 4, 1.1, 0.04, 0.05, 3, 5, 10),
     ("red_pole", 4.0, 3, 0.35, 0.02, 0.05, 1, 2, 10),
+    # 2026-11-16: the rest of the triad roster (docs/design.md §8.8b-g), one new type a wave from wave 6.
+    ("firebomber", 3.0, 6, 0.8, 0.03, 0.05, 2, 3, 12),
+    ("marksman", 4.0, 7, 0.55, 0.03, 0.05, 1, 2, 12),
+    ("dao_swordsman", 4.0, 8, 0.55, 0.04, 0.05, 1, 3, 12),
+    ("shield_man", 4.0, 9, 0.6, 0.03, 0.05, 1, 2, 13),
+    ("gunner", 5.0, 11, 0.45, 0.03, 0.05, 1, 2, 15),
+    ("anti_augment", 6.0, 13, 0.4, 0.03, 0.05, 1, 2, 16),
 ]
 
 # Boss roles, in order (data/enemies/<role>.tres, each with a BossConfig).

@@ -24,13 +24,24 @@ extends Resource
 @export var red_pole_weight: float = 0.12
 ## Hatchet Men (docs/design.md §8.8), 2026-11-15.
 @export var hatchet_man_weight: float = 0.0
+## The roles added 2026-11-16 (docs/design.md §8.8b-g): role -> weight, on top of the four above.
+@export var extra_roles: Dictionary[String, float] = {}
 ## How aware a new arrival is (0..1) and whether it knows where you are.
 @export var arrival_awareness: float = 0.6
 
 
 func pick_role(r: float) -> String:
-	var total: float = gunman_weight + enforcer_weight + red_pole_weight + hatchet_man_weight
+	var base: float = gunman_weight + enforcer_weight + red_pole_weight + hatchet_man_weight
+	var total: float = base
+	for k: String in extra_roles:
+		total += extra_roles[k]
 	var x: float = r * total
+	if x >= base:
+		var acc: float = base
+		for k: String in extra_roles:
+			acc += extra_roles[k]
+			if x < acc:
+				return k
 	if x < gunman_weight:
 		return "gunman"
 	if x < gunman_weight + enforcer_weight:

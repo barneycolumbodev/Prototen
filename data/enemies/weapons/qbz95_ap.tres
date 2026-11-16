@@ -1,0 +1,25 @@
+[gd_resource type="Resource" script_class="WeaponData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/weapons/weapon_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+display_name = "QBZ-95 (armour-piercing)"
+caliber = "5.8×42mm DBP10 AP"
+muzzle_velocity = 930.0
+bullet_mass_g = 4.15
+drag_per_m = 0.0012
+pellets = 1
+pattern_deg = 0.0
+penetration_scale = 2.4
+max_penetrations = 8
+max_ricochets = 0
+min_damage = 16.0
+damage_per_joule = 0.14
+impulse_scale = 10.0
+sound_prefix = "qbz_"
+flash_scale = 0.9
+shot_volume_db = -2.0
+max_range = 500.0
+player_damage_scale = 1.2
+armour_piercing = 0.6

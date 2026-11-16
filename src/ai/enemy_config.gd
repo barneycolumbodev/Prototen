@@ -13,6 +13,14 @@ extends Resource
 ## picked per man, then garments, colours, prints, tattoos (TriadLook).
 @export var outfits: Array[Outfit] = []
 @export var plate_carrier: bool = false
+## What his role wears on his body (raw_assets/characters/triad_gear: a
+## shield, the forearm graft, the jammer pack and respirator, bandoliers, a
+## satchel of bottles): each piece rides on its bone (EnemyGear). Null: none.
+@export var gear: PackedScene
+## Which clips stand in for the rifle stances: &"" = by role (a melee man's
+## blade stances, a boss's brute stances, else the rifle's), &"melee" (the
+## Firebomber holds a bottle like a blade), &"shield".
+@export var stance_set: StringName = &""
 ## Whole-body scale (model, hitboxes, capsule). Owner, 2026-11-05: enemies read
 ## too small on the phone screen; 1.08 made a 1.75 m man about 1.89 m.
 ## 2026-11-11 ("they are quite small"): 1.12, about 1.96 m.
@@ -127,6 +135,26 @@ extends Resource
 ## Highest obstacle (m) he vaults, and how long a vault takes (s).
 @export_range(0.4, 1.6) var vault_height: float = 1.25
 @export_range(0.25, 1.5) var vault_time: float = 0.55
+
+@export_group("Roles")
+## The Shield man's shield (docs/design.md §8.8e). Null for everyone else.
+@export var shield: ShieldConfig
+## The Dao swordsman's guard and cuts (§8.8b); needs `melee`.
+@export var dao: DaoConfig
+## Molotovs (the Firebomber, §8.8c: his whole fight) or EMP grenades (the
+## anti-augment specialist, §8.8g: thrown now and then between bursts).
+@export var thrower: ThrowerConfig
+## Throwing is all he does (the Firebomber): no gun, no rifle firefight.
+@export var throw_only: bool = false
+## The Marksman's laser and glint before each shot (§8.8d).
+@export var marksman: MarksmanConfig
+## The jammer backpack (§8.8g).
+@export var jammer: JammerConfig
+## Keeps firing where the operative was for this long (s) after losing sight
+## of him (the Gunner, §8.8f: "suppresses a whole street"). 0: never.
+@export_range(0.0, 20.0) var suppress_memory: float = 0.0
+## Aim error (deg) for fire at where he was, not at him.
+@export_range(0.0, 30.0) var suppress_error_deg: float = 7.0
 
 @export_group("Boss")
 ## A boss (docs/design.md §8.7): his attacks, entrance and execution

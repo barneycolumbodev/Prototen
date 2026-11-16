@@ -1,0 +1,54 @@
+[gd_resource type="Resource" script_class="EnemyConfig" load_steps=8 format=3]
+
+[ext_resource type="Script" path="res://src/ai/enemy_config.gd" id="1"]
+[ext_resource type="Script" path="res://src/ai/outfit.gd" id="o0"]
+[ext_resource type="Resource" path="res://data/enemies/outfits/shield.tres" id="of1"]
+[ext_resource type="PackedScene" path="res://assets/weapons/enemy/type54.gltf" id="g"]
+[ext_resource type="Resource" path="res://data/enemies/weapons/type54.tres" id="w"]
+[ext_resource type="PackedScene" path="res://assets/characters/triad_gear/gear_shield.gltf" id="gear"]
+[ext_resource type="Script" path="res://src/ai/roles/shield_config.gd" id="sc"]
+
+[sub_resource type="Resource" id="shield"]
+script = ExtResource("sc")
+box_size = Vector3(0.56, 0.95, 0.03)
+box_center = Vector3(0.03, 0.05, 0.41)
+stagger_energy = 2600.0
+stagger_time = 0.9
+integrity = 30000.0
+turn_deg = 120.0
+hold_range = 7.0
+stack_range = 12.0
+bash_range = 2.2
+bash_damage = 14.0
+bash_push = 7.5
+bash_cooldown = 2.2
+
+[resource]
+script = ExtResource("1")
+outfits = Array[ExtResource("o0")]([ExtResource("of1")])
+display_name = "Shield Man"
+callsign = "SHIELD"
+gear = ExtResource("gear")
+stance_set = &"shield"
+gun_scene = ExtResource("g")
+weapon = ExtResource("w")
+muzzle = Vector3(0.158, 0.026, 0)
+health = 120.0
+walk_speed = 1.3
+run_speed = 3.0
+turn_speed_deg = 160.0
+burst_min = 1
+burst_max = 2
+fire_interval = 0.32
+burst_pause = 0.9
+magazine = 8
+reload_time = 2.0
+aim_error_deg = 3.4
+aim_settle_time = 1.0
+reaction_time = 0.55
+preferred_range = 7.0
+max_range = 30.0
+aggressive = true
+courage = 0.8
+suppression_resist = 0.85
+shield = SubResource("shield")

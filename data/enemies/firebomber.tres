@@ -1,0 +1,49 @@
+[gd_resource type="Resource" script_class="EnemyConfig" load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://src/ai/enemy_config.gd" id="1"]
+[ext_resource type="Script" path="res://src/ai/outfit.gd" id="o0"]
+[ext_resource type="Resource" path="res://data/enemies/outfits/firebomber.tres" id="of1"]
+[ext_resource type="PackedScene" path="res://assets/weapons/enemy/molotov.gltf" id="g"]
+[ext_resource type="PackedScene" path="res://assets/characters/triad_gear/gear_firebomber.gltf" id="gear"]
+[ext_resource type="Script" path="res://src/ai/roles/thrower_config.gd" id="tc"]
+
+[sub_resource type="Resource" id="thrower"]
+script = ExtResource("tc")
+kind = 0
+model = ExtResource("g")
+min_range = 7.0
+max_range = 26.0
+cooldown = Vector2(4.0, 6.5)
+count = 6
+first_delay = 1.5
+release_time = 0.56
+flight_per_10m = 0.75
+spread = 1.2
+lead = 0.6
+interrupt = 25.0
+fire_radius = 2.4
+fire_time = 8.0
+fire_dps = 22.0
+ignite_time = 4.0
+ignite_dps = 18.0
+
+[resource]
+script = ExtResource("1")
+outfits = Array[ExtResource("o0")]([ExtResource("of1")])
+display_name = "Firebomber"
+callsign = "FIREBOMBER"
+gear = ExtResource("gear")
+stance_set = &"melee"
+gun_scene = ExtResource("g")
+health = 90.0
+walk_speed = 1.5
+run_speed = 5.2
+turn_speed_deg = 300.0
+reaction_time = 0.6
+preferred_range = 15.0
+max_range = 26.0
+aggressive = false
+courage = 0.5
+suppression_resist = 0.35
+thrower = SubResource("thrower")
+throw_only = true

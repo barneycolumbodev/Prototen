@@ -15,6 +15,8 @@ const COVER_SPACING: float = 1.2
 
 var members: Array[Enemy] = []
 var cover_points: PackedVector3Array = PackedVector3Array()
+## Who's fighting behind which Shield man (stack_point).
+var _stacked: Dictionary = {}
 ## Cover point -> the enemy holding it.
 var _claimed: Dictionary = {}
 var _shooters: Array[Enemy] = []
@@ -56,6 +58,9 @@ func _prune() -> void:
 	for k: Variant in _claimed.keys():
 		if not is_instance_valid(_claimed[k]):
 			_claimed.erase(k)
+	for k: Variant in _stacked.keys():
+		if not is_instance_valid(k) or not is_instance_valid(_stacked[k]):
+			_stacked.erase(k)
 
 
 ## Who holds cover point `i` (null if nobody alive).
@@ -237,11 +242,55 @@ func find_cover(e: Enemy, threat: Vector3) -> Vector3:
 		if p and not cover_hides(c, p):
 			continue
 		var score: float = dist + absf(to_threat - e.config.preferred_range) * 0.5
+		if e.config.marksman:
+			# The Marksman wants height: the gallery, the container stacks (docs/design.md §8.8d).
+			score -= (c.y - threat.y) * e.config.marksman.height_bonus
 		if score < best_score:
 			best_score = score
 			best = c
 			_claim(i, e)
 	return best
+
+
+## A place behind a Shield man for `e` to fight from (docs/design.md §8.8e):
+## the nearest shield within his stack range that's facing the fight, two
+## men to a shield, one off each shoulder. INF if there's none.
+func stack_point(e: Enemy, p: Player) -> Vector3:
+	_prune()
+	if p == null or e.config.melee or e.shield or e.config.throw_only:
+		return Vector3.INF
+	var best: Enemy
+	var best_d: float = INF
+	for m: Enemy in members:
+		if not is_instance_valid(m) or m == e or not m.alive or m.shield == null or not m.shield.has_shield \
+				or m.state != Enemy.State.COMBAT:
+			continue
+		var d: float = m.global_position.distance_to(e.global_position)
+		if d < m.config.shield.stack_range and d < best_d:
+			var taken: int = 0
+			for k: Variant in _stacked.keys():
+				if k != e and is_instance_valid(k) and _stacked[k] == m:
+					var ke: Enemy = k
+					if ke.alive:
+						taken += 1
+			if taken < 2:
+				best = m
+				best_d = d
+	if best == null:
+		_stacked.erase(e)
+		return Vector3.INF
+	_stacked[e] = best
+	var slot: int = 0
+	for k: Variant in _stacked.keys():
+		if k == e:
+			break
+		if is_instance_valid(k) and _stacked[k] == best:
+			slot += 1
+	var away: Vector3 = best.global_position - p.global_position
+	away.y = 0.0
+	away = away.normalized() if away.length() > 0.1 else Vector3.BACK
+	var side: Vector3 = Vector3.UP.cross(away).normalized() * (0.6 if slot == 0 else -0.6)
+	return best.global_position + away * 1.4 + side
 
 
 func _claim(i: int, e: Enemy) -> void:

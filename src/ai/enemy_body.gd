@@ -102,10 +102,12 @@ const SEGMENT_ORDER: Array[StringName] = [&"head", &"upper_arm_L", &"forearm_L",
 
 const STANCES: Array[StringName] = [&"loco", &"run", &"idle", &"cover", &"crouch_aim", &"blind_fire",
 		&"gut", &"crawl", &"surrender", &"flee", &"cower", &"melee_ready", &"melee_run", &"melee_crouch",
-		&"brute_ready", &"brute_walk", &"brute_run", &"cannon", &"kneel_down"]
+		&"brute_ready", &"brute_walk", &"brute_run", &"cannon", &"kneel_down",
+		&"shield_ready", &"shield_walk", &"guard", &"guard_walk"]
 const LOOPS: Array[StringName] = [&"aim", &"idle", &"walk_f", &"walk_b", &"walk_l", &"walk_r", &"run", &"cover",
 		&"crouch_aim", &"blind_fire", &"gut", &"crawl", &"surrender", &"flee", &"cower", &"melee_ready", &"melee_run", &"melee_crouch",
-		&"brute_ready", &"brute_walk", &"brute_run", &"cannon", &"kneel_down"]
+		&"brute_ready", &"brute_walk", &"brute_run", &"cannon", &"kneel_down",
+		&"shield_ready", &"shield_walk", &"guard", &"guard_walk"]
 const UPPER_BONES: Array[StringName] = [&"spine", &"chest", &"neck", &"head", &"clavicle.L", &"clavicle.R",
 		&"upper_arm.L", &"upper_arm.R", &"forearm.L", &"forearm.R", &"hand.L", &"hand.R", &"fingers.L", &"fingers.R", &"weapon"]
 ## Clip speeds (raw_assets/characters/triad/build.py): walk 1.4 m/s, run 4.6 m/s, flee 5.2, crawl 0.45.
@@ -126,6 +128,15 @@ const WALK_CLIP_SPEED: float = 1.4
 const RUN_CLIP_SPEED: float = 4.6
 const FLEE_CLIP_SPEED: float = 5.2
 const CRAWL_CLIP_SPEED: float = 0.45
+## The new roles' clips (2026-11-16, raw_assets/characters/triad/build.py): the shield walk and the
+## guard walk (rig m/s), the dao's slash and lunge, the overhand throw and the lob, each with the
+## moment its blow lands or the thing leaves the hand.
+const SHIELD_WALK_SPEED: float = 1.3
+const GUARD_WALK_SPEED: float = 1.8
+const SLASH_CLIP_HIT: float = 0.42
+const LUNGE_CLIP_HIT: float = 0.48
+const THROW_CLIP_RELEASE: float = 0.56
+const LOB_CLIP_RELEASE: float = 0.66
 
 ## Source meshes with CUSTOM0 (rest position, segment + 16 * slot) and
 ## CUSTOM1 (rest normal), by "name|segment|slot".
@@ -236,6 +247,33 @@ const BRUTE_STANCES: Dictionary[StringName, StringName] = {
 	&"cover": &"brute_ready", &"crouch_aim": &"brute_ready", &"blind_fire": &"brute_ready",
 }
 var _brute_loco: bool = false
+## The Shield man (EnemyConfig.stance_set "shield"): braced behind it standing,
+## walking it forward when he moves.
+const SHIELD_STANCES: Dictionary[StringName, StringName] = {
+	&"idle": &"shield_ready", &"loco": &"shield_ready", &"run": &"shield_walk",
+	&"cover": &"shield_ready", &"crouch_aim": &"shield_ready", &"blind_fire": &"shield_ready",
+}
+var _shield_loco: bool = false
+## The Dao swordsman holding his guard up (DaoBrain): his ready stance is the
+## guard and his run is the guard walk.
+var guarding: bool = false
+
+
+## Set in play: the Shield man without his shield falls back on the rifle's clips.
+var stance_override: StringName = &""
+
+
+## Which clips stand in for the rifle stances (EnemyConfig.stance_set).
+func stance_set() -> StringName:
+	if stance_override != &"":
+		return stance_override
+	if config == null:
+		return &"rifle"
+	if config.stance_set != &"":
+		return config.stance_set
+	if config.boss:
+		return &"brute"
+	return &"melee" if config.melee else &"rifle"
 
 
 func set_stance(s: StringName) -> void:
@@ -246,10 +284,22 @@ func set_stance(s: StringName) -> void:
 			return  # set_motion decides
 		_set_stance(s)
 		return
-	if config and config.melee:
+	var set_name: StringName = stance_set()
+	if set_name == &"shield":
+		_shield_loco = s == &"loco" or s == &"run"
+		s = SHIELD_STANCES.get(s, s)
+		if _shield_loco and (stance == &"shield_walk" or stance == &"shield_ready"):
+			return  # set_motion decides
+		_set_stance(s)
+		return
+	_shield_loco = false
+	if set_name == &"melee":
 		_melee_loco = s == &"loco" or s == &"run"
 		s = MELEE_STANCES.get(s, s)
-		if _melee_loco and stance == &"melee_run" and s == &"melee_ready":
+		if guarding:
+			s = {&"melee_ready": &"guard", &"melee_run": &"guard_walk"}.get(s, s)
+		if _melee_loco and (stance == &"melee_run" or stance == &"guard_walk" or stance == &"guard") \
+				and (s == &"melee_ready" or s == &"guard"):
 			return  # set_motion decides between these two
 	_set_stance(s)
 
@@ -272,6 +322,14 @@ func set_motion(local_velocity: Vector3) -> void:
 		_set_stance(&"brute_run" if running else (&"brute_walk" if speed > (0.35 if stance == &"brute_walk" else 0.6) else &"brute_ready"))
 		_tree.set(&"parameters/brute_walk_speed/scale", clampf(speed / (BRUTE_WALK_SPEED * sc), 0.5, 1.8))
 		_tree.set(&"parameters/brute_run_speed/scale", clampf(speed / (BRUTE_RUN_SPEED * sc), 0.6, 1.6))
+		return
+	if _shield_loco:
+		_set_stance(&"shield_walk" if speed > (0.3 if stance == &"shield_walk" else 0.5) else &"shield_ready")
+		_tree.set(&"parameters/shield_walk_speed/scale", clampf(speed / (SHIELD_WALK_SPEED * config.body_scale), 0.5, 1.8))
+		return
+	if _melee_loco and guarding:
+		_set_stance(&"guard_walk" if speed > (0.3 if stance == &"guard_walk" else 0.5) else &"guard")
+		_tree.set(&"parameters/guard_walk_speed/scale", clampf(speed / (GUARD_WALK_SPEED * config.body_scale), 0.5, 1.8))
 		return
 	if _melee_loco:
 		_set_stance(&"melee_run" if speed > (1.6 if stance == &"melee_run" else 2.2) else &"melee_ready")
@@ -300,9 +358,27 @@ func play_chop(hit_in: float) -> void:
 	_tree.set(&"parameters/chop/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
 
 
-## Breaks off a chop (he was staggered or knocked down).
+## Breaks off a chop (he was staggered or knocked down), and the dao's cuts and the throws.
 func cancel_chop() -> void:
-	_tree.set(&"parameters/chop/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FADE_OUT)
+	for one: StringName in [&"chop", &"slash", &"lunge", &"throw", &"lob"]:
+		_tree.set(StringName("parameters/%s/request" % one), AnimationNodeOneShot.ONE_SHOT_REQUEST_FADE_OUT)
+
+
+## The dao's slash or lunge (whole body), timed so the blade arrives `hit_in` s from now.
+func play_cut(lunge: bool, hit_in: float) -> void:
+	var one: String = "lunge" if lunge else "slash"
+	var hit: float = LUNGE_CLIP_HIT if lunge else SLASH_CLIP_HIT
+	_tree.set(StringName("parameters/%s_speed/scale" % one), hit / maxf(hit_in, 0.05))
+	_tree.set(StringName("parameters/%s/request" % one), AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
+
+
+## The Firebomber's overhand throw (whole body) or the lob (upper body only),
+## timed so the thing leaves the hand `release_in` s from now.
+func play_throw(lob: bool, release_in: float) -> void:
+	var one: String = "lob" if lob else "throw"
+	var rel: float = LOB_CLIP_RELEASE if lob else THROW_CLIP_RELEASE
+	_tree.set(StringName("parameters/%s_speed/scale" % one), rel / maxf(release_in, 0.05))
+	_tree.set(StringName("parameters/%s/request" % one), AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
 
 
 ## The boss's ground pound, timed so the fist lands `hit_in` s from now.
@@ -1189,7 +1265,7 @@ func _setup_animation() -> void:
 		var clip_node: StringName = StringName("clip_" + String(s))
 		root.add_node(clip_node, _anim(s))
 		var src: StringName = clip_node
-		if s == &"run" or s == &"flee" or s == &"crawl" or s == &"melee_run" or s == &"brute_walk" or s == &"brute_run":
+		if s in [&"run", &"flee", &"crawl", &"melee_run", &"brute_walk", &"brute_run", &"shield_walk", &"guard_walk"]:
 			var ts_name: StringName = &"crawl_speed" if s == &"crawl" else StringName(String(s) + "_speed")
 			if s == &"flee":
 				ts_name = &"run_speed_flee"
@@ -1204,9 +1280,9 @@ func _setup_animation() -> void:
 	root.add_node(&"clip_stumble", _anim(&"stumble"))
 	# Melee one-shots (Hatchet Man): the chop and the vault; the boss's pound,
 	# haymaker and entrance. Whole body, each with its own speed.
-	for one: StringName in [&"vault", &"chop", &"pound", &"swing", &"intro"]:
+	for one: StringName in [&"vault", &"chop", &"pound", &"swing", &"intro", &"slash", &"lunge", &"throw"]:
 		var os: AnimationNodeOneShot = AnimationNodeOneShot.new()
-		os.fadein_time = 0.0 if one == &"intro" else (0.06 if one == &"chop" else 0.1)
+		os.fadein_time = 0.0 if one == &"intro" else (0.06 if one in [&"chop", &"slash", &"lunge"] else 0.1)
 		os.fadeout_time = 0.18 if one != &"intro" else 0.3
 		root.add_node(one, os)
 		root.add_node(StringName("clip_" + String(one)), _anim(one))
@@ -1218,7 +1294,10 @@ func _setup_animation() -> void:
 	root.connect_node(&"pound", 0, &"chop")
 	root.connect_node(&"swing", 0, &"pound")
 	root.connect_node(&"intro", 0, &"swing")
-	root.connect_node(&"react", 0, &"intro")
+	root.connect_node(&"slash", 0, &"intro")
+	root.connect_node(&"lunge", 0, &"slash")
+	root.connect_node(&"throw", 0, &"lunge")
+	root.connect_node(&"react", 0, &"throw")
 	root.connect_node(&"react", 1, &"clip_stumble")
 	var reload: AnimationNodeOneShot = AnimationNodeOneShot.new()
 	reload.fadein_time = 0.15
@@ -1231,7 +1310,20 @@ func _setup_animation() -> void:
 	root.add_node(&"clip_reload", _anim(&"reload"))
 	root.connect_node(&"reload", 0, &"react")
 	root.connect_node(&"reload", 1, &"clip_reload")
-	root.connect_node(&"output", 0, &"reload")
+	# The lob: upper body only, like the reload (the legs keep walking).
+	var lob: AnimationNodeOneShot = AnimationNodeOneShot.new()
+	lob.fadein_time = 0.12
+	lob.fadeout_time = 0.2
+	lob.filter_enabled = true
+	for b: StringName in UPPER_BONES:
+		lob.set_filter_path(NodePath(sk_path + ":" + String(b)), true)
+	root.add_node(&"lob", lob)
+	root.add_node(&"clip_lob", _anim(&"lob"))
+	root.add_node(&"lob_speed", AnimationNodeTimeScale.new())
+	root.connect_node(&"lob_speed", 0, &"clip_lob")
+	root.connect_node(&"lob", 0, &"reload")
+	root.connect_node(&"lob", 1, &"lob_speed")
+	root.connect_node(&"output", 0, &"lob")
 	_tree = AnimationTree.new()
 	_tree.name = "AnimationTree"
 	_tree.tree_root = root
