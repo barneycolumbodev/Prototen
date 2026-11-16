@@ -64,6 +64,10 @@ LINES = {
     "grabbed": ["Get off me!", "Let me go!"],
     "limb_off": ["My arm! My arm!", "Oh god, my arm!"],
     "rally": ["Hold your ground!", "Nobody runs!"],
+    # 2026-11-16: the squad hunts and works together (docs/design.md §5.6a).
+    "flank": ["Flank him!", "Go around!", "Get on his side!"],
+    "suppress": ["Covering fire!", "Pin him down!", "Keep him down!"],
+    "hunt": ["Spread out, find him!", "He's close, find him!", "Check every corner!"],
 }
 
 # Voice id -> (Kokoro voice, language, pitch-up factor, render speed). The

@@ -279,6 +279,11 @@ func _start_game(survival_mode: bool = false) -> void:
 			world_material.set_shader_parameter(&"debug_view", arg.trim_prefix("--debug-view=").to_int())
 		if arg == "--god":
 			player.invulnerable = true
+		if arg == "--demo=hunt":
+			spawns_on = false
+			var hd: HuntDemo = HuntDemo.new()
+			hd.map = self
+			add_child(hd)
 		if arg == "--no-lod":
 			get_viewport().mesh_lod_threshold = 0.0  # capture A/B: every mesh at full detail
 		if arg == "--line-up":
@@ -554,7 +559,43 @@ func _build_navigation() -> void:
 	NavigationServer3D.parse_source_geometry_data(nm, source, self)
 	NavigationServer3D.bake_from_source_geometry_data_async(nm, source, func() -> void:
 		nav_region.navigation_mesh = nm
-		nav_region.enabled = true)
+		nav_region.enabled = true
+		# The map needs a sync before paths can be asked for.
+		get_tree().create_timer(0.3).timeout.connect(connect_spawns))
+
+
+## Moves every spawn point that has no path to the player start onto the
+## nearest ground that does (owner, 2026-11-16: men who spawned in a
+## stairwell, on the moored boat or the gallery could never reach him, so
+## the last man of a wave was never found). A point with nothing walkable
+## within SPAWN_SNAP metres goes. Returns how many were moved.
+const SPAWN_SNAP: float = 6.0
+var spawns_fixed: int = -1
+
+
+func connect_spawns() -> int:
+	var m: RID = get_world_3d().navigation_map
+	var home: Vector3 = NavigationServer3D.map_get_closest_point(m, player_start)
+	var keep: Array[Vector3] = []
+	var moved: int = 0
+	for sp: Vector3 in spawn_points:
+		var path: PackedVector3Array = NavigationServer3D.map_get_path(m, home, sp, true)
+		if path.is_empty():
+			keep.append(sp)
+			continue
+		var reach: Vector3 = path[path.size() - 1]
+		if reach.distance_to(sp) < 0.6:
+			keep.append(sp)
+		elif reach.distance_to(sp) < SPAWN_SNAP:
+			keep.append(reach + Vector3.DOWN * 0.15)
+			moved += 1
+		else:
+			moved += 1
+	# In place: the spawner holds this same array.
+	spawn_points.clear()
+	spawn_points.append_array(keep)
+	spawns_fixed = moved
+	return moved
 
 
 # ------------------------------------------------------------------ benchmark (same as the test room)

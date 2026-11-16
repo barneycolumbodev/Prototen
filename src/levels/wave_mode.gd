@@ -47,6 +47,7 @@ func start() -> void:
 	squad.name = "WaveSquad"
 	add_child(squad)
 	squad.set_player(room.player)
+	squad.enable_hunt()
 	squad.build_cover(Vector3(0, 0, 0), 15.5, room.get_world_3d())
 	squad.build_cover(Vector3(0, TestRoom.MEZZ_TOP, -12.0), 15.5, room.get_world_3d(), true)
 	wave = 0

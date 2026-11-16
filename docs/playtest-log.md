@@ -729,3 +729,27 @@ Please try:
 - Measured:
 - Notes from the owner:
 - Follow-ups:
+
+## S1 They come to you: the hunt, pin and flank, the last-hostile marker — 2026-11-16 (waiting for the owner)
+
+Owner (2026-11-16): "They need to come to me... when there is one more enemy, I need them marked like with an arrow... once they realize where I'm at, they're coordinating together and they need to pin me down and kill me." Design: `docs/design.md` §5.6a.
+
+What's in the APK:
+- **No more hunting for the last man.** Two causes, both fixed: men who lost you used to stand down and wait where they were; and 8 of the docks' 20 spawn points had no walkable way out (tenement stairwells, the boat, the gallery, the cold room), so a man who arrived there was stuck for good. Those spawn points now sit on the nearest ground that connects, and a man who's stuck for 6 s anyway is moved somewhere you can't see.
+- **They always know roughly where you are.** If nobody has seen you for 5 s, lookouts phone it in (within about 7 m) and they all come, running. Down to the last two: every 2 s, within 2 m.
+- **They work together once they find you.** Up to two pin you (stay in cover, and when you duck they keep shooting at your cover for a few seconds), up to two run round to your side, the rest move up cover by cover every 5 s or so. You'll hear "Covering fire!", "Flank him!", "Move up!".
+- **The last one runs out of places to hide**: with two or fewer left, men who ran away turn back.
+- **LAST HOSTILE**: with one man left in a wave, a red arrow at the screen edge points at him (with the distance), or a red marker sits over him when he's on screen, through walls.
+
+Cloud evidence: `tools/check.sh` (468 tests pass) with the new `tests/scene/test_squad_hunt.gd`: a straggler who forgot about you finds you; lookout tips land within 7 m of you and everyone heads there; with five men, contact makes 2 pinners and 2 flankers and the flank point is round your side; a flanker runs for his spot; a pinner fires at where you ducked and stops after 3.5 s, a man with no role doesn't; the last man stops running; every docks spawn point has a path to the player start; a man put on the boat is moved off it; the marker shows only for the last man, low-left for a man behind-left, over his head when he's ahead. Capture: `docs/previews/hunt_marker.png`. Not checked in the cloud: how hard the pressure feels in a real run (it may be too much on early waves), the new voice lines' sound (rendered with the same voice pipeline, not transcribed this time), frame cost on the phone (small: a role pass once a second).
+
+Please try:
+1. Survival to wave 3 or 4. When you break contact and hide, do they come looking within a few seconds? Too fast, too slow?
+2. Do you feel pinned: rounds hitting your cover while someone comes round the side? Can you tell from the callouts what they're doing?
+3. Is the LAST HOSTILE arrow easy to read? Should it start at two left instead of one (one number in `data/enemies/hunt.tres`)?
+4. Is it too hard now? The knobs: how many pin, how many flank, how often they push.
+
+- Device / renderer / settings:
+- Measured:
+- Notes from the owner:
+- Follow-ups: the docks' navmesh islands (boat gangway, gallery stair, stairwell thresholds) should be fixed in the map itself on its next rebuild.

@@ -120,6 +120,9 @@ func decide() -> void:
 			side = -signf(c)
 	# Lost him: run to where he was.
 	if not e.sees_player and e._unseen_for > 3.0 and e.last_known != Vector3.INF:
+		if e._hunting() and e.global_position.distance_to(e.last_known) < 2.5:
+			# Hunting: he's not here, try where the squad says next.
+			e.last_known = e.squad.search_point(e)
 		e.tactic = Enemy.Tactic.MOVE
 		_set_direct(false)
 		e._go(e.last_known)
