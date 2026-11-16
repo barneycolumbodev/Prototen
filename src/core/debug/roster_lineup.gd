@@ -37,7 +37,9 @@ func _ready() -> void:
 		var cam: Camera3D = Camera3D.new()
 		cam.name = spec[0]
 		room.add_child(cam)
-		cam.look_at_from_position(spec[1], spec[2])
+		var eye: Vector3 = spec[1]
+		var look: Vector3 = spec[2]
+		cam.look_at_from_position(eye, look)
 		cam.fov = spec[3]
 		cam.add_to_group(&"capture_cameras")
 	for i: int in ROLES.size():

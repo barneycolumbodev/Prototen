@@ -196,6 +196,12 @@ class BossBar:
 
 
 var _boss_bar: BossBar
+## The EMP (docs/design.md §8.8g): a blue wash and "AUGMENTS JAMMED" while
+## the actives are down.
+var _emp: ColorRect
+var _emp_label: Label
+var _emp_left: float = 0.0
+var _emp_total: float = 1.0
 
 
 func _ready() -> void:
@@ -227,6 +233,15 @@ func _ready() -> void:
 	_boss_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_boss_bar.visible = false
 	_root.add_child(_boss_bar)
+	_emp = ColorRect.new()
+	_emp.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_emp.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_emp.color = Color(0.35, 0.65, 1.0, 0.0)
+	_root.add_child(_emp)
+	_emp_label = _label(22)
+	_emp_label.add_theme_color_override("font_color", Color(0.6, 0.85, 1.0))
+	_emp_label.visible = false
+	EventBus.player_jammed.connect(_on_jammed)
 	EventBus.callout.connect(_on_callout)
 	EventBus.player_damaged.connect(_on_damaged)
 	EventBus.player_died.connect(func() -> void: _down.visible = true)
@@ -270,6 +285,19 @@ func _process(delta: float) -> void:
 	_banner_time -= delta
 	_wave.modulate.a = clampf(_banner_time, 0.25, 1.0) if _banner_time > -999.0 else 1.0
 	_update_arcs(delta)
+	if _emp_left > 0.0:
+		_emp_left = maxf(0.0, _emp_left - delta)
+		var k: float = _emp_left / _emp_total
+		# A hard flash that fades, with a flicker like a failing feed.
+		_emp.color.a = (0.45 * pow(k, 6.0) + 0.06 * k) * (0.7 + 0.3 * sin(_emp_left * 61.0))
+		_emp_label.visible = _emp_left > 0.0
+		_emp_label.text = "AUGMENTS JAMMED  %.1f" % _emp_left
+		_emp_label.position = Vector2(0, vp.y * 0.3)
+		_emp_label.size = Vector2(vp.x, 30)
+		_emp_label.modulate.a = 0.6 + 0.4 * sin(_emp_left * 12.0)
+		if _emp_left <= 0.0:
+			_emp.color.a = 0.0
+			_emp_label.visible = false
 	for c: Node in _callouts.get_children():
 		var l: Label = c as Label
 		var age: float = l.get_meta(&"age", 0.0)
@@ -296,6 +324,11 @@ func _update_arcs(delta: float) -> void:
 	_hits = still
 	_vignette.arcs = arcs
 	_vignette.redraw_if_changed()
+
+
+func _on_jammed(seconds: float) -> void:
+	_emp_left = maxf(seconds, 0.1)
+	_emp_total = _emp_left
 
 
 func _on_damaged(amount: float, from_dir: Vector3) -> void:

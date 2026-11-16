@@ -36,7 +36,7 @@ extends Resource
 ## Threat budget of wave n: base + per_wave·(n-1) + accel·(n-1)².
 @export var budget_base: float = 5.0
 @export var budget_per_wave: float = 2.2
-@export var budget_accel: float = 0.08
+@export var budget_accel: float = 0.11
 ## The wave after a boss starts this much lower (fraction of its budget).
 @export_range(0.0, 1.0) var after_boss_dip: float = 0.2
 ## Every n-th wave is a boss wave (until bosses exist: a lieutenant wave).

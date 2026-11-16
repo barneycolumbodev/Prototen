@@ -31,7 +31,7 @@ elif [ -x /opt/bpy-venv/bin/python ]; then
 else
   echo "Blender: NOT INSTALLED. Installing the bpy module in the background (tools/blender.sh will use it)."
   if [ -w /opt ]; then
-    nohup bash -c 'python3 -m venv /opt/bpy-venv && /opt/bpy-venv/bin/pip install -q "bpy==${BLENDER_VERSION:-5.2.3}" || echo "bpy fallback install failed (session_start.sh)" >> /opt/setup-errors.log' >/tmp/bpy-install.log 2>&1 &
+    nohup bash -c 'python3 -m venv /opt/bpy-venv && /opt/bpy-venv/bin/pip install -q "bpy==${BLENDER_VERSION:-5.2.3}" pillow numpy scipy fonttools brotli || echo "bpy fallback install failed (session_start.sh)" >> /opt/setup-errors.log' >/tmp/bpy-install.log 2>&1 &
   fi
 fi
 if [ -s "$ERR" ]; then

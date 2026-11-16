@@ -81,7 +81,7 @@ Checked 2026-11-01 in the first cloud session (CLAUDE.md §1 step 5, §10.4). Up
 
 ## 2026-11-16 (the rest of the triad roster, enemy look)
 
-- The same broken `bpy` (`libtbb.so.12`), no `mesa-vulkan-drivers`, no scipy; same fix as 2026-11-15. `fontTools` and `brotli` were also needed in `/opt/bpy-venv` for the gear's "警察" stencil (`/opt/bpy-venv/bin/pip install fonttools brotli`).
+- The same broken `bpy` (`libtbb.so.12`), no `mesa-vulkan-drivers`, no scipy; same fix as 2026-11-15. `/opt/bpy-venv` also needed `fontTools` and `brotli` (the gear's "警察" stencil) and `scipy` (the triad generator dilates its atlas with it at the very end, 25 minutes in: a run died there): `/opt/bpy-venv/bin/pip install fonttools brotli scipy`. `tools/setup_env.sh` and the SessionStart fallback now install them with bpy.
 - Baking HIGH onto LOW when both come from the same code: a curved shell or lathe with fewer sides in LOW sits millimetres inside HIGH between its edges, further than the bake rays reach, and bakes as stripes. Build such pieces with the same segment count in both (`triad_gear` `shell()`, the molotov's lathe).
 - The triad head is now an SDF (`head.py`). The grid must close the mesh (the neck is capped at z 1.415): an open mesh vanishes in the voxel remesh LOW uses, and the head then simply isn't in the exported body.
 - The triad generator's `--shots a,b` renders only those pose shots, and pose shots can show a gear kit and any of the enemy guns (`--gear`, `--guns`). A fast run with 9 shots: about 90 s.

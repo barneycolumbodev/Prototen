@@ -72,8 +72,14 @@ func test_bones_follow_pieces() -> void:
 	assert_almost_eq(rm.skeleton.get_bone_pose_scale(b), Vector3.ZERO, Vector3.ONE * 1e-6, "hidden piece collapses")
 
 
-func test_enemy_guns_flatten_to_one_surface() -> void:
-	for gun_path: String in ["res://assets/weapons/enemy/type56.gltf", "res://assets/weapons/enemy/smg.gltf", "res://assets/weapons/enemy/pump.gltf"]:
+## One draw per enemy gun (optimization overhaul C-08). Since 2026-11-16 the
+## guns are baked to one textured material each, so GunFlatten leaves them
+## as they are; an untextured multi-material gun would still be flattened.
+func test_enemy_guns_draw_in_one_surface() -> void:
+	for gun_path: String in ["res://assets/weapons/enemy/type56.gltf", "res://assets/weapons/enemy/smg.gltf",
+			"res://assets/weapons/enemy/pump.gltf", "res://assets/weapons/enemy/type79.gltf",
+			"res://assets/weapons/enemy/type80.gltf", "res://assets/weapons/enemy/qbz95.gltf",
+			"res://assets/weapons/enemy/type54.gltf", "res://assets/weapons/enemy/dao.gltf"]:
 		var gun: Node3D = (load(gun_path) as PackedScene).instantiate() as Node3D
 		add_child_autofree(gun)
 		var tris: int = _triangles(gun)
@@ -81,4 +87,5 @@ func test_enemy_guns_flatten_to_one_surface() -> void:
 		assert_eq(_surfaces(gun), 1, gun_path)
 		assert_eq(_triangles(gun), tris, "%s keeps every triangle" % gun_path)
 		var mi: MeshInstance3D = gun.find_children("*", "MeshInstance3D", true, false)[0] as MeshInstance3D
-		assert_true(mi.mesh.surface_get_material(0) is ShaderMaterial)
+		var m: BaseMaterial3D = mi.mesh.surface_get_material(0) as BaseMaterial3D
+		assert_true(m != null and m.albedo_texture != null, "%s: baked textures" % gun_path)

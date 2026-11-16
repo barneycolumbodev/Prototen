@@ -634,6 +634,7 @@ Each wave has a **threat budget** that grows with the wave number. Each enemy ty
 - At most 12 alive at once (CLAUDE.md §8). A wave bigger than that comes in as reinforcements while it's being fought, out of sight, like the rolling spawns (§7.1).
 - **Crescendo** *(proposal)*: waves build in fives. Waves 1–4 of a block rise, wave 5 is the boss, and the next block starts a little lower than the boss wave and climbs past it.
 - **Theme waves** *(proposal, after wave 6)*: now and then a wave is drawn mostly from one family: a rush of melee men and shotguns, a wave of marksmen on the heights, a wave led by two Red Poles.
+- 2026-11-16: with the elite types in the roster (§8.8b–g) the budget's growth went up (`budget_accel` 0.08 → 0.11) and the elites' weights down, so waves still grow in men as well as weight: waves 1/4/8/12/16/20 now bring about 3/8/11/17/20/21 (`test_sizes_grow`).
 - What the player gets and what the enemies get have to climb together. The target is that a good player with a sensible build reaches wave 15–20 and a strong build feels like a god by wave 20.
 
 ### 8.7 Bosses
