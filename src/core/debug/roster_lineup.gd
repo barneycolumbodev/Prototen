@@ -6,8 +6,8 @@ extends Node
 ## his guard, the Shield man braced, the Firebomber with a bottle up, the
 ## Marksman and the Gunner aiming, the specialist at ease. A molotov's fire
 ## burns in front of the row and the Marksman's laser is on. Cameras:
-## CapRoster (the row), CapRosterL / CapRosterR (close), CapRosterFar (22 m,
-## as in a fight), CapRosterFaces (heads), CapRosterFace (one face, close).
+## CapRoster (the row), CapRosterL / CapRosterR (close), CapRosterFaces (heads),
+## CapRosterFace (one face, close).
 
 const ROLES: Array[String] = ["gunman", "hatchet_man", "dao_swordsman", "shield_man", "firebomber", "marksman", "gunner",
 		"anti_augment"]
@@ -19,6 +19,9 @@ var _squad: Squad
 
 
 func _ready() -> void:
+	# Only this lineup's cameras (the room's own would take the capture past its time).
+	for n: Node in get_tree().get_nodes_in_group(&"capture_cameras"):
+		n.remove_from_group(&"capture_cameras")
 	var p: Player = room.player
 	p.invulnerable = true
 	p.input_enabled = false
@@ -31,9 +34,8 @@ func _ready() -> void:
 	for spec: Array in [["CapRoster", Vector3(0.0, 1.55, 11.6), Vector3(0.0, 1.05, 4.0), 66.0],
 			["CapRosterL", Vector3(-3.0, 1.55, 7.6), Vector3(-3.0, 1.1, 4.0), 50.0],
 			["CapRosterR", Vector3(3.0, 1.55, 7.6), Vector3(3.0, 1.1, 4.0), 50.0],
-			["CapRosterFar", Vector3(0.5, 1.7, 22.0), Vector3(0.0, 1.0, 4.0), 26.0],
-			["CapRosterFaces", Vector3(-1.5, 2.0, 6.6), Vector3(-1.5, 1.9, 4.0), 40.0],
-			["CapRosterFace", Vector3(-3.0, 2.02, 5.05), Vector3(-3.0, 1.95, 4.0), 30.0]]:
+			["CapRosterFaces", Vector3(-4.0, 1.95, 7.2), Vector3(-2.4, 1.85, 4.0), 34.0],
+			["CapRosterFace", Vector3(-5.45, 1.9, 4.95), Vector3(-5.6, 1.86, 4.0), 30.0]]:
 		var cam: Camera3D = Camera3D.new()
 		cam.name = spec[0]
 		room.add_child(cam)
@@ -69,6 +71,6 @@ func _physics_process(_delta: float) -> void:
 			"anti_augment":
 				e.body.set_stance(&"idle")
 			_:
-				e.body._set_stance(&"crouch_aim" if e.config.resource_path.ends_with("gunner.tres") else &"aim")
+				e.body.set_stance(&"crouch_aim" if e.config.resource_path.ends_with("gunner.tres") else &"loco")
 		if e.sight:
 			e.sight.update(room.player, 0.05 if _frame < 20 else 0.0, true)

@@ -67,11 +67,12 @@ func current_radius() -> float:
 func _ready() -> void:
 	add_to_group(&"fire_patches")
 	_flames = CPUParticles3D.new()
-	_flames.amount = 64
-	_flames.lifetime = 0.9
+	_flames.amount = 120
+	_flames.lifetime = 0.6
 	_flames.local_coords = false
 	var q: QuadMesh = QuadMesh.new()
-	q.size = Vector2.ONE
+	# Tall soft sprites, dense and overlapping: tongues of flame rather than sparks.
+	q.size = Vector2(0.6, 1.3)
 	_flames.mesh = q
 	_flames.material_override = Fx.fire_material()
 	_flames.emission_shape = CPUParticles3D.EMISSION_SHAPE_SPHERE
@@ -79,13 +80,15 @@ func _ready() -> void:
 	_flames.direction = Vector3.UP
 	_flames.spread = 12.0
 	_flames.gravity = Vector3(0, 2.4, 0)
-	_flames.initial_velocity_min = 0.4
-	_flames.initial_velocity_max = 1.4
-	_flames.scale_amount_min = 0.3
-	_flames.scale_amount_max = 0.7
+	_flames.initial_velocity_min = 0.7
+	_flames.initial_velocity_max = 1.7
+	_flames.scale_amount_min = 0.2
+	_flames.scale_amount_max = 0.46
 	_flames.scale_amount_curve = Fx.fire_shrink_curve()
 	_flames.color_ramp = Fx.fire_ramp()
-	_flames.scale = Vector3(1.0, 0.25, 1.0)
+	# Flat: flames licking up off a pool, not a ball of fire.
+	_flames.emission_shape = CPUParticles3D.EMISSION_SHAPE_BOX
+	_flames.emission_box_extents = Vector3(radius * 0.5, 0.02, radius * 0.5)
 	add_child(_flames)
 	_embers = CPUParticles3D.new()
 	_embers.amount = 18
@@ -140,11 +143,11 @@ func _exit_tree() -> void:
 func _physics_process(delta: float) -> void:
 	age += delta
 	var r: float = current_radius()
-	_flames.emission_sphere_radius = r * 0.55
+	_flames.emission_box_extents = Vector3(r * 0.55, 0.02, r * 0.55)
 	_embers.emission_sphere_radius = r * 0.6
 	var fade: float = clampf((lifetime - age) / 2.0, 0.0, 1.0)
-	_flames.scale_amount_max = 0.7 * fade + 0.05
-	_flames.scale_amount_min = 0.3 * fade + 0.02
+	_flames.scale_amount_max = 0.46 * fade + 0.04
+	_flames.scale_amount_min = 0.2 * fade + 0.02
 	_light.light_energy = (1.6 + 0.6 * sin(age * 23.0) + 0.4 * sin(age * 7.3)) * fade
 	if _sound and _sound.playing:
 		_sound.volume_db = linear_to_db(maxf(fade, 0.001)) - 2.0

@@ -672,19 +672,25 @@ def paint_body(o, P, N, mid, rest_hand):
     navel = np.exp(-((x / 0.006) ** 2 + ((z - 1.04) / 0.008) ** 2)) * (y < -0.04)
     skin = skin * (1 - 0.5 * navel[:, None])
     # Forearm veins (where HIGH has them), faintly blue-green.
-    lips = face & (np.abs(x) < 0.021 - 25 * (z - 1.594) ** 2) & (z > 1.581) & (z < 1.606) & (y < -0.085)
-    skin = np.where(lips[:, None], skin * np.array((0.88, 0.7, 0.68)), skin)
-    mouth = face & (line(z - 1.5945, 0.0012) > 0.5) & (np.abs(x) < 0.02) & (y < -0.085)
-    skin = np.where(mouth[:, None], skin * 0.45, skin)
-    nostril = face & (np.abs(np.abs(x) - 0.009) < 0.004) & (np.abs(z - 1.618) < 0.0035) & (y < -0.09)
-    skin = np.where(nostril[:, None], skin * 0.4, skin)
+    # The SDF head (head.py, 2026-11-16): the mouth line at 1.5972, lips 1.585-1.607.
+    lips = face & (np.abs(x) < 0.022 - 22 * (z - 1.5965) ** 2) & (z > 1.585) & (z < 1.607) & (y < -0.085)
+    skin = np.where(lips[:, None], skin * np.array((0.84, 0.62, 0.6)), skin)
+    mouth = face & (line(z - 1.5972, 0.0014) > 0.5) & (np.abs(x) < 0.022) & (y < -0.085)
+    skin = np.where(mouth[:, None], skin * 0.4, skin)
+    nostril = face & (np.abs(np.abs(x) - 0.0072) < 0.0045) & (np.abs(z - 1.6185) < 0.0035) & (y < -0.1)
+    skin = np.where(nostril[:, None], skin * 0.35, skin)
+    # The fold over each upper lid and the crease under the brow: a little shadow that reads at range.
+    for sx in (1, -1):
+        e = np.array(EYE["L" if sx > 0 else "R"][:])
+        fold = face & (np.abs(x - e[0]) < 0.016) & (np.abs(z - (e[2] + 0.0115)) < 0.0025) & (y < -0.075)
+        skin = np.where(fold[:, None], skin * 0.78, skin)
     for sx in (1, -1):
         bx = x * sx
         centre = 1.6875 + 0.006 * np.cos(np.clip((bx - 0.031) / 0.024, -1.5, 1.5)) - 0.003
-        width = 0.0048 * (1.0 - 0.5 * sstep(0.03, 0.055, bx))
+        width = 0.0058 * (1.0 - 0.45 * sstep(0.03, 0.055, bx))
         brow = face & (bx > 0.01) & (bx < 0.057) & (np.abs(z - centre) < width) & (y < -0.07)
-        brow_n = brow & (vnoise(P, 2200.0, 11 + sx) > 0.22)
-        skin = np.where(brow_n[:, None], np.array((0.06, 0.05, 0.045)), skin)
+        brow_n = brow & (vnoise(P, 2200.0, 11 + sx) > 0.16)
+        skin = np.where(brow_n[:, None], np.array((0.045, 0.038, 0.034)), skin)
         e = np.array(EYE["L" if sx > 0 else "R"][:])
         de = np.linalg.norm(P - e, axis=1)
         lash = face & (de < 0.0155) & (de > 0.0118) & (z > e[2] - 0.004)
@@ -699,7 +705,7 @@ def paint_body(o, P, N, mid, rest_hand):
     scalp = sstep(-0.005, 0.01, z - line_z) * (z > 1.6)
     skin = skin * (1 - 0.18 * scalp[:, None]) + scalp[:, None] * np.array((0.02, 0.025, 0.03))
     eye = M["eye"]
-    eye_col = np.tile(np.array((0.8, 0.77, 0.72)), (n, 1))
+    eye_col = np.tile(np.array((0.7, 0.66, 0.6)), (n, 1))
     lid = np.zeros(n, dtype=bool)
     for s in ("L", "R"):
         e = np.array(EYE[s][:])
@@ -707,8 +713,8 @@ def paint_body(o, P, N, mid, rest_hand):
         d = rel / np.maximum(np.linalg.norm(rel, axis=1, keepdims=True), 1e-9)
         ang = np.degrees(np.arccos(np.clip(-d[:, 1], -1, 1)))
         near = np.linalg.norm(rel, axis=1) < 0.02
-        eye_col = np.where((near & (ang < 18))[:, None], np.array((0.32, 0.2, 0.12)) * (0.8 + 0.4 * fine[:, None]), eye_col)
-        eye_col = np.where((near & (ang < 15.5) & (ang > 14.0))[:, None], np.array((0.12, 0.08, 0.05)), eye_col)
+        eye_col = np.where((near & (ang < 21))[:, None], np.array((0.2, 0.12, 0.07)) * (0.8 + 0.4 * fine[:, None]), eye_col)
+        eye_col = np.where((near & (ang < 21) & (ang > 19.0))[:, None], np.array((0.07, 0.05, 0.035)), eye_col)
         eye_col = np.where((near & (ang < 7))[:, None], np.array((0.02, 0.02, 0.02)), eye_col)
         # The lids cover the eyeball outside an almond-shaped opening (a little
         # higher at the outer corner); the upper lid's edge carries the lashes.

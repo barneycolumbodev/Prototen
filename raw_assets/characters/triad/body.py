@@ -219,13 +219,14 @@ def sculpt_face(ob):
 
 
 def build_head(hi):
-    res = 0.0025 if hi else 0.004
-    ob = to_mesh(head_families(res), "head")
-    remesh(ob, 0.0018 if hi else 0.0025)
-    sculpt_face(ob)
-    apply_mod(ob, "SMOOTH", factor=0.4, iterations=2)
-    if not hi:
-        remesh(ob, 0.0032)
+    """The head and neck (head.py: a signed-distance sculpt, 2026-11-16), cut at the neck base."""
+    import head
+    # LOW straight from the surface nets (no voxel remesh: it tore the thin parts), smoothed, and
+    # decimated by build_person.
+    me = head.build_mesh("head", 0.0011 if hi else 0.003, low=not hi)
+    ob = bpy.data.objects.new("head", me)
+    common.COL.objects.link(ob)
+    apply_mod(ob, "SMOOTH", factor=0.5, iterations=1)
     cut(ob, (0, 0, 1.43), (0, 0, 1))
     set_material(ob, "skin")
     return ob

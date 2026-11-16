@@ -729,3 +729,32 @@ Please try:
 - Measured:
 - Notes from the owner:
 - Follow-ups:
+
+## 2026-11-16: the rest of the triad roster, and how they look
+
+Owner (2026-11-16): "we've already come up with the blue lantern, the hatchetman, and the first boss the incense master, let's start working on the next enemies you have left already in your docs. Don't hesitate to make more or more detailed 3d models for enemy weapons either. Enemies and how the look is the absolute weakest part of the game so far." Design: `docs/design.md` §8.8b–h.
+
+What's in the APK:
+- **Six new enemy types**, one new one a wave in Survival from wave 6 (and mixed into Sandbox's rolling spawns on the docks):
+  - **Firebomber** (wave 6): bandana, satchel of bottles. Lobs lit molotovs over cover at where you're going; the fuel burns on the ground for 8 s and hurts to stand in (his men won't walk through it either). Shoot him while he winds up and he drops it at his own feet.
+  - **Marksman** (wave 7): a scoped Type 79 from height. A **red laser** finds you and the **scope glints** before every shot; the dot stops following you just before he fires, so a step sideways makes him miss. His shot hurts (about 46).
+  - **Dao swordsman** (wave 8): a sword and a **steel plate grafted into his left forearm**. When you look at him he walks in behind it and **rounds from the front spark off**. It breaks under enough fire (four rifle rounds, two MG42 rounds), and it doesn't cover his legs, sides or back. Close: a wide slash. A step further out: a fast lunge — sidestep it.
+  - **Shield man** (wave 9): a stolen **"警察 POLICE" ballistic shield** and a riot helmet; a pistol round its edge. He walks it at you and turns it after you (slowly: flank him); men with guns fall in behind him. Heavy rounds knock it aside; enough fire cracks it and he throws it down and runs. Too close and he bashes you back.
+  - **Gunner** (wave 11): a belt-fed with bandoliers. Long bursts, and he **keeps shooting where you were** for 5 s after you duck. The window is his 5.5 s belt change.
+  - **Anti-augment specialist** (wave 13): respirator, jammer backpack with antennas, a rig of EMP grenades, an AP rifle. An **EMP** lands, blinks, and if you're inside 7.5 m **all your actives go down for 5 s** (blue flash, "AUGMENTS JAMMED"). Within 16 m of him your **drone drops** and the **shroud fails**. Shoot the pack on his back to kill the jammer.
+- **Every man has a new head**: a real skull, brow, cheekbones, jaw, nose, lips, lidded eyes and ears instead of the old mannequin face.
+- **Every enemy gun and blade rebuilt** with detail and textures (the Type 56 has its milled receiver, hooded front sight and folded bayonet now), plus the new Type 79, Type 80, QBZ-95, Type 54, dao, molotov and EMP grenade.
+- New callouts ("Burn him!", "EMP out!", "Behind the shield!", "Face me!") and new gun, glass, fire and EMP sounds.
+
+Cloud evidence: `tests/scene/test_new_roles.gd` (14 tests: every role's gun and gear on the right bones; the roster's debut waves; the dao's guard turns a round from the front and not from behind, breaks under rifle fire, and the lunge lands from 5 m; the shield stops a pistol round and an MG42 round staggers him; it wears out and he throws it down; a gunman takes a place behind the shield; a molotov lands near you and the fire hurts; shot in the windup, the Firebomber drops it at his feet; the Marksman's laser locks and a step aside makes him miss; the Gunner fires at where you were; an EMP jams every active; shooting the pack kills the jammer), the full GUT suite, `docs/previews/enemy_guns.png`, `enemy_melee.png`, `triad_gear.png`, `triad_roster.png`, `triad_roster_close.png` (in the engine, `-- --demo=roster`), `triad_head.png` (faces in the engine). Not checked in the cloud: how hard each one is at full speed on the phone, frame rate with three fires burning, how the sounds and new voices sound (synthesized, never listened to).
+
+Please try:
+1. Play Survival to wave 13 (or use Sandbox on the docks): can you tell each type apart at a glance, before he does anything?
+2. The marksman's laser and glint, the dao's lunge, the firebomber's windup: readable in time?
+3. Is any of them unfair, or a pushover?
+4. The new faces up close: better? What still looks wrong?
+
+- Device / renderer / settings:
+- Measured:
+- Notes from the owner:
+- Follow-ups:

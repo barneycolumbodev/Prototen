@@ -71,6 +71,8 @@ ap.add_argument("--no-anim", action="store_true")
 ap.add_argument("--only", default="", help="comma-separated garment ids (default: the whole wardrobe)")
 ap.add_argument("--split-preview", default="", help="exploded view of the severable parts (PNG path, no .png)")
 ap.add_argument("--tattoo-sheet", default="", help="PNG of the tattoo designs")
+ap.add_argument("--shots", default="", help="comma-separated clip names: only these pose shots")
+ap.add_argument("--gear", default="assets/characters/triad_gear", help="gear kits (raw_assets/characters/triad_gear)")
 args = ap.parse_args(argv)
 
 T0 = time.time()
@@ -154,7 +156,7 @@ def join(obs, name):
     return ob
 
 
-BODY_BUDGET = {"body_low": 4400, "head": 2000, "hand_L": 640, "hand_R": 640}
+BODY_BUDGET = {"body_low": 4400, "head": 3200, "hand_L": 640, "hand_R": 640}
 
 
 def build_person(hi):
@@ -1225,6 +1227,206 @@ def _intro(t):
     return brute_pose(keyed(t, INTRO_KEYS))
 
 
+# ---------------------------------------------------------------- new roles (docs/design.md §8.8b-§8.8g, 2026-11-16)
+# Shield man: the ballistic shield rides on the chest (raw_assets/characters/triad_gear, kit "shield"),
+# the left hand on its vertical handle, the Type 54 out past the shield's right edge. Both are held
+# in the chest's frame so the game's aim layer swings shield and pistol together.
+SHIELD_HAND_RIG = hand_matrix(V((0.2, -0.25, 1.215)), (-0.55, -0.8, 0.15), (0.75, -0.35, 0.3))
+SHIELD_PISTOL_RIG = gun_frame((-0.3, -0.44, 1.36), (0.04, -1, 0.02))
+
+
+def shield_upper(p, breath=0.0):
+    set_fk(p)
+    bpy.context.view_layer.update()
+    ch = bone_pose("chest") @ REST["chest"].inverted()
+    p["hand.L"] = ch @ SHIELD_HAND_RIG
+    p["gun"] = ch @ (Matrix.Translation((0, 0, 0.003 * breath)) @ SHIELD_PISTOL_RIG)
+    p["poles"] = {"hand.L": V((0.7, 0.3, 0.9)), "hand.R": V((-0.8, 0.2, 1.0))}
+    return p
+
+
+def shield_body(breath=0.0):
+    p = {
+        "hips": euler(x=8, z=-6), "hips_loc": (0.0, 0.0, -0.08 - 0.008 * breath),
+        "spine": euler(x=8 + 1.5 * breath, z=4), "chest": euler(x=4 + breath, z=4),
+        "neck": euler(x=-4), "head": euler(x=-2),
+    }
+    p.update(feet(V((0.15, -0.16, 0.088)), V((-0.15, 0.16, 0.088)), l_yaw=-8, r_yaw=-24))
+    return p
+
+
+@clip("shield_ready", 2.0)
+def _shield_ready(t):
+    b = math.sin(2 * math.pi * t / 2.0)
+    return shield_upper(shield_body(b), b)
+
+
+SHIELD_WALK_T, SHIELD_WALK_SPEED = 0.8, 1.3
+
+
+@clip("shield_walk", SHIELD_WALK_T)
+def _shield_walk(t):
+    stride = SHIELD_WALK_SPEED * 0.6 * SHIELD_WALK_T
+    f, bob, sway = gait(t, SHIELD_WALK_T, (0, -1), stride, 0.6, 0.06, 0.15)
+    p = shield_body()
+    p.update({"hips": euler(x=8, z=-6 * sway), "hips_loc": (0.01 * sway, 0.0, -0.09 - 0.014 * bob),
+              "spine": euler(x=8, z=4 * sway)})
+    p.update(f)
+    return shield_upper(p)
+
+
+# Dao swordsman: the guard. The grafted plate on his left forearm comes up across his face with the
+# back of the hand (and the plate) toward the enemy; the dao is held back low by his right hip.
+GUARD = {
+    "hips": (14, 0, -16), "hips_loc": (0.0, 0.0, -0.13),
+    "spine": (10, 0, 8), "chest": (8, 0, 6), "head": (-14, 0, -4),
+    "foot_l": (0.16, -0.26, 0.088), "foot_r": (-0.17, 0.22, 0.088), "yaw": (-6, -38),
+    "hand_r": (-0.3, -0.14, 1.02), "handle": (-0.15, -0.9, 0.35), "edge": (0, -0.3, -1),
+    "hand_l": (0.0, -0.4, 1.5), "l_along": (-1, -0.1, 0.25), "l_back": (0.05, -1, 0.1), "l_open": (0.0,),
+    "lift": (0.0, 0.0),
+}
+
+
+def guard_pose(k, breath=0.0):
+    p = melee_pose(k, breath)
+    p["poles"] = {"hand.L": V((0.9, 0.0, 1.0)), "hand.R": V((-0.7, 0.5, 0.9))}
+    return p
+
+
+@clip("guard", 1.6)
+def _guard(t):
+    b = math.sin(2 * math.pi * t / 1.6)
+    k = dict(GUARD)
+    k["hips_loc"] = (0.0, 0.0, -0.13 - 0.01 * b)
+    return guard_pose(k, b)
+
+
+GUARD_WALK_T, GUARD_WALK_SPEED = 0.78, 1.8
+
+
+@clip("guard_walk", GUARD_WALK_T)
+def _guard_walk(t):
+    stride = GUARD_WALK_SPEED * 0.58 * GUARD_WALK_T
+    f, bob, sway = gait(t, GUARD_WALK_T, (0, -1), stride, 0.58, 0.07, 0.16)
+    k = dict(GUARD)
+    k.update({"hips": (14, 0, -16 + 6 * sway), "hips_loc": (0.012 * sway, 0.0, -0.12 - 0.02 * bob),
+              "spine": (10, 0, 8 + 5 * sway)})
+    p = guard_pose(k)
+    p.update(f)
+    return p
+
+
+# The slash: a rising cock of the blade over the right shoulder, a step in, and a diagonal cut from
+# high right to low left across the target. The blow lands at SLASH_HIT s.
+SLASH_T, SLASH_HIT = 0.95, 0.42
+SLASH_KEYS = [
+    (0.0, GUARD),
+    (0.26, dict(GUARD, **{
+        "hips": (6, 0, -30), "hips_loc": (0.0, 0.04, -0.1), "spine": (0, 0, -16), "chest": (-4, 0, -16), "head": (-12, 0, 10),
+        "hand_r": (-0.3, 0.1, 1.72), "handle": (0.2, 0.8, 0.6), "edge": (0.3, 0.3, 1),
+        "hand_l": (0.18, -0.42, 1.36), "l_along": (-0.2, -1, 0.1), "l_back": (0.6, -0.2, 0.7), "l_open": (0.5,)})),
+    (SLASH_HIT, dict(GUARD, **{
+        "hips": (14, 0, 16), "hips_loc": (0.0, -0.2, -0.17), "spine": (10, 0, 14), "chest": (8, 0, 14), "head": (-12, 0, -6),
+        "foot_l": (0.16, -0.5, 0.088),
+        "hand_r": (0.02, -0.62, 1.3), "handle": (0.85, -0.5, -0.1), "edge": (0.2, -0.3, -1),
+        "hand_l": (0.26, -0.08, 1.16), "l_along": (0.0, -0.4, -0.6), "l_back": (0.8, 0, 0.2), "l_open": (0.0,)})),
+    (0.6, dict(GUARD, **{
+        "hips": (16, 0, 24), "hips_loc": (0.0, -0.2, -0.19), "spine": (12, 0, 20), "chest": (8, 0, 16), "head": (-10, 0, -8),
+        "foot_l": (0.16, -0.5, 0.088),
+        "hand_r": (0.24, -0.42, 0.98), "handle": (0.6, 0.2, -0.8), "edge": (0, 0.6, -0.7),
+        "hand_l": (0.28, -0.04, 1.1), "l_along": (0.0, -0.4, -0.6), "l_back": (0.8, 0, 0.2)})),
+    (0.78, dict(GUARD, **{"hips_loc": (0.0, -0.1, -0.15), "foot_l": (0.16, -0.38, 0.088)})),
+    (SLASH_T, GUARD),
+]
+
+
+@clip("slash", SLASH_T, loop=False)
+def _slash(t):
+    return guard_pose(keyed(t, SLASH_KEYS))
+
+
+# The lunge: drops low and drives off the back foot, the point straight out at the chest, the left
+# arm thrown back for balance. The point arrives at LUNGE_HIT s.
+LUNGE_T, LUNGE_HIT = 1.1, 0.48
+LUNGE_KEYS = [
+    (0.0, GUARD),
+    (0.28, dict(GUARD, **{
+        "hips": (18, 0, -26), "hips_loc": (0.0, 0.08, -0.22), "spine": (10, 0, -10), "chest": (6, 0, -10), "head": (-18, 0, 8),
+        "hand_r": (-0.3, 0.14, 1.2), "handle": (0.0, -1, 0.15), "edge": (0, 0, -1),
+        "hand_l": (0.1, -0.42, 1.38), "l_along": (-0.6, -0.7, 0.2), "l_back": (0.2, -1, 0.2)})),
+    (LUNGE_HIT, dict(GUARD, **{
+        "hips": (22, 0, 10), "hips_loc": (0.0, -0.38, -0.3), "spine": (12, 0, 8), "chest": (6, 0, 8), "head": (-20, 0, 0),
+        "foot_l": (0.18, -0.78, 0.088), "foot_r": (-0.17, 0.3, 0.088), "yaw": (-4, -50),
+        "hand_r": (-0.06, -0.78, 1.32), "handle": (0.05, -1, 0.1), "edge": (0, 0, -1),
+        "hand_l": (0.34, 0.12, 1.2), "l_along": (0.4, 0.6, -0.4), "l_back": (0.6, 0, 0.8), "l_open": (0.6,)})),
+    (0.7, dict(GUARD, **{
+        "hips": (20, 0, 8), "hips_loc": (0.0, -0.36, -0.28), "foot_l": (0.18, -0.78, 0.088), "foot_r": (-0.17, 0.3, 0.088),
+        "hand_r": (-0.12, -0.62, 1.2), "handle": (0.1, -1, 0.3), "edge": (0, 0, -1)})),
+    (LUNGE_T, GUARD),
+]
+
+
+@clip("lunge", LUNGE_T, loop=False)
+def _lunge(t):
+    return guard_pose(keyed(t, LUNGE_KEYS))
+
+
+# Firebomber: the overhand throw. The bottle (raw_assets/weapons/enemy_melee "molotov", held by the
+# neck on the weapon bone) goes back behind his head, the left arm points at the target, he steps
+# in on the left foot and whips it over the shoulder. It leaves the hand at THROW_RELEASE s.
+THROW_T, THROW_RELEASE = 1.1, 0.56
+THROW_KEYS = [
+    (0.0, MELEE_READY),
+    (0.34, dict(MELEE_READY, **{
+        "hips": (2, 0, -34), "hips_loc": (0.0, 0.08, -0.08), "spine": (-8, 0, -18), "chest": (-10, 0, -16), "head": (-8, 0, 22),
+        "hand_r": (-0.34, 0.28, 1.6), "handle": (-0.1, 0.6, 1.0), "edge": (0, 1, 0.2),
+        "hand_l": (0.16, -0.56, 1.5), "l_along": (0.0, -1, 0.1), "l_back": (0, 0, 1), "l_open": (0.9,),
+        "lift": (0.04, 0.0)})),
+    (THROW_RELEASE, dict(MELEE_READY, **{
+        "hips": (12, 0, 14), "hips_loc": (0.0, -0.16, -0.12), "spine": (12, 0, 12), "chest": (10, 0, 12), "head": (-12, 0, -4),
+        "foot_l": (0.15, -0.46, 0.088),
+        "hand_r": (-0.12, -0.56, 1.66), "handle": (0.0, -0.6, 1.0), "edge": (0, -1, 0.2),
+        "hand_l": (0.26, -0.04, 1.14), "l_along": (0.0, -0.3, -0.8), "l_back": (0.9, 0, 0.2), "l_open": (0.3,)})),
+    (0.76, dict(MELEE_READY, **{
+        "hips": (18, 0, 20), "hips_loc": (0.0, -0.16, -0.16), "spine": (14, 0, 14), "chest": (10, 0, 12), "head": (-8, 0, -6),
+        "foot_l": (0.15, -0.46, 0.088),
+        "hand_r": (0.12, -0.42, 0.98), "handle": (0.4, -0.4, -0.8), "edge": (0, -0.6, -0.6),
+        "hand_l": (0.26, -0.02, 1.1), "l_along": (0.0, -0.3, -0.8), "l_back": (0.9, 0, 0.2)})),
+    (THROW_T, MELEE_READY),
+]
+
+
+@clip("throw", THROW_T, loop=False)
+def _throw(t):
+    return melee_pose(keyed(t, THROW_KEYS))
+
+
+# Anti-augment specialist: the lob (upper body only; the legs keep doing what they were). The rifle
+# drops to the right hand at low ready, the left hand pulls a grenade from the chest rig, swings it
+# back past the left shoulder and lobs it overhand. It leaves the hand at LOB_RELEASE s.
+LOB_T, LOB_RELEASE = 1.2, 0.66
+
+
+@clip("lob", LOB_T, loop=False)
+def _lob(t):
+    p = aim_body(0.0)
+    p["gun_chest"] = GUN_LOW_CHEST
+    keys = [
+        (0.0, ((0.04, -0.4, 1.26), (0.0, -1, 0.1), (0.3, 0, 1))),
+        (0.22, ((0.02, -0.2, 1.12), (0.0, -0.2, -1), (0, -1, 0))),
+        (0.46, ((0.28, 0.12, 1.66), (-0.2, 0.3, 0.9), (0.9, 0, 0.3))),
+        (LOB_RELEASE, ((0.2, -0.42, 1.72), (0.0, -0.9, 0.4), (0.4, 0.2, 0.9))),
+        (0.86, ((0.24, -0.36, 1.3), (0.1, -0.6, -0.6), (0.9, 0, 0.3))),
+        (LOB_T, ((0.04, -0.4, 1.26), (0.0, -1, 0.1), (0.3, 0, 1))),
+    ]
+    k = keyed(t, [(tt, {"pos": a, "along": b, "back": c}) for tt, (a, b, c) in keys])
+    p["hand.L"] = hand_matrix(V(k["pos"]), k["along"], k["back"])
+    p["open.L"] = 0.35 if LOB_RELEASE < t < 0.9 else 0.0
+    p["chest"] = euler(x=3, z=9 - 14 * math.sin(math.pi * min(t / LOB_T, 1.0)))
+    p["poles"] = {"hand.L": V((0.8, 0.3, 1.0)), "hand.R": V((-0.6, 0.4, 0.9))}
+    return p
+
+
 def ss_f(t):
     t = min(max(t, 0.0), 1.0)
     return t * t * (3 - 2 * t)
@@ -1944,7 +2146,8 @@ if args.out:
 # ====================================================================== previews
 def import_guns():
     guns = {}
-    for name in ("type56", "pump", "smg", "hatchet", "cleaver"):
+    for name in ("type56", "pump", "smg", "hatchet", "cleaver", "type79", "type80", "qbz95", "type54", "dao",
+                 "molotov"):
         path = os.path.join(args.guns, f"{name}.gltf")
         if not os.path.exists(path):
             continue
@@ -2023,18 +2226,47 @@ POSE_SHOTS = [("aim", 0, "type56"), ("idle", 0, "type56"), ("walk_f", 6, "type56
               ("stumble", 12, "type56"), ("gut", 0, "smg"), ("crawl", 18, None), ("surrender", 0, None),
               ("flee", 5, None), ("cower", 0, None), ("melee_ready", 0, "hatchet"), ("melee_run", 5, "hatchet"),
               ("chop", 9, "hatchet"), ("chop", 14, "hatchet"), ("chop", 17, "cleaver"), ("vault", 10, "cleaver"),
-              ("melee_crouch", 0, "cleaver")]
+              ("melee_crouch", 0, "cleaver"),
+              # 2026-11-16: the new roles (third field: gun; fourth: gear kit).
+              ("shield_ready", 0, "type54", "shield"), ("shield_walk", 6, "type54", "shield"),
+              ("guard", 0, "dao", "dao"), ("guard_walk", 6, "dao", "dao"), ("slash", 8, "dao", "dao"),
+              ("slash", 13, "dao", "dao"), ("lunge", 14, "dao", "dao"), ("throw", 10, "molotov", "firebomber"),
+              ("throw", 17, "molotov", "firebomber"), ("lob", 14, "qbz95", "antiaug"), ("lob", 20, "qbz95", "antiaug"),
+              ("aim", 0, "type79", None), ("aim", 0, "type80", "gunner")]
+
+
+def import_gear():
+    """Gear kits (raw_assets/characters/triad_gear): kit -> [(object, bone)]; meshes are bone space
+    turned for glTF, so each one is placed with its bone's pose matrix @ Rx(-90) (see pose shots)."""
+    kits = {}
+    for kit in ("shield", "dao", "antiaug", "gunner", "firebomber"):
+        path = os.path.join(args.gear, f"gear_{kit}.gltf")
+        if not os.path.exists(path):
+            continue
+        before = set(bpy.data.objects)
+        bpy.ops.import_scene.gltf(filepath=path)
+        for o in [o for o in bpy.data.objects if o not in before and o.type == "MESH"]:
+            bone = o.name.split("__")[1].split(".")[0]
+            bone = bone[:-2] + "." + bone[-1] if bone.endswith(("_L", "_R")) else bone
+            o.parent = None
+            o.hide_render = True
+            kits.setdefault(kit, []).append((o, bone))
+    return kits
 
 
 PREVIEW_OUTFIT = ("bomber", "cargo", "sneakers", "hair_fade")
 
 
-def preview_poses(prefix, guns):
+def preview_poses(prefix, guns, gear=None):
     for gid, ob in GARMENTS.items():
         ob.hide_render = gid not in PREVIEW_OUTFIT
     tmp = []
-    for name, frame_no, gun in POSE_SHOTS:
-        if name not in BAKED:
+    gear = gear or {}
+    only = [x for x in args.shots.split(",") if x]
+    for shot in POSE_SHOTS:
+        name, frame_no, gun = shot[:3]
+        kit = shot[3] if len(shot) > 3 else None
+        if name not in BAKED or (only and name not in only):
             continue
         ARM.animation_data.action = bpy.data.actions[name]
         scene.frame_set(frame_no + 1)
@@ -2045,9 +2277,14 @@ def preview_poses(prefix, guns):
             g = guns[gun]
             g.hide_render = False
             g.matrix_world = ARM.matrix_world @ PB["weapon"].matrix @ GUN_TO_BONE
+        for k, pieces in gear.items():
+            for o, bone in pieces:
+                o.hide_render = k != kit
+                if k == kit:
+                    o.matrix_world = ARM.matrix_world @ PB[bone].matrix @ Matrix.Rotation(math.radians(-90), 4, "X")
         camera((1.9, -2.6, 1.25), (0, -0.1, 0.8), 50)
-        tmp.append(render(f"{prefix}_pose_{name}_{frame_no}.png"))
-    sheet(tmp, 7, f"{prefix}_poses.png")
+        tmp.append(render(f"{prefix}_pose_{name}_{frame_no}_{gun}.png"))
+    sheet(tmp, min(7, len(tmp)), f"{prefix}_poses.png")
     for p in tmp:
         os.remove(p)
     ARM.animation_data.action = None
@@ -2074,6 +2311,6 @@ if args.preview:
     setup_render(args.samples, 420, 600)
     VEST.hide_render = True
     if BAKED:
-        preview_poses(args.preview, GUNS)
+        preview_poses(args.preview, GUNS, import_gear())
 
 log("done")
