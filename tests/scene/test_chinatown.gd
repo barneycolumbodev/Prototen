@@ -72,6 +72,10 @@ func test_spawns_start_with_eight_out_of_sight() -> void:
 	map.wave_mode.spawned.connect(func(e: Enemy) -> void:
 		seen.append(RollingSpawner.sees(space, map.player.camera().global_position, e.global_position))
 		dist.append(e.global_position.distance_to(map.player.global_position)))
+	# Attack dogs are in the docks mix too (design §8.8b): the same rules.
+	map.wave_mode.dog_spawned.connect(func(d: AttackDog) -> void:
+		seen.append(RollingSpawner.sees(space, map.player.camera().global_position, d.global_position))
+		dist.append(d.global_position.distance_to(map.player.global_position)))
 	map.wave_mode.start()
 	await wait_seconds(cfg.spawn_gap * cfg.start_count + 2.0)
 	assert_eq(map.wave_mode.spawned_total, cfg.start_count)
@@ -94,6 +98,13 @@ func test_three_more_when_fewer_than_four_fight() -> void:
 		map.wave_mode.squad.members.erase(e)
 		map.wave_mode.enemies.erase(e)
 		e.queue_free()
+		gone += 1
+	# Dogs in the mix (design §8.8b) count as fighters too.
+	for d: AttackDog in map.wave_mode.dogs.duplicate():
+		if gone == 5:
+			break
+		map.wave_mode.dogs.erase(d)
+		d.queue_free()
 		gone += 1
 	await wait_seconds(cfg.spawn_gap * cfg.batch + 1.5)
 	assert_eq(map.wave_mode.spawned_total, 11, "one batch of three")

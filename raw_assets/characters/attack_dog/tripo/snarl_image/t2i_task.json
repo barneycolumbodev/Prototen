@@ -1,0 +1,16 @@
+{
+  "type": "text_to_image",
+  "status": "success",
+  "progress": 100,
+  "input": {
+    "prompt": "Photorealistic full body side three-quarter view of an adult German Shepherd attack dog in a low crouched stance ready to charge, all four paws on the ground, head low and thrust forward, vicious snarl: upper lip curled high exposing long white fangs and pink gums, deeply wrinkled muzzle, teeth bared, eyes narrowed and glaring, ears pinned forward, hackles raised along the spine, black and tan saddle coat, heavy black leather collar with steel studs and a short chain, scarred, lean and muscular, entire dog visible including tail, plain neutral grey studio background, even soft lighting",
+    "model_version": "seedream_v5"
+  },
+  "output": {
+    "generated_image_url": "https://openapi-dl.data.tripo3d.com/tcli_498f55450c144f008d8eda29acd1c290/20261117/d19f8e5c-e762-4256-b534-353cadb63873/generated_image.png"
+  },
+  "task_id": "d19f8e5c-e762-4256-b534-353cadb63873",
+  "created_at": "2026-11-17T17:03:47.795445Z",
+  "completed_at": "2026-11-17T17:04:11.109504Z",
+  "credits_consumed": 5.00
+}

@@ -1,0 +1,12 @@
+{
+  "task_id": "fd36e6cd-d877-4e90-8369-bfe76c4ff11e",
+  "prompt": "Realistic adult German Shepherd attack dog, full body, standing on all four legs in a tense forward-leaning stance, head low and level, aggressive snarl with lips curled back baring long fangs and gums, wrinkled muzzle, ears pricked forward, hackles raised along the back, classic black and tan saddle coat, coarse realistic fur, worn black leather collar with steel studs and a short chain, scarred muzzle, lean muscular working dog, photorealistic",
+  "negative_prompt": "cartoon, stylized, anime, toy, plush, chibi, low detail, extra legs, extra tail, two heads, pedestal, base, ground plane, saddle, armor, rider",
+  "model": "v3.1-20260211",
+  "model_seed": 4117,
+  "texture": true,
+  "pbr": true,
+  "texture_quality": "detailed",
+  "geometry_quality": "detailed",
+  "auto_size": true
+}

@@ -284,6 +284,11 @@ func _start_game(survival_mode: bool = false) -> void:
 			var hd: HuntDemo = HuntDemo.new()
 			hd.map = self
 			add_child(hd)
+		if arg == "--demo=dogs":
+			spawns_on = false
+			var dd: DogDemo = DogDemo.new()
+			dd.map = self
+			add_child(dd)
 		if arg == "--no-lod":
 			get_viewport().mesh_lod_threshold = 0.0  # capture A/B: every mesh at full detail
 		if arg == "--line-up":

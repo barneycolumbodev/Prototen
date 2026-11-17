@@ -1,0 +1,29 @@
+{
+  "type": "text_to_model",
+  "status": "success",
+  "progress": 100,
+  "input": {
+    "pbr": true,
+    "prompt": "Realistic adult German Shepherd attack dog, full body, standing on all four legs in a tense forward-leaning stance, head low and level, aggressive snarl with lips curled back baring long fangs and gums, wrinkled muzzle, ears pricked forward, hackles raised along the back, classic black and tan saddle coat, coarse realistic fur, worn black leather collar with steel studs and a short chain, scarred muzzle, lean muscular working dog, photorealistic",
+    "delight": false,
+    "texture": true,
+    "auto_size": true,
+    "export_uv": true,
+    "model_seed": 4117,
+    "model_version": "v3.1-20260211",
+    "negative_prompt": "cartoon, stylized, anime, toy, plush, chibi, low detail, extra legs, extra tail, two heads, pedestal, base, ground plane, saddle, armor, rider",
+    "texture_quality": "detailed",
+    "texture_version": "v3.5-20260815",
+    "geometry_quality": "detailed",
+    "texture_alignment": "geometry"
+  },
+  "output": {
+    "model_url": "https://openapi-dl.data.tripo3d.com/tcli_498f55450c144f008d8eda29acd1c290/20261117/fd36e6cd-d877-4e90-8369-bfe76c4ff11e/tripo_pbr_model_fd36e6cd-d877-4e90-8369-bfe76c4ff11e.glb",
+    "rendered_image_url": "https://openapi-dl.data.tripo3d.com/tcli_498f55450c144f008d8eda29acd1c290/20261117/fd36e6cd-d877-4e90-8369-bfe76c4ff11e/legacy_mesh.webp",
+    "generated_image_url": "https://openapi-dl.data.tripo3d.com/tcli_498f55450c144f008d8eda29acd1c290/20261117/fd36e6cd-d877-4e90-8369-bfe76c4ff11e/text2image_fd36e6cd-d877-4e90-8369-bfe76c4ff11e.jpeg"
+  },
+  "task_id": "fd36e6cd-d877-4e90-8369-bfe76c4ff11e",
+  "created_at": "2026-11-17T16:57:12.508498Z",
+  "completed_at": "2026-11-17T16:59:13.153605Z",
+  "credits_consumed": 50.0
+}

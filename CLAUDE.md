@@ -30,7 +30,7 @@ Commit after each step.
 - You make the assets (§7). Build each mechanic with simple shapes first so gameplay work isn't blocked, then replace them with finished assets.
 - Tuning values (weapons, parts, enemies, gore, camera feel) go in `.tres` resource files, not in code.
 - Typed GDScript. Treat static-typing warnings as errors.
-- Paid APIs (Meshy, ElevenLabs): ask the owner first and say roughly how many calls you'll make.
+- Paid APIs (Meshy, ElevenLabs, Tripo3D): ask the owner first and say roughly how many calls you'll make. Tripo: one generation per asset, no variants or retries unless the owner asks (owner, 2026-11-17); the free rig-check before a rig.
 - Don't push git tags. The cloud GitHub proxy rejects them; CI creates release tags.
 - When a decision changes, update the docs in the same commit.
 - Tone: grounded military science fiction. Every ability comes from hardware. No magic, psychic powers, occult or religious-supernatural elements, and no anime styling.
@@ -39,7 +39,7 @@ Commit after each step.
 
 ## 2. The game
 
-- **Player and enemies.** You are augmented. For now, enemies are ordinary unaugmented humans: triad members (owner, 2026-11-03), in waves in the test range and on a rolling clock on the Chinatown docks map (8 at the start, 3 more whenever fewer than 4 are fighting, out of sight; owner, 2026-11-04). Each is dressed at random from a wardrobe bank, with tattoos, and speaks his callouts (owner, 2026-11-11; design §5.6). In wave modes they hunt you down, pin and flank together, and the last man of a wave is marked on the HUD (owner, 2026-11-16; design §5.6a). The first melee type, the Hatchet Man, came 2026-11-15 (design §8.8a), and the first boss, the Incense Master, on wave 5 (owner, 2026-11-15; design §8.7a, the execution §8.7b). The difference between you and them should show everywhere: speed, strength, durability, perception, what you can carry, and how they react to you. It's a power fantasy, but fights should still take skill.
+- **Player and enemies.** You are augmented. For now, enemies are ordinary unaugmented humans: triad members (owner, 2026-11-03), in waves in the test range and on a rolling clock on the Chinatown docks map (8 at the start, 3 more whenever fewer than 4 are fighting, out of sight; owner, 2026-11-04). Each is dressed at random from a wardrobe bank, with tattoos, and speaks his callouts (owner, 2026-11-11; design §5.6). In wave modes they hunt you down, pin and flank together, and the last man of a wave is marked on the HUD (owner, 2026-11-16; design §5.6a). The first melee type, the Hatchet Man, came 2026-11-15 (design §8.8a); attack dogs (German shepherds) 2026-11-17 (design §8.8b); and the first boss, the Incense Master, on wave 5 (owner, 2026-11-15; design §8.7a, the execution §8.7b). The difference between you and them should show everywhere: speed, strength, durability, perception, what you can carry, and how they react to you. It's a power fantasy, but fights should still take skill.
 - **Main mode: Survival** (owner, 2026-11-15; design §8). Waves on a map, getting harder. You start with a doctrine (a baseline body), one gun (Five-seveN, MP5 or Saiga-12K) and one active at Mk I, a tuned-down version; the actives as built are Mk III, the ceiling. After every wave a supply drop brings one item or a choice of two (guns, actives, passives, marks); the doctrine and what you already own steer the odds, so a run can aim at a build. A boss every fifth wave drops the active he carries or a mark for it. Many more enemy types per map, themed (triad on Chinatown), melee ones included. "A power fantasy that you have to earn." Death ends the run. Today's open mode (every gun and part, the loadout screen) stays as **Sandbox**.
 - **Simulation.** Simulate as much as an immersive sim would (bodies, damage, ballistics, enemy behavior), but keep combat fast. Every system has to work at full speed, without menus or pauses.
 - **Gunplay.** The goal is the best gunplay in any mobile shooter. References: Call of Duty for gun handling, Doom for speed and aggression, Halo for readable weapons and enemies, F.E.A.R. and Trepang2 for slow motion and hit reactions, S.T.A.L.K.E.R. for weapon weight, Soldier of Fortune for locational damage and gore.
@@ -73,7 +73,7 @@ The owner doesn't make assets. Claude makes them in the cloud session.
 
 **Sound:** layered and processed. Use CC0 sources where they exist. ElevenLabs sound generation needs the owner's approval because it costs money.
 
-**Optional, paid:** Meshy (text or image to 3D) for props and starting meshes.
+**Optional, paid:** Meshy (text or image to 3D) for props and starting meshes. Tripo3D (`openapi.tripo3d.ai/v3`, key added by a network secret; image-to-model and the quadruped auto-rig made the attack dog, `raw_assets/characters/attack_dog/`). Its meshes beat the hand-built ones on organic shapes; review them as critically as your own Blender work.
 
 Log every third-party file and its license in `CREDITS.md`.
 
@@ -280,6 +280,7 @@ Each milestone ends with an APK on the owner's phone and an entry in `docs/playt
    Built 2026-11-15: the design (§8); Mk I/II/III for all eleven actives; the run (doctrines as baseline bodies, supply drops with doctrine and affinity bias, threat-budget waves, lieutenant waves standing in for bosses); the Blue Lantern recruit; Survival on the main menu with the kit screen, the drop screen and the run-over screen. Today's mode is Sandbox.
    2026-11-15 (owner): the Hatchet Man, the first melee enemy: hatchet or cleaver, flanks from cover to cover, vaults low walls, a telegraphed chop to dodge, stagger or block (design §8.8a). Survival from wave 4; Sandbox spawns too.
    2026-11-15 (owner): the first boss, the Incense Master, on wave 5: a huge bald enforcer in black leather with a gold-and-diamond pendant and a Gauss prosthetic for a right arm; a haymaker, a ground pound to jump, a charged Gauss shot the LC-6 can catch and throw back. A short entrance cutscene; at zero he goes down on one knee and RB plays a first-person execution (punches, the head goes, the fist examined and shaken off). He drops the GX-4 or its next mark (design §8.7a, §8.7b).
+   2026-11-17 (owner): attack dogs, German shepherds that gallop in, leap and bite; Chinatown spawns and Survival from wave 6. The first Tripo3D asset: generated, reduced, auto-rigged, animated in Blender (design §8.8b).
    Next: more triad types and bosses (the Straw Sandal next), theme waves (design §8.8), then tuning from the owner's runs.
    Done when a run has a difficulty curve the owner wants to replay and builds that play differently.
 

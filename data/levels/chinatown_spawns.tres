@@ -17,4 +17,5 @@ gunman_weight = 0.5
 enforcer_weight = 0.22
 red_pole_weight = 0.1
 hatchet_man_weight = 0.18
+attack_dog_weight = 0.12
 arrival_awareness = 0.6

@@ -72,6 +72,20 @@ static func detonate(world: Node3D, at: Vector3, radius: float, damage: float, s
 			kills += 1
 		if Gore.is_maximum():
 			_tear(e, at, radius, f, dir)
+	for n: Node in tree.get_nodes_in_group(&"dogs"):
+		var dg: AttackDog = n as AttackDog
+		if dg == null or not dg.alive:
+			continue
+		var c: Vector3 = dg.chest_position()
+		var dd: float = c.distance_to(at)
+		if dd > radius or not _clear(space, at, c):
+			continue
+		var ff: float = 1.0 - pow(dd / radius, 1.5)
+		var ddir: Vector3 = ((c - at).normalized() if dd > 0.05 else Vector3.UP)
+		dg.strike(damage * ff, Vector3(ddir.x, 0.0, ddir.z).normalized() * (3.0 + 9.0 * ff), shooter)
+		Gore.spray(c, (ddir + Vector3.UP * 0.4).normalized(), 1.0 + ff, 6)
+		if not dg.alive:
+			kills += 1
 	var p: Player = tree.get_first_node_in_group(&"player") as Player
 	if p and not p.dead:
 		var eye: Vector3 = p.camera().global_position
@@ -146,6 +160,25 @@ static func fragments(world: Node3D, at: Vector3, normal: Vector3, g: GrenadeDat
 		Ballistics.fire(w, origin, dir, shooter, Vector3.INF, volley)
 		last_scattered += 1
 	# The operative: his share, straight off his health.
+	# Dogs: a smaller target, the same fragments.
+	for node2: Node in tree.get_nodes_in_group(&"dogs"):
+		var dg: AttackDog = node2 as AttackDog
+		if dg == null or not dg.alive:
+			continue
+		var c: Vector3 = dg.chest_position()
+		var dd: float = c.distance_to(at)
+		if dd > g.fragment_range or (not airburst and (c - at).dot(normal) < -0.1):
+			continue
+		var cnt: int = mini(poisson(g.expected_fragments(dd, g.body_area_m2 * 0.45), r), g.fragment_max_per_body)
+		for k: int in cnt:
+			var hb: HitboxPart = dg.hitboxes[r.randi() % dg.hitboxes.size()]
+			var aim2: Vector3 = hb.global_position + Vector3(r.randf_range(-0.03, 0.03), r.randf_range(-0.03, 0.03), r.randf_range(-0.03, 0.03))
+			var id2: int = Ballistics.fire(w, origin, (aim2 - origin).normalized(), shooter, Vector3.INF, volley)
+			if volley == 0:
+				volley = id2
+			last_aimed += 1
+		if cnt > 0 and not dg.alive:
+			kills += 1
 	var p: Player = tree.get_first_node_in_group(&"player") as Player
 	if p and not p.dead:
 		var eye: Vector3 = p.camera().global_position

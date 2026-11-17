@@ -724,6 +724,8 @@ Each map has a theme and its own roster. For Chinatown, the triad *(proposal; �
 | **Shield man** | A ballistic shield and a pistol; covers others as they advance. | 4 | 9 |
 | **Gunner** | A belt-fed gun; suppresses a whole street. | 5 | 11 |
 | **Anti-augment specialist** | EMP grenades that stall your actives, armour-piercing rounds, a jammer that grounds the drone. | 6 | 13 |
+| **Attack dog** ✓ (owner, 2026-11-17; built 2026-11-17, §8.8b) | A German shepherd that gallops straight at you by scent, leaps the last metres and bites. Fast and low, a small target. | 1.5 | 6 |
+
 
 Melee men need their own code: the Hatchet Man's is built (§8.8a); the swordsman still needs a block. The Hatchet Man debuts on wave 4, not 3 as first proposed, so the Red Pole (wave 3) and he each get a wave of their own.
 
@@ -741,6 +743,16 @@ Owner: "start work on the Hatchet Man melee focused enemy." What he does (`src/a
 - **Where he appears.** Survival from wave 4 (cost 2, at most 3 per wave, 5 from wave 10). Sandbox rolling spawns on the docks: 18 % of arrivals.
 
 Not yet *(proposal)*: his own voice lines (a war cry; he uses "Rush him!" for now), a thrown hatchet when the operative is out of reach on a height, blood on the blade after a hit, a sound made for the chop (it uses the whip's swish and cut).
+
+### 8.8b The attack dog (built 2026-11-17)
+
+Owner, 2026-11-17: "German shepherds that run at you... part of the triad map too."
+
+- **What it does.** No gun, no cover, no morale. It knows where the operative is (scent) and gallops straight in at 9.5 m/s (faster than his walk, 6.5, slower than his sprint, 11), by the navmesh when a wall is in the way. From 1.6–4.6 m with a clear line it crouches for 0.16 s (the tell) and leaps; if its mouth reaches his chest in the air the bite lands (24). At his legs it bites standing (14, every 0.75 s). After a leap it backs off a step and comes again. A sidestep in the crouch makes the leap miss. Bites go through `Player.on_melee_hit`, so blocks and shields stop them.
+- **Damage.** 60 health; zones on the rig's bones: head ×2.2, neck ×1.8, chest ×1.2, body, legs ×0.6. A hit of 9+ makes it flinch and yelp (and breaks a crouch). One pistol round to the head kills it. Blasts and grenade fragments hurt it, the R3 strike reaches down to it. It isn't an `Enemy`: it joins the `enemies` and `dogs` groups, code that casts to `Enemy` skips it, and the slide doesn't launch it yet. It isn't marked as the last hostile on the HUD.
+- **Where.** Chinatown rolling spawns (weight 0.12 of the mix, `data/levels/chinatown_spawns.tres`) and Survival from wave 6, up to 3 a wave (5 from wave 12), cost 1.5 (`tools/run/gen_pool.py`). Tuning: `data/enemies/attack_dog.tres`. Code: `src/ai/dog/`.
+- **Model.** Tripo3D: a generated concept image → image-to-model (1.9M triangles) → reduced to 15k with 2K textures (`reduce.py`) → Tripo's quadruped auto-rig (50 bones) → `build.py`: life size (1.28 m long), the texture islands padded (the dark seam cracks were the black atlas background bleeding in), and seven keyframed animations: idle_snarl, run (rotary gallop), trot, lunge, bite, flinch, death. Sounds are synthesized placeholders (`raw_assets/audio/build_dog_sfx.py`: growls, snarls, barks, bites, yelps, a dying whine). Tripo credits used: 165 for the model, 25 for the rig.
+- **Not yet.** A ragdoll (it plays a death and slides with the hit), dismemberment, burning, the slide launch, handlers, recorded sounds.
 
 ### 8.9 What was built first (2026-11-15)
 
