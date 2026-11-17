@@ -29,6 +29,7 @@ const ZONES: Array = [
 	[&"leg", &"tripo__1_Right_Limb_1", "capsule", Vector3(0.055, 0.32, 0), Vector3(-0.2, 0.22, 0.11)],
 ]
 const LOOPS: Array[StringName] = [&"run", &"trot", &"idle_snarl"]
+const SHADER: Shader = preload("res://src/ai/dog/dog.gdshader")
 
 enum State { CHASE, WINDUP, LUNGE, RECOVER, BITE, FLINCH, DEAD }
 
@@ -46,6 +47,8 @@ var model: Node3D
 var anim: AnimationPlayer
 var skeleton: Skeleton3D
 var hitboxes: Array[HitboxPart] = []
+## Its coat (dog.gdshader): fill, rim, blood.
+var coat: ShaderMaterial
 ## Bites that landed and whiffed (tests, tuning).
 var bites: int = 0
 var whiffs: int = 0
@@ -57,6 +60,7 @@ var _cooldown: float = 0.0
 var _bit_this: bool = false
 var _growl_in: float = 0.5
 var _knock: Vector3 = Vector3.ZERO
+var _blood: float = 0.0
 ## Its own running velocity (flat); the shove is added on top.
 var _run_vel: Vector3 = Vector3.ZERO
 var _nav_refresh: float = 0.0
@@ -106,9 +110,36 @@ func _build_model() -> void:
 		if anim.has_animation(n):
 			anim.get_animation(n).loop_mode = Animation.LOOP_LINEAR
 	for mi: Node in model.find_children("*", "MeshInstance3D", true, false):
-		(mi as MeshInstance3D).cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		var m: MeshInstance3D = mi as MeshInstance3D
+		m.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		_dress(m)
 	_build_blob()
 	_build_hitboxes()
+
+
+## Swaps Tripo's material for the coat shader, keeping its maps. One
+## material per dog (blood and the death fade are its own).
+func _dress(m: MeshInstance3D) -> void:
+	var std: StandardMaterial3D = m.mesh.surface_get_material(0) as StandardMaterial3D
+	if std == null:
+		return
+	coat = ShaderMaterial.new()
+	coat.shader = SHADER
+	coat.set_shader_parameter(&"base_tex", std.albedo_texture)
+	coat.set_shader_parameter(&"orm_tex", std.roughness_texture)
+	coat.set_shader_parameter(&"normal_tex", std.normal_texture)
+	coat.set_shader_parameter(&"fill_light", config.fill_light)
+	coat.set_shader_parameter(&"rim_strength", config.rim_strength)
+	m.material_override = coat
+
+
+func _set_coat(param: StringName, v: float) -> void:
+	if coat:
+		coat.set_shader_parameter(param, v)
+
+
+func _set_rim(v: float) -> void:
+	_set_coat(&"rim_alive", v)
 
 
 ## A soft contact shadow under it (the men's are one shared draw in
@@ -250,6 +281,8 @@ func on_part_hit(p: HitboxPart, hit: BallisticHit) -> void:
 	last_hit = hit
 	var head: bool = zone == &"head" or zone == &"neck"
 	var dep: float = hit.deposited()
+	_blood += config.blood_per_hit
+	_set_coat(&"bloodied", minf(_blood, 1.0))
 	Gore.flesh_hit(hit, sqrt(maxf(dep, 30.0) / 300.0) * config.gore_scale, head)
 	if not alive:
 		_knock += _flat(hit.direction) * clampf(hit.damage.impulse * 0.05, 0.0, 1.5)
@@ -300,6 +333,8 @@ func die(hit: BallisticHit = null) -> void:
 	if hit:
 		_knock += _flat(hit.direction) * clampf(hit.damage.impulse * 0.12, 0.5, 4.0)
 	_play(&"death", 0.06)
+	if coat:
+		create_tween().tween_method(_set_rim, 1.0, 0.0, 0.8)
 	_run_vel = Vector3(velocity.x, 0.0, velocity.z) * 0.5
 	Sfx.play_at(&"dog_death", head_position(), -1.0, 0.08)
 	EventBus.killed.emit(self, hit.damage if hit else null)

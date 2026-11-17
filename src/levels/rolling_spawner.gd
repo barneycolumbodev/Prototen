@@ -13,6 +13,7 @@ extends Node
 ## Named "WaveMode" in the scene so the pause menu's toggle works on it.
 
 signal spawned(e: Enemy)
+signal dog_spawned(d: AttackDog)
 
 var config: RollingSpawnConfig
 var level: Node3D
@@ -241,6 +242,7 @@ func _spawn_dog(at: Vector3) -> AttackDog:
 	dogs.append(d)
 	spawned_total += 1
 	_cleanup()
+	dog_spawned.emit(d)
 	return d
 
 

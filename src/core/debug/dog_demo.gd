@@ -28,7 +28,10 @@ func _ready() -> void:
 		if arg.begins_with("--capture-dir="):
 			_dir = arg.trim_prefix("--capture-dir=")
 	map.player.input_enabled = false
-	map.player.invulnerable = true
+	# Not invulnerable (a bite on an invulnerable man deals nothing and reads as a miss).
+	map.player.body_config = map.player.body_config.duplicate() as PlayerBodyConfig
+	map.player.body_config.max_health = 50000.0
+	map.player.health = 50000.0
 
 
 func _physics_process(_delta: float) -> void:
@@ -87,20 +90,26 @@ func _physics_process(_delta: float) -> void:
 		remove_from_group(&"capture_busy")
 
 
-## The clearest straight stretch from the operative (the dogs come down it).
+## The longest straight stretch of quay from the operative: no wall in the
+## way and ground under every metre of it (the water has no floor).
 func _pick_lane(p: Player) -> void:
 	var space: PhysicsDirectSpaceState3D = p.get_world_3d().direct_space_state
 	var from: Vector3 = p.global_position + Vector3.UP * 0.5
 	var best: float = -1.0
-	for i: int in 24:
-		var dir: Vector3 = Vector3.FORWARD.rotated(Vector3.UP, TAU * i / 24.0)
-		var q: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(from, from + dir * 22.0, Ballistics.LAYER_WORLD | Ballistics.LAYER_PROPS)
-		var hit: Dictionary = space.intersect_ray(q)
-		var d: float = 22.0 if hit.is_empty() else from.distance_to(hit["position"])
-		if d > best:
-			best = d
+	for i: int in 36:
+		var dir: Vector3 = Vector3.FORWARD.rotated(Vector3.UP, TAU * i / 36.0)
+		var run: float = 0.0
+		for m: int in range(1, 21):
+			var at: Vector3 = from + dir * float(m)
+			var wall: Dictionary = space.intersect_ray(PhysicsRayQueryParameters3D.create(from, at, Ballistics.LAYER_WORLD | Ballistics.LAYER_PROPS))
+			var floor_hit: Dictionary = space.intersect_ray(PhysicsRayQueryParameters3D.create(at, at + Vector3.DOWN * 1.5, Ballistics.LAYER_WORLD))
+			if not wall.is_empty() or floor_hit.is_empty():
+				break
+			run = float(m)
+		if run > best:
+			best = run
 			_fwd = dir
-	_run = clampf(best - 3.0, 9.0, 16.0)
+	_run = clampf(best - 2.0, 8.0, 16.0)
 	_right = _fwd.cross(Vector3.UP).normalized()
 
 

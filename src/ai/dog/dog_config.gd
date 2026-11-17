@@ -54,6 +54,13 @@ extends Resource
 @export var knock_per_impulse: float = 0.18
 @export var gore_scale: float = 0.8
 
+@export_group("Look")
+## Readability at night (dog.gdshader, as the men's): fill from the viewer, cool rim.
+@export var fill_light: float = 0.45
+@export var rim_strength: float = 0.8
+## Coat darkens and wets this much per hit (to 1).
+@export var blood_per_hit: float = 0.12
+
 @export_group("Voice")
 ## Seconds between growls while it runs in (random in range).
 @export var growl_gap: Vector2 = Vector2(1.2, 2.6)
