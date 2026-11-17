@@ -127,8 +127,12 @@ func _land() -> void:
 	var e: Enemy = target()
 	var cam: Camera3D = player.camera()
 	var w: PlayerWeapon = player.weapon()
+	var dog: AttackDog = dog_target() if e == null else null
 	if w and w.cam_recoil:
-		w.cam_recoil.kick(cfg.camera_kick_deg * (1.0 if e else 0.4))
+		w.cam_recoil.kick(cfg.camera_kick_deg * (1.0 if e or dog else 0.4))
+	if dog:
+		_land_on_dog(dog)
+		return
 	if e == null:
 		return
 	var dmg: float = damage()
@@ -152,3 +156,54 @@ func _land() -> void:
 		Input.start_joy_vibration(pad, cfg.rumble.x, cfg.rumble.y, cfg.rumble.z)
 	EventBus.slide_impact.emit(e, push)
 	struck.emit(e, dmg, push)
+
+
+## An attack dog in reach of the blow (low: judged on the flat, not by the
+## view's pitch, so a dog at your shins is struck while you look ahead), or null.
+func dog_target() -> AttackDog:
+	var cam: Camera3D = player.camera()
+	var fwd: Vector3 = -cam.global_basis.z
+	fwd.y = 0.0
+	fwd = fwd.normalized()
+	var best: AttackDog = null
+	var best_score: float = INF
+	for n: Node in player.get_tree().get_nodes_in_group(&"dogs"):
+		var d: AttackDog = n as AttackDog
+		if d == null or not d.alive:
+			continue
+		var to: Vector3 = d.chest_position() - player.global_position
+		to.y = 0.0
+		var dist: float = to.length()
+		if dist > cfg.reach + 0.5:
+			continue
+		var ang: float = rad_to_deg(fwd.angle_to(to)) if dist > 0.05 else 0.0
+		if ang > cfg.cone_deg * 0.5 and dist > 0.9:
+			continue
+		var score: float = ang + dist * 10.0
+		if score < best_score:
+			best_score = score
+			best = d
+	return best
+
+
+func _land_on_dog(d: AttackDog) -> void:
+	var cam: Camera3D = player.camera()
+	var dmg: float = damage()
+	var push: float = push_speed()
+	var dir: Vector3 = d.global_position - player.global_position
+	dir.y = 0.0
+	dir = dir.normalized() if dir.length() > 0.05 else -cam.global_basis.z
+	var lethal: bool = push >= cfg.lethal_push or dmg >= d.health
+	var hit_at: Vector3 = d.chest_position()
+	d.strike(9999.0 if lethal else dmg, dir * push * 0.8, player)
+	Sfx.play_at(&"impact_flesh", hit_at, 2.0, 0.08)
+	Sfx.play_at(&"mw7_cut", hit_at, 0.0, 0.1)
+	if knife:
+		knife.cut(lethal)
+	var across: Vector3 = (-cam.global_basis.x - cam.global_basis.y * 0.35 + dir * 0.6).normalized()
+	Gore.spray(hit_at, across, clampf(push / 8.0, 0.5, 2.0), 8 if lethal else 5)
+	Gore.mist(hit_at, across, 1.0 if lethal else 0.6)
+	TimeControl.hitstop(cfg.hitstop_time * (1.6 if lethal else 1.0), cfg.hitstop_scale)
+	for pad: int in Input.get_connected_joypads():
+		Input.start_joy_vibration(pad, cfg.rumble.x, cfg.rumble.y, cfg.rumble.z)
+	struck.emit(d, dmg, push)

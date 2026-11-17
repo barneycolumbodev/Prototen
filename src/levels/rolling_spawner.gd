@@ -24,6 +24,10 @@ var running: bool = false
 var kills: int = 0
 var spawned_total: int = 0
 var enemies: Array[Enemy] = []
+## Attack dogs (docs/design.md §8.8b) aren't men: kept apart, counted with them.
+var dogs: Array[AttackDog] = []
+## Most dead dogs left lying about (oldest go first).
+const MAX_DOG_BODIES: int = 4
 ## One draw for every man's contact shadow.
 var blobs: BlobShadows = BlobShadows.new()
 
@@ -82,6 +86,10 @@ func stop() -> void:
 		if is_instance_valid(e):
 			e.queue_free()
 	enemies.clear()
+	for d: AttackDog in dogs:
+		if is_instance_valid(d):
+			d.queue_free()
+	dogs.clear()
 	_queue = 0
 	if squad:
 		squad.queue_free()
@@ -97,13 +105,21 @@ func toggle() -> void:
 
 
 func fighting() -> int:
-	return squad.fighting_count() if squad else 0
+	return (squad.fighting_count() if squad else 0) + dogs_alive()
 
 
 func alive() -> int:
-	var n: int = 0
+	var n: int = dogs_alive()
 	for e: Enemy in enemies:
 		if is_instance_valid(e) and e.alive:
+			n += 1
+	return n
+
+
+func dogs_alive() -> int:
+	var n: int = 0
+	for d: AttackDog in dogs:
+		if is_instance_valid(d) and d.alive:
 			n += 1
 	return n
 
@@ -133,7 +149,7 @@ func _process(delta: float) -> void:
 		if _timer <= 0.0 and alive() < config.max_alive:
 			var i: int = pick_spawn()
 			if i >= 0:
-				_spawn(config.pick_role(_rng.randf()), spawn_points[i])
+				_spawn_role(config.pick_role(_rng.randf()), spawn_points[i])
 				_queue -= 1
 				_timer = config.spawn_gap
 			else:
@@ -194,7 +210,38 @@ func _occupied(p: Vector3) -> bool:
 	for e: Enemy in enemies:
 		if is_instance_valid(e) and e.alive and e.global_position.distance_to(p) < 1.6:
 			return true
+	for d: AttackDog in dogs:
+		if is_instance_valid(d) and d.alive and d.global_position.distance_to(p) < 1.6:
+			return true
 	return false
+
+
+## A man of `role`, or a dog.
+func _spawn_role(role: String, at: Vector3) -> void:
+	if role == AttackDog.ROLE:
+		_spawn_dog(at)
+	else:
+		_spawn(role, at)
+
+
+## An attack dog: it knows where the operative is (by scent) and comes straight in.
+func _spawn_dog(at: Vector3) -> AttackDog:
+	var d: AttackDog = AttackDog.new()
+	d.player = player
+	level.add_child(d)
+	var jit: Vector3 = at + Vector3(_rng.randf_range(-0.3, 0.3), 0.0, _rng.randf_range(-0.3, 0.3))
+	if sees(level.get_world_3d().direct_space_state, player.camera().global_position, jit):
+		jit = at
+	d.global_position = jit + Vector3(0, 0.05, 0)
+	var to: Vector3 = player.global_position - d.global_position
+	d.face(atan2(to.x, to.z))
+	d.died.connect(func(_x: AttackDog) -> void:
+		kills += 1
+		_emit())
+	dogs.append(d)
+	spawned_total += 1
+	_cleanup()
+	return d
 
 
 func _spawn(role: String, at: Vector3) -> Enemy:
@@ -250,6 +297,8 @@ func _take_look(role: String) -> TriadLook:
 
 
 func _fill_looks(role: String, count: int) -> void:
+	if role == AttackDog.ROLE:
+		return  # a dog has no wardrobe
 	if not _looks.has(role):
 		_looks[role] = []
 	var list: Array = _looks[role]
@@ -275,6 +324,19 @@ func _cleanup() -> void:
 		keep.erase(old)
 		old.queue_free()
 	enemies = keep
+	var dead_dogs: Array[AttackDog] = []
+	var keep_dogs: Array[AttackDog] = []
+	for d: AttackDog in dogs:
+		if not is_instance_valid(d):
+			continue
+		if not d.alive:
+			dead_dogs.append(d)
+		keep_dogs.append(d)
+	while dead_dogs.size() > MAX_DOG_BODIES:
+		var od: AttackDog = dead_dogs.pop_front()
+		keep_dogs.erase(od)
+		od.queue_free()
+	dogs = keep_dogs
 
 
 func _on_player_died() -> void:

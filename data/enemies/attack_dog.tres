@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="DogConfig" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/ai/dog/dog_config.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+health = 60.0
+zone_multipliers = Dictionary[StringName, float]({
+&"body": 1.0,
+&"chest": 1.2,
+&"head": 2.2,
+&"leg": 0.6,
+&"neck": 1.8
+})
+run_speed = 9.5
+trot_speed = 3.6
+lunge_range = 4.6
+lunge_damage = 24.0
+bite_damage = 14.0

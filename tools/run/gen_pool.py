@@ -135,6 +135,8 @@ ROSTER = [
     ("enforcer", 3.0, 2, 0.8, 0.06, 0.05, 0, 0, 10),
     ("hatchet_man", 2.0, 4, 1.1, 0.04, 0.05, 3, 5, 10),
     ("red_pole", 4.0, 3, 0.35, 0.02, 0.05, 1, 2, 10),
+    # Attack dogs (owner, 2026-11-17; design §8.8b): cheap, fast, come in twos and threes.
+    ("attack_dog", 1.5, 6, 1.0, 0.03, 0.1, 3, 5, 12),
 ]
 
 # Boss roles, in order (data/enemies/<role>.tres, each with a BossConfig).

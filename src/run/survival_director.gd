@@ -104,7 +104,7 @@ func _process(delta: float) -> void:
 			var i: int = pick_spawn()
 			if i >= 0:
 				var role: String = queue.pop_front()
-				_spawn(role, spawn_points[i])
+				_spawn_role(role, spawn_points[i])
 				_timer = config.spawn_gap
 			else:
 				_timer = 0.3

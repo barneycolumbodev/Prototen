@@ -1,0 +1,24 @@
+{
+  "type": "animate_rig",
+  "status": "success",
+  "progress": 100,
+  "input": {
+    "topology": "quadruped",
+    "out_format": "glb",
+    "original_model_id": "618d70c7-88d5-4d7a-888d-da7b3fdaea81"
+  },
+  "output": {
+    "model_url": "https://openapi-dl.data.tripo3d.com/tcli_498f55450c144f008d8eda29acd1c290/20261117/1dbae0ce-e57d-4c2b-9071-c197a7758fe4/tripo_rigging_1dbae0ce-e57d-4c2b-9071-c197a7758fe4.glb",
+    "rendered_image_url": "https://openapi-dl.data.tripo3d.com/tcli_498f55450c144f008d8eda29acd1c290/20261117/1dbae0ce-e57d-4c2b-9071-c197a7758fe4/legacy_mesh.webp",
+    "normalize_scale": 0.7833194732666016,
+    "normalize_translation": [
+      0.0,
+      -0.2544710636138916,
+      0.0
+    ]
+  },
+  "task_id": "1dbae0ce-e57d-4c2b-9071-c197a7758fe4",
+  "created_at": "2026-11-17T19:22:48.643033Z",
+  "completed_at": "2026-11-17T19:23:07.567716Z",
+  "credits_consumed": 25.00
+}
