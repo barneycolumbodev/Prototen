@@ -1,0 +1,12 @@
+{
+  "task_id": "b111dd47-a330-431f-a767-3164e5247405",
+  "prompt": "Photorealistic German Shepherd guard dog in a crouched aggressive stance about to charge, all four paws on the ground, body low, head thrust forward, mouth open wide snarling with bared teeth and wrinkled snout, ears forward, tail low and straight, black and tan coat with dark saddle, realistic dense fur, heavy black leather studded collar with a broken chain link, lean powerful muscles, triad street gang dog",
+  "negative_prompt": "cartoon, stylized, anime, toy, plush, chibi, low detail, extra legs, extra tail, two heads, pedestal, base, ground plane, saddle, armor, rider",
+  "model": "v3.1-20260211",
+  "model_seed": 2093,
+  "texture": true,
+  "pbr": true,
+  "texture_quality": "detailed",
+  "geometry_quality": "detailed",
+  "auto_size": true
+}

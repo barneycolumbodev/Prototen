@@ -1,0 +1,14 @@
+{
+  "model": "v3.1-20260211",
+  "file": {
+    "type": "png"
+  },
+  "texture": true,
+  "pbr": true,
+  "texture_quality": "detailed",
+  "geometry_quality": "detailed",
+  "auto_size": true,
+  "model_seed": 7311,
+  "source_image": "concept.png (text_to_image task in t2i_task.json)",
+  "task_id": "d7e633c3-0d35-4d91-9516-4ce9673f8fbe"
+}

@@ -23,3 +23,8 @@ export_credentials.cfg
 .DS_Store
 *.swp
 tools/_*
+
+# Tripo3D source downloads (~66 MB each, 1.9M triangles). Rebuild with
+# raw_assets/characters/attack_dog/tripo_generate.py; the reduced master is kept.
+raw_assets/characters/attack_dog/tripo/*/model.glb
+raw_assets/characters/attack_dog/tripo/*/wait.log

@@ -724,6 +724,9 @@ Each map has a theme and its own roster. For Chinatown, the triad *(proposal; �
 | **Shield man** | A ballistic shield and a pistol; covers others as they advance. | 4 | 9 |
 | **Gunner** | A belt-fed gun; suppresses a whole street. | 5 | 11 |
 | **Anti-augment specialist** | EMP grenades that stall your actives, armour-piercing rounds, a jammer that grounds the drone. | 6 | 13 |
+| **Attack dog** (owner, 2026-11-17; model made, not in the game yet) | A German shepherd that runs straight at you and bites. Fast and low, a small target, released by handlers. | 1–2 | 5 |
+
+The attack dog's model came from Tripo3D (paid, image-to-model from a generated concept): `raw_assets/characters/attack_dog/` (prompts, task records, `reduce.py` → `assets/characters/attack_dog/attack_dog.glb`, 15k triangles, 2K textures). It is a static mesh. To put it in the game it still needs a quadruped rig (Tripo's auto-rig, about 25 credits), run, lunge and bite animations, and a fix for the dark cracks along texture seams that the mesh reduction left.
 
 Melee men need their own code: the Hatchet Man's is built (§8.8a); the swordsman still needs a block. The Hatchet Man debuts on wave 4, not 3 as first proposed, so the Red Pole (wave 3) and he each get a wave of their own.
 
