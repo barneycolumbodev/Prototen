@@ -1,0 +1,16 @@
+{
+  "type": "text_to_image",
+  "status": "success",
+  "progress": 100,
+  "input": {
+    "prompt": "enormous bald Hong Kong Chinese triad enforcer, huge and massively muscular, heavy belly and thick neck, shaved head, cold brutal stare, stubble and a short goatee; sleeveless black leather vest worn open over a bare chest, chest and both arms covered in black-and-grey dragon and curling incense smoke tattoos; black leather trousers, wide black leather belt with a heavy gold buckle, heavy black boots, wide shot with empty margins all round, the whole figure inside the frame including both hands and fingertips and both shoes, full body from the top of the head to the soles of the shoes, standing in a T-pose with both arms straight out to the sides at shoulder height, palms down, fingers straight and together, legs straight and slightly apart, feet flat, facing the camera, front view, plain light grey studio background, soft even lighting with no harsh shadows, photorealistic, realistic human proportions, sharp detail --no cartoon, anime, stylized, toy, chibi, weapon, gun, knife, bag, props, cropped, extra limbs, text, watermark",
+    "model_version": "seedream_v5"
+  },
+  "output": {
+    "generated_image_url": "https://openapi-dl.data.tripo3d.com/tcli_498f55450c144f008d8eda29acd1c290/20261117/dedd668a-5f2f-43c0-9bb6-acc048b1acda/generated_image.png?Policy=eyJTdGF0ZW1lbnQiOlt7IlJlc291cmNlIjoiaHR0cHM6Ly9vcGVuYXBpLWRsLmRhdGEudHJpcG8zZC5jb20vdGNsaV80OThmNTU0NTBjMTQ0ZjAwOGQ4ZWRhMjlhY2QxYzI5MC8yMDI2MTExNy9kZWRkNjY4YS01ZjJmLTQzYzAtOWJiNi1hY2MwNDhiMWFjZGEvZ2VuZXJhdGVkX2ltYWdlLnBuZyIsIkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTc5NTAzNDg3M319fV19&Signature=MVdtVCrZGCIQKS4ekkZPuKJtYQKY6hdUMd3sIaPpesRAb4~Fk6TBoFh9ppLTB8sPlzNGSXquqQbXMCyI4Ha0U1ZSCdEcKbVIq7zvJeU1YPx9CWc-jXaw79VEaUlv7SHenRH6N7soBG2lu016CfnkRxYQ6kEjqR2oWpFKe38ANq4bW0esNyuOlBAiNzJFb2s9NnLUFNyBannDEEvi4z~QMGpzYhiFkpS9wIQbihgVADhoYYeHVMc6UMQ9S7YW1~JXcKQcozkAWO49ilTJtejKcr5aNlSiOkkwN4obRRWroEsO9zAhBJAKLBatY2cTCEbInxTl~r9RSqwYOmXn7aVgAQ__&Key-Pair-Id=K1676C64NMVM2J"
+  },
+  "task_id": "dedd668a-5f2f-43c0-9bb6-acc048b1acda",
+  "created_at": "2026-11-17T20:47:21.501719Z",
+  "completed_at": "2026-11-17T20:47:43.165422Z",
+  "credits_consumed": 5.0
+}

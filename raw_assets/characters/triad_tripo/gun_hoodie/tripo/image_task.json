@@ -1,0 +1,16 @@
+{
+  "type": "text_to_image",
+  "status": "success",
+  "progress": 100,
+  "input": {
+    "prompt": "Hong Kong Chinese triad gunman in his twenties, slicked-back black hair, thin moustache, cold eyes; mustard yellow pullover hoodie with the hood down, olive green cargo trousers with side pockets, tan leather work boots; small black koi fish tattoo on the side of his neck, silver watch, wide shot with empty margins all round, the whole figure inside the frame including both hands and fingertips and both shoes, full body from the top of the head to the soles of the shoes, standing in a T-pose with both arms straight out to the sides at shoulder height, palms down, fingers straight and together, legs straight and slightly apart, feet flat, facing the camera, front view, plain light grey studio background, soft even lighting with no harsh shadows, photorealistic, realistic human proportions, sharp detail --no cartoon, anime, stylized, toy, chibi, weapon, gun, knife, bag, props, cropped, extra limbs, text, watermark",
+    "model_version": "seedream_v5"
+  },
+  "output": {
+    "generated_image_url": "https://openapi-dl.data.tripo3d.com/tcli_498f55450c144f008d8eda29acd1c290/20261117/4f18f601-20b1-4b32-aa09-e4590c05bbea/generated_image.png?Policy=eyJTdGF0ZW1lbnQiOlt7IlJlc291cmNlIjoiaHR0cHM6Ly9vcGVuYXBpLWRsLmRhdGEudHJpcG8zZC5jb20vdGNsaV80OThmNTU0NTBjMTQ0ZjAwOGQ4ZWRhMjlhY2QxYzI5MC8yMDI2MTExNy80ZjE4ZjYwMS0yMGIxLTRiMzItYWEwOS1lNDU5MGMwNWJiZWEvZ2VuZXJhdGVkX2ltYWdlLnBuZyIsIkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTc5NTAzNDY4Mn19fV19&Signature=g0Pmvh5k9iRJ5Hse7LdaMC-rS~jRCilWFmXrIqOFChXQ5kJIFGRre0A7izKONT3RUTMiFGyoGSRoW~t9cozEkUfexTAHAoTTpLbeQqTYL0n5B3N2RjfBRMSHRPAarhwgvcXt~Ue2JoqNkhirj0Amlieo-USZXnRXbfkuxXLy9IZs88-CbBsTornV2bf4i~EWKyaJ6bAFiyfLc7Ophm1ZIg-ndvJQm~Lla8Yshn9YErO1rCXzocbY0Ek1KUswlSO0afvpkX69C66QCekrHewFeuUhLcvBE0eLTreZNAcaFb2CoN02IgZ6IWs4hMf582~1YkNkQrx5Lyy8yIieNcKeJQ__&Key-Pair-Id=K1676C64NMVM2J"
+  },
+  "task_id": "4f18f601-20b1-4b32-aa09-e4590c05bbea",
+  "created_at": "2026-11-17T20:44:10.212681Z",
+  "completed_at": "2026-11-17T20:44:31.709226Z",
+  "credits_consumed": 5.0
+}
