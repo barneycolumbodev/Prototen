@@ -1,0 +1,16 @@
+{
+  "type": "text_to_image",
+  "status": "success",
+  "progress": 100,
+  "input": {
+    "prompt": "Completely show the full body of the character in T-pose. Standing upright, facing forward. Arms raise horizontally at shoulder height. Palms facing down, remove handheld objects but keep hand-worn equipment and accessories. Legs straight, feet shoulder-width apart. Keep natural body proportions and anatomy. Front view, neutral background.\nlean muscular Hong Kong Chinese triad hatchet man in his thirties, black hair tied back in a short ponytail, red cloth headband, wild fierce eyes; shirtless under an open black waistcoat vest, torso and both arms covered in dense black-and-grey dragon, tiger and Chinese calligraphy tattoos, loose black kung fu trousers, black cloth shoes, white cloth wraps around the hands and wrists, full body from the top of the head to the soles of the shoes, standing in a T-pose with both arms straight out to the sides at shoulder height, palms down, fingers straight and together, legs straight and slightly apart, feet flat, facing the camera, front view, plain light grey studio background, soft even lighting with no harsh shadows, photorealistic, realistic human proportions, sharp detail --no cartoon, anime, stylized, toy, chibi, weapon, gun, knife, bag, props, cropped, extra limbs, text, watermark",
+    "model_version": "seedream_v5"
+  },
+  "output": {
+    "generated_image_url": "https://openapi-dl.data.tripo3d.com/tcli_498f55450c144f008d8eda29acd1c290/20261117/dbd11fbb-285a-4f67-82cb-177dd17737c7/generated_image.png?Policy=eyJTdGF0ZW1lbnQiOlt7IlJlc291cmNlIjoiaHR0cHM6Ly9vcGVuYXBpLWRsLmRhdGEudHJpcG8zZC5jb20vdGNsaV80OThmNTU0NTBjMTQ0ZjAwOGQ4ZWRhMjlhY2QxYzI5MC8yMDI2MTExNy9kYmQxMWZiYi0yODVhLTRmNjctODJjYi0xNzdkZDE3NzM3YzcvZ2VuZXJhdGVkX2ltYWdlLnBuZyIsIkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTc5NTAzNDU1NX19fV19&Signature=r-prcneuJJ~AaKgQBHotstVHHRb03oD3bwu3AuwZwX70Li0pMGqGHZ7jxE~tTanBM58Gyx-30~HkjgCCJFS08dCZr5uCBVKfSZujWDzPyqCym7~LfgSmr8849yq~uyW24vQLjmAFu~Z9nVsEozIJ77OpyvshnAEnij2ZBgAdB86K7IZWK9mwNFGgR8M~ft0wvdnpT7o5qXe4JkttF7xdPgueAS2KnDdwZDTJ0NZCVNddXdMf~BVL74FtE5FGGjRZX9tY9zfbvsI382ZtjR6O757-uXkAF97KK9mfIa0No~MOFCuP-yh~udhotW3lsbe9kuE~4J27H-sr70LbIUJasg__&Key-Pair-Id=K1676C64NMVM2J"
+  },
+  "task_id": "dbd11fbb-285a-4f67-82cb-177dd17737c7",
+  "created_at": "2026-11-17T20:42:03.533653Z",
+  "completed_at": "2026-11-17T20:42:29.027301Z",
+  "credits_consumed": 5.0
+}

@@ -1,0 +1,16 @@
+{
+  "type": "text_to_image",
+  "status": "success",
+  "progress": 100,
+  "input": {
+    "prompt": "Hong Kong Chinese triad Red Pole lieutenant in his forties, slicked-back black hair going grey at the temples, thin moustache and goatee, cold arrogant expression; open black leather jacket over a crimson silk shirt with a gold dragon print, heavy gold chain, gold watch and gold rings, dark charcoal slacks, polished black leather shoes, wide shot with empty margins all round, the whole figure inside the frame including both hands and fingertips and both shoes, full body from the top of the head to the soles of the shoes, standing in a T-pose with both arms straight out to the sides at shoulder height, palms down, fingers straight and together, legs straight and slightly apart, feet flat, facing the camera, front view, plain light grey studio background, soft even lighting with no harsh shadows, photorealistic, realistic human proportions, sharp detail --no cartoon, anime, stylized, toy, chibi, weapon, gun, knife, bag, props, cropped, extra limbs, text, watermark",
+    "model_version": "seedream_v5"
+  },
+  "output": {
+    "generated_image_url": "https://openapi-dl.data.tripo3d.com/tcli_498f55450c144f008d8eda29acd1c290/20261117/3d40b22d-67de-4476-891e-6e145d9f4e98/generated_image.png?Policy=eyJTdGF0ZW1lbnQiOlt7IlJlc291cmNlIjoiaHR0cHM6Ly9vcGVuYXBpLWRsLmRhdGEudHJpcG8zZC5jb20vdGNsaV80OThmNTU0NTBjMTQ0ZjAwOGQ4ZWRhMjlhY2QxYzI5MC8yMDI2MTExNy8zZDQwYjIyZC02N2RlLTQ0NzYtODkxZS02ZTE0NWQ5ZjRlOTgvZ2VuZXJhdGVkX2ltYWdlLnBuZyIsIkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTc5NTAzNDgzOX19fV19&Signature=ccb0Lba-BKGvNFJaHDIMc4O~J8rItLWZLVxkK6kw1Q4leRKvEDc4HoZuONhbqxSlRZkePtFvfI5MnC1hb34cI~w9MzUVrPeoetITNqN0L9ybZC~H-DRlEy32WwDLGWDL-FmUFV~JHI4nd1Q3UrdKGExLfgwe3shJDN5uqjTLS6a05n96yzVVM2FH7iFiBWKbfgfwukpyzm-fWBNqLS743xMWH8uYV4dhcSSdWr1yKbh9KLoYwJ9Iz1vUjjuSDtkNiXAIN0nOchrF8B0VoBsISwU3dwZVU48Fo6ggojxR254Q1RtnB2CNbahQxs0oLQ7vQ6njTqy5ieNEWPlgQ5KaWw__&Key-Pair-Id=K1676C64NMVM2J"
+  },
+  "task_id": "3d40b22d-67de-4476-891e-6e145d9f4e98",
+  "created_at": "2026-11-17T20:46:47.766541Z",
+  "completed_at": "2026-11-17T20:47:15.316075Z",
+  "credits_consumed": 5.0
+}

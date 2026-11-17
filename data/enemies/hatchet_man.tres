@@ -5,7 +5,7 @@
 [ext_resource type="PackedScene" path="res://assets/weapons/enemy/cleaver.gltf" id="3"]
 [ext_resource type="Script" path="res://src/ai/outfit.gd" id="o0"]
 [ext_resource type="Resource" path="res://data/enemies/outfits/summer.tres" id="o1"]
-[ext_resource type="Resource" path="res://data/enemies/outfits/muscle.tres" id="o2"]
+[ext_resource type="Resource" path="res://data/enemies/outfits/hatchet.tres" id="o2"]
 [ext_resource type="Resource" path="res://data/enemies/outfits/street.tres" id="o3"]
 
 [resource]

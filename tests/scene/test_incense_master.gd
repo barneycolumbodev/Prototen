@@ -94,12 +94,8 @@ func test_he_is_huge_and_wears_his_hardware() -> void:
 	assert_true(e.body.is_severed(&"forearm_R"), "his own forearm is gone")
 	assert_eq(e.body.hitboxes[&"r_forearm"].collision_layer, 0, "no flesh where the prosthetic is")
 	assert_ne(e.body.hitboxes[&"l_forearm"].collision_layer, 0)
-	assert_true(e.body.look.has(&"leather") and e.body.look.has(&"chain"), "leather jacket and a gold chain")
-	var bald: bool = true
-	for g: Garment in e.body.look.garments:
-		if g.slot == Garment.Slot.HAIR:
-			bald = false
-	assert_true(bald, "bald")
+	# Since 2026-11-17 he's a whole Tripo man (bald, black leather, tattoos; docs/design.md §5.6b).
+	assert_eq(e.body.look.key(), "tp_incense_master", "the Tripo Incense Master")
 
 
 func test_the_haymaker_lands_close_and_misses_a_sidestep() -> void:

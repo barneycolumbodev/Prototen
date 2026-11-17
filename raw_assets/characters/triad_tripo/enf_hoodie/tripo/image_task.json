@@ -1,0 +1,16 @@
+{
+  "type": "text_to_image",
+  "status": "success",
+  "progress": 100,
+  "input": {
+    "prompt": "big heavyset Hong Kong Chinese triad enforcer in his thirties, very short black hair, goatee, thick neck, intimidating; black ballistic plate carrier vest with rifle magazine pouches strapped tightly over a charcoal grey hoodie with the hood down, black cargo trousers, black combat boots, black fingerless gloves, wide shot with empty margins all round, the whole figure inside the frame including both hands and fingertips and both shoes, full body from the top of the head to the soles of the shoes, standing in a T-pose with both arms straight out to the sides at shoulder height, palms down, fingers straight and together, legs straight and slightly apart, feet flat, facing the camera, front view, plain light grey studio background, soft even lighting with no harsh shadows, photorealistic, realistic human proportions, sharp detail --no cartoon, anime, stylized, toy, chibi, weapon, gun, knife, bag, props, cropped, extra limbs, text, watermark",
+    "model_version": "seedream_v5"
+  },
+  "output": {
+    "generated_image_url": "https://openapi-dl.data.tripo3d.com/tcli_498f55450c144f008d8eda29acd1c290/20261117/d06612a9-8bf8-4040-8dbd-85511851fa2f/generated_image.png?Policy=eyJTdGF0ZW1lbnQiOlt7IlJlc291cmNlIjoiaHR0cHM6Ly9vcGVuYXBpLWRsLmRhdGEudHJpcG8zZC5jb20vdGNsaV80OThmNTU0NTBjMTQ0ZjAwOGQ4ZWRhMjlhY2QxYzI5MC8yMDI2MTExNy9kMDY2MTJhOS04YmY4LTQwNDAtOGRiZC04NTUxMTg1MWZhMmYvZ2VuZXJhdGVkX2ltYWdlLnBuZyIsIkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTc5NTAzNDc3Mn19fV19&Signature=fMymyLRaLI2gylpH3FE~s9yriXzPBqUG9N6JzU3Jb7ZaCzY-Xc7Sq87Srr7mSOuuyMEqYwAegipfGMQEbo8a9-jrDVP-QjqJSehKgXS874KF8F2HW2fgZDBrAhYwcrrEGwfF0NXwKyH9X7rsKckT3eO7Uyfmq0w2xRjWxe72oa5ThTAJ9Br92PcMNqbpIBKtQptfwrArKCz-P5xq9OhNRaaHff~o0k5z7tDfkiY9zhVIZlueZz4HR8kb9EySCWVsL-pZDNUCZ943IddBicNm3SlGkUD3Gh6X4kSkZrKTVQr9joAi8v8Fqhis7B1eeR4z21FS8NbdUe1sbPK~BMJOPg__&Key-Pair-Id=K1676C64NMVM2J"
+  },
+  "task_id": "d06612a9-8bf8-4040-8dbd-85511851fa2f",
+  "created_at": "2026-11-17T20:45:50.860273Z",
+  "completed_at": "2026-11-17T20:46:10.482512Z",
+  "credits_consumed": 5.0
+}

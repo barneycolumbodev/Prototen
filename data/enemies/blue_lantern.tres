@@ -4,12 +4,11 @@
 [ext_resource type="PackedScene" path="res://assets/weapons/enemy/smg.gltf" id="2"]
 [ext_resource type="Resource" path="res://data/enemies/weapons/smg.tres" id="3"]
 [ext_resource type="Script" path="res://src/ai/outfit.gd" id="o0"]
-[ext_resource type="Resource" path="res://data/enemies/outfits/street.tres" id="o1"]
-[ext_resource type="Resource" path="res://data/enemies/outfits/summer.tres" id="o2"]
+[ext_resource type="Resource" path="res://data/enemies/outfits/lantern.tres" id="o1"]
 
 [resource]
 script = ExtResource("1")
-outfits = Array[ExtResource("o0")]([ExtResource("o1"), ExtResource("o2")])
+outfits = Array[ExtResource("o0")]([ExtResource("o1")])
 display_name = "Blue Lantern"
 callsign = "BLUE LANTERN"
 plate_carrier = false

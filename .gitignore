@@ -28,3 +28,7 @@ tools/_*
 # raw_assets/characters/attack_dog/tripo_generate.py; the reduced master is kept.
 raw_assets/characters/attack_dog/tripo/*/model.glb
 raw_assets/characters/attack_dog/tripo/*/wait.log
+# Triad men from Tripo3D: same (raw_assets/characters/triad_tripo/build.py --make-master made the
+# committed master.glb from each).
+raw_assets/characters/triad_tripo/*/tripo/model.glb
+raw_assets/characters/triad_tripo/*/tripo/model_pbr.glb

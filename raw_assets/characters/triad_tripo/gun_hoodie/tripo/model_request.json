@@ -1,0 +1,10 @@
+{
+  "task_id": "3a2c2301-16a7-4009-9f6b-108e8029f58c",
+  "input": "4f18f601-20b1-4b32-aa09-e4590c05bbea",
+  "model": "v3.1-20260211",
+  "texture": true,
+  "pbr": true,
+  "texture_quality": "detailed",
+  "geometry_quality": "detailed",
+  "auto_size": true
+}

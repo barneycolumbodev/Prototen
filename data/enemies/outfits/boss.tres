@@ -17,9 +17,12 @@
 [ext_resource type="Resource" path="res://data/enemies/wardrobe/glasses.tres" id="15"]
 [ext_resource type="Resource" path="res://data/enemies/wardrobe/chain.tres" id="16"]
 [ext_resource type="Resource" path="res://data/enemies/wardrobe/watch.tres" id="17"]
+[ext_resource type="Resource" path="res://data/enemies/bodies/tp_red_pole.tres" id="b0"]
 
 [resource]
 script = ExtResource("1")
+bodies = Array[ExtResource("2")]([ExtResource("b0")])
+body_chance = 1.0
 display_name = "Boss"
 weight = 1.0
 tops = Array[ExtResource("2")]([ExtResource("3"), ExtResource("4"), ExtResource("5"), ExtResource("4")])

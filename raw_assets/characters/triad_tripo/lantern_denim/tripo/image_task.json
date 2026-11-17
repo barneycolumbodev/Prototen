@@ -1,0 +1,16 @@
+{
+  "type": "text_to_image",
+  "status": "success",
+  "progress": 100,
+  "input": {
+    "prompt": "skinny Hong Kong Chinese teenage triad recruit about nineteen years old, messy dyed brown hair, nervous defiant scowl, acne scars; oversized light blue denim jacket over a white hoodie with the hood down, baggy black jeans, chunky white sneakers; a cheap blue paper lantern charm on a string around his neck, wide shot with empty margins all round, the whole figure inside the frame including both hands and fingertips and both shoes, full body from the top of the head to the soles of the shoes, standing in a T-pose with both arms straight out to the sides at shoulder height, palms down, fingers straight and together, legs straight and slightly apart, feet flat, facing the camera, front view, plain light grey studio background, soft even lighting with no harsh shadows, photorealistic, realistic human proportions, sharp detail --no cartoon, anime, stylized, toy, chibi, weapon, gun, knife, bag, props, cropped, extra limbs, text, watermark",
+    "model_version": "seedream_v5"
+  },
+  "output": {
+    "generated_image_url": "https://openapi-dl.data.tripo3d.com/tcli_498f55450c144f008d8eda29acd1c290/20261117/b621140e-0e1f-4670-b82a-fe13b8b7c7ad/generated_image.png?Policy=eyJTdGF0ZW1lbnQiOlt7IlJlc291cmNlIjoiaHR0cHM6Ly9vcGVuYXBpLWRsLmRhdGEudHJpcG8zZC5jb20vdGNsaV80OThmNTU0NTBjMTQ0ZjAwOGQ4ZWRhMjlhY2QxYzI5MC8yMDI2MTExNy9iNjIxMTQwZS0wZTFmLTQ2NzAtYjgyYS1mZTEzYjhiN2M3YWQvZ2VuZXJhdGVkX2ltYWdlLnBuZyIsIkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTc5NTAzOTM3Mn19fV19&Signature=IedbBzjTTuIE1wOBpKOz76KoVi3QIo-lzy8F-~dUNZPtI9jxvp-Pj6jk2w-CiCvkHlKFEDXeewTCsZQNkG3YgXUPRktNTY1beW-LhMpGyc7wjbnOdASW87c8TlQsDyBJ4MEQJzvKzNHCUtrLADQWWYXcy1h5Q8xXVgQkiyuqDxPZ9798TikQO1AJxtytvS7q-6WeW4A~NX39ubYE4vFMn1JWK8ChteElU2SEATVEe1XgBC19i6F3tbbQIOQcY86QwVp~1el064kwQaBlfmvdOuNYP5wFusarqJIA98lghGWA4nq4-SUNgMhOVK4UDf7qcIRZ~ep~wKm9qGpQNRCdDA__&Key-Pair-Id=K1676C64NMVM2J"
+  },
+  "task_id": "b621140e-0e1f-4670-b82a-fe13b8b7c7ad",
+  "created_at": "2026-11-17T22:02:08.999868Z",
+  "completed_at": "2026-11-17T22:02:45.580470Z",
+  "credits_consumed": 5.0
+}
