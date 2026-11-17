@@ -742,7 +742,8 @@ func _process(delta: float) -> void:
 	elif _player.is_sprinting() and not firing_on_the_run():
 		pose = 1
 	var s: Slot = slots[current]
-	s.motion.update(delta, a, _player.look_velocity, _move_fraction(), _player.is_on_floor(), pose)
+	_player.view_steady = a
+	s.motion.update(delta, a, _player.look_velocity, _move_fraction(), _player.is_on_floor(), pose, _player.gait)
 	s.rig.transform = s.motion.compose(s.hip_xform, s.optic_xform if optic else s.ads_xform, a)
 	var away: float = _player.melee.gun_away() if _player.melee else 0.0
 	if away > 0.0:

@@ -9,19 +9,32 @@ extends Resource
 @export var crouch_speed: float = 3.2
 @export_group("Acceleration (m/s²)")
 ## Most the ground speed can change per second, speeding up and slowing down.
-@export var ground_accel: float = 70.0
-@export var ground_decel: float = 55.0
+@export var ground_accel: float = 48.0
+@export var ground_decel: float = 60.0
 @export var air_accel: float = 18.0
-@export_group("Feel (2026-11-11 overhaul)")
-## How quickly speed closes on the target (1/s): the gap shrinks at this
-## rate, capped by ground_accel/decel, so starts and stops ease out instead
-## of snapping. Higher = snappier.
-@export var ground_response: float = 14.0
-@export var stop_response: float = 16.0
-## Turning while moving swings the velocity round at this rate (rad/s)
-## without losing speed ("carving"). Past reverse_angle_deg you plant and
-## push off the other way instead.
+@export_group("Feel (2026-11-11 overhaul; planted 2026-11-17)")
+## Speeding up: the last stretch closes on the target at this rate (1/s), so
+## you arrive at speed firmly instead of creeping up on it. Higher = crisper.
+@export var ground_response: float = 20.0
+## Stopping and slowing: the last stretch closes at this rate (1/s), on top of
+## a small floor so the stop finishes. Higher = a firmer plant (2026-11-17:
+## was 16 with a long creep to zero, read as gliding to a halt).
+@export var stop_response: float = 30.0
+## The first push off: acceleration starts at this share of ground_accel and
+## reaches all of it by `start_ramp` of the target speed (the weight coming
+## onto the front foot). 1 = no ramp.
+@export_range(0.1, 1.0) var start_accel_fraction: float = 0.45
+@export_range(0.0, 1.0) var start_ramp: float = 0.35
+## Turning while moving swings the velocity round at this rate (rad/s) at a
+## walk, and sprint_turn_rate at a full sprint (a sprint is harder to turn).
+## Past reverse_angle_deg you plant and push off the other way instead.
 @export var ground_turn_rate: float = 13.0
+@export var sprint_turn_rate: float = 8.5
+## Share of the speed each 90° of turning takes (feet plant and push off the
+## new way; 2026-11-17, was 0: turns carved like a hovercraft). The push-off
+## wins it back as you turn, so a snap 90° dips about 10 % for a moment and
+## turning the view while running barely costs anything.
+@export_range(0.0, 1.0) var turn_speed_cost: float = 0.35
 @export_range(90.0, 180.0) var reverse_angle_deg: float = 125.0
 ## Speed above the current target (out of a slide, a wall jump, a dash, a
 ## fall) bleeds off this slowly (m/s²) while you keep pushing; let go of the
@@ -65,6 +78,57 @@ extends Resource
 @export var fov_smooth: float = 7.0
 ## Roll (°) into a strafe at full speed.
 @export var strafe_roll_deg: float = 1.1
+@export_group("Gait (2026-11-17)")
+## Metres per step at walking speed; faster strides grow by
+## (speed / walk)^stride_exponent (cadence rises gently: about 2.5 steps/s at
+## a walk, 3.2 at a sprint). Steps are tied to ground covered, so they never skate.
+@export var stride_walk: float = 2.6
+@export_range(0.0, 1.0) var stride_exponent: float = 0.55
+## The head rides the stride: up-and-down (m, cusped at each heel strike),
+## over the planted foot (m) and a roll onto it (deg), all at walking speed
+## (more at a sprint, less crouched).
+@export var bob_height: float = 0.011
+## How sharp the low point at each heel strike is (0 = a smooth wave, 1 = a
+## hard cusp). The strike's weight comes from the step spring as well.
+@export_range(0.0, 1.0) var bob_cusp: float = 0.3
+@export var bob_sway: float = 0.007
+@export var bob_roll_deg: float = 0.35
+@export_range(0.0, 1.0) var crouch_bob_scale: float = 0.55
+## Bob left while aiming down sights (1 = all of it).
+@export_range(0.0, 1.0) var ads_bob_scale: float = 0.3
+## Each heel strike: a dip (m), a nod (deg, nose down), a shift onto the foot
+## (m) and a roll (deg), settling on a spring (Hz, damping: under 1 bounces).
+@export var step_dip: float = 0.006
+@export var step_pitch_deg: float = 0.22
+@export var step_sway_kick: float = 0.003
+@export var step_roll_deg: float = 0.18
+@export var step_spring_hz: float = 6.5
+@export var step_spring_damping: float = 0.5
+## Landing nod (deg at 8 m/s of fall).
+@export var land_pitch_deg: float = 1.1
+## Weight shift: the head trails the body's velocity on this spring, and the
+## gap (m/s) leans the view: pitch (deg per m/s; back as you push off,
+## forward over a stop), roll into a strafe (deg per m/s) and a shift (m per m/s).
+@export var lean_spring_hz: float = 3.0
+@export var lean_spring_damping: float = 0.6
+@export var lean_pitch_per_mps: float = 0.14
+@export var lean_roll_per_mps: float = 0.22
+@export var lean_offset_per_mps: float = 0.0035
+## The gun trails the body more than the head (× WeaponData.move_inertia):
+## m and deg per m/s of lean; it sinks as you rise and floats as you fall
+## (m per m/s); and it shares this much of each heel strike.
+@export var gun_lag_per_mps: float = 0.0045
+@export var gun_turn_per_mps: float = 0.55
+@export var gun_rise_per_mps: float = 0.0016
+@export var gun_step_scale: float = 1.6
+@export_group("Footsteps (2026-11-17)")
+## Volume (dB) of a step at a walk; a sprint adds sprint_step_db and the
+## suit's gear, crouching takes crouch_step_db off. Landing: land_step_db at 8 m/s.
+@export var step_volume_db: float = -15.0
+@export var sprint_step_db: float = 3.0
+@export var crouch_step_db: float = -8.0
+@export var land_step_db: float = -8.0
+@export var footsteps: bool = true
 @export_group("Jump")
 @export var gravity: float = 22.0
 @export var jump_velocity: float = 8.0
@@ -173,8 +237,9 @@ extends Resource
 ## One tick of ground movement (horizontal velocity `h`, m/s). `wish`:
 ## stick direction in the world (length 0..1); `top`: the speed for this
 ## state (walk, sprint, crouch) at full tilt; `agility` scales every rate.
-## Speed and direction are handled apart: speed eases toward the target,
-## direction swings round at ground_turn_rate, so turns keep their speed.
+## Speed and direction are handled apart: speed follows a planted profile
+## (_ease_speed), direction swings round at the turn rate and a turn costs
+## a little speed (turn_speed_cost) as the feet plant and push off again.
 ## `carry`: the speed momentum bleeds down to gently (a sprint); below it,
 ## normal braking takes speed down to the target (aiming, crouching).
 func ground_step(h: Vector3, wish: Vector3, top: float, agility: float, delta: float, carry: float = -1.0) -> Vector3:
@@ -188,28 +253,38 @@ func ground_step(h: Vector3, wish: Vector3, top: float, agility: float, delta: f
 	var want: Vector3 = wish / wish.length()
 	if speed < 0.4:
 		# From (nearly) standing: push off straight along the stick.
-		return approach(h, want * target, ground_accel * agility, ground_decel * agility, delta)
+		return want * _ease_speed(speed, target, carry, true, agility, delta)
 	var dir: Vector3 = h / speed
 	var ang: float = dir.signed_angle_to(want, Vector3.UP)
 	if absf(ang) > deg_to_rad(reverse_angle_deg):
 		# Reversing: plant and push off the other way.
 		return approach(h, want * target, ground_accel * agility, ground_decel * agility * 1.15, delta)
-	var turn: float = ground_turn_rate * agility * delta
-	dir = dir.rotated(Vector3.UP, clampf(ang, -turn, turn))
+	var sprint_k: float = clampf((speed - walk_speed) / maxf(sprint_speed - walk_speed, 0.1), 0.0, 1.0)
+	var rate: float = lerpf(ground_turn_rate, sprint_turn_rate, sprint_k)
+	var turn: float = clampf(ang, -rate * agility * delta, rate * agility * delta)
+	dir = dir.rotated(Vector3.UP, turn)
+	if speed <= carry + 0.05:
+		# Momentum above a sprint (a slide-hop) carves freely; on foot a turn plants.
+		speed *= 1.0 - turn_speed_cost * absf(turn) / (PI * 0.5)
 	return dir * _ease_speed(speed, target, maxf(carry, top), true, agility, delta)
 
 
-## Eases `speed` toward `target`: the gap closes at *_response per second,
-## never faster than ground_accel/decel. Above `carry` (momentum from a
-## slide, a jump: faster than a sprint) it bleeds at overspeed_friction while
+## Eases `speed` toward `target`. Speeding up: the push starts at
+## start_accel_fraction of ground_accel, builds to all of it by start_ramp of
+## the target, and the last stretch closes at ground_response (arrives firmly).
+## Slowing: ground_decel until the last stretch, which closes at stop_response
+## plus a floor (a plant, not a creep). Above `carry` (momentum from a slide,
+## a jump: faster than a sprint) it bleeds at overspeed_friction while
 ## `pushing`; from `carry` down to the target, normal braking.
 func _ease_speed(speed: float, target: float, carry: float, pushing: bool, agility: float, delta: float) -> float:
 	if speed < target:
-		var rate: float = minf(ground_accel * agility, (target - speed) * ground_response + 2.0)
+		var x: float = clampf(speed / maxf(target * start_ramp, 0.01), 0.0, 1.0)
+		var onset: float = lerpf(start_accel_fraction, 1.0, x * x * (3.0 - 2.0 * x))
+		var rate: float = minf(ground_accel * agility * onset, (target - speed) * ground_response + 2.0)
 		return minf(speed + rate * delta, target)
 	if pushing and speed > carry + 0.05:
 		return maxf(speed - overspeed_friction * delta, maxf(target, carry))
-	var down: float = minf(ground_decel * agility, (speed - target) * stop_response + 2.5)
+	var down: float = minf(ground_decel * agility, (speed - target) * stop_response + 4.0)
 	return maxf(speed - down * delta, target)
 
 

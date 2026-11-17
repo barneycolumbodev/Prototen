@@ -134,6 +134,13 @@ var _strafe_roll: float = 0.0
 var _wall_entry_left: float = 0.0
 var _wall_entry_speed: float = 0.0
 var _mantle_exit_speed: float = 0.0
+## Footfalls, the head riding the stride, weight shift (Gait, 2026-11-17).
+var gait: Gait
+## 0..1 how far the sights are up (set by the weapon): the stride shows less.
+var view_steady: float = 0.0
+## Footstep bank for what's underfoot (step_concrete, step_metal...).
+var _floor_step: StringName = &"step_concrete"
+var _floor_collider_id: int = 0
 
 @onready var _head: Node3D = $Head
 @onready var _camera: Camera3D = $Head/Camera3D
@@ -176,6 +183,7 @@ func _ready() -> void:
 	_on_settings_changed()
 	_repaint.call_deferred()
 	_land_spring = Spring.new(movement.land_spring_hz, movement.land_spring_damping)
+	gait = Gait.new(movement)
 	_tick_prev = global_position
 	_tick_now = global_position
 
@@ -412,6 +420,7 @@ func _process(delta: float) -> void:
 		if aim_assist:
 			rate = aim_assist.apply(self, rate, look_dt)
 		set_view(yaw - deg_to_rad(rate.x) * look_dt, pitch - deg_to_rad(rate.y) * look_dt)
+	_update_gait(delta)
 	_update_crouch_pose(delta)
 	var real_dt: float = TimeControl.real_delta(delta)
 	var h_speed: float = Vector2(velocity.x, velocity.z).length()
@@ -530,11 +539,13 @@ func _physics_body(delta: float) -> void:
 		vy = jump_velocity()
 		_jump_buffer = 0.0
 		_coyote = 0.0
+		_on_jumped()
 	velocity = Vector3(horizontal.x, vy, horizontal.z)
 	var was_on_floor: bool = is_on_floor()
 	_move_with_steps(delta, was_on_floor)
 	if is_on_floor():
 		_last_wall_normal = Vector3.ZERO
+		_update_floor_surface()
 	if is_on_floor() and not was_on_floor and vy < -1.0:
 		_on_landed(-vy)
 	# Airborne next to a wall, pushing forward at speed: run along it.
@@ -545,6 +556,80 @@ func _physics_body(delta: float) -> void:
 func _on_landed(fall_speed: float) -> void:
 	landed.emit(fall_speed)
 	_land_spring.kick(Vector3(0.0, -minf(fall_speed * movement.land_dip_per_mps, movement.land_dip_max), 0.0))
+	_update_floor_surface()
+	gait.land(fall_speed)
+	if movement.footsteps:
+		# Both feet: the step on that surface, and the body and suit taking the weight.
+		var k: float = clampf(fall_speed / 8.0, 0.3, 1.6)
+		Sfx.play_step(_floor_step, movement.land_step_db + strength_db(k), 0.04)
+		Sfx.play_step(&"step_land", movement.land_step_db + strength_db(k) * 1.5, 0.05)
+
+
+## Volume change (dB) for a footfall of this strength (1 = a walking step).
+static func strength_db(k: float) -> float:
+	return 16.0 * log(clampf(k, 0.2, 2.0)) / log(10.0)
+
+
+## Push off for a jump (from the ground, a slide or a wall).
+func _on_jumped() -> void:
+	gait.takeoff()
+	if movement.footsteps:
+		Sfx.play_step(_floor_step, movement.step_volume_db - 3.0, 0.08)
+
+
+## Remembers what's underfoot (looked up only when the floor changes).
+func _update_floor_surface() -> void:
+	for i: int in get_slide_collision_count():
+		var c: KinematicCollision3D = get_slide_collision(i)
+		if c.get_normal().y < 0.6:
+			continue
+		var col: Object = c.get_collider()
+		if col == null:
+			return
+		var id: int = col.get_instance_id()
+		if id == _floor_collider_id:
+			return
+		_floor_collider_id = id
+		_floor_step = footstep_bank(SurfaceLibrary.shared().for_collider(col))
+		return
+
+
+## Footstep bank for a surface (by its impact sound): metal, wood, dirt, or concrete.
+static func footstep_bank(surface: SurfaceMaterial) -> StringName:
+	if surface == null:
+		return &"step_concrete"
+	match surface.impact_sound:
+		&"metal", &"steel", &"can":
+			return &"step_metal"
+		&"wood":
+			return &"step_wood"
+		&"dirt":
+			return &"step_dirt"
+	return &"step_concrete"
+
+
+## Steps the stride (in _process, so it's smooth at any frame rate; the
+## player's own time) and plays its footfalls.
+func _update_gait(delta: float) -> void:
+	var dt: float = delta * TimeControl.player_boost()
+	var local_vel: Vector3 = global_basis.inverse() * velocity
+	# Feet on the ground: walking, or running along a wall. Not sliding or climbing.
+	var footed: bool = not dead and _dash_left <= 0.0 and (move_state == MoveState.WALLRUN or (is_on_floor() and move_state == MoveState.NORMAL))
+	if move_state == MoveState.WALLRUN:
+		local_vel.y = 0.0
+	gait.update(dt, local_vel, footed, _crouching)
+	if not movement.footsteps:
+		return
+	for f: Vector2 in gait.footfalls:
+		var db: float = movement.step_volume_db + strength_db(f.y)
+		if _crouching:
+			db += movement.crouch_step_db
+		elif _sprinting:
+			db += movement.sprint_step_db
+		Sfx.play_step(&"step_metal" if move_state == MoveState.WALLRUN else _floor_step, db)
+		if _sprinting or move_state == MoveState.WALLRUN:
+			# The suit's plates and the kit on it, every stride at a run.
+			Sfx.play_step(&"step_gear", db - 5.0, 0.1)
 
 
 ## A thruster dash: straight along _dash_vel; living enemies in the way are
@@ -675,6 +760,7 @@ func _slide(delta: float, wish: Vector3, b_pressed: bool, b_held: bool, stick: V
 		_crouching = false
 		_slide_cd = cfg.slide_cooldown
 		velocity = Vector3(h.x, jump_velocity(), h.z)
+		_on_jumped()
 		_slide_move()
 		return
 	velocity = Vector3(h.x, vy, h.z)
@@ -845,6 +931,7 @@ func _wallrun(delta: float, forward_push: float) -> void:
 		_jump_buffer = 0.0
 		var h: Vector3 = Vector3(velocity.x, 0.0, velocity.z)
 		velocity = h * 0.9 + _wall_normal * cfg.wallrun_jump_out + Vector3.UP * cfg.wallrun_jump_up * jump_scale * sqrt(body.stat(&"jump") * body.load_scale())
+		_on_jumped()
 		_end_wallrun()
 		_slide_move()
 		return
@@ -968,7 +1055,11 @@ func _update_crouch_pose(delta: float) -> void:
 	var strafe: float = -deg_to_rad(cfg.strafe_roll_deg) * clampf(side, -1.0, 1.0) if move_state == MoveState.NORMAL and is_on_floor() else 0.0
 	_strafe_roll = lerpf(_strafe_roll, strafe, 1.0 - exp(-6.0 * delta))
 	_roll = lerpf(_roll, roll, 1.0 - exp(-9.0 * delta))
-	_head.rotation.z = _roll + _strafe_roll
+	# The stride, the heel strikes and the weight shift (Gait); less with the sights up.
+	var g_k: float = lerpf(1.0, cfg.ads_bob_scale, view_steady) if not dead else 0.0
+	var g_rot: Vector3 = gait.head_rotation_deg() * g_k
+	_head.rotation.z = _roll + _strafe_roll + deg_to_rad(g_rot.z)
+	_head.rotation.x = pitch - deg_to_rad(g_rot.x)
 	_crouch_blend = move_toward(_crouch_blend, target, cfg.crouch_transition_speed * delta)
 	# Eased in and out (smoothstep), so the camera doesn't drop at a constant rate.
 	var ease_c: float = _crouch_blend * _crouch_blend * (3.0 - 2.0 * _crouch_blend)
@@ -985,7 +1076,8 @@ func _update_crouch_pose(delta: float) -> void:
 		if camera_lag.length() > 1.0 or not global_position.is_equal_approx(_tick_now):
 			camera_lag = Vector3.ZERO  # teleported this frame
 	var local_lag: Vector3 = global_basis.inverse() * camera_lag
-	_head.position = Vector3(local_lag.x, lerpf(cfg.stand_eye_height, cfg.crouch_eye_height, ease_c) + _step_offset + _land_spring.value.y + local_lag.y, local_lag.z)
+	var g_pos: Vector3 = gait.head_offset() * g_k
+	_head.position = Vector3(local_lag.x + g_pos.x, lerpf(cfg.stand_eye_height, cfg.crouch_eye_height, ease_c) + _step_offset + _land_spring.value.y + local_lag.y + g_pos.y, local_lag.z + g_pos.z)
 
 
 func _on_settings_changed() -> void:

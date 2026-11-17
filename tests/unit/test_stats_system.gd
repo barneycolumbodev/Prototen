@@ -201,5 +201,8 @@ func test_requirement_text() -> void:
 
 func test_old_saved_slide_tuning_is_dropped() -> void:
 	# A phone that saved tuning before 2026-11-14 holds the long-slide values.
-	assert_eq(TuningMenu.stale_movement_keys(1), ["slide_friction", "slide_boost"] as Array[String])
+	assert_eq(TuningMenu.stale_movement_keys(2), ["ground_accel", "ground_decel", "ground_response", "stop_response", "ground_turn_rate"] as Array[String],
+			"2026-11-17: planted starts, stops and turns replace saved ones")
+	var from_one: Array[String] = TuningMenu.stale_movement_keys(1)
+	assert_true("slide_friction" in from_one and "slide_boost" in from_one and "ground_accel" in from_one, "saved before both: both dropped")
 	assert_true(TuningMenu.stale_movement_keys(TuningMenu.MOVEMENT_VERSION).is_empty(), "saved since: kept")

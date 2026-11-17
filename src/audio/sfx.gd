@@ -16,12 +16,16 @@ const VOICES_3D: int = 16
 const VOICES_2D: int = 8
 const VOICES_SHOT: int = 8
 const VOICES_TAIL: int = 3
+## The operative's own footsteps: their own voices, so a run never steals a reload beat.
+const VOICES_STEP: int = 3
 
 var _banks: Dictionary[StringName, Array] = {}
 var _voices3d: Array[AudioStreamPlayer3D] = []
 var _voices2d: Array[AudioStreamPlayer] = []
 var _voices_shot: Array[AudioStreamPlayer] = []
 var _voices_tail: Array[AudioStreamPlayer] = []
+var _voices_step: Array[AudioStreamPlayer] = []
+var _next_step: int = 0
 var _next_shot: int = 0
 var _next_tail: int = 0
 var _next3d: int = 0
@@ -66,6 +70,11 @@ func _ready() -> void:
 		p.bus = &"SFX"
 		add_child(p)
 		_voices_shot.append(p)
+	for i: int in VOICES_STEP:
+		var p: AudioStreamPlayer = AudioStreamPlayer.new()
+		p.bus = &"SFX"
+		add_child(p)
+		_voices_step.append(p)
 	for i: int in VOICES_TAIL:
 		var p: AudioStreamPlayer = AudioStreamPlayer.new()
 		p.bus = &"Tail"
@@ -124,6 +133,20 @@ func _play_pool(pool: Array[AudioStreamPlayer], index: int, name: StringName, vo
 	var p: AudioStreamPlayer = pool[index]
 	var stream: AudioStream = streams[_rng.randi() % streams.size()]
 	p.stream = stream
+	p.volume_db = volume_db
+	p.pitch_scale = TimeControl.player_pitch() * (1.0 + _rng.randf_range(-pitch_rand, pitch_rand))
+	p.play()
+
+
+## The operative's footstep (non-positional, its own voices). `pan`: -1
+## left foot, +1 right; a touch of stereo so the stride is felt.
+func play_step(name: StringName, volume_db: float, pitch_rand: float = 0.06) -> void:
+	var streams: Array = bank(name)
+	if streams.is_empty() or _voices_step.is_empty():
+		return
+	var p: AudioStreamPlayer = _voices_step[_next_step]
+	_next_step = (_next_step + 1) % _voices_step.size()
+	p.stream = streams[_rng.randi() % streams.size()]
 	p.volume_db = volume_db
 	p.pitch_scale = TimeControl.player_pitch() * (1.0 + _rng.randf_range(-pitch_rand, pitch_rand))
 	p.play()

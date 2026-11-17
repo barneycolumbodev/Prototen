@@ -68,6 +68,7 @@ sway_spring_damping = 0.7
 bob_amount = 0.008
 bob_rate = 1.9
 land_dip = 0.006
+move_inertia = 0.8
 pose_spring_hz = 4.5
 pose_spring_damping = 0.85
 muzzle_point = Vector3(0.284, 0.0, 0.0)

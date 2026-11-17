@@ -753,3 +753,27 @@ Please try:
 - Measured:
 - Notes from the owner:
 - Follow-ups: the docks' navmesh islands (boat gangway, gallery stair, stairwell thresholds) should be fixed in the map itself on its next rebuild.
+
+## Movement: stepping, not gliding — 2026-11-17 (waiting for the owner)
+
+Owner (2026-11-17): "I want it to feel like someone is smoothly, buttery, creamy, smooth stepping, almost like the movement in the reboot 2019 Modern Warfare game, but instead it just feels like a camera is kind of gliding. The only movement that has the quality of feel I'm going for is the slide... I want the other movements to be creamy and crisp as well, so that I can rely on them and not play the game like just an arena shooter." Design: `docs/design.md` §5.7a.
+
+What's in the APK:
+- **You take steps.** Each stride of ground is a heel strike: the head dips onto that foot, nods, shifts over it and rolls onto it, then settles. Faster means longer strides and a slightly quicker cadence (about 2.5 steps a second walking, 3.2 sprinting). Half as much crouched, 30 % aimed.
+- **Weight.** Push off and the view rocks back a touch; stop and it pitches forward over your feet; strafe and it leans in, then sways back when you stop.
+- **The gun has weight too**: it rides the stride a beat behind your head, lags back and to the side as you get going, carries on over a stop, sinks as you jump and floats as you fall. The MG42 swings most, the pistols least.
+- **Footsteps**: heavy boots on concrete, metal, wood or dirt (whatever you're on), the suit's kit rattling at a run, a thump when you land, a push-off when you jump.
+- **Crisper on your feet**: stops plant in about 0.15 s instead of creeping, the first step builds and then arrives at speed firmly, a sharp turn costs a moment of speed and a sprint turns wider than a walk. **The slide and slide-hops are unchanged.**
+
+Cloud evidence: `tools/check.sh` with the new `tests/unit/test_gait.gd` (one step per stride of ground, left-right alternating; cadence rises from walk to sprint; no steps in the air or standing; the head is lowest at the heel strike and dips after it; pushing off rocks back, stopping pitches forward, a strafe leans in; heavier guns lag more; everything settles when you stand; landing nods; footstep banks per surface), the updated `tests/unit/test_movement_config.gd` (a 90° turn costs some speed but recovers within 0.5 s; momentum above a sprint still carves; stops finish in 0.08–0.22 s with at most 3 ticks under 1 m/s; the first tick pushes less than the stride after it) and `test_walking_takes_steps_and_the_head_rides_them` in the test room. Traces from the game code: `docs/previews/gait_trace.png`. Not checked in the cloud: the feel itself on the controller, and how the footsteps sound through the phone speaker or headphones.
+
+Please try:
+1. Walk, stop, strafe left-right, sprint and stop in Chinatown. Does it feel like stepping now? Too much head motion, or too little?
+2. Footsteps: too loud, too quiet, too samey? (Pause → Tuning → Gait: "Footstep volume".)
+3. Snap turns and strafe switches: reliable and planted, or sluggish? (Movement: "Turn plant", "Turn rate".)
+4. If something's off, the Gait sliders are: step sharpness, head bob height, sway, roll, heel-strike dip, nod and bounce, weight shift pitch/roll/speed, gun lag, gun tilt, gun heel-strike share, bob left aimed. Copy the values and send them.
+
+- Device / renderer / settings:
+- Measured:
+- Notes from the owner:
+- Follow-ups: the augment arms (`arm_rig.gd`) and the knife still have their own simple bob; move them onto the gait if the gun's feels right.

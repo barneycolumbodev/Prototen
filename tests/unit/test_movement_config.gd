@@ -48,19 +48,35 @@ func _run_ground(cfg: MovementConfig, h: Vector3, wish: Vector3, top: float, sec
 	return speeds
 
 
-func test_a_90_degree_turn_keeps_its_speed() -> void:
+func test_a_90_degree_turn_plants_but_keeps_most_of_its_speed() -> void:
+	# 2026-11-17 (owner: movement read as a gliding camera): the feet plant
+	# through a sharp turn and push off the new way, losing a little speed,
+	# instead of carving round at full speed like a hovercraft.
 	var cfg: MovementConfig = load("res://data/player/movement_default.tres")
 	var h: Vector3 = Vector3(0, 0, -cfg.sprint_speed)
-	var speeds: Array[float] = _run_ground(cfg, h, Vector3(1, 0, 0), cfg.sprint_speed, 0.25)
+	var speeds: Array[float] = _run_ground(cfg, h, Vector3(1, 0, 0), cfg.sprint_speed, 0.5)
 	var lowest: float = speeds.min()
-	assert_gt(lowest, cfg.sprint_speed * 0.97, "carving: no dip through the turn (min %.2f)" % lowest)
-	# The old linear blend dipped to ~71 % through the same turn.
-	var old: Vector3 = h
-	var old_min: float = INF
-	for i: int in 15:
-		old = MovementConfig.approach(old, Vector3(cfg.sprint_speed, 0, 0), cfg.ground_accel, cfg.ground_decel, 1.0 / 60.0)
-		old_min = minf(old_min, old.length())
-	assert_lt(old_min, cfg.sprint_speed * 0.8, "for reference, the old blend lost speed")
+	assert_lt(lowest, cfg.sprint_speed * 0.97, "the turn costs something (min %.2f)" % lowest)
+	assert_gt(lowest, cfg.sprint_speed * 0.8, "but far less than the old linear blend (min %.2f)" % lowest)
+	assert_almost_eq(speeds[-1], cfg.sprint_speed, 0.05, "back at full speed within 0.5 s")
+
+
+func test_momentum_above_a_sprint_still_carves() -> void:
+	# A slide-hop's speed isn't spent on turning (the slide-hop chain stays).
+	var cfg: MovementConfig = load("res://data/player/movement_default.tres")
+	var h: Vector3 = Vector3(0, 0, -14.0)
+	for i: int in 6:
+		h = cfg.ground_step(h, Vector3(0.7, 0, -0.7).normalized(), cfg.sprint_speed, 1.0, 1.0 / 60.0, cfg.sprint_speed)
+	assert_gt(h.length(), 13.0, "no turn cost on momentum (%.2f)" % h.length())
+
+
+func test_a_sprint_turns_slower_than_a_walk() -> void:
+	var cfg: MovementConfig = load("res://data/player/movement_default.tres")
+	var walk: Vector3 = cfg.ground_step(Vector3(0, 0, -cfg.walk_speed), Vector3(1, 0, 0), cfg.walk_speed, 1.0, 1.0 / 60.0)
+	var sprint: Vector3 = cfg.ground_step(Vector3(0, 0, -cfg.sprint_speed), Vector3(1, 0, 0), cfg.sprint_speed, 1.0, 1.0 / 60.0)
+	var a_walk: float = Vector3(0, 0, -1).angle_to(walk)
+	var a_sprint: float = Vector3(0, 0, -1).angle_to(sprint)
+	assert_gt(a_walk, a_sprint * 1.2, "walk turns %.3f rad in a tick, sprint %.3f" % [a_walk, a_sprint])
 
 
 func test_turn_finishes_quickly() -> void:
@@ -79,14 +95,35 @@ func test_momentum_above_sprint_bleeds_slowly_while_pushing() -> void:
 	assert_lt(free[-1], 1.0, "let go of the stick and you stop")
 
 
-func test_stopping_eases_out() -> void:
+func test_stopping_plants_without_a_creep() -> void:
+	# 2026-11-17: the old stop spent half its time creeping under 1.5 m/s
+	# (read as gliding to a halt). Now it brakes hard, settles briefly, done.
 	var cfg: MovementConfig = load("res://data/player/movement_default.tres")
 	var speeds: Array[float] = _run_ground(cfg, Vector3(0, 0, -cfg.walk_speed), Vector3.ZERO, cfg.walk_speed, 0.6)
 	var stop_at: int = speeds.find(0.0)
-	assert_between(stop_at, 6, 27, "stops in 0.1-0.45 s (tick %d)" % stop_at)
+	assert_between(stop_at, 5, 13, "stopped in 0.08-0.22 s (tick %d)" % stop_at)
+	var creeping: int = 0
+	for v: float in speeds:
+		if v > 0.0 and v < 1.0:
+			creeping += 1
+	assert_lt(creeping, 4, "under 1 m/s for at most 3 ticks (%d)" % creeping)
 	var first: float = cfg.walk_speed - speeds[0]
 	var late: float = speeds[stop_at - 2] - speeds[stop_at - 1]
-	assert_lt(late, first, "slows harder at first, gently at the end")
+	assert_lt(late, first, "still settles: softer at the very end")
+
+
+func test_starting_pushes_off_softly_then_arrives_firmly() -> void:
+	var cfg: MovementConfig = load("res://data/player/movement_default.tres")
+	var speeds: Array[float] = _run_ground(cfg, Vector3.ZERO, Vector3(0, 0, -1), cfg.walk_speed, 0.5)
+	var first: float = speeds[0]
+	var mid: float = speeds[4] - speeds[3]
+	assert_lt(first, mid, "the first tick pushes less than the stride after it (%.2f vs %.2f)" % [first, mid])
+	var t95: int = 0
+	while speeds[t95] < cfg.walk_speed * 0.95:
+		t95 += 1
+	assert_between(t95, 8, 16, "95 %% of walking speed in 0.13-0.27 s (tick %d)" % t95)
+	var at: int = speeds.find(cfg.walk_speed)
+	assert_between(at, t95, 24, "and all of it by 0.4 s (tick %d)" % at)
 
 
 func test_air_control_turns_without_losing_speed() -> void:

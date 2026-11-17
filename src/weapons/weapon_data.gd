@@ -242,11 +242,16 @@ enum WeaponClass { HANDGUN, SHOTGUN, RIFLE, HEAVY }
 @export_range(0.0, 15.0) var sway_max_deg: float = 6.0
 @export_range(0.5, 30.0) var sway_spring_hz: float = 5.0
 @export_range(0.1, 2.0) var sway_spring_damping: float = 0.7
-## Walk bob amplitude (metres) and steps per second at walking speed.
+## Walk bob amplitude (metres). Steps per second at walking speed: only for
+## a viewmodel with no gait (the stride sets the cadence since 2026-11-17).
 @export_range(0.0, 0.05) var bob_amount: float = 0.008
 @export_range(0.5, 4.0) var bob_rate: float = 1.9
 ## Dip on landing, metres per (m/s) of fall speed.
 @export_range(0.0, 0.02) var land_dip: float = 0.006
+## How much the gun trails the body when you speed up, stop and strafe, and
+## rides each heel strike (× MovementConfig gun_* values; 2026-11-17). A
+## pistol is light in the hands, the MG42 swings.
+@export_range(0.0, 3.0) var move_inertia: float = 1.0
 ## Pivot for procedural rotation (in the hand, behind the trigger guard).
 @export var grip_pivot: Vector3 = Vector3(-0.07, -0.055, 0.0)
 ## Poses: offset in camera space (m; +X right, +Y up, +Z back) and rotation in

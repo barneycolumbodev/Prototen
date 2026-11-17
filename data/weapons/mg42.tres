@@ -76,6 +76,7 @@ sway_spring_damping = 0.65
 bob_amount = 0.014
 bob_rate = 1.6
 land_dip = 0.01
+move_inertia = 1.7
 grip_pivot = Vector3(0.05, -0.06, 0.0)
 sprint_offset = Vector3(0.03, -0.07, 0.05)
 sprint_rotation_deg = Vector3(10.0, 35.0, -12.0)

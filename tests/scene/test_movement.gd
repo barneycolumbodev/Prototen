@@ -301,3 +301,27 @@ class FrameProbe:
 			body_steps.append(Vector2(b.x - _last_body.x, b.z - _last_body.z).length() / dt)
 		_last_cam = c
 		_last_body = b
+
+
+func test_walking_takes_steps_and_the_head_rides_them() -> void:
+	# 2026-11-17 (owner: "it just feels like a camera gliding"): the stride
+	# is on the real player in the real room, the head moves with it.
+	Input.action_press(&"move_forward", 0.8)  # below auto-sprint
+	await wait_physics_frames(20)
+	var phase0: float = player.gait.phase
+	var x0: Vector3 = player.global_position
+	var lo: float = INF
+	var hi: float = -INF
+	for i: int in 60:
+		await get_tree().process_frame
+		var y: float = player.camera().global_position.y - player.global_position.y
+		lo = minf(lo, y)
+		hi = maxf(hi, y)
+	Input.action_release(&"move_forward")
+	var walked: float = Vector2(player.global_position.x - x0.x, player.global_position.z - x0.z).length()
+	var steps: float = player.gait.phase - phase0
+	var expected: float = walked / player.gait.stride(_speed() if _speed() > 1.0 else player.movement.walk_speed * 0.8)
+	gut.p("walked %.2f m, %.2f steps, head range %.1f mm" % [walked, steps, (hi - lo) * 1000.0])
+	assert_gt(steps, 1.0, "steps were taken")
+	assert_almost_eq(steps, expected, expected * 0.35 + 0.3, "about one step per stride of ground")
+	assert_gt(hi - lo, player.movement.bob_height * 0.5, "the head rides the stride")
