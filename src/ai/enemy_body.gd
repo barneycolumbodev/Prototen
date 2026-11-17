@@ -821,11 +821,14 @@ func intact_mesh() -> ArrayMesh:
 	if TriadMeshBaker.enabled:
 		TriadMeshBaker.prefetch(look, source_meshes())
 		_lod_wait = true
-	var srcs: Array[Array] = [[&"triad", _meshes[&"triad"].mesh, 0, 0]]
+	var srcs: Array[Array] = []
+	if look.whole_body() == null:
+		srcs.append([&"triad", _meshes[&"triad"].mesh, 0, 0])
 	for g: Garment in look.garments:
 		var name: StringName = StringName("w_" + String(g.mesh))
-		if _wardrobe.has(name):
-			srcs.append([name, _wardrobe[name], 0, int(g.slot)])
+		var wm: Mesh = wardrobe_mesh(name)
+		if wm:
+			srcs.append([name, wm, 0, int(g.slot)])
 	# Not cached: the next man in these clothes gets the baked one.
 	return _merge(srcs)
 
@@ -883,12 +886,13 @@ func split_mesh() -> ArrayMesh:
 	for i: int in SEGMENT_ORDER.size() + 1:
 		var part: String = "body" if i == 0 else String(SEGMENT_ORDER[i - 1])
 		var mi: MeshInstance3D = _meshes.get(StringName("part_" + part))
-		if mi:
+		if mi and look.whole_body() == null:
 			srcs.append([StringName("part_" + part), mi.mesh, i, 0])
 		for g: Garment in look.garments:
 			var name: StringName = StringName("w_%s__%s" % [g.mesh, part])
-			if _wardrobe.has(name):
-				srcs.append([name, _wardrobe[name], i, int(g.slot)])
+			var wm: Mesh = wardrobe_mesh(name)
+			if wm:
+				srcs.append([name, wm, i, int(g.slot)])
 	var m: ArrayMesh = _merge(srcs)
 	_store(_split_cache, key, m)
 	return m
@@ -908,12 +912,13 @@ func gib_mesh(group: Array[StringName]) -> ArrayMesh:
 	var srcs: Array[Array] = []
 	for seg: StringName in group:
 		var mi: MeshInstance3D = _meshes.get(SEGMENTS[seg][0])
-		if mi:
+		if mi and look.whole_body() == null:
 			srcs.append([SEGMENTS[seg][0], mi.mesh, 0, 0])  # segment 0: never masked, it's the flying piece
 		for g: Garment in look.garments:
 			var name: StringName = StringName("w_%s__%s" % [g.mesh, seg])
-			if _wardrobe.has(name):
-				srcs.append([name, _wardrobe[name], 0, int(g.slot)])
+			var wm: Mesh = wardrobe_mesh(name)
+			if wm:
+				srcs.append([name, wm, 0, int(g.slot)])
 	var first: Mesh = srcs[0][1]
 	var whole: AABB = first.get_aabb()
 	for src: Array in srcs:
@@ -988,9 +993,63 @@ static func prepared(name: StringName, mesh: Mesh, seg: int, slot: int) -> Array
 
 
 ## A wardrobe mesh by node name (w_<id> intact, w_<id>__<part> a piece), or null.
+## A whole body's (w_tp_<id>...) is loaded from its own glTF the first time.
 static func wardrobe_mesh(name: StringName) -> Mesh:
 	_load_wardrobe()
+	if not _wardrobe.has(name) and String(name).begins_with("w_tp_"):
+		_load_body(String(name).trim_prefix("w_").get_slice("__", 0))
 	return _wardrobe.get(name)
+
+
+const BODY_DIR: String = "res://assets/characters/triad_tripo/%s/%s"
+## Whole bodies whose glTF has been read (by mesh id, tp_<id>).
+static var _bodies_loaded: Dictionary[String, bool] = {}
+## A whole body's textures by mesh id: [base, orm, normal].
+static var _body_tex: Dictionary[StringName, Array] = {}
+
+
+## Reads a whole body's meshes (w_tp_<id>, w_tp_<id>__<part>) into the wardrobe. Main thread.
+static func _load_body(mesh_id: String) -> void:
+	if _bodies_loaded.has(mesh_id):
+		return
+	_bodies_loaded[mesh_id] = true
+	var id: String = mesh_id.trim_prefix("tp_")
+	var path: String = BODY_DIR % [id, id + ".gltf"]
+	if not ResourceLoader.exists(path):
+		push_warning("EnemyBody: no whole body at %s" % path)
+		return
+	var root: Node = (load(path) as PackedScene).instantiate()
+	for mi: Node in root.find_children("*", "MeshInstance3D", true, false):
+		_wardrobe[StringName(mi.name)] = (mi as MeshInstance3D).mesh
+	root.free()
+
+
+## Starts loading a whole body's textures off the main thread (the spawner
+## picks a man's look a spawn or two early: TriadMeshBaker.prefetch).
+static func request_body_textures(mesh_id: StringName) -> void:
+	if _body_tex.has(mesh_id):
+		return
+	var id: String = String(mesh_id).trim_prefix("tp_")
+	for suffix: String in ["_basecolor.png", "_orm.png", "_normal.png"]:
+		var path: String = BODY_DIR % [id, id + suffix]
+		if not ResourceLoader.has_cached(path):
+			ResourceLoader.load_threaded_request(path)
+
+
+## A whole body's textures [base, orm, normal] (loaded once, kept; waits for
+## a load request_body_textures started).
+static func body_textures(mesh_id: StringName) -> Array:
+	if not _body_tex.has(mesh_id):
+		var id: String = String(mesh_id).trim_prefix("tp_")
+		var out: Array = []
+		for suffix: String in ["_basecolor.png", "_orm.png", "_normal.png"]:
+			var path: String = BODY_DIR % [id, id + suffix]
+			if ResourceLoader.load_threaded_get_status(path) != ResourceLoader.THREAD_LOAD_INVALID_RESOURCE:
+				out.append(ResourceLoader.load_threaded_get(path) as Texture2D)
+			else:
+				out.append(load(path) as Texture2D)
+		_body_tex[mesh_id] = out
+	return _body_tex[mesh_id]
 
 
 ## The wardrobe glTF's meshes by node name (loaded once; the scene is freed).
@@ -1056,13 +1115,23 @@ func _setup_meshes() -> void:
 	empty_w.resize(MAX_WOUNDS)
 	material.set_shader_parameter(&"wounds", empty_w)
 	look.apply(material)
+	var whole: Garment = look.whole_body()
+	if whole:
+		# A Tripo man: his own maps; no tint mask, tattoo or beard map (they're in his colour).
+		var tex: Array = body_textures(whole.mesh)
+		material.set_shader_parameter(&"base_tex", tex[0])
+		material.set_shader_parameter(&"orm_tex", tex[1])
+		material.set_shader_parameter(&"normal_tex", tex[2])
+		material.set_shader_parameter(&"mask_tex", null)
+		material.set_shader_parameter(&"skin_tex", null)
+		material.set_shader_parameter(&"skin_inset", 0.0)
 	for child: Node in skeleton.get_children():
 		var mi: MeshInstance3D = child as MeshInstance3D
 		if mi == null:
 			continue
 		mi.material_override = material
 		_meshes[StringName(mi.name)] = mi
-		mi.visible = mi.name == "triad" or (mi.name == "vest" and config.plate_carrier)
+		mi.visible = mi.name == "triad" or (mi.name == "vest" and config.plate_carrier and not look.own_vest())
 		if mi.name == "vest":
 			mi.mesh = prepared(&"vest", mi.mesh, 0, 0)
 	_meshes[&"triad"].mesh = intact_mesh()

@@ -5,11 +5,18 @@ extends Resource
 ## assets/characters/triad/triad_wardrobe.gltf (w_<mesh> and its severable
 ## parts w_<mesh>__<part>), built by raw_assets/characters/triad/wardrobe.py.
 ## Colours are drawn per man from these lists; data/enemies/wardrobe/*.tres.
+##
+## A whole-body garment (whole_body) is a complete man made with Tripo3D and
+## fitted to the triad rig (raw_assets/characters/triad_tripo/, docs/design.md
+## §5.6b): his clothes, skin, face and tattoos in one mesh with its own
+## textures, worn instead of the body and the rest of the wardrobe.
+## data/enemies/bodies/*.tres.
 
 ## Shader slot (triad.gdshader tints and prints are per slot).
 enum Slot { SKIN, INNER, TOP, BOTTOM, SHOES, HAIR, HAT, ACCESSORY }
 
-## Mesh id in the wardrobe glTF (without the w_ prefix).
+## Mesh id in the wardrobe glTF (without the w_ prefix). A whole body's is
+## tp_<id>: its glTF and textures are in assets/characters/triad_tripo/<id>/.
 @export var mesh: StringName
 @export var slot: Slot = Slot.TOP
 ## Main colour: one is picked per man. Cloth is painted mid-grey, so these are
@@ -35,3 +42,10 @@ enum Slot { SKIN, INNER, TOP, BOTTOM, SHOES, HAIR, HAT, ACCESSORY }
 ## How much further in the skin it covers is drawn (loose cloth needs more),
 ## so the body never shows through it where joints bend (triad.gdshader).
 @export_range(0.0, 0.03) var inset: float = 0.006
+
+@export_group("Whole body")
+## A complete man (skin, face, clothes) in one mesh with his own textures:
+## the triad body and every other garment are left off.
+@export var whole_body: bool = false
+## He wears his own plate carrier, so the role's vest mesh stays hidden.
+@export var own_vest: bool = false

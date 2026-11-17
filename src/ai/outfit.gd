@@ -6,6 +6,10 @@ extends Resource
 ## a garment for each slot, the colours, prints, tattoos and facial hair.
 
 @export var display_name: String = "Street"
+## Whole men made with Tripo3D (Garment.whole_body), one picked per man with
+## body_chance; otherwise he's dressed from the wardrobe slots below.
+@export var bodies: Array[Garment] = []
+@export_range(0.0, 1.0) var body_chance: float = 1.0
 ## Relative chance among the role's outfits.
 @export_range(0.0, 10.0) var weight: float = 1.0
 ## The outer top (a tee, a hoodie, an open shirt...).

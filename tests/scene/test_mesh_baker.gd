@@ -9,7 +9,7 @@ var gunman: EnemyConfig = load("res://data/enemies/gunman.tres") as EnemyConfig
 func _look(seed: int) -> TriadLook:
 	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 	rng.seed = seed
-	return TriadLook.pick(gunman.outfits, rng)
+	return TriadLook.pick(gunman.outfits, rng, false)  # the wardrobe bank (Tripo men: test_tripo_bodies.gd)
 
 
 func _lod_count(m: ArrayMesh) -> int:

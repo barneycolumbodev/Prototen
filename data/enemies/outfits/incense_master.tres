@@ -7,9 +7,12 @@
 [ext_resource type="Resource" path="res://data/enemies/wardrobe/im_boots.tres" id="5"]
 [ext_resource type="Resource" path="res://data/enemies/wardrobe/im_chain.tres" id="6"]
 [ext_resource type="Resource" path="res://data/enemies/wardrobe/im_watch.tres" id="7"]
+[ext_resource type="Resource" path="res://data/enemies/bodies/tp_incense_master.tres" id="b0"]
 
 [resource]
 script = ExtResource("1")
+bodies = Array[ExtResource("2")]([ExtResource("b0")])
+body_chance = 1.0
 display_name = "Incense Master"
 weight = 1.0
 tops = Array[ExtResource("2")]([ExtResource("3")])

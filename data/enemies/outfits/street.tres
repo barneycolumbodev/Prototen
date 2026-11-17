@@ -23,9 +23,14 @@
 [ext_resource type="Resource" path="res://data/enemies/wardrobe/glasses.tres" id="21"]
 [ext_resource type="Resource" path="res://data/enemies/wardrobe/chain.tres" id="22"]
 [ext_resource type="Resource" path="res://data/enemies/wardrobe/watch.tres" id="23"]
+[ext_resource type="Resource" path="res://data/enemies/bodies/tp_gun_bomber.tres" id="b0"]
+[ext_resource type="Resource" path="res://data/enemies/bodies/tp_gun_hoodie.tres" id="b1"]
+[ext_resource type="Resource" path="res://data/enemies/bodies/tp_gun_older.tres" id="b2"]
 
 [resource]
 script = ExtResource("1")
+bodies = Array[ExtResource("2")]([ExtResource("b0"), ExtResource("b1"), ExtResource("b2")])
+body_chance = 1.0
 display_name = "Street"
 weight = 1.0
 tops = Array[ExtResource("2")]([ExtResource("3"), ExtResource("3"), ExtResource("4"), ExtResource("5"), ExtResource("6"), ExtResource("7")])

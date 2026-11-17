@@ -18,9 +18,13 @@
 [ext_resource type="Resource" path="res://data/enemies/wardrobe/chain.tres" id="16"]
 [ext_resource type="Resource" path="res://data/enemies/wardrobe/watch.tres" id="17"]
 [ext_resource type="Resource" path="res://data/enemies/wardrobe/glasses.tres" id="18"]
+[ext_resource type="Resource" path="res://data/enemies/bodies/tp_sum_hawaii.tres" id="b0"]
+[ext_resource type="Resource" path="res://data/enemies/bodies/tp_sum_singlet.tres" id="b1"]
 
 [resource]
 script = ExtResource("1")
+bodies = Array[ExtResource("2")]([ExtResource("b0"), ExtResource("b1")])
+body_chance = 1.0
 display_name = "Summer"
 weight = 0.8
 tops = Array[ExtResource("2")]([ExtResource("3"), ExtResource("3"), ExtResource("4"), ExtResource("5"), ExtResource("6")])

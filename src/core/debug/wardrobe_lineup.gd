@@ -7,9 +7,16 @@ extends Node
 ## `--wardrobe-seed=<n>` changes the whole row. Cameras: CapWardrobe (the
 ## row), CapWardrobeL / CapWardrobeR (three men close), CapWardrobeBack
 ## (the row from behind), CapWardrobeFar (the row from 22 m, as in a fight).
+## `--wardrobe-bodies` stands the Tripo cast instead (docs/design.md §5.6b):
+## one of each whole-body man, in his role (BODIES).
 
 const ROLES: Array[String] = ["gunman", "gunman", "red_pole", "enforcer", "gunman", "gunman", "red_pole", "gunman"]
 const STANCES: Array[StringName] = [&"idle", &"loco", &"idle", &"loco", &"idle", &"idle", &"loco", &"idle"]
+
+## [body id, role] for --wardrobe-bodies.
+const BODIES: Array[Array] = [["lantern_denim", "blue_lantern"], ["gun_bomber", "gunman"], ["gun_hoodie", "gunman"],
+		["sum_hawaii", "gunman"], ["enf_track", "enforcer"], ["red_pole", "red_pole"], ["gun_older", "gunman"],
+		["sum_singlet", "gunman"], ["enf_hoodie", "enforcer"], ["hatchet", "hatchet_man"], ["lantern_sport", "blue_lantern"]]
 
 var room: TestRoom
 var men: Array[Enemy] = []
@@ -38,17 +45,21 @@ func _ready() -> void:
 		cam.look_at_from_position(eye, look)
 		cam.fov = spec[3]
 		cam.add_to_group(&"capture_cameras")
-	for i: int in ROLES.size():
-		var cfg: EnemyConfig = load("res://data/enemies/%s.tres" % ROLES[i]) as EnemyConfig
+	var cast: bool = OS.get_cmdline_user_args().has("--wardrobe-bodies")
+	for i: int in (BODIES.size() if cast else ROLES.size()):
+		var cfg: EnemyConfig = load("res://data/enemies/%s.tres" % (BODIES[i][1] if cast else ROLES[i])) as EnemyConfig
 		var e: Enemy = Enemy.new()
 		e.config = cfg
 		e.passive = true
 		e.look_seed = seed_base * 100 + i
+		if cast:
+			e.look = TriadLook.new()
+			e.look.garments.append(load("res://data/enemies/bodies/tp_%s.tres" % BODIES[i][0]) as Garment)
 		e.name = "Wardrobe%d" % i
 		room.add_child(e)
-		e.position = Vector3(-5.25 + i * 1.5, 0, 4.0)
+		e.position = Vector3(-5.5 + i * 1.1, 0, 4.0) if cast else Vector3(-5.25 + i * 1.5, 0, 4.0)
 		e.face(0.0)
-		e.body.set_stance(STANCES[i])
+		e.body.set_stance(STANCES[i % STANCES.size()])
 		men.append(e)
 		for arg: String in OS.get_cmdline_user_args():
 			if arg.begins_with("--wardrobe-debug="):

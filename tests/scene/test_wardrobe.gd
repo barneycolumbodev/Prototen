@@ -3,6 +3,8 @@ extends GutTest
 ## randomly selected from a bank", tattoos): looks are picked from the
 ## role's outfits, every garment exists and is cut like the body, a man is
 ## one mesh before and after a cut, and a severed limb takes its sleeve.
+## Since 2026-11-17 the roles' outfits put whole Tripo men on first
+## (test_tripo_bodies.gd); the bank is still there and tested here.
 
 var room: TestRoom
 var gunman: EnemyConfig = preload("res://data/enemies/gunman.tres")
@@ -20,7 +22,7 @@ func before_each() -> void:
 func _look(cfg: EnemyConfig, seed: int) -> TriadLook:
 	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 	rng.seed = seed
-	return TriadLook.pick(cfg.outfits, rng)
+	return TriadLook.pick(cfg.outfits, rng, false)
 
 
 func _spawn(cfg: EnemyConfig, seed: int, at: Vector3 = Vector3(0, 0, 4)) -> Enemy:
@@ -90,7 +92,12 @@ func test_looks_vary() -> void:
 
 
 func test_a_man_is_one_mesh_with_his_clothes() -> void:
-	var e: Enemy = _spawn(gunman, 7)
+	var e: Enemy = Enemy.new()
+	e.config = gunman
+	e.passive = true
+	e.look = _look(gunman, 7)
+	room.add_child(e)
+	e.position = Vector3(0, 0, 4)
 	await wait_physics_frames(2)
 	var shown: Array[String] = []
 	for n: Node in e.body.skeleton.get_children():

@@ -65,7 +65,8 @@ func test_the_split_body_is_one_mesh() -> void:
 	var clothes: int = 0
 	for part: StringName in [&"body"] + EnemyBody.SEGMENT_ORDER:
 		var mi: MeshInstance3D = e.body.skeleton.get_node(NodePath("part_" + String(part))) as MeshInstance3D
-		expected += (mi.mesh as ArrayMesh).surface_get_array_len(0)
+		if e.body.look.whole_body() == null:  # a whole Tripo man is his own body
+			expected += (mi.mesh as ArrayMesh).surface_get_array_len(0)
 		# Everything he wears is cut at the same places and comes along in the same mesh.
 		for g: Garment in e.body.look.garments:
 			var w: Mesh = EnemyBody.wardrobe_mesh(StringName("w_%s__%s" % [g.mesh, part]))

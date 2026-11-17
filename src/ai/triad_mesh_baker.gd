@@ -50,6 +50,8 @@ static var enabled: bool = true
 static func prefetch(look: TriadLook, parts: Dictionary[StringName, Mesh]) -> void:
 	if not enabled or look == null:
 		return
+	if look.whole_body():
+		EnemyBody.request_body_textures(look.whole_body().mesh)
 	var key: String = look.key()
 	_mutex.lock()
 	var known: bool = _jobs.has(key) or _ready.has(key)
@@ -152,7 +154,7 @@ static func _reap(key: String) -> void:
 # ------------------------------------------------------------------ specs ([name, segment, slot])
 
 static func intact_specs(look: TriadLook) -> Array:
-	var out: Array = [[&"triad", 0, 0]]
+	var out: Array = [] if look.whole_body() else [[&"triad", 0, 0]]
 	for g: Garment in look.garments:
 		var name: StringName = StringName("w_" + String(g.mesh))
 		if EnemyBody.wardrobe_mesh(name) != null:
@@ -165,7 +167,7 @@ static func split_specs(look: TriadLook, parts: Dictionary[StringName, Mesh]) ->
 	for i: int in EnemyBody.SEGMENT_ORDER.size() + 1:
 		var part: String = "body" if i == 0 else String(EnemyBody.SEGMENT_ORDER[i - 1])
 		var pn: StringName = StringName("part_" + part)
-		if parts.has(pn):
+		if parts.has(pn) and look.whole_body() == null:
 			out.append([pn, i, 0])
 		for g: Garment in look.garments:
 			var name: StringName = StringName("w_%s__%s" % [g.mesh, part])
@@ -178,7 +180,7 @@ static func gib_specs(look: TriadLook, group: Array[StringName], parts: Dictiona
 	var out: Array = []
 	for seg: StringName in group:
 		var pn: StringName = EnemyBody.SEGMENTS[seg][0]
-		if parts.has(pn):
+		if parts.has(pn) and look.whole_body() == null:
 			out.append([pn, 0, 0])  # segment 0: never masked, it's the flying piece
 		for g: Garment in look.garments:
 			var name: StringName = StringName("w_%s__%s" % [g.mesh, seg])

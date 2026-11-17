@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="Garment" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/ai/garment.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+mesh = &"tp_gun_bomber"
+slot = 2
+colors = PackedColorArray(0.5, 0.5, 0.5, 1)
+inset = 0.0
+whole_body = true
+own_vest = false

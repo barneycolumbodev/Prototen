@@ -52,7 +52,24 @@ func has(mesh: StringName) -> bool:
 	return false
 
 
-static func pick(outfits: Array[Outfit], rng: RandomNumberGenerator) -> TriadLook:
+## A whole-body man (Garment.whole_body) he is, if any: worn instead of the
+## triad body and the wardrobe.
+func whole_body() -> Garment:
+	for g: Garment in garments:
+		if g.whole_body:
+			return g
+	return null
+
+
+## Does he wear his own plate carrier (the role's vest stays hidden)?
+func own_vest() -> bool:
+	var b: Garment = whole_body()
+	return b != null and b.own_vest
+
+
+## `bodies`: false dresses him from the wardrobe even when the outfit has
+## whole bodies (tests of the wardrobe bank).
+static func pick(outfits: Array[Outfit], rng: RandomNumberGenerator, bodies: bool = true) -> TriadLook:
 	var look: TriadLook = TriadLook.new()
 	if outfits.is_empty():
 		return look
@@ -67,6 +84,9 @@ static func pick(outfits: Array[Outfit], rng: RandomNumberGenerator) -> TriadLoo
 			outfit = o
 			break
 	look.outfit_name = outfit.display_name
+	if bodies and not outfit.bodies.is_empty() and rng.randf() < outfit.body_chance:
+		look._wear(_one(outfit.bodies, rng), rng)
+		return look
 	var top: Garment = _one(outfit.tops, rng)
 	look._wear(top, rng)
 	if top and top.mesh in outfit.open_tops and not outfit.inners.is_empty() and rng.randf() >= outfit.bare_chest_chance:
