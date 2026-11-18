@@ -3,6 +3,10 @@ extends Resource
 ## Look of a night map: exposure, fog, rain, glow, sky, water.
 ## data/levels/chinatown_night.tres holds the Chinatown values.
 
+## False for an indoor map (the hotel): no moon, harbour water, skyline,
+## rain or steam; reflection probes come from the map's "probe" markers.
+@export var outdoor: bool = true
+
 @export_group("Exposure")
 @export var exposure: float = 1.35
 @export var lightmap_gain: float = 1.0

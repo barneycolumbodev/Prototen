@@ -62,6 +62,17 @@ var arm_hurt: bool = false
 var burn_left: float = 0.0
 var burn_dps: float = 0.0
 var charred: float = 0.0
+## Plasma (docs/design.md §4.9): seconds left of burning agony (he runs
+## blind, flails and screams, and doesn't fight), and when he next lurches.
+var agony: float = 0.0
+var _agony_turn: float = 0.0
+var _agony_cry: float = 0.0
+var _spread_check: float = 0.0
+## Fire on a man spreads: a burning man who comes within SPREAD_REACH of
+## another sets him alight too (checked every SPREAD_EVERY s, CATCH_CHANCE each time).
+const SPREAD_REACH: float = 1.1
+const SPREAD_EVERY: float = 0.4
+const CATCH_CHANCE: float = 0.45
 var last_hit: BallisticHit
 ## Hits per zone (range readout, tests).
 var zone_hits: Dictionary[StringName, int] = {}
@@ -316,6 +327,13 @@ func on_part_hit(part: HitboxPart, hit: BallisticHit) -> void:
 	else:
 		if head:
 			kind = &"headshot"
+		if hit.weapon and hit.weapon.stagger_push > 0.0 and not melee:
+			# A heavy round that doesn't kill still takes him off his feet's line.
+			knock_back(hit.direction * hit.weapon.stagger_push + Vector3.UP * 0.6, hit.shooter, 0.0, 0.15)
+			if not alive:
+				EventBus.target_hit.emit(&"kill", hit)
+				EventBus.damage_applied.emit(hit.damage, self)
+				return
 		_react(zone, dmg, hit)
 	EventBus.target_hit.emit(kind, hit)
 	EventBus.damage_applied.emit(hit.damage, self)
@@ -651,13 +669,15 @@ func _try_sever(zone: StringName, hit: BallisticHit) -> bool:
 
 ## Cuts `seg` off (and what's on it) and makes the man react. Also used by
 ## blasts. Returns whether it came off.
-func sever(seg: StringName, velocity_out: Vector3, destroy: bool, hit: BallisticHit = null, zone: StringName = &"chest") -> bool:
+func sever(seg: StringName, velocity_out: Vector3, destroy: bool, hit: BallisticHit = null, zone: StringName = &"chest",
+		cauterize: bool = false) -> bool:
 	if boss and not boss.executed:
 		return false
 	var group: Array[StringName] = body.attached(seg)
-	if not body.sever(seg, velocity_out, destroy):
+	if not body.sever(seg, velocity_out, destroy, cauterize):
 		return false
-	_bleeders.append(Bleeder.new(seg))
+	if not cauterize:
+		_bleeders.append(Bleeder.new(seg))
 	set_physics_process(true)
 	Sfx.play_at(&"gore_sever", body.cut_point(seg), 0.0, 0.1)
 	if not alive:
@@ -676,8 +696,188 @@ func sever(seg: StringName, velocity_out: Vector3, destroy: bool, hit: Ballistic
 		morale = 0.0
 		_enter(State.COWER if _rng.randf() < 0.5 else State.FLEE)
 		speak(&"limb_off")
-	bleed_dps = maxf(bleed_dps, 14.0 if seg.begins_with("upper_arm") or seg.begins_with("thigh") else 9.0)
+	if not cauterize:
+		bleed_dps = maxf(bleed_dps, 14.0 if seg.begins_with("upper_arm") or seg.begins_with("thigh") else 9.0)
 	return true
+
+
+# ------------------------------------------------------------------ plasma (docs/design.md §4.9)
+
+## A plasma bolt hit `part` square on. `charge`: the shot's 0..1. Returns
+## true if the bolt stops in him, false if it burned through and carries on.
+func on_plasma_hit(part: HitboxPart, hit: BallisticHit, charge: float, pd: PlasmaData) -> bool:
+	var zone: StringName = part.get_meta(&"zone")
+	last_hit = hit
+	zone_hits[zone] = zone_hits.get(zone, 0) + 1
+	var torso: bool = zone in Dismemberment.TORSO
+	var head: bool = zone == &"head" or zone == &"neck"
+	var maximum: bool = Gore.is_maximum()
+	var through: bool = torso and charge >= pd.burn_through_charge
+	# The wound is a burn: cooked, no blood (Gore.plasma_hit), charred round it.
+	body.add_wound(zone, hit.point, pd.at(0.02, 0.045, charge), false)
+	if through:
+		body.add_hole(zone, hit.point, hit.direction, pd.hole_radius(charge))
+	Gore.plasma_hit(hit, charge, through)
+	var push: Vector3 = hit.direction * pd.push_full * charge
+	if not alive:
+		body.push_bone(zone, push * 6.0, hit.point)
+		if not torso and maximum and charge >= pd.sever_charge and not body.gibbed:
+			_plasma_sever(zone, hit, charge, pd)
+		Fx.burn_at(part, hit.point, hit.normal, pd.burn_time, true)
+		charred = minf(charred + 0.3 * charge, 1.0)
+		body.set_char(charred)
+		return not through
+	var mult: float = config.zone_multipliers.get(zone, 1.0)
+	var dmg: float = pd.damage(charge) * mult
+	if boss:
+		_boss_hit(zone, dmg, hit, head)
+		ignite(part, hit, pd.burn_time * 0.5, pd.burn_dps(charge) * 0.5, 0.0)
+		return true
+	zone_damage[zone] = zone_damage.get(zone, 0.0) + dmg
+	health -= dmg
+	_alerted_by(hit.shooter)
+	body.flinch(hit.direction, clampf(1.0 + 2.5 * charge, 0.6, 3.5), head)
+	if maximum and charge >= (pd.head_charge if head else pd.sever_charge) and not torso:
+		_plasma_sever(zone, hit, charge, pd)
+		if not alive:
+			return true
+	ignite(part, hit, pd.burn_time, pd.burn_dps(charge), pd.agony_time)
+	var kind: StringName = &"hit"
+	if health <= 0.0:
+		kind = &"kill"
+		die(hit, zone, &"shot")
+	elif head:
+		kind = &"headshot"
+	EventBus.target_hit.emit(kind, hit)
+	EventBus.damage_applied.emit(hit.damage, self)
+	if alive and charge > 0.3 and not melee:
+		knock_back(push + Vector3.UP * 0.5, hit.shooter, 0.0, 0.2)
+	return not through
+
+
+## Plasma that only passed close (or the splash where it burst): he catches
+## fire and goes mad with it.
+func on_plasma_graze(part: HitboxPart, hit: BallisticHit, charge: float, pd: PlasmaData) -> void:
+	if not alive:
+		Fx.burn_at(part, hit.point, hit.normal, pd.burn_time * 0.5, false)
+		return
+	last_hit = hit
+	_alerted_by(hit.shooter)
+	health -= pd.damage(charge) * 0.12
+	ignite(part, hit, pd.burn_time * pd.graze_burn, pd.burn_dps(charge), pd.agony_time)
+	if health <= 0.0:
+		die(hit, &"chest", &"burn")
+		EventBus.target_hit.emit(&"kill", hit)
+	else:
+		EventBus.target_hit.emit(&"hit", hit)
+
+
+## Sets him alight (Fx fire riding on `part`): `seconds` of `dps`, and
+## `agony_s` seconds of burning panic.
+func ignite(part: HitboxPart, hit: BallisticHit, seconds: float, dps: float, agony_s: float) -> void:
+	if not alive:
+		return
+	var first: bool = burn_left <= 0.0
+	burn_left = maxf(burn_left, seconds)
+	burn_dps = maxf(burn_dps, dps)
+	charred = minf(charred + 0.12, 1.0)
+	body.set_char(charred)
+	var on: Node3D = part
+	if on == null:
+		on = body
+	Fx.burn_at(on, hit.point, hit.normal, seconds, true)
+	if agony_s <= 0.0 or boss:
+		return
+	var was: float = agony
+	agony = maxf(agony, agony_s)
+	morale = 0.0
+	suppression = 1.0
+	if was <= 0.0 and state not in [State.CRAWL, State.DEAD, State.SURRENDER]:
+		if has_gun and _rng.randf() < 0.55:
+			has_gun = false
+			body.drop_gun(Vector3(_rng.randf_range(-1, 1), 1.5, _rng.randf_range(-1, 1)))
+		_enter(State.FLEE)
+		_agony_turn = 0.0
+	if first or was <= 0.0:
+		_agony_cry = 0.0
+
+
+## Takes off the piece nearest a plasma hit, cauterised: whole and burning,
+## or (a full charge, or the head) burned to charred pieces.
+func _plasma_sever(zone: StringName, hit: BallisticHit, charge: float, pd: PlasmaData) -> void:
+	var pick: Array = Dismemberment.nearest_cut(Gore.config, zone, hit.point, body.cut_points(), body.severed)
+	var seg: StringName = pick[0]
+	if seg == &"":
+		return
+	var destroy: bool = seg == &"head" or charge >= pd.pulp_charge
+	var v_out: Vector3 = hit.direction * (3.0 + 4.0 * charge) + Vector3.UP * (1.5 + 1.5 * charge)
+	var at: Vector3 = body.cut_point(seg)
+	if sever(seg, v_out, destroy, hit, zone, true):
+		Gore.charred_chunks(at, hit.direction + Vector3.UP * 0.4, 3 + roundi(4.0 * charge) if destroy else 2,
+				3.0 + 5.0 * charge, pd.burn_time)
+		Fx._emit(&"smoke", at, Vector3.UP, Color(0.18, 0.16, 0.15, 0.4), 4, 0.8)
+
+
+## A burning man sets those he runs into alight (and the panic with it).
+func _spread_fire(delta: float) -> void:
+	if burn_left <= 0.0 or not alive:
+		return
+	_spread_check -= delta
+	if _spread_check > 0.0:
+		return
+	_spread_check = SPREAD_EVERY
+	for n: Node in get_tree().get_nodes_in_group(&"triad"):
+		var other: Enemy = n as Enemy
+		if other == null or other == self or not other.alive or other.is_burning() or other.boss:
+			continue
+		if other.global_position.distance_to(global_position) > SPREAD_REACH:
+			continue
+		if _rng.randf() > CATCH_CHANCE:
+			continue
+		var h: BallisticHit = last_hit
+		if h == null:
+			continue
+		var part: HitboxPart = other.body.hitboxes[&"chest"] if other.body.hitboxes.has(&"chest") else null
+		var catch_hit: BallisticHit = BallisticHit.new()
+		catch_hit.weapon = h.weapon
+		catch_hit.shooter = h.shooter
+		catch_hit.damage = h.damage
+		catch_hit.point = other.body.chest_position()
+		catch_hit.normal = (global_position - other.global_position).normalized()
+		catch_hit.direction = -catch_hit.normal
+		other.last_hit = catch_hit
+		other.ignite(part, catch_hit, burn_left * 0.8, burn_dps * 0.8, 4.0)
+		other.speak(&"burning")
+
+
+func _update_agony(delta: float) -> void:
+	_spread_fire(delta)
+	if agony <= 0.0:
+		return
+	agony -= delta
+	if not alive or state in [State.DEAD, State.CRAWL]:
+		agony = 0.0
+		return
+	_agony_turn -= delta
+	if _agony_turn <= 0.0:
+		# Blind, burning: he lurches one way then another, clawing at himself.
+		_agony_turn = _rng.randf_range(0.45, 0.9)
+		var dir: Vector3 = Vector3(_rng.randf_range(-1, 1), 0.0, _rng.randf_range(-1, 1)).normalized()
+		_go(global_position + dir * _rng.randf_range(3.0, 6.5))
+		body.flinch(-dir, _rng.randf_range(1.2, 2.6), _rng.randf() < 0.3)
+		if _rng.randf() < 0.3:
+			body.play_stumble()
+	_agony_cry -= delta
+	if _agony_cry <= 0.0:
+		_agony_cry = _rng.randf_range(1.4, 2.4)
+		if _rng.randf() < 0.45:
+			speak(&"burning")
+		elif Sfx.claim_death_voice():
+			vocal(&"death_scream", -1.0, 0.15)
+		else:
+			vocal(&"enemy_pain", 0.0, 0.2)
+	if state != State.FLEE and state != State.DEAD:
+		_enter(State.FLEE)
 
 
 ## Maximum gore: enough into the torso in one volley (or into a corpse over
@@ -731,7 +931,7 @@ func die(hit: BallisticHit, zone: StringName, cause: StringName = &"shot") -> vo
 	var impulse: Vector3 = Vector3.ZERO
 	var point: Vector3 = body.chest_position()
 	if hit:
-		var heavy: float = clampf(hit.damage.impulse, 4.0, 40.0)
+		var heavy: float = clampf(hit.damage.impulse, 4.0, 40.0) * (hit.weapon.ragdoll_push if hit.weapon else 1.0)
 		impulse = (hit.direction * heavy * 1.4 + Vector3.UP * heavy * 0.15) * TimeControl.impact_multiplier()
 		point = hit.point
 	body.ragdoll(impulse + velocity * 40.0, point, zone)
@@ -837,6 +1037,7 @@ func _physics_process(delta: float) -> void:
 		vocal(&"death_groan", -9.0)
 	_update_flash(delta)
 	_update_burn(delta)
+	_update_agony(delta)
 	_update_bleeders(delta)
 	if bleed_dps > 0.0:
 		health -= bleed_dps * delta
@@ -1060,7 +1261,9 @@ func _decide() -> void:
 			if passive:
 				body.set_stance(&"cower")
 				return
-			if _move_target == Vector3.INF or global_position.distance_to(_move_target) < 1.5:
+			if agony > 0.0:
+				pass  # running blind (_update_agony picks where)
+			elif _move_target == Vector3.INF or global_position.distance_to(_move_target) < 1.5:
 				_pick_flee_point()
 		State.CRAWL:
 			if not passive and (_move_target == Vector3.INF or global_position.distance_to(_move_target) < 1.0):

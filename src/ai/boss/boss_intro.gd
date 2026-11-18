@@ -82,6 +82,18 @@ func _ready() -> void:
 ## A spot in front of the operative for him to land: on the navmesh, open to
 ## the sky, in sight. Tries the middle first, then wider and nearer/farther.
 static func pick_landing(p: Player, c: BossConfig) -> Vector3:
+	var at: Vector3 = find_landing(p, c)
+	if at.is_finite():
+		return at
+	var fwd: Vector3 = -p.camera().global_basis.z
+	fwd.y = 0.0
+	fwd = fwd.normalized() if fwd.length() > 0.05 else Vector3.FORWARD
+	return p.global_position + fwd * minf(c.intro_distance, 8.0)
+
+
+## A spot in front of the operative with open sky over it to drop onto, in
+## view and with room round it; INF if there's none (indoors, a corridor).
+static func find_landing(p: Player, c: BossConfig) -> Vector3:
 	var fwd: Vector3 = -p.camera().global_basis.z
 	fwd.y = 0.0
 	fwd = fwd.normalized() if fwd.length() > 0.05 else Vector3.FORWARD
@@ -114,7 +126,7 @@ static func pick_landing(p: Player, c: BossConfig) -> Vector3:
 					break
 			if roomy:
 				return at
-	return p.global_position + fwd * minf(c.intro_distance, 8.0)
+	return Vector3.INF
 
 
 func _process(delta: float) -> void:

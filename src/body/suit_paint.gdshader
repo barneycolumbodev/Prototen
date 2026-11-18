@@ -27,6 +27,38 @@ uniform vec4 surf[12];
 // Lights: rgb = colour (linear), a = 1 when set.
 uniform vec4 glow_paint = vec4(0.0);
 
+// Lever actions (ViewmodelRig.set_hand_bend): the firing hand goes with the
+// lever. Vertices are taken into weapon space, turned `bend_angle` (rad)
+// about the line along Z through `bend_pivot`, weighted: full forward of
+// bend_ramp.y, none behind bend_ramp.x (the forearm stays, the wrist
+// bends), none past bend_ramp.z (the other hand), only below bend_max_y
+// and right of bend_min_z. 0 = off (one uniform branch).
+uniform float bend_angle = 0.0;
+uniform mat4 bend_to_weapon;
+uniform mat4 bend_from_weapon;
+uniform vec3 bend_pivot;
+uniform vec3 bend_ramp = vec3(-0.16, -0.085, 0.15);
+uniform float bend_max_y = -0.015;
+uniform float bend_min_z = -0.045;
+
+void vertex() {
+	if (bend_angle != 0.0) {
+		vec3 p = (bend_to_weapon * vec4(VERTEX, 1.0)).xyz;
+		float w = smoothstep(bend_ramp.x, bend_ramp.y, p.x) * (1.0 - smoothstep(bend_ramp.z - 0.02, bend_ramp.z, p.x));
+		w *= 1.0 - smoothstep(bend_max_y - 0.02, bend_max_y + 0.02, p.y);
+		w *= smoothstep(bend_min_z - 0.02, bend_min_z + 0.01, p.z);
+		float a = bend_angle * w;
+		float c = cos(a);
+		float s = sin(a);
+		vec3 d = p - bend_pivot;
+		p = bend_pivot + vec3(d.x * c - d.y * s, d.x * s + d.y * c, d.z);
+		VERTEX = (bend_from_weapon * vec4(p, 1.0)).xyz;
+		vec3 n = mat3(bend_to_weapon) * NORMAL;
+		n = vec3(n.x * c - n.y * s, n.x * s + n.y * c, n.z);
+		NORMAL = normalize(mat3(bend_from_weapon) * n);
+	}
+}
+
 void fragment() {
 	vec4 a = texture(tex_albedo, UV) * albedo_factor;
 	vec3 orm = texture(tex_orm, UV).rgb;

@@ -608,6 +608,63 @@ func burst_chunks(at: Vector3, dir: Vector3, count: int, speed: float) -> void:
 				v * speed * _rng.randf_range(0.4, 1.0), Vector3(_rng.randf_range(-20, 20), _rng.randf_range(-20, 20), 0), sz, mat, scale)
 
 
+# ------------------------------------------------------------------ plasma (docs/design.md §4.9)
+
+## A plasma bolt struck flesh: no gunshot spray, a burn. Sparks of molten
+## matter and greasy smoke where it went in; burned clean `through`, cooked
+## pieces and a thin, half-boiled spray blow out of the back.
+func plasma_hit(hit: BallisticHit, charge: float, through: bool) -> void:
+	Fx._emit(&"sparks", hit.point, hit.normal, Color(1.0, 0.62, 0.22, 1.0), 10 + roundi(22.0 * charge), 1.0 + 1.4 * charge)
+	Fx._emit(&"smoke", hit.point, Vector3.UP, Color(0.2, 0.18, 0.17, 0.4), 2 + roundi(3.0 * charge), 0.6)
+	Sfx.play_at(&"plasma_flesh", hit.point, 0.0, 0.1)
+	if not is_on():
+		return
+	sprays_fired += 1
+	var floor_y: float = _floor_y(hit.point)
+	if through:
+		var out: Vector3 = hit.point + hit.direction * 0.32
+		Fx._emit(&"sparks", out, hit.direction, Color(1.0, 0.5, 0.15, 1.0), 26, 2.4)
+		Fx._emit(&"smoke", out, hit.direction, Color(0.16, 0.14, 0.13, 0.45), 4, 1.2)
+		drops.cone(out, hit.direction, roundi(10.0 * charge * _amount()) + 2, 1.6, 4.0 + 3.0 * charge, 22.0, 0.004, 0.012,
+				1.4, 1, Vector3.ZERO, floor_y, 0.6)
+		charred_chunks(out, hit.direction, 2 + roundi(3.0 * charge), 4.0 + 5.0 * charge, 4.0)
+	else:
+		drops.cone(hit.point, hit.normal, roundi(4.0 * _amount()), 1.0, 2.0, 35.0, 0.003, 0.008, 2.0, 0, Vector3.ZERO,
+				floor_y, 0.6)
+
+
+var _char_mat: StandardMaterial3D
+
+
+## Burned pieces thrown from `at` along `dir`: black, glowing at the edges;
+## the first couple go on burning where they land for `burn_s` seconds.
+func charred_chunks(at: Vector3, dir: Vector3, count: int, speed: float, burn_s: float) -> void:
+	if not is_maximum():
+		return
+	if _char_mat == null:
+		_char_mat = StandardMaterial3D.new()
+		_char_mat.albedo_color = Color(0.035, 0.028, 0.022)
+		_char_mat.roughness = 0.92
+		_char_mat.emission_enabled = true
+		_char_mat.emission = Color(1.0, 0.3, 0.05)
+		_char_mat.emission_energy_multiplier = 0.55
+	var meat: Array[StringName] = [&"gib_meat_a", &"gib_meat_b", &"gib_meat_c"]
+	for i: int in count:
+		var sz: float = _rng.randf_range(0.025, 0.055)
+		var mesh: Mesh = gib_piece(meat[i % 3])
+		var scale: float = sz / 0.05
+		if mesh == null:
+			var box: BoxMesh = BoxMesh.new()
+			box.size = Vector3(sz, sz * 0.7, sz)
+			mesh = box
+			scale = 1.0
+		var v: Vector3 = (dir.normalized() + Vector3(_rng.randf_range(-0.7, 0.7), _rng.randf_range(-0.1, 0.9), _rng.randf_range(-0.7, 0.7))).normalized()
+		var g: RigidBody3D = throw_gib(mesh, Transform3D(Basis.from_euler(Vector3(_rng.randf() * TAU, _rng.randf() * TAU, 0)), at),
+				v * speed * _rng.randf_range(0.5, 1.0), Vector3(_rng.randf_range(-15, 15), _rng.randf_range(-15, 15), 0), sz, _char_mat, scale)
+		if g and i < 2 and burn_s > 0.0:
+			Fx.burn_at(g, at, Vector3.UP, burn_s, true)
+
+
 func clear() -> void:
 	_big[2] = 0
 	_big[3] = 0

@@ -90,18 +90,80 @@ static func fcolor(d: Dictionary, key: String = "color") -> Color:
 	return Color(r, g, b)
 
 
+# ------------------------------------------------------------------ per-map data (HotelMap overrides)
+
+func layout_path() -> String:
+	return LAYOUT_PATH
+
+
+func map_scene_path() -> String:
+	return MAP_SCENE
+
+
+func lightmap_path() -> String:
+	return LIGHTMAP
+
+
+func spawn_config_path() -> String:
+	return SPAWN_CONFIG
+
+
+func atmos_config_path() -> String:
+	return ATMOS_CONFIG
+
+
+## Prefix of the map's three texture arrays (`<prefix>albedo.webp`...).
+func world_texture_prefix() -> String:
+	return "res://assets/env/world/world_"
+
+
+## Where Squad.build_cover samples cover: [origin, half extent] pairs.
+func level_cover_regions() -> Array:
+	return cover_regions()
+
+
+## What the navigation mesh is baked from.
+func nav_bounds() -> AABB:
+	# Only the ground floor and the first-floor gallery: no roofs.
+	return AABB(Vector3(-47, -1.0, -35), Vector3(94, 6.0, 81))
+
+
+## Where the benchmark spins the camera (Blender coordinates).
+func bench_point() -> Vector3:
+	return b2g([-8.0, 7.0, -0.15])
+
+
+## The spawner (Sandbox) or Survival director is set up: a map can hook its spawns.
+func _on_spawner(_spawner: RollingSpawner) -> void:
+	pass
+
+
+## A Survival kit picked on the menu for a map other than this one: the next
+## map scene that loads starts the run with it ([doctrine, gun, active]).
+static var pending_survival: Array = []
+## Maps Survival can be played on (the test range has no spawns).
+const SURVIVAL_MAPS: Array[String] = ["res://src/levels/chinatown/chinatown.tscn", "res://src/levels/hotel/hotel.tscn"]
+
+
 func _ready() -> void:
-	layout = load_layout()
+	layout = _read_layout()
 	_build_map_meshes()
 	_build_colliders()
 	_build_occluders()
 	_build_markers()
 	atmos = NightAtmosphere.new()
 	atmos.name = "Atmosphere"
-	atmos.config = load(ATMOS_CONFIG) as NightAtmosphereConfig
+	atmos.config = load(atmos_config_path()) as NightAtmosphereConfig
 	atmos.map = self
 	add_child(atmos)
-	Sfx.set_room(0.25)
+	Sfx.set_room(room_size())
+	if not pending_survival.is_empty():
+		var kd: Doctrine = pending_survival[0]
+		var kg: WeaponData = pending_survival[1]
+		var ka: ActivePartData = pending_survival[2]
+		pending_survival = []
+		start_survival.call_deferred(kd, kg, ka)
+		return
 	for a: String in OS.get_cmdline_user_args():
 		if a.begins_with("--survival"):
 			# Cloud captures and tests: --survival[=doctrine,gun,active] (indices).
@@ -173,8 +235,14 @@ func _on_begin(scene_path: String) -> void:
 	tw.tween_callback(black.queue_free)
 
 
-## Survival on the main menu: the menu goes, the run starts here.
+## Survival on the main menu: the menu goes, the run starts here (or on the
+## map picked on the menu: it loads and starts the run).
 func _on_survival(doctrine: Doctrine, gun: WeaponData, active: ActivePartData) -> void:
+	var want: String = menu.map_path()
+	if want != scene_file_path and want in SURVIVAL_MAPS:
+		pending_survival = [doctrine, gun, active]
+		get_tree().change_scene_to_file.call_deferred(want)
+		return
 	var black: CanvasLayer = CanvasLayer.new()
 	black.layer = 120
 	var rect: ColorRect = ColorRect.new()
@@ -209,14 +277,15 @@ func start_survival(doctrine: Doctrine, gun: WeaponData, active: ActivePartData,
 	survival.name = "Survival"
 	survival.level = self
 	survival.player = player
-	survival.spawn_config = load(SPAWN_CONFIG) as RollingSpawnConfig
+	survival.spawn_config = load(spawn_config_path()) as RollingSpawnConfig
 	survival.spawn_points = spawn_points
-	survival.cover_regions = cover_regions()
+	survival.cover_regions = level_cover_regions()
 	add_child(survival)
 	# Physics needs a frame to register the colliders before cover sampling.
 	await get_tree().physics_frame
 	await get_tree().physics_frame
 	survival.begin(doctrine, gun, active, seed_value)
+	_on_spawner(survival.director)
 
 
 ## Cover: the whole ground level, and the gallery on the east tenement.
@@ -262,12 +331,13 @@ func _start_game(survival_mode: bool = false) -> void:
 		return
 	wave_mode = RollingSpawner.new()
 	wave_mode.name = "WaveMode"
-	wave_mode.config = load(SPAWN_CONFIG) as RollingSpawnConfig
+	wave_mode.config = load(spawn_config_path()) as RollingSpawnConfig
 	wave_mode.level = self
 	wave_mode.player = player
 	wave_mode.spawn_points = spawn_points
-	wave_mode.cover_regions = cover_regions()
+	wave_mode.cover_regions = level_cover_regions()
 	add_child(wave_mode)
+	_on_spawner(wave_mode)
 	EventBus.wave_mode_requested.connect(wave_mode.toggle)
 	var spawns_on: bool = autostart_spawns and not CaptureDirector.is_capturing()
 	for arg: String in OS.get_cmdline_user_args():
@@ -346,9 +416,22 @@ func _start_spawns() -> void:
 
 
 static func load_layout() -> Dictionary:
-	var f: FileAccess = FileAccess.open(LAYOUT_PATH, FileAccess.READ)
+	return read_layout(LAYOUT_PATH)
+
+
+static func read_layout(path: String) -> Dictionary:
+	var f: FileAccess = FileAccess.open(path, FileAccess.READ)
 	var d: Dictionary = JSON.parse_string(f.get_as_text())
 	return d
+
+
+func _read_layout() -> Dictionary:
+	return read_layout(layout_path())
+
+
+## Reverb size for Sfx (0 = small room .. 1 = huge).
+func room_size() -> float:
+	return 0.25
 
 
 # ------------------------------------------------------------------ meshes
@@ -359,19 +442,20 @@ func _build_map_meshes() -> void:
 	# Drawn after the first-person view (0) and the men (EnemyBody.RENDER_PRIORITY):
 	# the Mobile renderer draws lower priorities first (optimization overhaul R-01).
 	world_material.render_priority = WORLD_PRIORITY
-	world_material.set_shader_parameter(&"albedo_arr", load("res://assets/env/world/world_albedo.webp"))
-	world_material.set_shader_parameter(&"normal_arr", load("res://assets/env/world/world_normal.webp"))
-	world_material.set_shader_parameter(&"orm_arr", load("res://assets/env/world/world_orm.webp"))
-	if ResourceLoader.exists(LIGHTMAP):
-		world_material.set_shader_parameter(&"lightmap", load(LIGHTMAP))
+	var tex: String = world_texture_prefix()
+	world_material.set_shader_parameter(&"albedo_arr", load(tex + "albedo.webp"))
+	world_material.set_shader_parameter(&"normal_arr", load(tex + "normal.webp"))
+	world_material.set_shader_parameter(&"orm_arr", load(tex + "orm.webp"))
+	if ResourceLoader.exists(lightmap_path()):
+		world_material.set_shader_parameter(&"lightmap", load(lightmap_path()))
 	world_material.set_shader_parameter(&"noise_tex", NightAtmosphere._noise_texture(0.06, false, 7))
 	world_material.set_shader_parameter(&"hash_tex", hash_texture())
 	glass_material = ShaderMaterial.new()
 	glass_material.shader = preload("res://src/levels/chinatown/glass.gdshader")
-	glass_material.set_shader_parameter(&"albedo_arr", load("res://assets/env/world/world_albedo.webp"))
-	glass_material.set_shader_parameter(&"orm_arr", load("res://assets/env/world/world_orm.webp"))
+	glass_material.set_shader_parameter(&"albedo_arr", load(tex + "albedo.webp"))
+	glass_material.set_shader_parameter(&"orm_arr", load(tex + "orm.webp"))
 	glass_material.render_priority = 1
-	var scene: PackedScene = load(MAP_SCENE) as PackedScene
+	var scene: PackedScene = load(map_scene_path()) as PackedScene
 	map_root = scene.instantiate() as Node3D
 	map_root.name = "Map"
 	add_child(map_root)
@@ -554,8 +638,7 @@ func _build_navigation() -> void:
 	nm.agent_max_slope = 40.0
 	nm.cell_size = 0.25
 	nm.cell_height = 0.1
-	# Only the ground floor and the first-floor gallery: no roofs.
-	nm.filter_baking_aabb = AABB(Vector3(-47, -1.0, -35), Vector3(94, 6.0, 81))
+	nm.filter_baking_aabb = nav_bounds()
 	add_child(nav_region)
 	NavigationServer3D.map_set_cell_height(get_world_3d().navigation_map, nm.cell_height)
 	NavigationServer3D.map_set_cell_size(get_world_3d().navigation_map, nm.cell_size)
@@ -616,7 +699,7 @@ func _process(_delta: float) -> void:
 func start_benchmark(duration_sec: float) -> void:
 	player.input_enabled = false
 	player.invulnerable = true
-	player.global_position = b2g([-8.0, 7.0, -0.15])
+	player.global_position = bench_point()
 	player.velocity = Vector3.ZERO
 	_bench_yaw0 = 0.0
 	_bench.start(duration_sec)
@@ -626,7 +709,7 @@ func start_benchmark(duration_sec: float) -> void:
 func start_feature_sweep() -> void:
 	player.input_enabled = false
 	player.invulnerable = true
-	player.global_position = b2g([-8.0, 7.0, -0.15])
+	player.global_position = bench_point()
 	player.velocity = Vector3.ZERO
 	_bench_yaw0 = 0.0
 	if wave_mode and wave_mode.running:

@@ -777,3 +777,27 @@ Please try:
 - Measured:
 - Notes from the owner:
 - Follow-ups: the augment arms (`arm_rig.gd`) and the knife still have their own simple bob; move them onto the gait if the gun's feels right.
+
+## Map 2, the Golden Dragon hotel; the Governor; the SL-9 Slagger — 2026-11-18 (waiting for the owner)
+
+Owner (2026-11-18): "time for map 2 ... a luxurious Chinese 5 star hotel lobby, abandoned ofc but still fully lit ... waves spawn in elevators that release into the lobby and also enter from outside ... tight corridors that wind around a central lobby atrium ... the long sitelines of the massive atrium ... to stalk my foes", plus two guns: "The Governor", a tactical black polymer .45-70 lever action, and the first energy weapon, a makeshift welder-pistol that charges a ball of plasma. Design: `docs/design.md` §7.2 (map), §4.9 (guns).
+
+What's in the APK:
+- **The hotel** (Main menu → Map ◀ ▶ Golden Dragon hotel, then Begin or Survival; Pause → Map). A 15 m marble atrium with the fountain, chandeliers, reception, lounges and twin grand stairs up to a mezzanine gallery with a glass balustrade you shoot over; winding red-damask corridors (drywall: the Governor goes through them) round it, the Dragon Bar, restrooms, offices, tea lounge, ballroom foyer, a back stair in each wing, the lift hall, a staff service corridor, the entrance hall and the porte-cochère with the hotel car. Abandoned and fortified: dust, papers, sandbags, toppled sofas, luggage carts. Ceiling speakers still play.
+- **Where they come from:** the six lifts (the floor lantern lights, a chime, the brass doors roll open and out they come; the doors close when the car's empty) and the street, through the glass doors. Same rolling rule as Chinatown in Sandbox; Survival waves the same way.
+- **The Governor** (the wheel): 6+1 rounds of .45-70. Each shot is answered by the lever: thrown down and up, the case flying, the bolt and hammer moving, a two-part clunk in your ears and both rumble motors. A trunk hit kills and throws the man; limbs come off; it shoves a survivor off his feet. X loads round by round through the gate on the right.
+- **The SL-9 Slagger** (the wheel): hold RT to charge (2.75 s to full: the ball of plasma at the emitter swells, the field bands strain, the gun trembles and the controller rumbles harder), let go to fire. Tap = fizzle. Hold 3 s past full = overload in your hands. A graze sets a man alight and he runs blind, screaming, dropping his gun; a charged hit to the body burns a hole you can see through and the bolt goes on into the next man; an arm or leg comes off cauterised and burning, a full charge burns it to charred chunks; it bursts on walls in a splash of fire that lights up anyone standing there.
+
+Cloud evidence: `tools/check.sh` (515+ tests; new `tests/scene/test_hotel.gd`: indoors, six lifts, spawns only in the cars and on the drive, the player starts standing, the grand stair is a walkable ramp at the right height, the navigation reaches the gallery, shut doors hide a car and a spawn in it chimes and opens it; `test_governor.gd`: 6+1, the lever throws and the hammer cocks, round-by-round reload to 7, a chest hit kills, a thigh hit takes the leg; `test_slagger.gd`: hold and release fires with the charge built, 2.75 s to full, a tap fizzles, holding past full overloads, a full charge burns through the chest, a graze sets him alight and running, a charged arm hit takes it off with no bleeding). Screenshots of the hotel from the capture cameras and of both guns (lever thrown, gate loading, the charge at 85 %, the field straining past full, bolt hits on the range). Not checked in the cloud: the frame rate on the Moto G (the hotel is ~75k triangles, 98 meshes; the atrium is the busiest view), the sounds and rumble on the controller, and how fast the plasma bolt feels.
+
+Added after the first build: the gallery's glass balustrade and the glass front break (shoot a pane out and knock a man through it), fire spreads from a burning man to the men he runs into, and the Tuning screen has Lever and Plasma sections (Pause → Tuning with the gun out).
+
+Please try:
+1. Hotel, Sandbox: hold the gallery and stalk across the atrium, then fight through the corridors. Do the lifts feel like the place they come from? Too dark or too bright anywhere? Lost anywhere?
+2. The Governor: does the lever clunk feel right (timing 0.16 s after the shot, 0.42 s stroke)? Recoil too much or too little?
+3. The Slagger: charge time, how big the ball gets, how strong the recoil is at full, the bolt speed (58 m/s at full). Does a graze read? Do the holes and burning limbs read?
+
+- Device / renderer / settings:
+- Measured:
+- Notes from the owner:
+- Follow-ups: the right hand stays on the grip while the lever swings (the M14/P arms are one mesh): split the arms and move the hand with the lever if it reads badly. The Slagger has no HUD charge meter (the ball is the meter). Lightmap tuning from the phone.

@@ -59,6 +59,26 @@ const WEAPON_PARAMS: Array = [
 	["Launcher", "blast_damage", 0.0, 600.0, 10.0, "Blast damage at the centre"],
 	["Launcher", "fragment_count", 0.0, 2000.0, 20.0, "Fragments"],
 	["Launcher", "fireball_radius", 0.2, 2.0, 0.05, "Fireball size (m)"],
+	["Lever", "lever_delay", 0.0, 0.4, 0.01, "Lever thrown after the shot (s)"],
+	["Lever", "lever_time", 0.15, 1.0, 0.01, "Lever stroke (s)"],
+	["Lever", "lever_open_deg", 20.0, 80.0, 1.0, "Lever swing (°)"],
+	["Lever", "lever_hand_follow", 0.0, 1.0, 0.05, "Hand follows the lever"],
+	["Lever", "ragdoll_push", 0.5, 4.0, 0.1, "Throws the dead (×)"],
+	["Lever", "stagger_push", 0.0, 12.0, 0.5, "Shoves the living (m/s)"],
+	["Plasma", "full_charge_time", 0.5, 5.0, 0.05, "Full charge after (s)"],
+	["Plasma", "min_charge", 0.0, 0.5, 0.01, "Fizzles below (charge)"],
+	["Plasma", "overload_time", 0.5, 8.0, 0.25, "Overload after full (s)"],
+	["Plasma", "speed_full", 10.0, 150.0, 1.0, "Bolt speed, full (m/s)"],
+	["Plasma", "radius_full", 0.02, 0.2, 0.005, "Bolt size, full (m)"],
+	["Plasma", "graze_full", 0.0, 1.5, 0.05, "Graze reach, full (m)"],
+	["Plasma", "damage_full", 50.0, 1500.0, 10.0, "Damage, full"],
+	["Plasma", "burn_time", 0.0, 15.0, 0.5, "Burns for (s)"],
+	["Plasma", "burn_dps_full", 0.0, 80.0, 1.0, "Burn damage/s, full"],
+	["Plasma", "agony_time", 0.0, 15.0, 0.5, "Runs in agony (s)"],
+	["Plasma", "burn_through_charge", 0.0, 1.0, 0.05, "Burns through the body from (charge)"],
+	["Plasma", "sever_charge", 0.0, 1.0, 0.05, "Takes limbs from (charge)"],
+	["Plasma", "splash_full", 0.0, 5.0, 0.1, "Splash sets alight within (m)"],
+	["Plasma", "recoil_full", 0.0, 3.0, 0.05, "Recoil at full (×)"],
 	["Feedback", "hitstop_headshot", 0.0, 0.15, 0.005, "Hit-stop headshot (s)"],
 	["Feedback", "hitstop_kill", 0.0, 0.15, 0.005, "Hit-stop kill (s)"],
 ]
@@ -194,7 +214,7 @@ func save() -> void:
 			var prop: String = p[1]
 			var holder: Resource = param_target(p, slot.data)
 			if holder:
-				cfg.set_value(section, GRENADE_KEY + prop if holder != slot.data else prop, holder.get(prop))
+				cfg.set_value(section, key_prefix(p) + prop, holder.get(prop))
 	if _assist:
 		cfg.set_value("aim_assist", "enabled", _assist.enabled)
 		for p: Array in ASSIST_PARAMS:
@@ -211,8 +231,18 @@ func save() -> void:
 	cfg.save(SAVE_PATH)
 
 
-## Launcher values live in the gun's GrenadeData; saved under this prefix in the gun's section.
+## Launcher values live in the gun's GrenadeData, plasma values in its
+## PlasmaData; saved under these prefixes in the gun's section.
 const GRENADE_KEY: String = "grenade/"
+const PLASMA_KEY: String = "plasma/"
+
+
+static func key_prefix(param: Array) -> String:
+	if param[0] == "Launcher":
+		return GRENADE_KEY
+	if param[0] == "Plasma":
+		return PLASMA_KEY
+	return ""
 
 
 ## Railgun sliders only appear for railguns, launcher ones for launchers
@@ -224,8 +254,12 @@ static func shows(param: Array, data: WeaponData) -> bool:
 		return data.laser_range > 0.0
 	if param[0] == "Launcher":
 		return data.grenade != null
+	if param[0] == "Plasma":
+		return data.plasma != null
+	if param[0] == "Lever":
+		return data.lever_action
 	if param[0] == "Ballistics":
-		return data.grenade == null
+		return data.grenade == null and data.plasma == null
 	return true
 
 
@@ -233,6 +267,8 @@ static func shows(param: Array, data: WeaponData) -> bool:
 static func param_target(param: Array, data: WeaponData) -> Resource:
 	if param[0] == "Launcher":
 		return data.grenade
+	if param[0] == "Plasma":
+		return data.plasma
 	return data
 
 
@@ -313,6 +349,10 @@ static func load_saved(data: WeaponData, assist: AimAssistConfig) -> void:
 				var gp: String = prop.trim_prefix(GRENADE_KEY)
 				if data.grenade and gp in data.grenade:
 					data.grenade.set(gp, cfg.get_value(section, prop))
+			elif prop.begins_with(PLASMA_KEY):
+				var pp: String = prop.trim_prefix(PLASMA_KEY)
+				if data.plasma and pp in data.plasma:
+					data.plasma.set(pp, cfg.get_value(section, prop))
 			elif prop in data:
 				data.set(prop, cfg.get_value(section, prop))
 	if assist and cfg.has_section("aim_assist"):
@@ -329,7 +369,7 @@ func values_text() -> String:
 			continue
 		var prop: String = p[1]
 		var holder: Resource = param_target(p, _weapon.data)
-		lines.append("%s%s = %s" % ["grenade: " if holder != _weapon.data else "", prop, var_to_str(holder.get(prop))])
+		lines.append("%s%s = %s" % [key_prefix(p).replace("/", ": "), prop, var_to_str(holder.get(prop))])
 	if _assist:
 		lines.append("# aim assist (data/input/aim_assist.tres)")
 		lines.append("enabled = %s" % var_to_str(_assist.enabled))
@@ -489,11 +529,14 @@ func _on_copy() -> void:
 
 
 func _on_defaults() -> void:
-	var fresh: WeaponData = ResourceLoader.load(_weapon.data.resource_path, "", ResourceLoader.CACHE_MODE_IGNORE) as WeaponData
+	var fresh: WeaponData = ResourceLoader.load(_weapon.data.resource_path, "", ResourceLoader.CACHE_MODE_IGNORE_DEEP) as WeaponData
 	if fresh:
 		for p: Array in WEAPON_PARAMS:
 			var prop: String = p[1]
-			_weapon.data.set(prop, fresh.get(prop))
+			var to: Resource = param_target(p, _weapon.data)
+			var from: Resource = param_target(p, fresh)
+			if to and from:
+				to.set(prop, from.get(prop))
 	if _assist:
 		var fresh_assist: AimAssistConfig = ResourceLoader.load(_assist.resource_path, "", ResourceLoader.CACHE_MODE_IGNORE) as AimAssistConfig
 		if fresh_assist:

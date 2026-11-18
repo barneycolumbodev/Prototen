@@ -1,0 +1,416 @@
+{
+ "size": 1024,
+ "cols": 6,
+ "rows": 5,
+ "layers": {
+  "plaster": {
+   "tile_m": 3.0,
+   "tint": true,
+   "mean_linear": [
+    0.1697,
+    0.1625,
+    0.1487
+   ],
+   "rough": 0.874,
+   "index": 0
+  },
+  "concrete": {
+   "tile_m": 4.0,
+   "tint": false,
+   "mean_linear": [
+    0.0877,
+    0.0849,
+    0.0768
+   ],
+   "rough": 0.841,
+   "index": 1
+  },
+  "darkwood": {
+   "tile_m": 1.0,
+   "tint": false,
+   "mean_linear": [
+    0.0271,
+    0.0067,
+    0.0016
+   ],
+   "rough": 0.328,
+   "index": 2
+  },
+  "lacquer": {
+   "tile_m": 1.0,
+   "tint": false,
+   "mean_linear": [
+    0.1424,
+    0.0009,
+    0.0004
+   ],
+   "rough": 0.3,
+   "index": 3
+  },
+  "glass": {
+   "tile_m": 2.0,
+   "tint": false,
+   "mean_linear": [
+    0.0012,
+    0.0014,
+    0.0016
+   ],
+   "rough": 0.109,
+   "index": 4
+  },
+  "emissive": {
+   "tile_m": 1.0,
+   "tint": true,
+   "mean_linear": [
+    0.2185,
+    0.2185,
+    0.2185
+   ],
+   "rough": 0.2,
+   "index": 5
+  },
+  "paint_metal": {
+   "tile_m": 2.0,
+   "tint": true,
+   "mean_linear": [
+    0.1942,
+    0.1921,
+    0.1912
+   ],
+   "rough": 0.482,
+   "index": 6
+  },
+  "galv": {
+   "tile_m": 1.0,
+   "tint": false,
+   "mean_linear": [
+    0.3415,
+    0.3541,
+    0.3667
+   ],
+   "rough": 0.348,
+   "index": 7
+  },
+  "grate": {
+   "tile_m": 1.0,
+   "tint": false,
+   "mean_linear": [
+    0.0433,
+    0.0103,
+    0.003
+   ],
+   "rough": 0.7,
+   "index": 8
+  },
+  "epoxy": {
+   "tile_m": 4.0,
+   "tint": false,
+   "mean_linear": [
+    0.0349,
+    0.0564,
+    0.048
+   ],
+   "rough": 0.406,
+   "index": 9
+  },
+  "canvas": {
+   "tile_m": 1.0,
+   "tint": true,
+   "mean_linear": [
+    0.1771,
+    0.1771,
+    0.1769
+   ],
+   "rough": 0.9,
+   "index": 10
+  },
+  "plastic": {
+   "tile_m": 1.0,
+   "tint": true,
+   "mean_linear": [
+    0.2023,
+    0.2023,
+    0.2023
+   ],
+   "rough": 0.413,
+   "index": 11
+  },
+  "cardboard": {
+   "tile_m": 1.0,
+   "tint": false,
+   "mean_linear": [
+    0.148,
+    0.0715,
+    0.0232
+   ],
+   "rough": 0.871,
+   "index": 12
+  },
+  "terrazzo": {
+   "tile_m": 2.0,
+   "tint": false,
+   "mean_linear": [
+    0.3805,
+    0.3293,
+    0.2478
+   ],
+   "rough": 0.226,
+   "index": 13
+  },
+  "wallpaper": {
+   "tile_m": 1.0,
+   "tint": false,
+   "mean_linear": [
+    0.0937,
+    0.0117,
+    0.0017
+   ],
+   "rough": 0.704,
+   "index": 14
+  },
+  "stone": {
+   "tile_m": 2.0,
+   "tint": false,
+   "mean_linear": [
+    0.0964,
+    0.0897,
+    0.0844
+   ],
+   "rough": 0.645,
+   "index": 15
+  },
+  "lantern": {
+   "tile_m": 1.0,
+   "tint": true,
+   "mean_linear": [
+    0.1981,
+    0.1968,
+    0.1962
+   ],
+   "rough": 0.8,
+   "index": 16
+  },
+  "marble": {
+   "tile_m": 2.4,
+   "tint": false,
+   "mean_linear": [
+    0.6995,
+    0.6632,
+    0.5947
+   ],
+   "rough": 0.1,
+   "index": 17
+  },
+  "marble_dark": {
+   "tile_m": 2.4,
+   "tint": false,
+   "mean_linear": [
+    0.0041,
+    0.004,
+    0.0038
+   ],
+   "rough": 0.106,
+   "index": 18
+  },
+  "onyx": {
+   "tile_m": 1.6,
+   "tint": false,
+   "mean_linear": [
+    0.542,
+    0.2201,
+    0.0413
+   ],
+   "rough": 0.08,
+   "index": 19
+  },
+  "brass": {
+   "tile_m": 1.0,
+   "tint": true,
+   "mean_linear": [
+    0.5542,
+    0.3105,
+    0.0674
+   ],
+   "rough": 0.216,
+   "index": 20
+  },
+  "rosewood": {
+   "tile_m": 2.4,
+   "tint": false,
+   "mean_linear": [
+    0.0175,
+    0.0015,
+    0.0003
+   ],
+   "rough": 0.307,
+   "index": 21
+  },
+  "carpet": {
+   "tile_m": 2.0,
+   "tint": false,
+   "mean_linear": [
+    0.0701,
+    0.0066,
+    0.0012
+   ],
+   "rough": 0.95,
+   "index": 22
+  },
+  "silk": {
+   "tile_m": 1.0,
+   "tint": true,
+   "mean_linear": [
+    0.2866,
+    0.192,
+    0.0623
+   ],
+   "rough": 0.547,
+   "index": 23
+  },
+  "hotel_atlas": {
+   "tile_m": 1.0,
+   "tint": false,
+   "mean_linear": [
+    0.2451,
+    0.1769,
+    0.0953
+   ],
+   "rough": 0.616,
+   "rects": {
+    "logo": [
+     0.0,
+     0.0,
+     1.0,
+     0.171875
+    ],
+    "reception": [
+     0.0,
+     0.171875,
+     0.5,
+     0.265625
+    ],
+    "lifts": [
+     0.5,
+     0.171875,
+     1.0,
+     0.265625
+    ],
+    "ballroom": [
+     0.0,
+     0.265625,
+     0.5,
+     0.359375
+    ],
+    "bar": [
+     0.5,
+     0.265625,
+     1.0,
+     0.359375
+    ],
+    "exit": [
+     0.0,
+     0.359375,
+     0.25,
+     0.4375
+    ],
+    "staff": [
+     0.25,
+     0.359375,
+     0.625,
+     0.4375
+    ],
+    "toilets": [
+     0.625,
+     0.359375,
+     1.0,
+     0.4375
+    ],
+    "ind_up": [
+     0.0,
+     0.4375,
+     0.125,
+     0.515625
+    ],
+    "ind_down": [
+     0.125,
+     0.4375,
+     0.25,
+     0.515625
+    ],
+    "ind_l": [
+     0.25,
+     0.4375,
+     0.375,
+     0.515625
+    ],
+    "ind_9": [
+     0.375,
+     0.4375,
+     0.5,
+     0.515625
+    ],
+    "callplate": [
+     0.5,
+     0.4375,
+     0.625,
+     0.625
+    ],
+    "scroll": [
+     0.625,
+     0.4375,
+     0.75,
+     1.0
+    ],
+    "art_a": [
+     0.0,
+     0.515625,
+     0.5,
+     0.78125
+    ],
+    "art_b": [
+     0.0,
+     0.78125,
+     0.375,
+     1.0
+    ],
+    "roundel": [
+     0.75,
+     0.4375,
+     1.0,
+     0.6875
+    ],
+    "welcome": [
+     0.375,
+     0.78125,
+     0.625,
+     1.0
+    ],
+    "lounge": [
+     0.75,
+     0.6875,
+     1.0,
+     0.765625
+    ],
+    "level2": [
+     0.75,
+     0.765625,
+     1.0,
+     0.84375
+    ],
+    "concierge": [
+     0.75,
+     0.84375,
+     1.0,
+     0.921875
+    ],
+    "guests": [
+     0.75,
+     0.921875,
+     1.0,
+     1.0
+    ]
+   },
+   "index": 24
+  }
+ }
+}

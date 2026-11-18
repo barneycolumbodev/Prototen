@@ -169,6 +169,12 @@ var _bones: Dictionary[StringName, PhysicalBone3D] = {}
 var _meshes: Dictionary[StringName, MeshInstance3D] = {}
 var _gun_socket: BoneAttachment3D
 var _wounds: PackedVector4Array = PackedVector4Array()
+## Plasma burn-throughs (rest space): centre + radius, axis + glow, and age.
+var _holes: PackedVector4Array = PackedVector4Array()
+var _hole_dirs: PackedVector4Array = PackedVector4Array()
+var _hole_age: PackedFloat32Array = PackedFloat32Array()
+const MAX_HOLES: int = 4
+const HOLE_COOL_TIME: float = 7.0
 var _wound_age: PackedFloat32Array = PackedFloat32Array()
 var _ragdoll_time: float = 0.0
 var _split: bool = false
@@ -445,6 +451,47 @@ func wound_count() -> int:
 	return _wounds.size()
 
 
+## A plasma bolt burned clean through: a tunnel of `radius` along `dir`
+## through `hit_point` (on zone `zone`), drawn as nothing (you see through
+## him), ringed with char and embers that cool over HOLE_COOL_TIME.
+func add_hole(zone: StringName, hit_point: Vector3, dir: Vector3, radius: float) -> void:
+	if not Gore.is_on():
+		return
+	var spec: Array = ZONES.get(zone, [])
+	if spec.is_empty():
+		return
+	set_process(true)
+	var zone_bone: StringName = spec[0]
+	var bi: int = skeleton.find_bone(zone_bone)
+	var to_rest: Transform3D = skeleton.global_transform * skeleton.get_bone_global_rest(bi)
+	to_rest = skeleton.global_transform.affine_inverse() * to_rest * bone_global(zone_bone).affine_inverse()
+	var p: Vector3 = to_rest * hit_point
+	var a: Vector3 = (to_rest.basis * dir).normalized()
+	if _holes.size() >= MAX_HOLES:
+		_holes.remove_at(0)
+		_hole_dirs.remove_at(0)
+		_hole_age.remove_at(0)
+	# Centre the tunnel on the body's middle along the path, not the entry.
+	_holes.append(Vector4(p.x, p.y, p.z, radius))
+	_hole_dirs.append(Vector4(a.x, a.y, a.z, 1.0))
+	_hole_age.append(0.0)
+	_push_holes()
+
+
+func hole_count() -> int:
+	return _holes.size()
+
+
+func _push_holes() -> void:
+	var h: PackedVector4Array = _holes.duplicate()
+	var d: PackedVector4Array = _hole_dirs.duplicate()
+	h.resize(MAX_HOLES)
+	d.resize(MAX_HOLES)
+	material.set_shader_parameter(&"holes", h)
+	material.set_shader_parameter(&"hole_dirs", d)
+	material.set_shader_parameter(&"hole_count", _holes.size())
+
+
 func flinch(dir: Vector3, strength: float, head: bool) -> void:
 	var local_dir: Vector3 = skeleton.global_basis.inverse() * dir
 	pose.flinch(local_dir, (0.12 if head else 0.2) * strength, (0.35 if head else 0.1) * strength)
@@ -575,6 +622,13 @@ func _process(delta: float) -> void:
 		for i: int in _wound_age.size():
 			_wound_age[i] += delta
 		material.set_shader_parameter(&"wound_age", _wound_age)
+	if not _holes.is_empty() and _hole_age[_hole_age.size() - 1] < HOLE_COOL_TIME:
+		for i: int in _hole_age.size():
+			_hole_age[i] += delta
+			var d: Vector4 = _hole_dirs[i]
+			d.w = clampf(1.0 - _hole_age[i] / HOLE_COOL_TIME, 0.0, 1.0)
+			_hole_dirs[i] = d
+		_push_holes()
 	if frozen and _can_sleep():
 		# A frozen corpse whose blood has stopped spreading has nothing left
 		# to do until it's hit or moved (optimization overhaul F-15).
@@ -586,6 +640,9 @@ func _process(delta: float) -> void:
 func _can_sleep() -> bool:
 	if _lod_wait:
 		return false
+	for age: float in _hole_age:
+		if age < HOLE_COOL_TIME:
+			return false
 	for age: float in _wound_age:
 		if age < WOUND_GROW_TIME:
 			return false
@@ -626,7 +683,8 @@ func _nearest_body(zone: StringName, point: Vector3) -> PhysicalBone3D:
 ## Cuts `segment` off with everything still on it (an arm off at the upper
 ## arm takes the forearm and hand). `destroy`: blown to pieces (chunks and
 ## mist, no limb). Returns false if it was already gone.
-func sever(segment: StringName, velocity: Vector3, destroy: bool = false) -> bool:
+## `cauterize`: burned off (plasma): no blood thrown, the pieces char.
+func sever(segment: StringName, velocity: Vector3, destroy: bool = false, cauterize: bool = false) -> bool:
 	if gibbed or severed.has(segment) or not SEGMENTS.has(segment):
 		return false
 	_split_mesh()
@@ -652,7 +710,9 @@ func sever(segment: StringName, velocity: Vector3, destroy: bool = false) -> boo
 	var mid: Vector3 = (at + _segment_end(group)) * 0.5
 	if destroy:
 		var n: int = 3 + 2 * group.size()
-		if segment == &"head":
+		if cauterize:
+			pass  # burned to pieces: the caller throws charred chunks (Gore.charred_chunks)
+		elif segment == &"head":
 			Gore.burst_head(at + Vector3.UP * 0.08, velocity)
 		else:
 			Gore.burst_chunks(mid, velocity.normalized() + Vector3.UP * 0.3, n, velocity.length() * 0.8 + 2.0)
@@ -664,7 +724,10 @@ func sever(segment: StringName, velocity: Vector3, destroy: bool = false) -> boo
 		var mesh: ArrayMesh = gib_mesh(group)
 		# The mesh is centred on its middle: the body goes there.
 		var centre: Vector3 = _gib_centres[look.key() + "|" + ",".join(PackedStringArray(group))]
-		Gore.throw_gib(mesh, xform * Transform3D(Basis(), centre), velocity, spin, radius, material)
+		var g: RigidBody3D = Gore.throw_gib(mesh, xform * Transform3D(Basis(), centre), velocity, spin, radius, material)
+		if cauterize and g:
+			# The limb goes off burning.
+			Fx.burn_at(g, g.global_position, Vector3.UP, 6.0, true)
 	if gun and (&"hand_R" in group):
 		drop_gun(velocity * 0.3)
 	return true

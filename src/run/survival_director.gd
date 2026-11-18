@@ -66,7 +66,17 @@ func _bring_boss(role: String) -> void:
 	e.look = _take_look(role)
 	squad.add(e)
 	level.add_child(e)
-	var at: Vector3 = BossIntro.pick_landing(player, e.config.boss)
+	var at: Vector3 = BossIntro.find_landing(player, e.config.boss)
+	# Nowhere to drop in from (indoors, away from the atrium): a map may bring
+	# him another way (the hotel: down in a lift). Otherwise the fallback spot.
+	var arrived: bool = false
+	if not at.is_finite() and level.has_method(&"boss_arrival"):
+		var via: Vector3 = level.call(&"boss_arrival", player, e)
+		if via.is_finite():
+			at = via
+			arrived = true
+	if not at.is_finite():
+		at = BossIntro.pick_landing(player, e.config.boss)
 	e.global_position = at + Vector3.UP * 0.05
 	var to: Vector3 = player.global_position - at
 	e.face(atan2(to.x, to.z))
@@ -78,7 +88,7 @@ func _bring_boss(role: String) -> void:
 	enemies.append(e)
 	spawned_total += 1
 	boss = e
-	if boss_intro:
+	if boss_intro and not arrived:
 		var intro: BossIntro = BossIntro.new()
 		intro.name = "BossIntro"
 		intro.boss = e
