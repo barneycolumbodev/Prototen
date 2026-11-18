@@ -97,7 +97,10 @@ func _ready() -> void:
 	var sp_mat: StandardMaterial3D = StandardMaterial3D.new()
 	sp_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	sp_mat.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
-	sp_mat.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
+	sp_mat.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
+	sp_mat.billboard_keep_scale = true
+	sp_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	sp_mat.albedo_texture = Fx._soft_dot()
 	sp_mat.albedo_color = Color(1.0, 0.6, 0.2) * 3.0
 	qm.material = sp_mat
 	sparks.mesh = qm
@@ -122,7 +125,7 @@ func _apply() -> void:
 		return
 	# It swells as it fills, and shivers: harder near full and past it.
 	var flick: float = 0.85 + 0.15 * sin(_t * 47.0) * sin(_t * 31.0) + _rng.randf_range(-0.1, 0.1) * (0.4 + strain)
-	var r: float = lerpf(BALL_MIN, data.radius_full * 0.85, sqrt(charge)) * (1.0 + 0.08 * flick * charge + strain * 0.12 * _rng.randf())
+	var r: float = lerpf(BALL_MIN, data.radius_full * 0.6, sqrt(charge)) * (1.0 + 0.08 * flick * charge + strain * 0.12 * _rng.randf())
 	ball.scale = Vector3.ONE * r
 	ball_mat.set_shader_parameter(&"intensity", lerpf(1.6, 4.5, charge))
 	ball_mat.set_shader_parameter(&"heat", clampf(charge * 0.9 + strain * 0.3, 0.0, 1.0))

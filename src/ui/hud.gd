@@ -42,6 +42,8 @@ class RailGauge:
 	var charge: float = 1.0
 	var heat: float = 0.0
 	var venting: bool = false
+	## The SL-9's charge instead: orange, the second bar is the field's strain past full.
+	var plasma: bool = false
 	var _t: float = 0.0
 	const W: float = 150.0
 
@@ -50,7 +52,7 @@ class RailGauge:
 	func _process(delta: float) -> void:
 		_t += delta
 		# Redrawn only when something it shows changed (optimization overhaul U-07).
-		var now: Array = [charge, heat, venting, size, _t if venting else 0.0]
+		var now: Array = [charge, heat, venting, size, _t if venting or (plasma and heat > 0.0) else 0.0, plasma]
 		if now != _drawn:
 			_drawn = now
 			queue_redraw()
@@ -69,6 +71,11 @@ class RailGauge:
 		var font: Font = get_theme_default_font()
 		var label: String = "VENTING" if venting else ("CHARGED" if full else "CHARGING")
 		var col: Color = Color(1.0, 0.5, 0.2, hot.a) if venting else c
+		if plasma:
+			c = Color(1.0, 0.55, 0.15, 1.0 if full else 0.8).lerp(Color(1, 0.95, 0.8), 0.5 if full else 0.0)
+			draw_rect(Rect2(x0, 0, W * charge, 5), c)
+			label = "RECOVERING" if venting else ("FIELD FAILING" if heat > 0.5 else ("FULL" if full else "PLASMA %d%%" % roundi(charge * 100.0)))
+			col = Color(1.0, 0.3, 0.1, 0.55 + 0.45 * sin(_t * 18.0)) if heat > 0.5 or venting else c
 		draw_string(font, Vector2(x0, -4), label, HORIZONTAL_ALIGNMENT_LEFT, W, 12, col)
 
 
@@ -369,8 +376,15 @@ func _process(delta: float) -> void:
 		_update_launcher(cam)
 		_scope.lit_color = _reticle.color
 		_wheel.weapon = weapon
-		_gauge.visible = weapon.data.is_rail()
-		if _gauge.visible:
+		_gauge.visible = weapon.data.is_rail() or (weapon.data.plasma != null and (weapon.plasma_charging or weapon.plasma_locked()))
+		_gauge.plasma = weapon.data.plasma != null
+		if _gauge.visible and _gauge.plasma:
+			var vp2: Vector2 = get_viewport().get_visible_rect().size
+			_gauge.position = Vector2(vp2.x - RailGauge.W - 26.0, vp2.y - 118.0)
+			_gauge.charge = weapon.plasma_charge()
+			_gauge.heat = weapon.plasma_strain()
+			_gauge.venting = weapon.plasma_locked()
+		elif _gauge.visible:
 			var vp: Vector2 = get_viewport().get_visible_rect().size
 			_gauge.position = Vector2(vp.x - RailGauge.W - 26.0, vp.y - 118.0)
 			_gauge.charge = weapon.mechanism.charge()

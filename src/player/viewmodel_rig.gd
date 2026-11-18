@@ -65,6 +65,10 @@ var _hammer: Node3D
 var _hammer_rest: Transform3D
 var _load_round: Node3D
 var _load_rest: Vector3
+## The arms (every model after the gun): their meshes, for the lever hand bend.
+var _arm_roots: Array[Node] = []
+var _bend_ready: bool = false
+var _last_bend: float = 0.0
 var _rounds: Array[Node3D] = []
 var _round_rest: Array[Transform3D] = []
 var _tinted: Array[GeometryInstance3D] = []
@@ -78,6 +82,8 @@ func _ready() -> void:
 	for scene: PackedScene in models:
 		var model: Node = scene.instantiate()
 		add_child(model)
+		if scene != models[0]:
+			_arm_roots.append(model)
 		for node: Node in model.find_children("*", "GeometryInstance3D", true, false):
 			var geo: GeometryInstance3D = node as GeometryInstance3D
 			geo.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
@@ -270,6 +276,39 @@ func lever_transform() -> Transform3D:
 func set_bolt(back: float) -> void:
 	if _bolt:
 		_bolt.position = _bolt_rest + Vector3(-back, 0.0, 0.0)
+
+
+## The firing hand goes with a lever: turned `angle_rad` about the line
+## along Z through `pivot` (weapon space), bending at the wrist
+## (suit_paint.gdshader). 0 puts it back on the grip.
+func set_hand_bend(angle_rad: float, pivot: Vector3) -> void:
+	if _arm_roots.is_empty() or is_equal_approx(angle_rad, _last_bend):
+		return
+	_last_bend = angle_rad
+	if not _bend_ready:
+		if angle_rad == 0.0:
+			return
+		_bend_ready = true
+		# Unpainted arms still wear the baked StandardMaterial: give them the
+		# suit shader (no colours: the baked look) so they can bend.
+		for root: Node in _arm_roots:
+			for n: Node in root.find_children("*", "MeshInstance3D", true, false):
+				var mi: MeshInstance3D = n as MeshInstance3D
+				if mi.get_surface_override_material(0) == null:
+					BodyColors.new().apply_to_model(root, false)
+					break
+	for root: Node in _arm_roots:
+		for n: Node in root.find_children("*", "MeshInstance3D", true, false):
+			var mi: MeshInstance3D = n as MeshInstance3D
+			var to_w: Transform3D = global_transform.affine_inverse() * mi.global_transform
+			for i: int in mi.get_surface_override_material_count():
+				var m: ShaderMaterial = mi.get_surface_override_material(i) as ShaderMaterial
+				if m == null:
+					continue
+				m.set_shader_parameter(&"bend_angle", angle_rad)
+				m.set_shader_parameter(&"bend_pivot", pivot)
+				m.set_shader_parameter(&"bend_to_weapon", Projection(to_w))
+				m.set_shader_parameter(&"bend_from_weapon", Projection(to_w.affine_inverse()))
 
 
 ## Hammer turned `angle_deg` from cocked about the line along Z through `hinge`.

@@ -5310,7 +5310,7 @@
 0.78,
 0.52
 ],
-"energy": 260.0,
+"energy": 380.0,
 "radius": 1.92,
 "type": "POINT",
 "dyn": true,
@@ -5328,7 +5328,7 @@
 0.78,
 0.52
 ],
-"energy": 110.0,
+"energy": 160.0,
 "radius": 1.2000000000000002,
 "type": "POINT",
 "dyn": false,
@@ -5346,11 +5346,203 @@
 0.78,
 0.52
 ],
-"energy": 110.0,
+"energy": 160.0,
 "radius": 1.2000000000000002,
 "type": "POINT",
 "dyn": false,
 "range": 22.0
+},
+{
+"kind": "light",
+"p": [
+-12.0,
+0.0,
+14.7
+],
+"color": [
+1.0,
+0.78,
+0.52
+],
+"energy": 140.0,
+"radius": 0.15,
+"type": "SPOT",
+"dyn": false,
+"range": 20.0,
+"spot": 55,
+"dir": [
+0.0,
+0.0,
+-1.0
+]
+},
+{
+"kind": "light",
+"p": [
+-12.0,
+12.0,
+14.7
+],
+"color": [
+1.0,
+0.78,
+0.52
+],
+"energy": 140.0,
+"radius": 0.15,
+"type": "SPOT",
+"dyn": false,
+"range": 20.0,
+"spot": 55,
+"dir": [
+0.0,
+0.0,
+-1.0
+]
+},
+{
+"kind": "light",
+"p": [
+-4.0,
+0.0,
+14.7
+],
+"color": [
+1.0,
+0.78,
+0.52
+],
+"energy": 140.0,
+"radius": 0.15,
+"type": "SPOT",
+"dyn": false,
+"range": 20.0,
+"spot": 55,
+"dir": [
+0.0,
+0.0,
+-1.0
+]
+},
+{
+"kind": "light",
+"p": [
+-4.0,
+12.0,
+14.7
+],
+"color": [
+1.0,
+0.78,
+0.52
+],
+"energy": 140.0,
+"radius": 0.15,
+"type": "SPOT",
+"dyn": false,
+"range": 20.0,
+"spot": 55,
+"dir": [
+0.0,
+0.0,
+-1.0
+]
+},
+{
+"kind": "light",
+"p": [
+4.0,
+0.0,
+14.7
+],
+"color": [
+1.0,
+0.78,
+0.52
+],
+"energy": 140.0,
+"radius": 0.15,
+"type": "SPOT",
+"dyn": false,
+"range": 20.0,
+"spot": 55,
+"dir": [
+0.0,
+0.0,
+-1.0
+]
+},
+{
+"kind": "light",
+"p": [
+4.0,
+12.0,
+14.7
+],
+"color": [
+1.0,
+0.78,
+0.52
+],
+"energy": 140.0,
+"radius": 0.15,
+"type": "SPOT",
+"dyn": false,
+"range": 20.0,
+"spot": 55,
+"dir": [
+0.0,
+0.0,
+-1.0
+]
+},
+{
+"kind": "light",
+"p": [
+12.0,
+0.0,
+14.7
+],
+"color": [
+1.0,
+0.78,
+0.52
+],
+"energy": 140.0,
+"radius": 0.15,
+"type": "SPOT",
+"dyn": false,
+"range": 20.0,
+"spot": 55,
+"dir": [
+0.0,
+0.0,
+-1.0
+]
+},
+{
+"kind": "light",
+"p": [
+12.0,
+12.0,
+14.7
+],
+"color": [
+1.0,
+0.78,
+0.52
+],
+"energy": 140.0,
+"radius": 0.15,
+"type": "SPOT",
+"dyn": false,
+"range": 20.0,
+"spot": 55,
+"dir": [
+0.0,
+0.0,
+-1.0
+]
 },
 {
 "kind": "light",
@@ -7632,7 +7824,7 @@
 "kind": "light",
 "p": [
 -12.0,
-23.0,
+24.5,
 3.75
 ],
 "color": [
@@ -7640,7 +7832,7 @@
 0.78,
 0.52
 ],
-"energy": 12.0,
+"energy": 9.0,
 "radius": 0.08,
 "type": "POINT",
 "dyn": false,
@@ -7650,7 +7842,7 @@
 "kind": "light",
 "p": [
 -8.0,
-23.0,
+24.5,
 3.75
 ],
 "color": [
@@ -7658,7 +7850,7 @@
 0.78,
 0.52
 ],
-"energy": 12.0,
+"energy": 9.0,
 "radius": 0.08,
 "type": "POINT",
 "dyn": false,
@@ -7668,7 +7860,7 @@
 "kind": "light",
 "p": [
 -4.0,
-23.0,
+24.5,
 3.75
 ],
 "color": [
@@ -7676,7 +7868,7 @@
 0.78,
 0.52
 ],
-"energy": 12.0,
+"energy": 9.0,
 "radius": 0.08,
 "type": "POINT",
 "dyn": false,
@@ -7686,7 +7878,7 @@
 "kind": "light",
 "p": [
 0.0,
-23.0,
+24.5,
 3.75
 ],
 "color": [
@@ -7694,7 +7886,7 @@
 0.78,
 0.52
 ],
-"energy": 12.0,
+"energy": 9.0,
 "radius": 0.08,
 "type": "POINT",
 "dyn": true,
@@ -7704,7 +7896,7 @@
 "kind": "light",
 "p": [
 4.0,
-23.0,
+24.5,
 3.75
 ],
 "color": [
@@ -7712,7 +7904,7 @@
 0.78,
 0.52
 ],
-"energy": 12.0,
+"energy": 9.0,
 "radius": 0.08,
 "type": "POINT",
 "dyn": false,
@@ -7722,7 +7914,7 @@
 "kind": "light",
 "p": [
 8.0,
-23.0,
+24.5,
 3.75
 ],
 "color": [
@@ -7730,7 +7922,7 @@
 0.78,
 0.52
 ],
-"energy": 12.0,
+"energy": 9.0,
 "radius": 0.08,
 "type": "POINT",
 "dyn": false,
@@ -7740,7 +7932,7 @@
 "kind": "light",
 "p": [
 12.0,
-23.0,
+24.5,
 3.75
 ],
 "color": [
@@ -7748,7 +7940,7 @@
 0.78,
 0.52
 ],
-"energy": 12.0,
+"energy": 9.0,
 "radius": 0.08,
 "type": "POINT",
 "dyn": false,

@@ -76,6 +76,8 @@ enum WeaponClass { HANDGUN, SHOTGUN, RIFLE, HEAVY }
 @export var rumble_lever_open: Vector3 = Vector3(0.2, 0.5, 0.06)
 @export var rumble_lever_close: Vector3 = Vector3(0.45, 0.85, 0.09)
 @export var load_round_from: Vector3 = Vector3(-0.02, -0.03, 0.06)
+## How much of the lever's swing the firing hand follows (0 = stays on the grip).
+@export_range(0.0, 1.0) var lever_hand_follow: float = 0.8
 
 @export_group("Fire")
 ## Fastest the mechanism cycles (seconds between shots). Semi-auto.

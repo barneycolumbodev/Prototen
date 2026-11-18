@@ -940,9 +940,9 @@ def atrium():
     for x in (-8, -3, 3, 8):
         column(x, -8.0, 0.0, 7.5, 0.55)
     # Chandeliers: one great one over the fountain, two smaller.
-    chandelier((0.0, 6.0, ATRIUM_TOP), 2.4, 4, energy=260.0, dyn=True)
-    chandelier((-9.0, 6.0, ATRIUM_TOP), 1.5, 3, energy=110.0)
-    chandelier((9.0, 6.0, ATRIUM_TOP), 1.5, 3, energy=110.0)
+    chandelier((0.0, 6.0, ATRIUM_TOP), 2.4, 4, energy=380.0, dyn=True)
+    chandelier((-9.0, 6.0, ATRIUM_TOP), 1.5, 3, energy=160.0)
+    chandelier((9.0, 6.0, ATRIUM_TOP), 1.5, 3, energy=160.0)
     # Coffered ceiling: rosewood field, brass grid, warm coves round the edge.
     k.quad((-16, 16, ATRIUM_TOP - 0.002), (16, 16, ATRIUM_TOP - 0.002), (16, -4, ATRIUM_TOP - 0.002), (-16, -4, ATRIUM_TOP - 0.002), "rosewood", (0.55, 0.5, 0.5))
     for x in range(-16, 17, 4):
@@ -952,6 +952,11 @@ def atrium():
     for x in range(-14, 15, 4):
         for y in range(-2, 15, 4):
             k.box((x, y, ATRIUM_TOP - 0.06), (2.6, 2.6, 0.04), "silk", (0.56, 0.46, 0.3))
+    # Recessed spots in the coffers: a 15 m atrium needs light from the ceiling, not just the chandeliers.
+    for x in range(-12, 13, 8):
+        for y in (0, 12):
+            k.cyl((x, y, ATRIUM_TOP - 0.03), (x, y, ATRIUM_TOP - 0.06), 0.16, "emissive", (1.0, 0.86, 0.66), sides=12, emit=14.0)
+            light((x, y, ATRIUM_TOP - 0.3), WARM, 140.0, radius=0.15, kind="SPOT", spot=55, direction=(0, 0, -1), rng=20.0)
     # Red silk banners down the void.
     for x, y, yaw in ((-12.0, -3.5, 0), (12.0, -3.5, 0), (-12.0, 15.5, 0), (12.0, 15.5, 0)):
         banner(x, y, ATRIUM_TOP - 0.5, 7.0, yaw)
@@ -1109,7 +1114,7 @@ def lift_hall():
     k.sign((-13.97, 23.0, 2.6), 2.4, 0.45, 90.0, "hotel_atlas", "lifts", depth=0.03, back_mat="brass", back_tint=(0.4, 0.33, 0.24))
     k.sign((13.97, 23.0, 2.6), 2.4, 0.45, -90.0, "hotel_atlas", "lifts", depth=0.03, back_mat="brass", back_tint=(0.4, 0.33, 0.24))
     for x in (-12, -8, -4, 0, 4, 8, 12):
-        downlight(x, 23.0, 4.0, 12.0, dyn=x == 0)
+        downlight(x, 24.5, 4.0, 9.0, dyn=x == 0)
     for x in (-12.0, 12.0):
         planter((x, 21.0, 0), 1.0)
     k.box((0.0, 22.0, 0.25), (3.0, 0.8, 0.5), "marble_dark", None, col="concrete")

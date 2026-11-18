@@ -101,7 +101,10 @@ func _ensure(pd: PlasmaData) -> void:
 		var m: StandardMaterial3D = StandardMaterial3D.new()
 		m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 		m.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
-		m.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
+		m.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
+		m.billboard_keep_scale = true
+		m.vertex_color_use_as_albedo = true
+		m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 		m.albedo_texture = Fx._soft_dot()
 		m.albedo_color = Color(1.0, 0.5, 0.15) * 2.5
 		qm.material = m
@@ -196,7 +199,9 @@ func _step(b: Bolt, delta: float, space: PhysicsDirectSpaceState3D) -> void:
 	var dir: Vector3 = b.vel.normalized()
 	var r: float = b.pd.radius(b.charge)
 	var to: Vector3 = b.pos + b.vel * delta
-	var q: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(b.pos, to + dir * r, Ballistics.BULLET_MASK, b.exclude)
+	# Not debris: it would burst on the burned pieces it just threw out of a man.
+	var q: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(b.pos, to + dir * r,
+			Ballistics.BULLET_MASK & ~Ballistics.LAYER_DEBRIS, b.exclude)
 	var res: Dictionary = space.intersect_ray(q)
 	if not res.is_empty():
 		var go_on: bool = _contact(b, res, dir)
@@ -278,7 +283,7 @@ func _splash(b: Bolt, point: Vector3, normal: Vector3, collider: Object, surface
 	var c: float = b.charge
 	if surface:
 		if c > 0.45:
-			Fx.explosion(point, normal, 0.35 + 0.9 * c, false)
+			Fx.explosion(point, normal, 0.2 + 0.5 * c, false)
 		Fx._emit(&"sparks", point, normal, Color(1.0, 0.55, 0.18, 1.0), 14 + roundi(26.0 * c), 1.2 + 1.6 * c)
 		Fx._emit(&"smoke", point, normal, Color(0.22, 0.2, 0.19, 0.35), 2 + roundi(3.0 * c), 0.8)
 		Fx.burn_at(collider as Node3D, point, normal, 2.0 + 4.0 * c, true)

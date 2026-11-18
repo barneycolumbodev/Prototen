@@ -1023,8 +1023,10 @@ func _fire() -> void:
 	# Railguns: the capacitor's charge sets this shot's energy (1 for other guns).
 	var power: float = mechanism.last_power
 	if r.plasma:
+		# From the emitter toward what the sights are on (plus the spread).
+		var to_aim: Vector3 = (_view_point(eye.origin, forward, 400.0) - muzzle.origin).normalized()
 		PlasmaBolts.get_for(self).launch(r, _launch_origin(eye.origin, muzzle.origin),
-				(_view_point(eye.origin, forward, 400.0) - muzzle.origin).normalized().slerp(dir, 0.0), plasma_shot_charge, _player)
+				Ballistics.random_in_cone(to_aim, spread, _rng), plasma_shot_charge, _player)
 	elif r.grenade:
 		_launch(r, muzzle.origin, forward)
 		if data.cylinder_chambers > 0:
@@ -1103,6 +1105,18 @@ func _rumble(r: Vector3) -> void:
 
 
 # ------------------------------------------------------------------ plasma (docs/design.md §4.9)
+
+## 0..1 how far past full toward an overload.
+func plasma_strain() -> float:
+	if not plasma_charging or data.plasma == null:
+		return 0.0
+	return clampf((plasma_held - data.plasma.full_charge_time) / maxf(data.plasma.overload_time, 0.1), 0.0, 1.0)
+
+
+## Recovering from an overload (can't charge).
+func plasma_locked() -> bool:
+	return _plasma_lock > 0.0
+
 
 ## 0..1 charge built at the emitter right now.
 func plasma_charge() -> float:
@@ -1202,10 +1216,14 @@ func _update_plasma(delta: float, s: Slot) -> void:
 	s.rig.set_glow(col, energy)
 	if not plasma_charging:
 		return
-	# The gun trembles in the hands as the field strains to hold it.
-	var k: float = (c * c + strain) * delta * 60.0
-	motion.jolt(Vector3(randf_range(-1, 1), randf_range(-1, 1), randf_range(-1, 1)) * pd.tremble_pos * k,
-			Vector3(randf_range(-1, 1), randf_range(-1, 1), randf_range(-1, 1)) * pd.tremble_rot * k)
+	# The gun trembles in the hands as the field strains to hold it: a fresh
+	# small offset every frame (bounded; it never builds up), about the grip.
+	var k: float = c * c + strain
+	var e: Vector3 = Vector3(randf_range(-1, 1), randf_range(-1, 1), randf_range(-1, 1)) * deg_to_rad(pd.tremble_rot) * k
+	var piv: Vector3 = data.grip_pivot
+	s.rig.transform = s.rig.transform * Transform3D(Basis(), piv) * Transform3D(Basis.from_euler(e), Vector3.ZERO) \
+			* Transform3D(Basis(), -piv)
+	s.rig.transform.origin += Vector3(randf_range(-1, 1), randf_range(-1, 1), randf_range(-1, 1)) * pd.tremble_pos * k
 	_plasma_rumble -= delta
 	if _plasma_rumble <= 0.0:
 		_plasma_rumble = 0.1
@@ -1275,6 +1293,8 @@ func _update_lever(delta: float, s: Slot) -> void:
 			lever_t = -1.0
 	var open: float = lever_open(lever_t)
 	s.rig.set_lever(open * data.lever_open_deg, data.lever_hinge)
+	# The firing hand rides the lever (most of its swing; the wrist bends).
+	s.rig.set_hand_bend(deg_to_rad(open * data.lever_open_deg * data.lever_hand_follow), data.lever_hinge)
 	s.rig.set_bolt(open * data.bolt_travel)
 	var cock: float = 0.0 if not hammer_down else 1.0
 	if lever_t >= 0.0 and _lever_beats == 0:
