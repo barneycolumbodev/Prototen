@@ -6,10 +6,10 @@
 script = ExtResource("1")
 outdoor = false
 exposure = 1.25
-lightmap_gain = 1.8
+lightmap_gain = 1.1
 emission_gain = 1.0
 ambient_color = Color(0.2, 0.16, 0.12, 1)
-ambient_energy = 1.3
+ambient_energy = 1.1
 saturation = 1.06
 contrast = 1.08
 viewmodel_fill_color = Color(1, 0.86, 0.7, 1)
