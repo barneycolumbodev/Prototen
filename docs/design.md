@@ -529,7 +529,7 @@ Capture: `docs/previews/hunt_marker.png` (top: the last man behind you to the le
 Owner (2026-11-11): movement "still feels a little bit jank"; it should be smooth and buttery, with a lot of control over the character, not limited to what a real human can do. What changed (`src/player/player.gd`, `MovementConfig.ground_step / air_step / gravity_scale`, values in `data/player/movement_default.tres` and on the phone under Pause → Tuning → Movement):
 
 - **Camera between physics ticks.** Physics runs at 60 Hz. When the phone drops frames, the body moved in uneven steps per frame (one tick, then two). The camera is now drawn between the last two ticks, so it moves the same distance every frame. Only the player's camera does this: project-wide interpolation would touch gibs, ragdolls and teleports.
-- **Turns keep their speed.** Speed and direction are handled separately. The stick swings the velocity round at 13 rad/s (a 90° turn takes about 0.12 s) instead of blending through a slower diagonal; the old blend lost about 30 % of a sprint through a 90° turn. Past 125° you plant and push off the other way.
+- **Turns keep their speed** (replaced 2026-11-17, §5.7a: turns now plant and cost a little speed). Speed and direction are handled separately. The stick swings the velocity round at 13 rad/s (a 90° turn takes about 0.12 s) instead of blending through a slower diagonal; the old blend lost about 30 % of a sprint through a 90° turn. Past 125° you plant and push off the other way.
 - **Starts and stops ease out.** Speed closes on the target at a rate proportional to the gap (capped by the old acceleration), so there's no hard snap.
 - **Momentum carries.** Speed above the current target (slide-hop, wall jump, dash, mantle at a run) bleeds at 7 m/s² while you keep pushing, instead of being braked away the moment you land (it was 55 m/s²). Let go of the stick to stop.
 - **Air control.** The stick steers in the air without slowing you; pulling back brakes.
@@ -546,6 +546,22 @@ Owner (2026-11-11): movement "still feels a little bit jank"; it should be smoot
 - Cloud evidence: `test_sliding_into_an_enemy_launches_him` (over 0.9 m up, no damage, back on his feet), `test_a_tap_of_b_slides_the_whole_way` (5–10 m), `test_slide_launch_scales_with_momentum`; frames from `-- --demo=slide` in `docs/previews/slide_launch.png`.
 
 Evidence in the cloud is indirect (`tests/unit/test_movement_config.gd`, `tests/scene/test_movement.gd`): no speed lost through a 90° turn, a slide-hop keeps most of its speed 0.3 s after landing, a tapped jump is lower than a held one, and at 40 fps the camera moves an even distance every frame while the body doesn't. Whether it feels better is the owner's call on the phone.
+
+
+### 5.7a Gait: stepping, not gliding (2026-11-17)
+
+Owner (2026-11-17): "I want it to feel like someone is smoothly, buttery, creamy, smooth stepping, almost like the movement in the reboot 2019 Modern Warfare game, but instead it just feels like a camera is kind of gliding. The only movement that has the quality of feel I'm going for is the slide... I want the other movements to be creamy and crisp as well, so that I can rely on them and not play the game like just an arena shooter."
+
+Why it glided: the camera only translated (no head motion at all, the gun had a free-running sine bob), the player had no footstep sounds, turns carved round at full speed, and stops crept to zero (half the stop was spent under 1.5 m/s). What changed (`src/player/gait.gd`, `MovementConfig` "Gait" and "Footsteps" groups, `WeaponData.move_inertia`):
+
+- **Steps tied to the ground.** A heel strikes every stride of ground covered; the stride grows with speed (2.6 m at a walk × (speed / walk)^0.55), so cadence rises gently: about 2.5 steps/s walking, 3.2 sprinting. The feet never skate, whatever the frame rate.
+- **The head rides the stride**: low at each strike, high mid-stride (a smooth wave with a little cusp, `bob_cusp`), over the planted foot and rolled onto it. Each strike lands with weight: a short dip, a nod and a shift onto that foot on a slightly bouncy spring, then it settles. Crouched it's about half; aimed down sights, 30 %.
+- **Weight shift.** The head trails the body's velocity on a spring (3 Hz): it rocks back about 0.4° as you push off, pitches forward about 0.5° over a stop, leans into a strafe and counter-sways when the strafe stops. Landing adds a nod.
+- **The gun has weight.** It rides the same stride a beat behind the head, nods with each strike, trails back and to the side when you speed up or strafe, carries on over a stop, sinks as you jump and floats as you fall. Heavier guns swing more (`move_inertia`: pistols 0.8, MP5 0.95, Saiga 1.15, rail 1.1, M14 1.25, M32 1.35, MG42 1.7).
+- **Footsteps**: a heavy boot on concrete, metal (hollow, no ring), wood or dirt, picked from what's underfoot; the suit's plates and kit on running strides and wall-runs; a both-feet thump on landing; a push-off on a jump. Synthesized (`raw_assets/audio/build_footstep_sfx.py`), on their own three voices so they never cut a reload sound.
+- **Planted starts, stops and turns.** The first push builds over the first third of the speed (45 % → 100 % of the acceleration) and arrives firmly; stops brake hard and finish in about 0.15 s instead of creeping (on top of the head's forward pitch). Turns plant and push off: a snap 90° dips the speed about 10 % for a moment (it carved at full speed before), and a sprint turns slower (8.5 rad/s) than a walk (13). Speed above a sprint (slide-hops, wall jumps) still carves and carries: the slide and the slide-hop are unchanged.
+
+All of it is on the phone under Pause → Tuning → Movement and Gait (and "Gun weight on the move" per gun). A phone that saved tuning before keeps its other values but takes the new acceleration, braking and turn values (`TuningMenu.MOVEMENT_RESETS` version 3). Evidence: `tests/unit/test_gait.gd`, `tests/unit/test_movement_config.gd`, `test_walking_takes_steps_and_the_head_rides_them`; traces from the game code in `docs/previews/gait_trace.png` (`tools/gait_trace.gd`, `tools/plot_gait_trace.py`). Whether it feels like stepping is the owner's call on the phone.
 
 ## 6. Art direction
 

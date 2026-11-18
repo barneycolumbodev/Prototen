@@ -25,6 +25,7 @@ const WEAPON_PARAMS: Array = [
 	["Gun motion", "vm_spring_damping", 0.1, 1.5, 0.05, "Gun spring damping"],
 	["Gun motion", "sway_per_turn", 0.0, 0.05, 0.001, "Sway when turning"],
 	["Gun motion", "bob_amount", 0.0, 0.03, 0.001, "Walk bob (m)"],
+	["Gun motion", "move_inertia", 0.0, 3.0, 0.05, "Gun weight on the move"],
 	["Aiming", "ads_time", 0.05, 0.5, 0.01, "Time to aim (s)"],
 	["Aiming", "ads_fov_scale", 0.5, 1.0, 0.01, "Aimed zoom (FOV ×)"],
 	["Aiming", "ads_sensitivity", 0.3, 1.5, 0.05, "Aimed look speed"],
@@ -71,8 +72,14 @@ const ASSIST_PARAMS: Array = [
 const MOVE_PARAMS: Array = [
 	["Movement", "walk_speed", 3.0, 10.0, 0.1, "Walk speed (m/s)"],
 	["Movement", "sprint_speed", 6.0, 16.0, 0.1, "Sprint speed (m/s)"],
-	["Movement", "ground_response", 4.0, 30.0, 0.5, "Speed-up/brake snap"],
-	["Movement", "ground_turn_rate", 4.0, 30.0, 0.5, "Turn carve (rad/s)"],
+	["Movement", "ground_accel", 15.0, 120.0, 1.0, "Push-off accel (m/s²)"],
+	["Movement", "ground_decel", 15.0, 120.0, 1.0, "Braking (m/s²)"],
+	["Movement", "start_accel_fraction", 0.1, 1.0, 0.05, "First-step softness (1 = none)"],
+	["Movement", "ground_response", 4.0, 40.0, 0.5, "Arrive-at-speed snap"],
+	["Movement", "stop_response", 4.0, 60.0, 0.5, "Stop plant snap"],
+	["Movement", "ground_turn_rate", 4.0, 30.0, 0.5, "Turn rate, walk (rad/s)"],
+	["Movement", "sprint_turn_rate", 2.0, 30.0, 0.5, "Turn rate, sprint (rad/s)"],
+	["Movement", "turn_speed_cost", 0.0, 1.0, 0.01, "Turn plant (speed cost)"],
 	["Movement", "overspeed_friction", 0.0, 30.0, 0.5, "Momentum bleed (m/s²)"],
 	["Movement", "air_turn_rate", 0.0, 8.0, 0.1, "Air steering (rad/s)"],
 	["Movement", "air_accel", 0.0, 40.0, 0.5, "Air accel (m/s²)"],
@@ -88,6 +95,22 @@ const MOVE_PARAMS: Array = [
 	["Movement", "land_dip_per_mps", 0.0, 0.03, 0.001, "Landing dip"],
 	["Movement", "sprint_fov_deg", 0.0, 12.0, 0.5, "Sprint FOV (°)"],
 	["Movement", "strafe_roll_deg", 0.0, 4.0, 0.1, "Strafe lean (°)"],
+	["Gait", "stride_walk", 1.2, 4.0, 0.05, "Stride at a walk (m)"],
+	["Gait", "bob_height", 0.0, 0.05, 0.001, "Head bob height (m)"],
+	["Gait", "bob_cusp", 0.0, 1.0, 0.05, "Step sharpness (0 = smooth)"],
+	["Gait", "bob_sway", 0.0, 0.03, 0.001, "Head sway over the foot (m)"],
+	["Gait", "bob_roll_deg", 0.0, 2.0, 0.05, "Head roll per step (°)"],
+	["Gait", "step_dip", 0.0, 0.04, 0.001, "Heel-strike dip (m)"],
+	["Gait", "step_pitch_deg", 0.0, 1.5, 0.02, "Heel-strike nod (°)"],
+	["Gait", "step_spring_damping", 0.15, 1.2, 0.05, "Heel-strike bounce (low = more)"],
+	["Gait", "lean_pitch_per_mps", 0.0, 0.6, 0.01, "Weight shift pitch (°/m/s)"],
+	["Gait", "lean_roll_per_mps", 0.0, 0.8, 0.01, "Weight shift roll (°/m/s)"],
+	["Gait", "lean_spring_hz", 1.0, 8.0, 0.1, "Weight shift speed (Hz)"],
+	["Gait", "gun_lag_per_mps", 0.0, 0.015, 0.0005, "Gun lag (m per m/s)"],
+	["Gait", "gun_turn_per_mps", 0.0, 2.0, 0.05, "Gun tilt (° per m/s)"],
+	["Gait", "gun_step_scale", 0.0, 4.0, 0.1, "Gun heel-strike share"],
+	["Gait", "ads_bob_scale", 0.0, 1.0, 0.05, "Bob left aimed"],
+	["Gait", "step_volume_db", -40.0, 0.0, 0.5, "Footstep volume (dB)"],
 ]
 
 ## Dismemberment and blood (data/gore/gore_default.tres; 2026-11-11).
@@ -243,11 +266,13 @@ static func load_saved_gore() -> void:
 ## data/player/movement_default.tres would never reach a phone that has
 ## saved once. Each bump of the version drops the saved values it lists.
 const MOVEMENT_VERSION_KEY: String = "_version"
-const MOVEMENT_VERSION: int = 2
+const MOVEMENT_VERSION: int = 3
 ## version -> the values saved before it that no longer apply.
 const MOVEMENT_RESETS: Dictionary[int, Array] = {
 	# Owner, 2026-11-14: a shorter slide (about 7 m instead of 18).
 	2: ["slide_friction", "slide_boost"],
+	# Owner, 2026-11-17: planted starts, stops and turns (not gliding).
+	3: ["ground_accel", "ground_decel", "ground_response", "stop_response", "ground_turn_rate"],
 }
 
 
@@ -380,7 +405,7 @@ func _build() -> void:
 		match sec:
 			"Aim assist":
 				target = _assist
-			"Movement":
+			"Movement", "Gait":
 				target = _move
 			"Gore":
 				target = Gore.config

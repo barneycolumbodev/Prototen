@@ -20,6 +20,11 @@ var land: Spring
 
 var bob_phase: float = 0.0
 var bob: Vector3 = Vector3.ZERO
+## The body's weight on the gun (Gait, 2026-11-17): it trails the body,
+## rides the stride and nods with each heel strike. Camera space (m) and
+## weapon space (deg).
+var gait_pos: Vector3 = Vector3.ZERO
+var gait_rot: Vector3 = Vector3.ZERO
 ## 0..1, how far the slide is back.
 var slide: float = 0.0
 var _slide_time: float = 1.0
@@ -86,8 +91,9 @@ func landed(fall_speed: float) -> void:
 ## `look_rate`: degrees per second, x = turning right, y = looking up.
 ## `pose`: 0 = none, 1 = sprint, 2 = reload, 3 = holstering (going down to
 ## the draw pose; the draw itself starts from there via `start_draw`).
+## `gait`: the player's stride and weight (null: the old free-running bob).
 func update(delta: float, ads: float, look_rate: Vector2, move_fraction: float,
-		on_floor: bool, pose: int) -> void:
+		on_floor: bool, pose: int, gait: Gait = null) -> void:
 	var still: float = 1.0 - 0.75 * ads
 	var sway_target: Vector3 = Vector3(
 			-look_rate.x * data.sway_per_turn * 0.4,
@@ -115,12 +121,28 @@ func update(delta: float, ads: float, look_rate: Vector2, move_fraction: float,
 	recoil_rot.step(delta)
 	land.step(delta)
 
-	# Figure-eight bob, faster and bigger when sprinting, nearly gone when aimed.
-	var rate: float = data.bob_rate * (1.45 if pose == 1 else 1.0)
-	if on_floor and move_fraction > 0.05:
-		bob_phase = fmod(bob_phase + TAU * rate * move_fraction * delta, TAU * 2.0)
-	var amp: float = data.bob_amount * clampf(move_fraction, 0.0, 1.6) * (1.0 - 0.85 * ads) * (1.0 if on_floor else 0.3)
-	bob = bob.lerp(Vector3(sin(bob_phase) * amp, sin(bob_phase * 2.0) * amp * 0.5, 0.0), clampf(delta * 12.0, 0.0, 1.0))
+	var steady: float = 1.0 - 0.85 * ads
+	if gait != null:
+		# Locked to the feet: across once per two steps, down at each heel
+		# strike (shaped like the head's), a beat behind the head so it trails.
+		var p: float = gait.phase - 0.08
+		var amp_g: float = data.bob_amount * gait.intensity * steady
+		var down: float = lerpf(0.5 - 0.5 * cos(TAU * p), absf(sin(PI * p)), gait.cfg.bob_cusp) - 0.5
+		# The sprint carry swings wider across the body.
+		var across: float = (1.6 if pose == 1 else 1.0)
+		bob = Vector3(-sin(PI * p) * amp_g * across, down * amp_g * 0.9, 0.0)
+		var k: float = data.move_inertia * lerpf(1.0, 0.35, ads)
+		gait_pos = gait.gun_offset(k)
+		gait_rot = gait.gun_rotation_deg(k)
+	else:
+		# Figure-eight bob, faster and bigger when sprinting, nearly gone when aimed.
+		var rate: float = data.bob_rate * (1.45 if pose == 1 else 1.0)
+		if on_floor and move_fraction > 0.05:
+			bob_phase = fmod(bob_phase + TAU * rate * move_fraction * delta, TAU * 2.0)
+		var amp: float = data.bob_amount * clampf(move_fraction, 0.0, 1.6) * steady * (1.0 if on_floor else 0.3)
+		bob = bob.lerp(Vector3(sin(bob_phase) * amp, sin(bob_phase * 2.0) * amp * 0.5, 0.0), clampf(delta * 12.0, 0.0, 1.0))
+		gait_pos = Vector3.ZERO
+		gait_rot = Vector3.ZERO
 
 	_slide_time += delta
 	var cycle: float = data.slide_cycle_time
@@ -158,8 +180,8 @@ func aim_rotation_deg() -> Vector3:
 
 func compose(hip: Transform3D, ads_xform: Transform3D, ads: float) -> Transform3D:
 	var base: Transform3D = hip.interpolate_with(ads_xform, ads)
-	var rot: Vector3 = (recoil_rot.value + sway.value + pose_rot.value) * (PI / 180.0)
+	var rot: Vector3 = (recoil_rot.value + sway.value + pose_rot.value + gait_rot) * (PI / 180.0)
 	var pivot: Vector3 = data.grip_pivot
 	var local: Transform3D = Transform3D(Basis(), pivot) * Transform3D(Basis.from_euler(rot), Vector3.ZERO) * Transform3D(Basis(), -pivot)
-	var offset: Vector3 = recoil_pos.value + pose_pos.value + land.value + bob
+	var offset: Vector3 = recoil_pos.value + pose_pos.value + land.value + bob + gait_pos
 	return Transform3D(Basis(), offset) * base * local
