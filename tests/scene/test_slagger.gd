@@ -108,3 +108,14 @@ func test_a_charged_arm_hit_takes_it_off_cauterised() -> void:
 	await _bolt_at(e, &"l_forearm", 0.6)
 	assert_true(e.body.severed.has(&"forearm_L") or e.body.severed.has(&"hand_L"), "the arm comes off")
 	assert_eq(e.bleed_dps, 0.0, "cauterised: no bleeding stump")
+
+
+func test_fire_spreads_to_a_man_close_by() -> void:
+	var a: Enemy = _target(0)
+	var b: Enemy = _target(1)
+	b.global_position = a.global_position + Vector3(0.7, 0.0, 0.0)
+	await wait_physics_frames(2)
+	await _bolt_at(a, &"chest", 0.3, 0.4)
+	assert_true(a.is_burning(), "the first man is alight")
+	await wait_seconds(4.0)
+	assert_true(b.is_burning() or not b.alive, "and it spread to the man beside him")

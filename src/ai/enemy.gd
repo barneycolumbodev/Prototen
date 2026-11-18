@@ -67,6 +67,12 @@ var charred: float = 0.0
 var agony: float = 0.0
 var _agony_turn: float = 0.0
 var _agony_cry: float = 0.0
+var _spread_check: float = 0.0
+## Fire on a man spreads: a burning man who comes within SPREAD_REACH of
+## another sets him alight too (checked every SPREAD_EVERY s, CATCH_CHANCE each time).
+const SPREAD_REACH: float = 1.1
+const SPREAD_EVERY: float = 0.4
+const CATCH_CHANCE: float = 0.45
 var last_hit: BallisticHit
 ## Hits per zone (range readout, tests).
 var zone_hits: Dictionary[StringName, int] = {}
@@ -812,7 +818,40 @@ func _plasma_sever(zone: StringName, hit: BallisticHit, charge: float, pd: Plasm
 		Fx._emit(&"smoke", at, Vector3.UP, Color(0.18, 0.16, 0.15, 0.4), 4, 0.8)
 
 
+## A burning man sets those he runs into alight (and the panic with it).
+func _spread_fire(delta: float) -> void:
+	if burn_left <= 0.0 or not alive:
+		return
+	_spread_check -= delta
+	if _spread_check > 0.0:
+		return
+	_spread_check = SPREAD_EVERY
+	for n: Node in get_tree().get_nodes_in_group(&"triad"):
+		var other: Enemy = n as Enemy
+		if other == null or other == self or not other.alive or other.is_burning() or other.boss:
+			continue
+		if other.global_position.distance_to(global_position) > SPREAD_REACH:
+			continue
+		if _rng.randf() > CATCH_CHANCE:
+			continue
+		var h: BallisticHit = last_hit
+		if h == null:
+			continue
+		var part: HitboxPart = other.body.hitboxes[&"chest"] if other.body.hitboxes.has(&"chest") else null
+		var catch_hit: BallisticHit = BallisticHit.new()
+		catch_hit.weapon = h.weapon
+		catch_hit.shooter = h.shooter
+		catch_hit.damage = h.damage
+		catch_hit.point = other.body.chest_position()
+		catch_hit.normal = (global_position - other.global_position).normalized()
+		catch_hit.direction = -catch_hit.normal
+		other.last_hit = catch_hit
+		other.ignite(part, catch_hit, burn_left * 0.8, burn_dps * 0.8, 4.0)
+		other.speak(&"burning")
+
+
 func _update_agony(delta: float) -> void:
+	_spread_fire(delta)
 	if agony <= 0.0:
 		return
 	agony -= delta

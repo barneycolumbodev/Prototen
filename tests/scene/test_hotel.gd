@@ -82,3 +82,22 @@ func test_a_lift_opens_for_whoever_spawned_in_it() -> void:
 	assert_true(lift.is_open(), "doors open")
 	assert_true(RollingSpawner.sees(space, eye, e.global_position), "and you can see him")
 	e.queue_free()
+
+
+func test_survival_runs_on_the_hotel_and_the_lifts_deliver() -> void:
+	var cfg: SurvivalConfig = preload("res://data/run/survival.tres")
+	var ghost: Doctrine = cfg.doctrine_named("Ghost")
+	await map.start_survival(ghost, cfg.starter_weapons[0], ghost.starter_actives[0], 7)
+	var run: SurvivalRun = map.survival
+	assert_not_null(run)
+	await wait_until(func() -> bool: return run.director.spawned_total >= 3, 20.0)
+	assert_gte(run.director.spawned_total, 3, "men came in")
+	var by_lift: int = 0
+	for e: Enemy in run.director.enemies:
+		if is_instance_valid(e) and map.lift_at(e.global_position) != null:
+			by_lift += 1
+	var calling: int = 0
+	for l: Lift in map.lifts:
+		if l.state != Lift.State.CLOSED:
+			calling += 1
+	assert_true(by_lift == 0 or calling > 0, "a man in a car has his lift coming")
