@@ -21,6 +21,8 @@ const HOTEL_SPAWNS: String = "res://data/levels/hotel_spawns.tres"
 const HOTEL_ATMOS: String = "res://data/levels/hotel_interior.tres"
 
 var lifts: Array[Lift] = []
+## The breakable glass: the gallery balustrade and the glass front.
+var glass: GlassPanes
 
 
 func layout_path() -> String:
@@ -70,6 +72,16 @@ func bench_point() -> Vector3:
 	return b2g([0.0, -6.0, 0.0])
 
 
+## The glass goes in with the markers (before the navigation bake: whole,
+## it's a wall to the men's paths).
+func _build_markers() -> void:
+	super._build_markers()
+	glass = GlassPanes.new()
+	glass.name = "GlassPanes"
+	glass.map = self
+	add_child(glass)
+
+
 ## The lifts go in after the navigation mesh is baked from the level, so the
 ## mesh runs into the cars (their doors would cut them off).
 func _build_navigation() -> void:
@@ -96,6 +108,26 @@ func _build_lifts() -> void:
 func _on_spawner(spawner: RollingSpawner) -> void:
 	spawner.spawned.connect(func(e: Enemy) -> void: _arrived(e))
 	spawner.dog_spawned.connect(func(d: AttackDog) -> void: _arrived(d))
+
+
+## The boss on a boss wave, when there's no open sky in front of the
+## operative to drop in from (SurvivalDirector): he comes down in the lift
+## nearest the operative; the car chimes and opens on him. Returns where he
+## stands (the car), INF if there's no lift.
+func boss_arrival(p: Player, boss: Enemy) -> Vector3:
+	var best: Lift = null
+	for l: Lift in lifts:
+		if l.state == Lift.State.CLOSED and (best == null or l.car_centre.distance_to(p.global_position) < best.car_centre.distance_to(p.global_position)):
+			best = l
+	if best == null:
+		return Vector3.INF
+	var lift: Lift = best
+	# Once he's in the car: the chime, and the doors open on him.
+	(func() -> void:
+		await get_tree().physics_frame
+		if is_instance_valid(boss):
+			lift.call_down()).call()
+	return lift.car_centre
 
 
 ## Someone appeared: if it was in a car, that car comes down and opens.

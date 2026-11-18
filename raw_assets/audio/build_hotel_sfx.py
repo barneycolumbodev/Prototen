@@ -14,6 +14,7 @@ One-shots:
 - lift_ding: the arrival chime (a two-tone bell, down a major third).
 - lift_door: the doors running on their track: a motor whine, the rumble
   of the hangers, a soft thump as they meet the stops.
+- glass_shatter: tempered glass bursting (the breakable panes).
 
 Usage: python3 raw_assets/audio/build_hotel_sfx.py [out_dir]  (default assets/audio/sfx)
 """
@@ -166,6 +167,21 @@ def door():
     return w.at(sec, (0.0, motor + rumble + track), (1.15, thump * 1.5), (1.16, clk * 0.4))
 
 
+def shatter(v):
+    """Tempered glass bursting: a sharp crack, then thousands of cubes tinkling down."""
+    sec = 1.6
+    crack = w.band(w.noise(0.02), 2500, 16000) * w.env(0.02, 0.0002, 0.003)
+    burst = w.band(w.noise(0.35), 1800, 14000) * w.env(0.35, 0.001, 0.06)
+    out = w.at(sec, (0.0, crack * 1.4), (0.0, burst))
+    for _ in range(160):
+        t0 = rng.uniform(0.02, 1.2) ** 1.4
+        f = rng.uniform(3000, 9500)
+        d = rng.uniform(0.01, 0.05)
+        tink = w.partials(d, (f, f * 1.6), (d / 3, d / 4), (1.0, 0.4), 0.02)
+        out = out + w.at(sec, (t0, tink * rng.uniform(0.05, 0.25) * (1.2 - t0 / 1.5)))
+    return out
+
+
 if __name__ == "__main__":
     os.makedirs(out_arg, exist_ok=True)
     amb.save("amb_lobby_music", lobby_music(), -4.0)
@@ -174,4 +190,6 @@ if __name__ == "__main__":
     amb.save("amb_hum", hum(), -8.0)
     w.save("lift_ding_1", ding(), -3.0)
     w.save("lift_door_1", door(), -4.0)
+    for v in (1, 2):
+        w.save(f"glass_shatter_{v}", shatter(v), -2.0)
     print("hotel sounds written to", out_arg)

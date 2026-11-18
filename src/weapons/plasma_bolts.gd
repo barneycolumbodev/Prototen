@@ -248,6 +248,8 @@ func _contact(b: Bolt, res: Dictionary, dir: Vector3) -> bool:
 		_splash(b, point, normal, collider, false)
 		_end(b)
 		return false
+	if collider.has_method(&"on_ballistic_hit"):
+		collider.call(&"on_ballistic_hit", _make_hit(b, collider, point, normal, dir))
 	_splash(b, point, normal, collider, true)
 	_end(b)
 	return false

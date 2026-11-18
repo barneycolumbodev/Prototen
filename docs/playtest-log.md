@@ -790,6 +790,8 @@ What's in the APK:
 
 Cloud evidence: `tools/check.sh` (515+ tests; new `tests/scene/test_hotel.gd`: indoors, six lifts, spawns only in the cars and on the drive, the player starts standing, the grand stair is a walkable ramp at the right height, the navigation reaches the gallery, shut doors hide a car and a spawn in it chimes and opens it; `test_governor.gd`: 6+1, the lever throws and the hammer cocks, round-by-round reload to 7, a chest hit kills, a thigh hit takes the leg; `test_slagger.gd`: hold and release fires with the charge built, 2.75 s to full, a tap fizzles, holding past full overloads, a full charge burns through the chest, a graze sets him alight and running, a charged arm hit takes it off with no bleeding). Screenshots of the hotel from the capture cameras and of both guns (lever thrown, gate loading, the charge at 85 %, the field straining past full, bolt hits on the range). Not checked in the cloud: the frame rate on the Moto G (the hotel is ~75k triangles, 98 meshes; the atrium is the busiest view), the sounds and rumble on the controller, and how fast the plasma bolt feels.
 
+Added after the first build: the gallery's glass balustrade and the glass front break (shoot a pane out and knock a man through it), fire spreads from a burning man to the men he runs into, and the Tuning screen has Lever and Plasma sections (Pause → Tuning with the gun out).
+
 Please try:
 1. Hotel, Sandbox: hold the gallery and stalk across the atrium, then fight through the corridors. Do the lifts feel like the place they come from? Too dark or too bright anywhere? Lost anywhere?
 2. The Governor: does the lever clunk feel right (timing 0.16 s after the shot, 0.42 s stroke)? Recoil too much or too little?

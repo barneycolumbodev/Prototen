@@ -101,3 +101,38 @@ func test_survival_runs_on_the_hotel_and_the_lifts_deliver() -> void:
 		if l.state != Lift.State.CLOSED:
 			calling += 1
 	assert_true(by_lift == 0 or calling > 0, "a man in a car has his lift coming")
+
+
+func test_glass_breaks_when_shot() -> void:
+	assert_gt(map.glass.count(), 60, "panes along the gallery and the front")
+	# A balustrade pane on the gallery (under a metre tall) with a clear line to it.
+	var space: PhysicsDirectSpaceState3D = map.get_world_3d().direct_space_state
+	var i: int = -1
+	var at: Vector3
+	var from: Vector3
+	for k: int in map.glass.count():
+		var b: GlassPanes.Pane = map.glass.bodies[k]
+		if (b.get_child(0) as CollisionShape3D).shape.get("size").y > 1.0:
+			continue
+		for side: float in [1.0, -1.0]:
+			var f: Vector3 = b.global_position + b.global_basis.z * 3.0 * side
+			var r: Dictionary = space.intersect_ray(PhysicsRayQueryParameters3D.create(f, b.global_position, Ballistics.LAYER_WORLD))
+			if not r.is_empty() and r["collider"] == b:
+				i = k
+				at = b.global_position
+				from = f
+				break
+		if i >= 0:
+			break
+	assert_gte(i, 0, "a pane in the open")
+	var pane: GlassPanes.Pane = map.glass.bodies[i]
+	var n: Vector3 = (from - at).normalized()
+	Ballistics.fire(preload("res://data/weapons/pistol_57.tres"), from, (at - from).normalized(), map.player)
+	await wait_physics_frames(4)
+	assert_true(map.glass.is_broken(i), "the pane burst")
+	assert_gte(map.glass.broken, 1, "(the round may go on and burst more beyond it)")
+	var q: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(from, at - n * 0.3, Ballistics.LAYER_WORLD)
+	q.exclude = []
+	var res: Dictionary = space.intersect_ray(q)
+	var blocker: Object = null if res.is_empty() else res["collider"]
+	assert_ne(blocker, pane, "nothing left to stop a body there")

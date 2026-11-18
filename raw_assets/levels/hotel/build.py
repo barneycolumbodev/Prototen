@@ -365,7 +365,9 @@ def collect_edges():
                     if level == 2 and ch in "AS" and t.get("open"):
                         continue
                     if not tn["walk"]:
-                        if tn.get("glass"):
+                        if tn.get("glass") and ch == "v":
+                            pass  # door jamb: no glass across the opening's sides
+                        elif tn.get("glass"):
                             add_run(runs, (level, "glasswall", base, top, dname), x, y, d)
                         elif t.get("open"):
                             # Open cells: the wall goes all the way up, unless the
@@ -469,14 +471,35 @@ def emit_runs(runs):
     return walls
 
 
+def pane(a, b, z0, z1, thick):
+    """A breakable glass pane from `a` to `b` (2D), z0..z1: a marker; the game
+    draws and breaks it (src/levels/hotel/glass_panes.gd)."""
+    a = np.asarray(a, np.float64)
+    b = np.asarray(b, np.float64)
+    c = (a + b) / 2
+    yaw = math.degrees(math.atan2(b[1] - a[1], b[0] - a[0]))
+    k.marker("pane", (c[0], c[1], (z0 + z1) / 2), w=round(float(np.linalg.norm(b - a)), 3), h=round(z1 - z0, 3),
+             t=thick, yaw=round(yaw, 2))
+
+
+def panes(a, b, z0, z1, thick, max_w):
+    """A run of glass split into panes no wider than max_w."""
+    a = np.asarray(a, np.float64)
+    b = np.asarray(b, np.float64)
+    L = float(np.linalg.norm(b - a))
+    n = max(int(math.ceil(L / max_w - 1e-6)), 1)
+    for i in range(n):
+        pane(a + (b - a) * (i / n), a + (b - a) * ((i + 1) / n), z0, z1, thick)
+
+
 def glass_wall(a, b, n, z0, z1):
-    """Shopfront-style glazing: bronze mullions every metre, a transom at 3 m."""
+    """Shopfront-style glazing: bronze mullions every metre, a transom at 3 m.
+    The panes themselves break (markers, see `pane`)."""
     a = np.asarray(a)
     b = np.asarray(b)
     mid_off = -n[:2] * 0.5  # in the middle of the solid cell
     a2, b2 = a + mid_off, b + mid_off
-    k.quad((b2[0], b2[1], z0), (a2[0], a2[1], z0), (a2[0], a2[1], 3.2), (b2[0], b2[1], 3.2), "glass", (0.55, 0.6, 0.62))
-    k.quad((a2[0], a2[1], z0), (b2[0], b2[1], z0), (b2[0], b2[1], 3.2), (a2[0], a2[1], 3.2), "glass", (0.55, 0.6, 0.62))
+    panes(a2, b2, z0, 3.2, 0.03, 1.0)
     wall_quad(a, b, 3.2, z1, "marble", None)
     L = np.linalg.norm(b2 - a2)
     tvec = (b2 - a2) / L
@@ -496,11 +519,11 @@ def balustrade(a, b, n, z0):
     c = (a2 + b2) / 2
     yaw = math.degrees(math.atan2(b2[1] - a2[1], b2[0] - a2[0]))
     k.box((c[0], c[1], z0 + 0.06), (L, 0.16, 0.12), "marble_dark", None, yaw=yaw)
-    k.quad((a2[0], a2[1], z0 + 0.12), (b2[0], b2[1], z0 + 0.12), (b2[0], b2[1], z0 + 0.98), (a2[0], a2[1], z0 + 0.98), "glass", (0.6, 0.62, 0.6))
-    k.quad((b2[0], b2[1], z0 + 0.12), (a2[0], a2[1], z0 + 0.12), (a2[0], a2[1], z0 + 0.98), (b2[0], b2[1], z0 + 0.98), "glass", (0.6, 0.62, 0.6))
+    panes(a2, b2, z0 + 0.12, z0 + 0.98, 0.02, 1.6)
     k.cyl((a2[0], a2[1], z0 + 1.03), (b2[0], b2[1], z0 + 1.03), 0.035, "brass", None, sides=8)
-    k.colliders.append({"c": [float(c[0]), float(c[1]), z0 + 0.55], "s": [float(L) if abs(n[1]) > 0.5 else 0.16, 0.16 if abs(n[1]) > 0.5 else float(L), 1.1],
-                        "yaw": 0.0, "surface": "glass"})
+    # The plinth (the glass is its own breakable body; once it's out, a body goes over).
+    k.colliders.append({"c": [float(c[0]), float(c[1]), z0 + 0.06], "s": [float(L) if abs(n[1]) > 0.5 else 0.16, 0.16 if abs(n[1]) > 0.5 else float(L), 0.12],
+                        "yaw": 0.0, "surface": "concrete"})
 
 
 def greedy_rects(mask):
@@ -571,8 +594,7 @@ def colliders():
             st = []
             if not t1["walk"]:
                 if t1.get("glass"):
-                    st.append((0.0, 3.2, "glass"))
-                    st.append((3.2, SOLID_TOP, "concrete"))
+                    st.append((3.2, SOLID_TOP, "concrete"))  # the panes below are breakable bodies
                 elif t2["walk"] and not t2.get("open"):
                     st.append((0.0, FLOOR2, "wall"))
                 else:
