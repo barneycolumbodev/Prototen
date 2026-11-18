@@ -1,0 +1,84 @@
+extends GutTest
+## The Golden Dragon hotel (map 2, docs/design.md §7.2): loads indoors, the
+## grand stairs carry people up to the gallery, the navigation reaches both
+## storeys, the enemy only comes from the lifts and the street, and a car
+## chimes and opens to let out whoever spawned in it.
+
+var map: HotelMap
+
+
+func before_each() -> void:
+	map = (load("res://src/levels/hotel/hotel.tscn") as PackedScene).instantiate() as HotelMap
+	map.autostart_spawns = false
+	add_child_autofree(map)
+	await wait_physics_frames(20)
+
+
+func test_map_builds_indoors() -> void:
+	var meshes: Array[Node] = map.map_root.find_children("*", "MeshInstance3D", true, false)
+	assert_gt(meshes.size(), 20, "map meshes")
+	assert_false(map.atmos.config.outdoor, "indoor atmosphere")
+	assert_null(map.atmos.rain, "no rain indoors")
+	assert_eq(map.lifts.size(), 6, "six lifts")
+
+
+func test_spawns_are_lifts_and_the_street() -> void:
+	var lifts: int = 0
+	var street: int = 0
+	for m: Dictionary in map.layout["markers"]:
+		if ChinatownMap.fstr(m, "kind") != "spawn":
+			continue
+		var name: String = ChinatownMap.fstr(m, "name")
+		if name.begins_with("lift_"):
+			lifts += 1
+		elif name.begins_with("drive_"):
+			street += 1
+		else:
+			fail_test("unexpected spawn %s" % name)
+	assert_eq(lifts, 12, "two places in each of six cars")
+	assert_eq(street, 6, "six out on the drive")
+
+
+func test_player_starts_on_the_floor_in_the_entrance_hall() -> void:
+	await wait_physics_frames(20)
+	assert_true(map.player.is_on_floor(), "standing")
+	assert_almost_eq(map.player.global_position.y, 0.0, 0.2)
+
+
+func test_grand_stairs_are_walkable_ramps() -> void:
+	var space: PhysicsDirectSpaceState3D = map.get_world_3d().direct_space_state
+	# Halfway up the west stair (Blender y 4: bottom at y 10, top at y -2, 4.5 m up).
+	var p: Vector3 = ChinatownMap.b2g([-14.5, 4.0, 8.0])
+	var res: Dictionary = space.intersect_ray(PhysicsRayQueryParameters3D.create(p, p + Vector3.DOWN * 10.0, Ballistics.LAYER_WORLD))
+	assert_false(res.is_empty(), "something under the stair")
+	var hit: Vector3 = res["position"]
+	assert_almost_eq(hit.y, 4.5 * 6.0 / 12.0, 0.35, "ramp surface halfway up")
+
+
+func test_navigation_reaches_the_gallery() -> void:
+	await wait_seconds(1.5)
+	var m: RID = map.get_world_3d().navigation_map
+	var from: Vector3 = NavigationServer3D.map_get_closest_point(m, map.player_start)
+	var gallery: Vector3 = ChinatownMap.b2g([0.0, 18.0, 4.5])
+	var path: PackedVector3Array = NavigationServer3D.map_get_path(m, from, gallery, true)
+	assert_false(path.is_empty())
+	assert_almost_eq(path[path.size() - 1].y, 4.5, 0.4, "path ends up on the gallery")
+
+
+func test_a_lift_opens_for_whoever_spawned_in_it() -> void:
+	var lift: Lift = map.lifts[2]
+	var e: Enemy = Enemy.new()
+	e.config = load("res://data/enemies/gunman.tres") as EnemyConfig
+	e.passive = true
+	map.add_child(e)
+	e.global_position = lift.car_centre + Vector3.UP * 0.05
+	assert_true(lift.contains(e.global_position), "he's in the car")
+	var space: PhysicsDirectSpaceState3D = map.get_world_3d().direct_space_state
+	var eye: Vector3 = lift.door_centre + (lift.door_centre - lift.car_centre).normalized() * 6.0 + Vector3.UP * 1.6
+	assert_false(RollingSpawner.sees(space, eye, e.global_position), "shut doors hide the car")
+	map._arrived(e)
+	assert_eq(lift.state, Lift.State.ARRIVING, "the chime")
+	await wait_seconds(Lift.CHIME_TO_OPEN + Lift.OPEN_TIME + 0.2)
+	assert_true(lift.is_open(), "doors open")
+	assert_true(RollingSpawner.sees(space, eye, e.global_position), "and you can see him")
+	e.queue_free()

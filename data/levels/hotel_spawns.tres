@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="RollingSpawnConfig" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/levels/rolling_spawn_config.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+start_count = 8
+low_water = 4
+batch = 3
+spawn_gap = 0.5
+min_distance = 10.0
+preferred_min = 14.0
+preferred_max = 34.0
+max_bodies = 10
+max_alive = 12
+gunman_weight = 0.5
+enforcer_weight = 0.22
+red_pole_weight = 0.1
+hatchet_man_weight = 0.2
+attack_dog_weight = 0.1
+arrival_awareness = 0.6

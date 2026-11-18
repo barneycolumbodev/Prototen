@@ -184,6 +184,7 @@ func _on_pacing() -> void:
 ## Maps the pause menu cycles through (scene path -> name).
 const MAPS: Dictionary[String, String] = {
 	"res://src/levels/chinatown/chinatown.tscn": "Chinatown docks",
+	"res://src/levels/hotel/hotel.tscn": "Golden Dragon hotel",
 	"res://src/levels/test_room.tscn": "Test range",
 }
 

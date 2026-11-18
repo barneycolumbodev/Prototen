@@ -23,6 +23,7 @@ const DEFAULT_LOADOUT: BodyLoadout = preload("res://data/body/loadout_default.tr
 ## Maps Begin can start (scene path, name).
 const MAPS: Array[Array] = [
 	["res://src/levels/chinatown/chinatown.tscn", "Chinatown docks"],
+	["res://src/levels/hotel/hotel.tscn", "Golden Dragon hotel"],
 	["res://src/levels/test_room.tscn", "Test range"],
 ]
 const C_ACCENT: Color = Color(0.36, 0.86, 0.78)

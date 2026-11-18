@@ -27,12 +27,14 @@ const FEATURES: Array[StringName] = [&"probes", &"glow", &"water_streaks", &"rip
 
 func _ready() -> void:
 	_build_environment()
-	_build_moon()
-	_build_water()
-	_build_skyline()
+	if config.outdoor:
+		_build_moon()
+		_build_water()
+		_build_skyline()
 	_build_probes()
-	_build_roof_map.call_deferred()
-	_build_steam()
+	if config.outdoor:
+		_build_roof_map.call_deferred()
+		_build_steam()
 	_build_sounds()
 	var wm: ShaderMaterial = map.world_material
 	wm.set_shader_parameter(&"lm_gain", config.lightmap_gain)
@@ -217,7 +219,8 @@ func set_feature(feature: StringName, on: bool) -> void:
 		&"glow":
 			env.glow_enabled = on
 		&"water_streaks":
-			water_material.set_shader_parameter(&"streaks", 1.0 if on else 0.0)
+			if water_material:
+				water_material.set_shader_parameter(&"streaks", 1.0 if on else 0.0)
 		&"ripples":
 			map.world_material.set_shader_parameter(&"ripple_amount", 1.0 if on else 0.0)
 		&"rain":
@@ -278,7 +281,16 @@ static func _box(st: SurfaceTool, c: Vector3, s: Vector3) -> void:
 
 func _build_probes() -> void:
 	# [centre, size] in Godot coordinates; box-projected, rendered once.
-	var probes: Array = [
+	# A map can list its own as "probe" markers (centre p, size s in Blender axes).
+	var listed: Array = []
+	for m: Dictionary in map.layout["markers"]:
+		if ChinatownMap.fstr(m, "kind") == "probe":
+			var sz: Array = m["s"]
+			var sx: float = sz[0]
+			var sy: float = sz[1]
+			var sz_: float = sz[2]
+			listed.append([ChinatownMap.fpos(m), Vector3(sx, sz_, sy)])
+	var probes: Array = listed if not listed.is_empty() else [
 		[Vector3(-22, 4, -7), Vector3(50, 10, 12)], [Vector3(24, 4, -7), Vector3(46, 10, 12)],
 		[Vector3(0, 3.5, 6), Vector3(32, 8, 15)], [Vector3(0, 3, 19), Vector3(94, 8, 10)],
 		[Vector3(-33, 4, 6), Vector3(26, 9, 16)], [Vector3(34, 4, 6), Vector3(24, 9, 16)],
