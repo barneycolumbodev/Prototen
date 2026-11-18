@@ -1,0 +1,46 @@
+[gd_resource type="Resource" script_class="PlasmaData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/weapons/plasma_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+full_charge_time = 2.75
+min_charge = 0.12
+overload_time = 3.0
+overload_lockout = 1.4
+charge_curve = 1.35
+speed_min = 34.0
+speed_full = 58.0
+radius_min = 0.025
+radius_full = 0.075
+graze_min = 0.18
+graze_full = 0.55
+gravity = 0.6
+lifetime = 2.6
+damage_min = 40.0
+damage_full = 520.0
+burn_time = 7.0
+burn_dps_min = 9.0
+burn_dps_full = 24.0
+graze_burn = 0.75
+agony_time = 6.0
+burn_through_charge = 0.5
+through_keep = 0.6
+sever_charge = 0.35
+pulp_charge = 0.88
+head_charge = 0.3
+hole_min = 0.045
+hole_full = 0.1
+splash_full = 1.7
+splash_damage_full = 60.0
+push_full = 5.0
+core_color = Color(1, 0.82, 0.45, 1)
+hot_color = Color(1, 0.36, 0.06, 1)
+field_color = Color(1, 0.55, 0.2, 1)
+light_energy = 5.0
+light_range = 7.0
+recoil_min = 0.3
+recoil_full = 1.0
+rumble_charge = Vector2(0.55, 0.45)
+tremble_pos = 0.0018
+tremble_rot = 1.1

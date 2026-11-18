@@ -43,6 +43,40 @@ enum WeaponClass { HANDGUN, SHOTGUN, RIFLE, HEAVY }
 @export var crane_hinge: Vector3 = Vector3.ZERO
 @export_range(-180.0, 180.0) var crane_swing_deg: float = 0.0
 
+@export_group("Plasma")
+## A plasma gun (the SL-9 Slagger): hold the trigger to charge, let go to
+## fire one bolt of the charge (PlasmaBolts). Charge, bolt, burn and gore
+## values live in the PlasmaData; recoil and kick here are the full-charge
+## values (PlasmaData.recoil scales them).
+@export var plasma: PlasmaData
+
+@export_group("Lever action")
+## A lever action (the Governor): after each shot the lever is thrown down
+## and back up (`lever_delay` after the shot, over `lever_time`), which runs
+## the bolt back (`bolt_travel`, node "bolt"), throws the case out at the
+## bottom of the stroke and cocks the hammer (node "hammer", fallen
+## `hammer_fall_deg` about `hammer_hinge` after a shot). The lever (node
+## "lever") swings `lever_open_deg` about the line along the gun's side
+## through `lever_hinge` (weapon space). fire_interval should be at least
+## lever_delay + lever_time. The gun cants by `lever_cant_deg` (x roll, y
+## yaw, z muzzle rise) and moves `lever_cant_offset` (camera space) at the
+## bottom of the stroke. `rumble_lever_open` / `rumble_lever_close`: the
+## clunks in the hands. Loading: one round at a time through the gate (node
+## "load_round" is shown sliding in from `load_round_from`).
+@export var lever_action: bool = false
+@export var lever_hinge: Vector3 = Vector3.ZERO
+@export_range(-120.0, 120.0) var lever_open_deg: float = 50.0
+@export_range(0.0, 0.5) var lever_delay: float = 0.12
+@export_range(0.1, 1.5) var lever_time: float = 0.4
+@export_range(0.0, 0.15) var bolt_travel: float = 0.05
+@export var hammer_hinge: Vector3 = Vector3.ZERO
+@export_range(-90.0, 90.0) var hammer_fall_deg: float = -32.0
+@export var lever_cant_deg: Vector3 = Vector3(-10.0, 4.0, 7.0)
+@export var lever_cant_offset: Vector3 = Vector3(0.0, -0.015, 0.02)
+@export var rumble_lever_open: Vector3 = Vector3(0.2, 0.5, 0.06)
+@export var rumble_lever_close: Vector3 = Vector3(0.45, 0.85, 0.09)
+@export var load_round_from: Vector3 = Vector3(-0.02, -0.03, 0.06)
+
 @export_group("Fire")
 ## Fastest the mechanism cycles (seconds between shots). Semi-auto.
 @export_range(0.03, 1.0) var fire_interval: float = 0.1
@@ -134,6 +168,12 @@ enum WeaponClass { HANDGUN, SHOTGUN, RIFLE, HEAVY }
 @export_range(0.0, 500.0) var min_damage: float = 10.0
 ## Multiplies real bullet momentum for physics pushes (props, plates, ragdolls).
 @export_range(0.0, 200.0) var impulse_scale: float = 30.0
+
+## How hard a man this round kills is thrown (× the usual push: a .45-70
+## carries him off his feet), and the shove it gives a man it doesn't kill
+## (m/s; 0 = only the usual flinch).
+@export_range(0.5, 4.0) var ragdoll_push: float = 1.0
+@export_range(0.0, 12.0) var stagger_push: float = 0.0
 
 ## Special gore for this round (Gore.special_hit): &"gauss" = the GX-4 arm
 ## cannon's corkscrew wound and electrocution. Empty = the normal wounds.

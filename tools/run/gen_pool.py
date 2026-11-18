@@ -33,6 +33,8 @@ POOL = [
     (W, "mg42", ["heavy"], 0.9, 4, False, "1,200 rpm of 7.62 mm from a 150-round box. Loose from the hip, slows you down.", {}, {}),
     (W, "m32", ["heavy", "tech"], 0.8, 5, False, "Six 40 mm grenades. Lase a wall with LT and they burst over the men behind it.", {}, {}),
     (W, "rail_carbine", ["precision", "tech"], 0.7, 7, False, "A personal railgun. Any torso hit kills; the slug goes on through walls and men.", {}, {}),
+    (W, "governor", ["precision", "heavy"], 0.9, 3, False, "The Governor: a .45-70 lever action. Seven rounds that throw men off their feet; work the lever between shots.", {}, {}),
+    (W, "slagger", ["tech", "close"], 0.8, 4, False, "SL-9 plasma pistol. Hold to charge, let go to fire: grazes set men alight, a full charge burns through them.", {}, {}),
     # ---------------------------------------------------------- actives (mk1, mk2 overrides)
     (P, "rx9_reflex_overclock", ["precision", "mobility"], 1.0, 1, False, "",
      {"charge_max": 4.0, "world_scale": 0.4, "regen_per_s": 0.3},

@@ -1,0 +1,84 @@
+[gd_resource type="Resource" script_class="WeaponData" load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://src/weapons/weapon_data.gd" id="1"]
+[ext_resource type="Texture2D" path="res://assets/ui/weapon_icons/slagger.png" id="wheel_icon"]
+[ext_resource type="Resource" path="res://data/weapons/ammo/plasma_bolt.tres" id="plasma"]
+
+[resource]
+script = ExtResource("1")
+icon = ExtResource("wheel_icon")
+display_name = "SL-9 Slagger"
+weapon_class = 0
+caliber = "Plasma cell"
+magazine_size = 8
+closed_bolt = false
+reserve_ammo = 64
+infinite_reserve = true
+plasma = ExtResource("plasma")
+fire_interval = 0.3
+automatic = false
+fire_buffer = 0.0
+sprint_to_fire = 0.12
+draw_time = 0.45
+holster_time = 0.22
+reload_tactical_time = 1.5
+reload_empty_time = 1.5
+mag_out_point = 0.22
+mag_in_point = 0.62
+muzzle_velocity = 58.0
+bullet_mass_g = 30.0
+max_range = 150.0
+max_penetrations = 0
+damage_per_joule = 0.0
+min_damage = 40.0
+impulse_scale = 1.0
+ragdoll_push = 1.6
+mechanical_moa = 3.0
+hip_spread_deg = 1.0
+move_spread_deg = 1.0
+air_spread_deg = 2.5
+bloom_per_shot_deg = 0.0
+ads_spread_scale = 0.2
+kick_pitch_deg = 7.5
+kick_yaw_deg = 1.6
+kick_yaw_bias_deg = 0.25
+kick_permanent = 0.22
+camera_spring_hz = 5.5
+camera_spring_damping = 0.65
+ads_recoil_scale = 0.85
+vm_kick_back = 0.12
+vm_kick_rise_deg = 30.0
+vm_kick_roll_deg = 9.0
+vm_spring_hz = 6.0
+vm_spring_damping = 0.42
+ads_vm_scale = 0.6
+slide_travel = 0.0
+ads_time = 0.17
+ads_fov_scale = 0.82
+ads_sensitivity = 0.78
+ads_move_speed = 0.7
+ads_eye_position = Vector3(-0.35, 0.045, 0)
+ads_look_target = Vector3(1, 0.045, 0)
+sway_per_turn = 0.02
+sway_max_deg = 6.0
+bob_amount = 0.009
+move_inertia = 1.05
+grip_pivot = Vector3(-0.07, -0.055, 0)
+reload_offset = Vector3(-0.02, -0.03, 0.025)
+reload_rotation_deg = Vector3(30, -6, 16)
+muzzle_point = Vector3(0.172, 0, 0)
+ejects_shells = false
+flash_scale = 2.2
+flash_light_energy = 8.0
+flash_color = Color(1, 0.45, 0.12, 1)
+flash_light_time = 0.16
+smoke_per_shot = 3
+magazine_travel = Vector3(-0.34, -0.94, 0)
+sound_prefix = "slagger_"
+shot_volume_db = 1.0
+rumble_fire = Vector3(1.0, 1.0, 0.25)
+rumble_hit = Vector3(0, 0.3, 0.06)
+rumble_kill = Vector3(0.6, 0.9, 0.18)
+hitstop_headshot = 0.07
+hitstop_kill = 0.06
+hitstop_time_scale = 0.06

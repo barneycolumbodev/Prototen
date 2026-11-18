@@ -135,6 +135,12 @@ func holster() -> Array[StringName]:
 	return events
 
 
+## Most rounds the gun holds: the magazine (or tube, or cylinder), plus one
+## in the chamber for a closed bolt.
+func capacity() -> int:
+	return data.magazine_size + (1 if data.closed_bolt else 0)
+
+
 ## Rounds the player can fire before reloading.
 func loaded() -> int:
 	return magazine + (1 if chambered else 0)
@@ -166,6 +172,14 @@ func reload_progress() -> float:
 				done = total - close_t + _phase_time
 		return clampf(done / maxf(total, 0.01), 0.0, 1.0)
 	return clampf(_state_time / reload_duration(), 0.0, 1.0)
+
+
+## Single-round reload: 0..1 through putting the current round in (-1 when
+## not loading one).
+func round_progress() -> float:
+	if state != State.RELOADING or not data.loads_singly() or load_phase != LoadPhase.LOADING:
+		return -1.0
+	return clampf(_phase_time / maxf(data.round_load_time, 0.01), 0.0, 1.0)
 
 
 ## Single-round reload: 0..1 how far the gun is open (the cylinder swung out).
@@ -356,7 +370,7 @@ func _start_reload(events: Array[StringName], swap: bool = false) -> void:
 	load_phase = LoadPhase.OPENING
 	_phase_time = 0.0
 	rounds_loaded = 0
-	_single_need = data.magazine_size - loaded()
+	_single_need = capacity() - loaded()
 	_fire_after_close = false
 	_enter(State.RELOADING)
 	events.append(EV_RELOAD_START)
@@ -388,7 +402,7 @@ func _advance_single(delta: float, pull: bool, cancel: bool, events: Array[Strin
 			if _phase_time >= data.round_load_time:
 				_phase_time -= data.round_load_time
 				_insert_round(events)
-				if loaded() >= data.magazine_size or (not data.infinite_reserve and reserve <= 0):
+				if loaded() >= capacity() or (not data.infinite_reserve and reserve <= 0):
 					load_phase = LoadPhase.CLOSING
 					_phase_time = 0.0
 		LoadPhase.CLOSING:

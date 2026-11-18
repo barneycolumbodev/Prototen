@@ -25,6 +25,10 @@ extends Node3D
 ##              swings out on the crane to load (M32A1)
 ##   `crane`    the yoke the cylinder swings out on (swings, doesn't turn)
 ##   `round_<n>` the case head in chamber n (turns and swings with the cylinder)
+##   `lever`    a lever action's lever: swings about a hinge along the gun's side
+##   `bolt`     a lever action's bolt: runs back (−X) with the lever
+##   `hammer`   an exposed hammer: falls forward on the shot, cocked by the lever
+##   `load_round` the cartridge going in at a loading gate during a reload
 
 @export var config: ViewmodelConfig
 @export var models: Array[PackedScene] = []
@@ -53,6 +57,14 @@ var _cylinder: Node3D
 var _cylinder_rest: Transform3D
 var _crane: Node3D
 var _crane_rest: Transform3D
+var _lever: Node3D
+var _lever_rest: Transform3D
+var _bolt: Node3D
+var _bolt_rest: Vector3
+var _hammer: Node3D
+var _hammer_rest: Transform3D
+var _load_round: Node3D
+var _load_rest: Vector3
 var _rounds: Array[Node3D] = []
 var _round_rest: Array[Transform3D] = []
 var _tinted: Array[GeometryInstance3D] = []
@@ -102,6 +114,14 @@ func _ready() -> void:
 					break
 				_rounds.append(r)
 				_round_rest.append(r.transform)
+		if _lever == null:
+			_lever = model.find_child("lever", true, false) as Node3D
+		if _bolt == null:
+			_bolt = model.find_child("bolt", true, false) as Node3D
+		if _hammer == null:
+			_hammer = model.find_child("hammer", true, false) as Node3D
+		if _load_round == null:
+			_load_round = model.find_child("load_round", true, false) as Node3D
 		for part: String in ["shell_hull", "mag_tape"]:
 			var g: GeometryInstance3D = model.find_child(part, true, false) as GeometryInstance3D
 			if g:
@@ -118,6 +138,15 @@ func _ready() -> void:
 		_vent_rest = _vent.position
 	if _handle:
 		_handle_rest = _handle.position
+	if _lever:
+		_lever_rest = _lever.transform
+	if _bolt:
+		_bolt_rest = _bolt.position
+	if _hammer:
+		_hammer_rest = _hammer.transform
+	if _load_round:
+		_load_rest = _load_round.position
+		_load_round.visible = false
 	if _cylinder:
 		_cylinder_rest = _cylinder.transform
 	if _crane:
@@ -165,6 +194,14 @@ func has_moving_slide() -> bool:
 
 func has_part(part_name: StringName) -> bool:
 	match part_name:
+		&"lever":
+			return _lever != null
+		&"bolt":
+			return _bolt != null
+		&"hammer":
+			return _hammer != null
+		&"load_round":
+			return _load_round != null
 		&"slide":
 			return _slide != null
 		&"magazine":
@@ -217,6 +254,48 @@ func set_cover_open(angle_deg: float, hinge: Vector3) -> void:
 	if _cover:
 		var r: Transform3D = Transform3D(Basis(Vector3(0, 0, 1), deg_to_rad(angle_deg)), Vector3.ZERO)
 		_cover.transform = Transform3D(Basis(), hinge) * r * Transform3D(Basis(), -hinge) * _cover_rest
+
+
+## Lever swung `angle_deg` about the line along the gun's side (Z) through `hinge`.
+func set_lever(angle_deg: float, hinge: Vector3) -> void:
+	if _lever:
+		_lever.transform = _hinged(angle_deg, hinge) * _lever_rest
+
+
+func lever_transform() -> Transform3D:
+	return _lever.transform if _lever else Transform3D()
+
+
+## Bolt travel back from rest, metres (weapon space −X).
+func set_bolt(back: float) -> void:
+	if _bolt:
+		_bolt.position = _bolt_rest + Vector3(-back, 0.0, 0.0)
+
+
+## Hammer turned `angle_deg` from cocked about the line along Z through `hinge`.
+func set_hammer(angle_deg: float, hinge: Vector3) -> void:
+	if _hammer:
+		_hammer.transform = _hinged(angle_deg, hinge) * _hammer_rest
+
+
+## The round at the loading gate: hidden at `t` < 0, else on its way in
+## from `from` (weapon-space offset) at t = 0 to home at t = 1.
+func set_load_round(t: float, from: Vector3) -> void:
+	if _load_round == null:
+		return
+	_load_round.visible = t >= 0.0 and t < 0.98
+	if t >= 0.0:
+		var k: float = smoothstep(0.0, 1.0, t)
+		_load_round.position = _load_rest + from * (1.0 - k)
+
+
+func has_lever() -> bool:
+	return _lever != null
+
+
+static func _hinged(angle_deg: float, hinge: Vector3) -> Transform3D:
+	return Transform3D(Basis(), hinge) * Transform3D(Basis(Vector3(0, 0, 1), deg_to_rad(angle_deg)), Vector3.ZERO) \
+			* Transform3D(Basis(), -hinge)
 
 
 ## Shows the stock at the hip, hides it once the sights are mostly up.

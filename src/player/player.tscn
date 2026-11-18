@@ -1,4 +1,4 @@
-[gd_scene load_steps=26 format=3]
+[gd_scene load_steps=30 format=3]
 
 [ext_resource type="Script" path="res://src/player/player.gd" id="1_player"]
 [ext_resource type="Script" path="res://src/player/viewmodel_rig.gd" id="2_rig"]
@@ -24,6 +24,9 @@
 [ext_resource type="PackedScene" path="res://assets/weapons/glock22/glock22.gltf" id="40_glock"]
 [ext_resource type="Resource" path="res://data/player/viewmodel_m32.tres" id="41_vmm32"]
 [ext_resource type="PackedScene" path="res://assets/weapons/m32/m32.gltf" id="42_m32"]
+[ext_resource type="Resource" path="res://data/player/viewmodel_governor.tres" id="43_vmgov"]
+[ext_resource type="PackedScene" path="res://assets/weapons/governor/governor.gltf" id="44_gov"]
+[ext_resource type="PackedScene" path="res://assets/weapons/slagger/slagger.gltf" id="45_slag"]
 
 [sub_resource type="CapsuleShape3D" id="capsule"]
 radius = 0.4
@@ -89,6 +92,18 @@ visible = false
 script = ExtResource("2_rig")
 config = ExtResource("41_vmm32")
 models = Array[PackedScene]([ExtResource("42_m32"), ExtResource("9_armsmg")])
+
+[node name="ViewmodelGovernor" type="Node3D" parent="Head/Camera3D"]
+visible = false
+script = ExtResource("2_rig")
+config = ExtResource("43_vmgov")
+models = Array[PackedScene]([ExtResource("44_gov"), ExtResource("18_armsm14")])
+
+[node name="ViewmodelSlagger" type="Node3D" parent="Head/Camera3D"]
+visible = false
+script = ExtResource("2_rig")
+config = ExtResource("3_vmcfg")
+models = Array[PackedScene]([ExtResource("45_slag"), ExtResource("5_arms")])
 
 [node name="Weapon" type="Node" parent="."]
 script = ExtResource("6_weapon")

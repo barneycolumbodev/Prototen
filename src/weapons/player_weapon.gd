@@ -1,7 +1,8 @@
 class_name PlayerWeapon
 extends Node
 ## The player's guns (docs/m1-gunplay-plan.md). Holds a small loadout (the
-## suppressed pistol, the MG42, the Saiga-12K, the RC-6 rail carbine, the M14/P, the MP5 and the switched Glock 22), one viewmodel rig per gun. Reads the
+## suppressed pistol, the MG42, the Saiga-12K, the RC-6 rail carbine, the M14/P, the MP5, the switched Glock 22, the M32A1,
+## the Governor lever action and the SL-9 Slagger plasma pistol), one viewmodel rig per gun. Reads the
 ## controller, runs the active gun's GunMechanism, fires rounds through
 ## Ballistics from the eye (so the round goes exactly where the crosshair or
 ## sights point, plus the gun's spread), and drives every piece of feedback:
@@ -67,6 +68,8 @@ class Slot:
 	var bore: int = 0
 	var cyl_angle: float = 0.0
 	var cyl_target: float = 0.0
+	## Plasma guns: the charge drawn at the emitter.
+	var plasma_fx: PlasmaCharge
 
 	func _init(p_data: WeaponData, p_rig: ViewmodelRig) -> void:
 		data = p_data
@@ -108,10 +111,13 @@ const CHAMBER_SPENT: int = 2
 	preload("res://data/weapons/mp5.tres"),
 	preload("res://data/weapons/glock22.tres"),
 	preload("res://data/weapons/m32.tres"),
+	preload("res://data/weapons/governor.tres"),
+	preload("res://data/weapons/slagger.tres"),
 ]
 @export var rig_paths: Array[NodePath] = [^"../Head/Camera3D/Viewmodel", ^"../Head/Camera3D/ViewmodelMG42",
 		^"../Head/Camera3D/ViewmodelSaiga", ^"../Head/Camera3D/ViewmodelRail", ^"../Head/Camera3D/ViewmodelM14",
-		^"../Head/Camera3D/ViewmodelMP5", ^"../Head/Camera3D/ViewmodelGlock", ^"../Head/Camera3D/ViewmodelM32"]
+		^"../Head/Camera3D/ViewmodelMP5", ^"../Head/Camera3D/ViewmodelGlock", ^"../Head/Camera3D/ViewmodelM32",
+		^"../Head/Camera3D/ViewmodelGovernor", ^"../Head/Camera3D/ViewmodelSlagger"]
 @export var input_enabled: bool = true
 @export var wheel_config: WeaponWheelConfig = preload("res://data/input/weapon_wheel.tres")
 
@@ -183,6 +189,8 @@ var _charge_voice: AudioStreamPlayer
 var _glow_time: float = 0.0
 ## Scripted input for tests and the capture demo (overrides the controller).
 var _script_pull: bool = false
+## Scripted trigger held down until released (tests: charging a plasma gun).
+var _script_hold: bool = false
 var _script_aim: bool = false
 var _script_reload: bool = false
 var _script_switch: bool = false
@@ -192,6 +200,25 @@ var _scripted: bool = false
 var _script_wheel: bool = false
 var _script_y: bool = false
 var _script_stick: Vector2 = Vector2.ZERO
+## Plasma (WeaponData.plasma): seconds the trigger has been held charging,
+## whether a charge is building, the charge the last shot left with, the
+## overload lockout, and sound/rumble pacing.
+var plasma_held: float = 0.0
+var plasma_charging: bool = false
+var plasma_shot_charge: float = 0.0
+var _plasma_lock: float = 0.0
+var _plasma_need_release: bool = false
+var _plasma_voice: AudioStreamPlayer
+var _plasma_full_sound: float = 0.0
+var _plasma_rumble: float = 0.0
+var _plasma_flash: float = 0.0
+## Lever action (WeaponData.lever_action): wait before the stroke starts
+## (-1 none), progress through it (0..1, -1 = lever home), whether the hammer
+## is down (fired, not yet cocked), and the beats already played this stroke.
+var _lever_wait: float = -1.0
+var lever_t: float = -1.0
+var hammer_down: bool = false
+var _lever_beats: int = 0
 ## Real time (ms) Y went down, -1 when it's up.
 var _y_down_ms: int = -1
 ## Countdown from the last shell-type press to the swap (-1 = none pending).
@@ -334,6 +361,7 @@ func stow() -> void:
 	for ev: StringName in mechanism.holster():
 		_handle(ev)
 	_stop_charge_whine()
+	_finish_lever()
 	_stow_left = data.holster_time / handling()
 	Sfx.play_ui(&"holster", -4.0)
 
@@ -373,8 +401,15 @@ func script_input(pull: bool, aim: bool, reload: bool = false, switch: bool = fa
 	_script_ammo = ammo_step
 
 
+## Holds the trigger down (scripted) until called with false.
+func script_hold(on: bool) -> void:
+	_scripted = true
+	_script_hold = on
+
+
 func end_script_input() -> void:
 	_scripted = false
+	_script_hold = false
 	_script_wheel = false
 
 
@@ -526,6 +561,7 @@ func request_switch(index: int = -1) -> void:
 	for ev: StringName in mechanism.holster():
 		_handle(ev)
 	_stop_charge_whine()
+	_finish_lever()
 	switching_to = target
 	_holster_left = data.holster_time / handling()
 	Sfx.play_ui(&"holster", -4.0)
@@ -608,7 +644,7 @@ func _physics_process(delta: float) -> void:
 	var ammo_step: int = 0
 	if _scripted:
 		pull = _script_pull
-		held = _script_pull
+		held = _script_pull or _script_hold
 		reload = _script_reload
 		switch = _script_switch
 		aim_held = _script_aim
@@ -680,6 +716,11 @@ func _physics_process(delta: float) -> void:
 		_sprint_out = maxf(0.0, _sprint_out - delta)
 	var sprint_block: bool = _player.is_sprinting() and not run_gun
 	var blocked: bool = sprint_block or _sprint_out > 0.0 or is_switching() or _player.is_mantling() or stowed
+	if data.plasma:
+		# Charge while held, fire on letting go (the mechanism sees one pull).
+		pull = _plasma_trigger(delta, held, pull, blocked or wheel_open)
+		held = false
+		_player.sprint_blocked = aim_held or plasma_charging
 
 	# Holstered guns keep recharging and cooling.
 	for i: int in slots.size():
@@ -779,6 +820,10 @@ func _process(delta: float) -> void:
 		s.rig.set_belt_offset(_belt_shake.value)
 	if data.cylinder_chambers > 0:
 		_update_cylinder(delta, s)
+	if data.lever_action:
+		_update_lever(delta, s)
+	if data.plasma:
+		_update_plasma(delta, s)
 	_update_laser(s)
 
 
@@ -906,6 +951,7 @@ func _handle(ev: StringName) -> void:
 			motion.lock_slide()
 		GunMechanism.EV_DRY_FIRE:
 			_play(&"dry_fire")
+			hammer_down = true
 			motion.jolt(Vector3(0, 0, 0.003), Vector3(0, 0, 0.6))
 		GunMechanism.EV_RELOAD_START:
 			_play(&"reload_start", -6.0)
@@ -931,6 +977,12 @@ func _handle(ev: StringName) -> void:
 			var spent: AmmoData = slots[current].ammo(mechanism.ejected_ammo)
 			var vel: Vector3 = gun.basis * (data.ejection_velocity * 0.6) + _player.velocity
 			Fx.eject_shell(gun * data.ejection_point, vel, gun.basis, spent.color if spent and data.shotshell else Color(0, 0, 0, 0))
+		GunMechanism.EV_SLIDE_RELEASE when data.lever_action:
+			# Gate loaded: if it went in empty, the lever chambers a round.
+			if mechanism.empty_reload or hammer_down:
+				_start_lever(0.05)
+			else:
+				_play(&"slide_release", -6.0)
 		GunMechanism.EV_SLIDE_RELEASE:
 			if data.cylinder_chambers > 0:
 				_cylinder_closed()
@@ -970,7 +1022,10 @@ func _fire() -> void:
 	var trail_from: Vector3 = muzzle.origin if tracer or r.embers else Vector3.INF
 	# Railguns: the capacitor's charge sets this shot's energy (1 for other guns).
 	var power: float = mechanism.last_power
-	if r.grenade:
+	if r.plasma:
+		PlasmaBolts.get_for(self).launch(r, _launch_origin(eye.origin, muzzle.origin),
+				(_view_point(eye.origin, forward, 400.0) - muzzle.origin).normalized().slerp(dir, 0.0), plasma_shot_charge, _player)
+	elif r.grenade:
 		_launch(r, muzzle.origin, forward)
 		if data.cylinder_chambers > 0:
 			_cylinder_fired()
@@ -986,8 +1041,9 @@ func _fire() -> void:
 	EventBus.shot_fired.emit(_player, eye.origin, dir)
 
 	var a: float = ads_visual()
-	# Recoil is the round's momentum: for a railgun it goes with speed, √power.
-	var strength: float = sqrt(power)
+	# Recoil is the round's momentum: for a railgun it goes with speed, √power;
+	# for plasma, with the charge that left.
+	var strength: float = sqrt(power) if r.plasma == null else r.plasma.recoil(plasma_shot_charge)
 	var s: float = lerpf(1.0, data.ads_recoil_scale, a) * strength * recoil_scale()
 	var pitch_kick: float = r.kick_pitch_deg * _rng.randf_range(0.9, 1.1) * s
 	var yaw_kick: float = (_rng.randf_range(-1.0, 1.0) * r.kick_yaw_deg + data.kick_yaw_bias_deg) * s
@@ -1002,11 +1058,17 @@ func _fire() -> void:
 		_belt_shake.kick(Vector3(_rng.randf_range(-0.3, 0.3), _rng.randf_range(0.2, 1.0), _rng.randf_range(-1.0, 1.0)) * data.belt_jiggle)
 
 	Fx.muzzle_flash(muzzle, r)
+	if data.lever_action:
+		hammer_down = true
+		_start_lever(data.lever_delay)
 	if data.ejects_shells:
 		var eject_vel: Vector3 = gun.basis * data.ejection_velocity + _player.velocity
 		var hull: Color = shell.color if shell and data.shotshell else Color(0, 0, 0, 0)
 		Fx.eject_shell(gun * data.ejection_point, eject_vel, gun.basis, hull)
-	Sfx.play_shot(r, _tail_cooldown <= 0.0, linear_to_db(lerpf(0.55, 1.0, power)))
+	var loud: float = lerpf(0.35, 1.0, plasma_shot_charge) if r.plasma else lerpf(0.55, 1.0, power)
+	Sfx.play_shot(r, _tail_cooldown <= 0.0, linear_to_db(loud))
+	if r.plasma:
+		_plasma_flash = 1.0
 	if _tail_cooldown <= 0.0:
 		_tail_cooldown = data.tail_interval
 	if data.is_rail():
@@ -1038,6 +1100,195 @@ func _rumble(r: Vector3) -> void:
 		return
 	for pad: int in Input.get_connected_joypads():
 		Input.start_joy_vibration(pad, r.x, r.y, r.z)
+
+
+# ------------------------------------------------------------------ plasma (docs/design.md §4.9)
+
+## 0..1 charge built at the emitter right now.
+func plasma_charge() -> float:
+	return data.plasma.charge_fraction(plasma_held) if data.plasma and plasma_charging else 0.0
+
+
+## The trigger for a plasma gun: holding it charges; letting go returns a
+## pull for the mechanism if the charge is enough (else it fizzles). Held
+## past full for `overload_time`, the field fails.
+func _plasma_trigger(delta: float, held_now: bool, pull_now: bool, blocked: bool) -> bool:
+	var pd: PlasmaData = data.plasma
+	if _plasma_lock > 0.0:
+		_plasma_lock -= delta
+		held_now = false
+	if not held_now:
+		_plasma_need_release = false
+	var can: bool = mechanism.state == GunMechanism.State.READY and mechanism.loaded() > 0 and not blocked
+	if plasma_charging:
+		if not can:
+			_plasma_fizzle()
+			return false
+		if held_now:
+			plasma_held += delta
+			if plasma_held >= pd.full_charge_time + pd.overload_time:
+				_plasma_overload()
+			return false
+		plasma_charging = false
+		var c: float = pd.charge_fraction(plasma_held)
+		plasma_held = 0.0
+		_stop_plasma_voice()
+		if c < pd.min_charge:
+			_plasma_fizzle()
+			return false
+		plasma_shot_charge = c
+		return true
+	if mechanism.loaded() == 0 or mechanism.state == GunMechanism.State.RELOADING:
+		return pull_now  # empty: the click, the auto-reload; reloading: a pull still interrupts
+	if held_now and can and not _plasma_need_release:
+		plasma_charging = true
+		plasma_held = 0.0
+		_plasma_full_sound = 0.0
+		_stop_plasma_voice()
+		_plasma_voice = Sfx.play_ui(Sfx.weapon_bank(data, &"charge"), -3.0, 0.0)
+	return false
+
+
+func _stop_plasma_voice() -> void:
+	if _plasma_voice and _plasma_voice.playing and _plasma_voice.stream in Sfx.bank(Sfx.weapon_bank(data, &"charge")):
+		_plasma_voice.stop()
+	_plasma_voice = null
+
+
+## Let go too early, or interrupted: the field collapses with a pop.
+func _plasma_fizzle() -> void:
+	plasma_charging = false
+	plasma_held = 0.0
+	_stop_plasma_voice()
+	_play(&"fizzle", -4.0)
+	var s: Slot = slots[current]
+	Fx._emit(&"sparks", s.rig.global_transform * data.muzzle_point, s.rig.global_basis.x, Color(1.0, 0.5, 0.15, 1.0), 8, 0.6)
+
+
+## Held too long at full: the field fails in your hands.
+func _plasma_overload() -> void:
+	var pd: PlasmaData = data.plasma
+	plasma_charging = false
+	plasma_held = 0.0
+	_plasma_lock = pd.overload_lockout
+	_plasma_need_release = true
+	_stop_plasma_voice()
+	_play(&"overload", 0.0)
+	var s: Slot = slots[current]
+	var at: Vector3 = s.rig.global_transform * data.muzzle_point
+	Fx._emit(&"sparks", at, s.rig.global_basis.x, Color(1.0, 0.55, 0.2, 1.0), 30, 2.0)
+	Fx.vent_steam(at, s.rig.global_basis.y, 1.0)
+	motion.jolt(Vector3(0.0, 0.01, 0.02), Vector3(-6.0, 3.0, 10.0))
+	_rumble(Vector3(0.8, 1.0, 0.3))
+
+
+func _update_plasma(delta: float, s: Slot) -> void:
+	var pd: PlasmaData = data.plasma
+	if s.plasma_fx == null:
+		s.plasma_fx = PlasmaCharge.new()
+		s.plasma_fx.name = "PlasmaCharge"
+		s.plasma_fx.data = pd
+		s.rig.add_child(s.plasma_fx)
+		s.plasma_fx.position = data.muzzle_point
+	var c: float = plasma_charge()
+	var strain: float = clampf((plasma_held - pd.full_charge_time) / maxf(pd.overload_time, 0.1), 0.0, 1.0) if plasma_charging else 0.0
+	s.plasma_fx.set_state(c, strain, delta)
+	_plasma_flash = maxf(0.0, _plasma_flash - delta * 4.0)
+	# The coils and vents glow with the charge, white-hot near full, and flare on the shot.
+	var col: Color = pd.hot_color.lerp(pd.core_color, clampf(c * 1.2, 0.0, 1.0)).lerp(Color(1, 1, 1), strain * 0.5)
+	var energy: float = 0.3 + 7.0 * c * (0.9 + 0.2 * randf()) + 9.0 * _plasma_flash + 4.0 * strain
+	if _plasma_lock > 0.0:
+		energy = 0.6 + 0.6 * sin(_plasma_lock * 40.0)
+	s.rig.set_glow(col, energy)
+	if not plasma_charging:
+		return
+	# The gun trembles in the hands as the field strains to hold it.
+	var k: float = (c * c + strain) * delta * 60.0
+	motion.jolt(Vector3(randf_range(-1, 1), randf_range(-1, 1), randf_range(-1, 1)) * pd.tremble_pos * k,
+			Vector3(randf_range(-1, 1), randf_range(-1, 1), randf_range(-1, 1)) * pd.tremble_rot * k)
+	_plasma_rumble -= delta
+	if _plasma_rumble <= 0.0:
+		_plasma_rumble = 0.1
+		_rumble(Vector3(pd.rumble_charge.x * c, pd.rumble_charge.y * c * c + 0.35 * strain, 0.13))
+	if c >= 1.0:
+		_plasma_full_sound -= delta
+		if _plasma_full_sound <= 0.0:
+			_plasma_full_sound = 0.85
+			_play(&"full", -4.0 + 4.0 * strain)
+
+
+# ------------------------------------------------------------------ lever action
+
+## The lever will be thrown `wait` seconds from now.
+func _start_lever(wait: float) -> void:
+	_lever_wait = wait
+	lever_t = -1.0
+	_lever_beats = 0
+
+
+## Put away mid-stroke: the hands finish it (no sounds, no case).
+func _finish_lever() -> void:
+	if lever_t >= 0.0 or _lever_wait >= 0.0:
+		hammer_down = false
+	_lever_wait = -1.0
+	lever_t = -1.0
+
+
+## 0..1 how far the lever is down at stroke progress `t` (0..1): thrown fast,
+## a short dwell at the bottom, back up harder and home with a snap.
+static func lever_open(t: float) -> float:
+	if t < 0.0 or t >= 1.0:
+		return 0.0
+	if t < 0.38:
+		var k: float = t / 0.38
+		return 1.0 - (1.0 - k) * (1.0 - k)
+	if t < 0.5:
+		return 1.0
+	var c: float = (t - 0.5) / 0.5
+	return 1.0 - c * c
+
+
+func _update_lever(delta: float, s: Slot) -> void:
+	if _lever_wait >= 0.0:
+		_lever_wait -= delta
+		if _lever_wait < 0.0:
+			lever_t = 0.0
+	if lever_t >= 0.0:
+		lever_t += delta / maxf(data.lever_time / handling(), 0.05)
+		# Bottom of the stroke: the case flies, the hammer is cocked, clunk.
+		if _lever_beats == 0 and lever_t >= 0.36:
+			_lever_beats = 1
+			hammer_down = false
+			_play(&"lever_open")
+			_rumble(data.rumble_lever_open)
+			motion.jolt(Vector3(0.0, -0.012, 0.01), Vector3(-2.0, 0.0, -4.0))
+			var gun: Transform3D = s.rig.global_transform
+			var vel: Vector3 = gun.basis * data.ejection_velocity + _player.velocity
+			Fx.eject_shell(gun * data.ejection_point, vel, gun.basis)
+		# Home: the bolt locks up, the heavy clunk.
+		if _lever_beats == 1 and lever_t >= 0.97:
+			_lever_beats = 2
+			_play(&"lever_close")
+			_rumble(data.rumble_lever_close)
+			motion.jolt(Vector3(0.0, 0.01, -0.006), Vector3(3.0, 0.0, 5.0))
+		if lever_t >= 1.0:
+			lever_t = -1.0
+	var open: float = lever_open(lever_t)
+	s.rig.set_lever(open * data.lever_open_deg, data.lever_hinge)
+	s.rig.set_bolt(open * data.bolt_travel)
+	var cock: float = 0.0 if not hammer_down else 1.0
+	if lever_t >= 0.0 and _lever_beats == 0:
+		cock = 1.0 - clampf(open * 1.6, 0.0, 1.0)
+	s.rig.set_hammer(cock * data.hammer_fall_deg, data.hammer_hinge)
+	# The gun cants as the lever is thrown (about the grip).
+	if open > 0.0:
+		var e: Vector3 = data.lever_cant_deg * (PI / 180.0) * open
+		var piv: Vector3 = data.grip_pivot
+		var tilt: Transform3D = Transform3D(Basis(), piv) * Transform3D(Basis.from_euler(e), Vector3.ZERO) * Transform3D(Basis(), -piv)
+		s.rig.transform = s.rig.transform * tilt
+		s.rig.transform.origin += data.lever_cant_offset * open
+	# Loading through the gate: the round slides in.
+	s.rig.set_load_round(mechanism.round_progress() * 1.25, data.load_round_from)
 
 
 # ------------------------------------------------------------------ grenade launchers
