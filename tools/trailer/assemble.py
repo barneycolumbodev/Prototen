@@ -9,7 +9,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import timeline as TL
 
-S = os.path.dirname(HERE)
+S = os.environ.get("TRAILER_ROOT", os.path.dirname(HERE))  # holds render/, footage/ and work/
 RENDER = f"{S}/render"
 FOOT = f"{S}/footage"
 WORK = f"{S}/work"
