@@ -32,3 +32,6 @@ raw_assets/characters/attack_dog/tripo/*/wait.log
 # committed master.glb from each).
 raw_assets/characters/triad_tripo/*/tripo/model.glb
 raw_assets/characters/triad_tripo/*/tripo/model_pbr.glb
+
+# Trailer renders (tools/trailer/render.sh) set the window size here
+override.cfg

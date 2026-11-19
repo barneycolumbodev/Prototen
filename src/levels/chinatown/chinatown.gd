@@ -157,6 +157,13 @@ func _ready() -> void:
 	atmos.map = self
 	add_child(atmos)
 	Sfx.set_room(room_size())
+	for a: String in OS.get_cmdline_user_args():
+		if a.begins_with("--trailer="):
+			# Trailer shots (tools/trailer/render.sh).
+			var td: TrailerDirector = TrailerDirector.new()
+			td.map = self
+			td.shot = a.trim_prefix("--trailer=")
+			add_child(td)
 	if not pending_survival.is_empty():
 		var kd: Doctrine = pending_survival[0]
 		var kg: WeaponData = pending_survival[1]
