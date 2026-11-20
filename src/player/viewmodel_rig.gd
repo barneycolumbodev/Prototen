@@ -33,6 +33,8 @@ extends Node3D
 ##   `mag_rounds` the rounds inside it, one mesh: a shader hides the fired ones
 ##                (UV.x = slot from the top; mag_rounds.gdshader)
 ##   `mag_follower` rides up the magazine's curve under the last round
+##   `pump`     a pump gun's fore-end: racked back (−X) and forward each shot
+##   `support_arm` the support hand and arm (in the arms model): rides the pump
 
 @export var config: ViewmodelConfig
 @export var models: Array[PackedScene] = []
@@ -69,6 +71,10 @@ var _hammer: Node3D
 var _hammer_rest: Transform3D
 var _load_round: Node3D
 var _load_rest: Vector3
+var _pump: Node3D
+var _pump_rest: Vector3
+var _support: Node3D
+var _support_rest: Vector3
 ## The arms (every model after the gun): their meshes, for the lever hand bend.
 var _arm_roots: Array[Node] = []
 var _bend_ready: bool = false
@@ -137,6 +143,10 @@ func _ready() -> void:
 			_hammer = model.find_child("hammer", true, false) as Node3D
 		if _load_round == null:
 			_load_round = model.find_child("load_round", true, false) as Node3D
+		if _pump == null:
+			_pump = model.find_child("pump", true, false) as Node3D
+		if _support == null:
+			_support = model.find_child("support_arm", true, false) as Node3D
 		if _mag_rounds == null:
 			_mag_rounds = model.find_child("mag_rounds", true, false) as GeometryInstance3D
 			_mag_follower = model.find_child("mag_follower", true, false) as Node3D
@@ -165,6 +175,10 @@ func _ready() -> void:
 		_bolt_rest = _bolt.position
 	if _hammer:
 		_hammer_rest = _hammer.transform
+	if _pump:
+		_pump_rest = _pump.position
+	if _support:
+		_support_rest = _support.position
 	if _load_round:
 		_load_rest = _load_round.position
 		_load_round.visible = false
@@ -229,6 +243,10 @@ func has_part(part_name: StringName) -> bool:
 			return _hammer != null
 		&"load_round":
 			return _load_round != null
+		&"pump":
+			return _pump != null
+		&"support_arm":
+			return _support != null
 		&"slide":
 			return _slide != null
 		&"magazine":
@@ -330,6 +348,23 @@ func set_lever(angle_deg: float, hinge: Vector3) -> void:
 
 func lever_transform() -> Transform3D:
 	return _lever.transform if _lever else Transform3D()
+
+
+## Pump (fore-end) travel back from rest, metres (weapon space −X); the
+## support arm goes with it.
+func set_pump(back: float) -> void:
+	if _pump:
+		_pump.position = _pump_rest + Vector3(-back, 0.0, 0.0)
+	if _support:
+		_support.position = _support_rest + Vector3(-back, 0.0, 0.0)
+
+
+func pump_position() -> Vector3:
+	return _pump.position - _pump_rest if _pump else Vector3.ZERO
+
+
+func support_position() -> Vector3:
+	return _support.position - _support_rest if _support else Vector3.ZERO
 
 
 ## Bolt travel back from rest, metres (weapon space −X).

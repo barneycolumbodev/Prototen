@@ -52,7 +52,7 @@ Commit after each step.
 
 ## 3–6. Game design
 
-Augmentation (§3; the actives in §3.4, §3.4b, §3.4c and §3.4d, the passive library in §3.6, colours in §3.7), test loadouts (§4; the Governor and the Slagger plasma pistol §4.9, the Steyr AUG §4.10), combat simulation (§5; the squad hunt §5.6a, tuning `data/enemies/hunt.tres`), art direction (§6), maps (§7) and the Survival mode (§8: runs, marks, drops, doctrines, waves, bosses, the enemy roster) live in [`docs/design.md`](docs/design.md). Survival tuning: `tools/run/gen_pool.py` → `data/run/survival.tres` (don't hand-edit the .tres).
+Augmentation (§3; the actives in §3.4, §3.4b, §3.4c and §3.4d, the passive library in §3.6, colours in §3.7), test loadouts (§4; the Governor and the Slagger plasma pistol §4.9, the Steyr AUG §4.10, the SPAS-12 §4.11), combat simulation (§5; the squad hunt §5.6a, tuning `data/enemies/hunt.tres`), art direction (§6), maps (§7) and the Survival mode (§8: runs, marks, drops, doctrines, waves, bosses, the enemy roster) live in [`docs/design.md`](docs/design.md). Survival tuning: `tools/run/gen_pool.py` → `data/run/survival.tres` (don't hand-edit the .tres).
 
 ---
 
@@ -160,7 +160,7 @@ Put an empty `.gdignore` file in `raw_assets/`, `tools/` and `docs/` so Godot do
 | LB | The selected active part (tap on / tap off; the LC-6 catcher is held: hold to catch, let go to throw back, owner 2026-11-13). RB: executes a boss who is down on one knee (owner, 2026-11-15; design §8.7b); otherwise free. While a part is out, RT and LT are its own (whip: LT + right stick steers, RT lashes; mesh arm: RT grabs, RT throws; drone: sticks fly, A/B climb/sink, RT detonates; setae: LT marks, RT throws) |
 | A | Jump (wall-run on contact) |
 | B | Slide (a tap runs it out) / crouch |
-| X | Reload (hold to interact; the M32A1 loads a round at a time, RT shuts it and fires) |
+| X | Reload (hold to interact; the M32A1, the Governor and the SPAS-12 load a round at a time, RT stops and fires) |
 | Y | Tap: previous weapon. Hold: weapon wheel (owner, 2026-11-02; the MG barrel change needs another input in M3) |
 | D-pad | Left / down / right: select active part 1 / 2 / 3 for LB, in the order they were installed (default: RX-9 / GX-4 arm / empty; 2026-11-10: any three of nine; 2026-11-13: of ten; 2026-11-14: of eleven). Up: shell type on guns that take several (Saiga-12K) (owner, 2026-11-07) |
 | Menu / View | Pause / body status and loadout (in Survival the body can be viewed, not changed) (built 2026-11-05; loadout 2026-11-08; LB there: colours, 2026-11-10; 2026-11-11: every part on one grid, A installs or removes, RB jumps to the part that supplies a missing requirement) |
@@ -286,6 +286,7 @@ Each milestone ends with an APK on the owner's phone and an entry in `docs/playt
    2026-11-17 (owner: "remake the models you're not impressed by in Tripo"): every triad man and the Incense Master are now Tripo3D men on the triad rig, eleven looks plus the boss, the Blue Lantern in his own (design §5.6b).
    2026-11-18 (owner): map 2, the Golden Dragon Grand Hotel (design §7.2), and two guns with it (design §4.9): the Governor, a black polymer .45-70 lever action (the lever is thrown after every shot: bolt, case, hammer, a heavy clunk in sound and rumble), and the SL-9 Slagger, the first energy weapon, a welder-built plasma pistol (hold to charge, 2.75 s to full; grazes set men alight and panicking, a charged trunk hit burns a hole through, limbs come off cauterised and burning).
    2026-11-20 (owner: "an automatic rifle, like an assault rifle niche ... a very realistic Steyr AUG"): the AUG A1 (StG 77), traced from reference photos and checked against them by overlay; olive stock, 1.5x integral scope (aiming goes through it, circle reticle), progressive trigger (light pull single, full pull automatic), clear magazine showing the rounds left (design §4.10).
+   2026-11-20 (owner: "the SPAS 12 ... stock folded up ... one-to-one with the actual SPAS 12"): the SPAS-12, traced from a studio photo with the stock folded and checked by overlay; pump only, and after every shot the gun comes up while the left hand racks the pump (Doom style); slower than the Saiga, more damage, a little more range, a tighter pattern and a smaller ring; a layered stereo boom (design §4.11).
    Next: more triad types and bosses (the Straw Sandal next), theme waves (design §8.8), then tuning from the owner's runs.
    Done when a run has a difficulty curve the owner wants to replay and builds that play differently.
 

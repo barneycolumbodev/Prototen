@@ -2,7 +2,8 @@ class_name PlayerWeapon
 extends Node
 ## The player's guns (docs/m1-gunplay-plan.md). Holds a small loadout (the
 ## suppressed pistol, the MG42, the Saiga-12K, the RC-6 rail carbine, the M14/P, the MP5, the switched Glock 22, the M32A1,
-## the Governor lever action, the SL-9 Slagger plasma pistol and the Steyr AUG), one viewmodel rig per gun. Reads the
+## the Governor lever action, the SL-9 Slagger plasma pistol, the Steyr AUG and the SPAS-12 pump gun), one viewmodel
+## rig per gun. Reads the
 ## controller, runs the active gun's GunMechanism, fires rounds through
 ## Ballistics from the eye (so the round goes exactly where the crosshair or
 ## sights point, plus the gun's spread), and drives every piece of feedback:
@@ -114,12 +115,13 @@ const CHAMBER_SPENT: int = 2
 	preload("res://data/weapons/governor.tres"),
 	preload("res://data/weapons/slagger.tres"),
 	preload("res://data/weapons/aug.tres"),
+	preload("res://data/weapons/spas12.tres"),
 ]
 @export var rig_paths: Array[NodePath] = [^"../Head/Camera3D/Viewmodel", ^"../Head/Camera3D/ViewmodelMG42",
 		^"../Head/Camera3D/ViewmodelSaiga", ^"../Head/Camera3D/ViewmodelRail", ^"../Head/Camera3D/ViewmodelM14",
 		^"../Head/Camera3D/ViewmodelMP5", ^"../Head/Camera3D/ViewmodelGlock", ^"../Head/Camera3D/ViewmodelM32",
 		^"../Head/Camera3D/ViewmodelGovernor", ^"../Head/Camera3D/ViewmodelSlagger",
-		^"../Head/Camera3D/ViewmodelAUG"]
+		^"../Head/Camera3D/ViewmodelAUG", ^"../Head/Camera3D/ViewmodelSPAS12"]
 @export var input_enabled: bool = true
 @export var wheel_config: WeaponWheelConfig = preload("res://data/input/weapon_wheel.tres")
 
@@ -221,6 +223,11 @@ var _lever_wait: float = -1.0
 var lever_t: float = -1.0
 var hammer_down: bool = false
 var _lever_beats: int = 0
+## Pump action (WeaponData.pump_action) runs on the same stroke clock:
+## `lever_t` is the progress through raise, rack and lower (-1 = ready).
+var pump_t: float:
+	get:
+		return lever_t if data.pump_action else -1.0
 ## Real time (ms) Y went down, -1 when it's up.
 var _y_down_ms: int = -1
 ## Countdown from the last shell-type press to the swap (-1 = none pending).
@@ -846,6 +853,8 @@ func _process(delta: float) -> void:
 		_update_cylinder(delta, s)
 	if data.lever_action:
 		_update_lever(delta, s)
+	elif data.pump_action:
+		_update_pump(delta, s)
 	if data.plasma:
 		_update_plasma(delta, s)
 	_update_laser(s)
@@ -1001,8 +1010,8 @@ func _handle(ev: StringName) -> void:
 			var spent: AmmoData = slots[current].ammo(mechanism.ejected_ammo)
 			var vel: Vector3 = gun.basis * (data.ejection_velocity * 0.6) + _player.velocity
 			Fx.eject_shell(gun * data.ejection_point, vel, gun.basis, spent.color if spent and data.shotshell else Color(0, 0, 0, 0))
-		GunMechanism.EV_SLIDE_RELEASE when data.lever_action:
-			# Gate loaded: if it went in empty, the lever chambers a round.
+		GunMechanism.EV_SLIDE_RELEASE when data.lever_action or data.pump_action:
+			# Gate loaded: if it went in empty, the lever (or the pump) chambers a round.
 			if mechanism.empty_reload or hammer_down:
 				_start_lever(0.05)
 			else:
@@ -1087,6 +1096,9 @@ func _fire() -> void:
 	if data.lever_action:
 		hammer_down = true
 		_start_lever(data.lever_delay)
+	elif data.pump_action:
+		hammer_down = true
+		_start_lever(data.pump_delay)
 	if data.ejects_shells:
 		var eject_vel: Vector3 = gun.basis * data.ejection_velocity + _player.velocity
 		var hull: Color = shell.color if shell and data.shotshell else Color(0, 0, 0, 0)
@@ -1332,6 +1344,73 @@ func _update_lever(delta: float, s: Slot) -> void:
 		s.rig.transform = s.rig.transform * tilt
 		s.rig.transform.origin += data.lever_cant_offset * open
 	# Loading through the gate: the round slides in.
+	s.rig.set_load_round(mechanism.round_progress() * 1.25, data.load_round_from)
+
+
+# ------------------------------------------------------------------ pump action
+
+## 0..1 how far the gun is raised at stroke progress `t` (0..1): it comes up
+## fast after the shot, stays up while the pump is worked, and settles back.
+static func pump_raise(t: float) -> float:
+	if t < 0.0 or t >= 1.0:
+		return 0.0
+	if t < 0.24:
+		var k: float = t / 0.24
+		return 1.0 - (1.0 - k) * (1.0 - k) * (1.0 - k)
+	if t < 0.68:
+		return 1.0
+	return 1.0 - smoothstep(0.68, 1.0, t)
+
+
+## 0..1 how far the fore-end is racked back at stroke progress `t`: yanked
+## back hard, a beat at the rear, slammed home.
+static func pump_back(t: float) -> float:
+	if t < 0.24 or t >= 0.62:
+		return 0.0
+	if t < 0.42:
+		var k: float = (t - 0.24) / 0.18
+		return 1.0 - (1.0 - k) * (1.0 - k)
+	if t < 0.47:
+		return 1.0
+	var c: float = (t - 0.47) / 0.15
+	return 1.0 - c * c
+
+
+func _update_pump(delta: float, s: Slot) -> void:
+	if _lever_wait >= 0.0:
+		_lever_wait -= delta
+		if _lever_wait < 0.0:
+			lever_t = 0.0
+	if lever_t >= 0.0:
+		lever_t += delta / maxf(data.pump_time / handling(), 0.05)
+		# Rear of the stroke: the hull flies out, the action unlocks with a rasp.
+		if _lever_beats == 0 and lever_t >= 0.41:
+			_lever_beats = 1
+			hammer_down = false
+			_play(&"pump_back")
+			_rumble(data.rumble_pump_back)
+			motion.jolt(Vector3(0.0, -0.006, 0.012), Vector3(-1.5, 0.0, -3.0))
+			var gun: Transform3D = s.rig.global_transform
+			var vel: Vector3 = gun.basis * data.ejection_velocity + _player.velocity
+			Fx.eject_shell(gun * data.ejection_point, vel, gun.basis, data.hull_color)
+		# Home: the fore-end slams forward and locks, the big chunk-chunk.
+		if _lever_beats == 1 and lever_t >= 0.6:
+			_lever_beats = 2
+			_play(&"pump_forward")
+			_rumble(data.rumble_pump_forward)
+			motion.jolt(Vector3(0.0, 0.012, -0.01), Vector3(4.0, 0.0, 6.0))
+		if lever_t >= 1.0:
+			lever_t = -1.0
+	var back: float = pump_back(lever_t)
+	s.rig.set_pump(back * data.pump_travel)
+	s.rig.set_bolt(back * data.bolt_travel)
+	var up: float = pump_raise(lever_t)
+	if up > 0.0:
+		var e: Vector3 = data.pump_raise_deg * (PI / 180.0) * up
+		var piv: Vector3 = data.grip_pivot
+		var tilt: Transform3D = Transform3D(Basis(), piv) * Transform3D(Basis.from_euler(e), Vector3.ZERO) * Transform3D(Basis(), -piv)
+		s.rig.transform = s.rig.transform * tilt
+		s.rig.transform.origin += data.pump_raise_offset * up
 	s.rig.set_load_round(mechanism.round_progress() * 1.25, data.load_round_from)
 
 

@@ -193,6 +193,39 @@ func test_aug_arms_budget() -> void:
 	assert_lt(tris, 12000, "first-person arms (AUG hold)")
 
 
+func test_spas12_parts_budget_and_baked_material() -> void:
+	var gun: Node = (load("res://assets/weapons/spas12/spas12.gltf") as PackedScene).instantiate()
+	# Body plus the parts the game drives: the pump, the bolt in the port, the shell at the loading port.
+	for part: String in ["body", "pump", "bolt", "load_round"]:
+		assert_true(gun.find_child(part, true, false) != null, "has a %s node" % part)
+	var body: MeshInstance3D = gun.find_child("body", true, false) as MeshInstance3D
+	var mat: StandardMaterial3D = body.mesh.surface_get_material(0) as StandardMaterial3D
+	assert_not_null(mat.albedo_texture)
+	assert_not_null(mat.normal_texture)
+	assert_not_null(mat.roughness_texture)
+	assert_not_null(mat.metallic_texture, "steel and anodising vs polymer comes from the metal map")
+	# The muzzle 717 mm ahead of the grip, 810 mm overall with the stock folded.
+	var lo: float = 1e9
+	var hi: float = -1e9
+	for mi: MeshInstance3D in _meshes(gun):
+		var verts: PackedVector3Array = mi.mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX]
+		for v: Vector3 in verts:
+			lo = minf(lo, v.x)
+			hi = maxf(hi, v.x)
+	var tris: int = _tris(gun)
+	gun.free()
+	assert_almost_eq(hi - lo, 0.810, 0.01, "810 mm folded (%.3f m)" % (hi - lo))
+	assert_between(tris, 10000, 22000, "first-person SPAS-12 (%d tris)" % tris)
+
+
+func test_spas12_arms_have_a_support_arm_and_fit_the_budget() -> void:
+	var arms: Node = (load("res://assets/characters/fp_arms_spas12/fp_arms_spas12.gltf") as PackedScene).instantiate()
+	assert_true(arms.find_child("support_arm", true, false) != null, "the left arm is its own node (it rides the pump)")
+	var tris: int = _tris(arms)
+	arms.free()
+	assert_lt(tris, 12000, "first-person arms (SPAS-12 hold)")
+
+
 func test_glock22_parts_budget_and_baked_material() -> void:
 	var gun: Node = (load("res://assets/weapons/glock22/glock22.gltf") as PackedScene).instantiate()
 	# Body plus the parts the game drives: the slide (with the switch on its back) and the magazine.
@@ -221,7 +254,7 @@ func test_m14p_arms_budget() -> void:
 
 func test_every_gun_has_a_wheel_icon() -> void:
 	for path: String in ["pistol_57", "mg42", "saiga12k", "rail_carbine", "m14p", "mp5", "glock22", "m32", "governor",
-			"slagger", "aug"]:
+			"slagger", "aug", "spas12"]:
 		var d: WeaponData = load("res://data/weapons/%s.tres" % path) as WeaponData
 		assert_not_null(d.icon, "%s has a weapon wheel icon" % path)
 

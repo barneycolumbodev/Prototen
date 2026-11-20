@@ -79,6 +79,27 @@ enum WeaponClass { HANDGUN, SHOTGUN, RIFLE, HEAVY }
 ## How much of the lever's swing the firing hand follows (0 = stays on the grip).
 @export_range(0.0, 1.0) var lever_hand_follow: float = 0.8
 
+@export_group("Pump action")
+## A pump action (the SPAS-12, pump only): `pump_delay` after the shot the
+## gun comes up, muzzle high (`pump_raise_deg`: x roll, y yaw, z muzzle rise,
+## about `grip_pivot`; `pump_raise_offset` camera space), the fore-end
+## (node "pump", the support arm "support_arm" with it, the bolt "bolt" too)
+## is racked back `pump_travel` and slammed forward, and the gun comes back
+## down; `pump_time` for the whole move. The hull flies out at the back of
+## the stroke. fire_interval should be at least pump_delay + pump_time.
+## Loads one shell at a time (`round_load_time`, node "load_round" pushed in
+## from `load_round_from`); if it went in empty, the pump chambers one.
+@export var pump_action: bool = false
+@export_range(0.0, 0.5) var pump_delay: float = 0.08
+@export_range(0.1, 1.5) var pump_time: float = 0.62
+@export_range(0.0, 0.2) var pump_travel: float = 0.085
+@export var pump_raise_deg: Vector3 = Vector3(-8.0, 6.0, 26.0)
+@export var pump_raise_offset: Vector3 = Vector3(-0.015, 0.035, 0.02)
+@export var rumble_pump_back: Vector3 = Vector3(0.3, 0.6, 0.07)
+@export var rumble_pump_forward: Vector3 = Vector3(0.6, 1.0, 0.1)
+## Colour of the spent hull the pump throws out.
+@export var hull_color: Color = Color(0.78, 0.1, 0.07)
+
 @export_group("Fire")
 ## Fastest the mechanism cycles (seconds between shots). Semi-auto.
 @export_range(0.03, 1.0) var fire_interval: float = 0.1
@@ -292,6 +313,10 @@ enum WeaponClass { HANDGUN, SHOTGUN, RIFLE, HEAVY }
 @export_group("Aim down sights")
 ## Seconds from hip to fully aimed.
 @export_range(0.03, 1.0) var ads_time: float = 0.15
+## Keep the hip reticle while aiming (the SPAS-12: the folded stock sits over
+## the sights, so aiming brings the gun up to the shoulder and the ring stays,
+## shrunk by `ads_spread_scale`).
+@export var reticle_when_aimed: bool = false
 ## Field of view while aimed, as a fraction of the normal one.
 @export_range(0.3, 1.0) var ads_fov_scale: float = 0.8
 ## Look sensitivity while aimed, before the FOV correction.

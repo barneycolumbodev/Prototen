@@ -1,4 +1,4 @@
-[gd_scene load_steps=33 format=3]
+[gd_scene load_steps=36 format=3]
 
 [ext_resource type="Script" path="res://src/player/player.gd" id="1_player"]
 [ext_resource type="Script" path="res://src/player/viewmodel_rig.gd" id="2_rig"]
@@ -30,6 +30,9 @@
 [ext_resource type="Resource" path="res://data/player/viewmodel_aug.tres" id="46_vmaug"]
 [ext_resource type="PackedScene" path="res://assets/weapons/aug/aug.gltf" id="47_aug"]
 [ext_resource type="PackedScene" path="res://assets/characters/fp_arms_aug/fp_arms_aug.gltf" id="48_armsaug"]
+[ext_resource type="Resource" path="res://data/player/viewmodel_spas12.tres" id="49_vmspas"]
+[ext_resource type="PackedScene" path="res://assets/weapons/spas12/spas12.gltf" id="50_spas"]
+[ext_resource type="PackedScene" path="res://assets/characters/fp_arms_spas12/fp_arms_spas12.gltf" id="51_armsspas"]
 
 [sub_resource type="CapsuleShape3D" id="capsule"]
 radius = 0.4
@@ -113,6 +116,12 @@ visible = false
 script = ExtResource("2_rig")
 config = ExtResource("46_vmaug")
 models = Array[PackedScene]([ExtResource("47_aug"), ExtResource("48_armsaug")])
+
+[node name="ViewmodelSPAS12" type="Node3D" parent="Head/Camera3D"]
+visible = false
+script = ExtResource("2_rig")
+config = ExtResource("49_vmspas")
+models = Array[PackedScene]([ExtResource("50_spas"), ExtResource("51_armsspas")])
 
 [node name="Weapon" type="Node" parent="."]
 script = ExtResource("6_weapon")
