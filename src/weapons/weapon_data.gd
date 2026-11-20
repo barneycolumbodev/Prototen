@@ -10,9 +10,14 @@ extends Resource
 ## Which body proficiency stat it uses (docs/design.md §3.6): handgun,
 ## shotgun, rifle (rifles and rail guns) or heavy (machine guns).
 enum WeaponClass { HANDGUN, SHOTGUN, RIFLE, HEAVY }
+## Weapon wheel category (owner, 2026-11-20: categories like GTA V's wheel;
+## the stick picks a category, the D-pad scrolls the guns in it).
+enum WheelCategory { PISTOLS, SMGS, SHOTGUNS, RIFLES, HEAVY, SPECIAL }
+const WHEEL_NAMES: PackedStringArray = ["PISTOLS", "SMGs", "SHOTGUNS", "RIFLES", "HEAVY", "SPECIAL"]
 
 @export var display_name: String = "Five-seveN SR"
 @export var weapon_class: WeaponClass = WeaponClass.HANDGUN
+@export var wheel_category: WheelCategory = WheelCategory.PISTOLS
 @export var caliber: String = "5.7×28mm"
 ## Weapon wheel icon (raw_assets/ui/weapon_icons/build.py renders one per gun).
 @export var icon: Texture2D

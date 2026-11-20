@@ -9,6 +9,7 @@ script = ExtResource("1")
 icon = ExtResource("wheel_icon")
 display_name = "M32A1 MGL"
 weapon_class = 3
+wheel_category = 4
 caliber = "40×46mm LV"
 grenade = ExtResource("2_grenade")
 cylinder_chambers = 6

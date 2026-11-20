@@ -9,6 +9,7 @@ script = ExtResource("1")
 icon = ExtResource("wheel_icon")
 display_name = "SL-9 Slagger"
 weapon_class = 0
+wheel_category = 5
 caliber = "Plasma cell"
 magazine_size = 8
 closed_bolt = false

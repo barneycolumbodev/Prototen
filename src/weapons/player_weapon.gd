@@ -11,7 +11,8 @@ extends Node
 ##
 ## Controls (CLAUDE.md §9.4): RT fire, LT held = aim down sights, X reload.
 ## Y: a tap swaps back to the previous gun; holding it opens the weapon wheel
-## (time slows, the right stick picks a gun, letting go draws it). Switching
+## (time slows; the right stick picks a category, the D-pad scrolls the guns
+## in it, letting go draws the one shown; owner, 2026-11-20). Switching
 ## cancels a reload. `over_enemy` says whether the line of sight is on an
 ## enemy (reticles turn crimson, ReticleStyle). Firing during a sprint drops the
 ## sprint first. The active gun's "Carry" values slow the player down.
@@ -154,9 +155,13 @@ var cam_recoil: Spring
 var switching_to: int = -1
 ## Gun drawn before this one (a tap on Y goes back to it; -1 = none yet).
 var previous: int = -1
-## Weapon wheel: open, and the slot the stick points at.
+## Weapon wheel: open, the category the stick points at
+## (WeaponData.WheelCategory) and the gun (slot) shown in it.
 var wheel_open: bool = false
+var wheel_category: int = 0
 var wheel_pick: int = 0
+## The gun each category last showed (category -> slot), like GTA V's wheel.
+var _category_pick: Dictionary[int, int] = {}
 ## The laser (guns with `laser_range` > 0): beam and dot on the aim line.
 var laser: WeaponLaser
 ## The trigger is held this physics tick (sprint fire keeps the gun up while it is).
@@ -204,6 +209,7 @@ var _scripted: bool = false
 var _script_wheel: bool = false
 var _script_y: bool = false
 var _script_stick: Vector2 = Vector2.ZERO
+var _script_cycle: int = 0
 ## Plasma (WeaponData.plasma): seconds the trigger has been held charging,
 ## whether a charge is building, the charge the last shot left with, the
 ## overload lockout, and sound/rumble pacing.
@@ -445,6 +451,47 @@ func script_wheel(y_held: bool, stick: Vector2 = Vector2.ZERO) -> void:
 	_script_stick = stick
 
 
+## A D-pad press while the wheel is open (tests): +1 right (next gun in the
+## category), -1 left.
+func script_wheel_cycle(step: int) -> void:
+	_script_wheel = true
+	_script_cycle = step
+
+
+## Number of wheel categories (wedges).
+static func wheel_categories() -> int:
+	return WeaponData.WHEEL_NAMES.size()
+
+
+## Slots of the carried guns in `category`, in loadout order.
+func wheel_guns(category: int) -> Array[int]:
+	var out: Array[int] = []
+	for i: int in slots.size():
+		if slots[i].data.wheel_category == category:
+			out.append(i)
+	return out
+
+
+## The gun a category shows on the wheel: the one picked there last, else its first (-1 = empty).
+func wheel_shown(category: int) -> int:
+	var guns: Array[int] = wheel_guns(category)
+	if guns.is_empty():
+		return -1
+	var last: int = _category_pick.get(category, -1)
+	return last if guns.has(last) else guns[0]
+
+
+## Next (+1) or previous (-1) gun in the highlighted category, wrapping.
+func wheel_cycle(step: int) -> void:
+	var guns: Array[int] = wheel_guns(wheel_category)
+	if guns.size() < 2 or step == 0:
+		return
+	var at: int = maxi(guns.find(wheel_pick), 0)
+	wheel_pick = guns[posmod(at + step, guns.size())]
+	_category_pick[wheel_category] = wheel_pick
+	Sfx.play_ui(&"wheel_tick", -10.0, 0.02)
+
+
 ## Wheel slot the stick points at: slot 0 at the top, then clockwise.
 ## `stick` uses Input.get_vector axes (x right, y down).
 static func wheel_slot(stick: Vector2, count: int) -> int:
@@ -463,6 +510,8 @@ func quick_switch() -> void:
 func _open_wheel() -> void:
 	wheel_open = true
 	wheel_pick = current
+	wheel_category = data.wheel_category
+	_category_pick[wheel_category] = current
 	_player.look_blocked = true
 	TimeControl.set_slowmo(wheel_config.time_scale)
 	Sfx.play_ui(&"wheel_open", -6.0)
@@ -473,6 +522,8 @@ func _close_wheel(apply: bool) -> void:
 	wheel_open = false
 	_player.look_blocked = false
 	TimeControl.set_slowmo(1.0)
+	if apply:
+		_category_pick[wheel_category] = wheel_pick
 	if apply and wheel_pick != current and wheel_pick != switching_to:
 		request_switch(wheel_pick)
 
@@ -489,10 +540,21 @@ func _update_wheel() -> void:
 	if wheel_open:
 		var stick: Vector2 = _script_stick if _script_wheel else Input.get_vector(&"look_left", &"look_right", &"look_up", &"look_down", 0.0)
 		if stick.length() >= wheel_config.stick_deadzone:
-			var pick: int = wheel_slot(stick, slots.size())
-			if pick != wheel_pick:
-				wheel_pick = pick
+			# The stick picks a category; an empty one (a gun you don't carry) is skipped.
+			var cat: int = wheel_slot(stick, wheel_categories())
+			var shown: int = wheel_shown(cat)
+			if cat != wheel_category and shown >= 0:
+				wheel_category = cat
+				wheel_pick = shown
 				Sfx.play_ui(&"wheel_tick", -12.0, 0.02)
+		# D-pad left / right scrolls the guns in the category (the actives ignore it while the wheel is up).
+		var step: int = _script_cycle
+		_script_cycle = 0
+		if Input.is_action_just_pressed(&"active_select_3"):
+			step += 1
+		if Input.is_action_just_pressed(&"active_select_1"):
+			step -= 1
+		wheel_cycle(step)
 	if not held and _y_down_ms >= 0:
 		_y_down_ms = -1
 		if wheel_open:
@@ -693,7 +755,7 @@ func _physics_process(delta: float) -> void:
 		aim_held = false
 
 	# Shell type: pick now, swap once the presses stop.
-	if ammo_step != 0 and not is_switching() and not stowed:
+	if ammo_step != 0 and not is_switching() and not stowed and not wheel_open:
 		select_ammo(ammo_step)
 	if _select_left >= 0.0:
 		_select_left -= delta
