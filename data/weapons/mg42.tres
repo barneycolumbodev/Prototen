@@ -8,6 +8,7 @@ script = ExtResource("1")
 icon = ExtResource("wheel_icon")
 display_name = "MG42/A"
 weapon_class = 3
+wheel_category = 4
 caliber = "7.62×51mm"
 magazine_size = 150
 closed_bolt = false

@@ -161,7 +161,7 @@ Put an empty `.gdignore` file in `raw_assets/`, `tools/` and `docs/` so Godot do
 | A | Jump (wall-run on contact) |
 | B | Slide (a tap runs it out) / crouch |
 | X | Reload (hold to interact; the M32A1 loads a round at a time, RT shuts it and fires) |
-| Y | Tap: previous weapon. Hold: weapon wheel (owner, 2026-11-02; the MG barrel change needs another input in M3) |
+| Y | Tap: previous weapon. Hold: weapon wheel (owner, 2026-11-02; the MG barrel change needs another input in M3). Since 2026-11-20 the wheel is GTA V style: the stick picks a category (pistols, SMGs, shotguns, rifles, heavy, special), D-pad left/right scrolls the guns in it (design §4.7) |
 | D-pad | Left / down / right: select active part 1 / 2 / 3 for LB, in the order they were installed (default: RX-9 / GX-4 arm / empty; 2026-11-10: any three of nine; 2026-11-13: of ten; 2026-11-14: of eleven). Up: shell type on guns that take several (Saiga-12K) (owner, 2026-11-07) |
 | Menu / View | Pause / body status and loadout (in Survival the body can be viewed, not changed) (built 2026-11-05; loadout 2026-11-08; LB there: colours, 2026-11-10; 2026-11-11: every part on one grid, A installs or removes, RB jumps to the part that supplies a missing requirement) |
 

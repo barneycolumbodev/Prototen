@@ -8,6 +8,7 @@ script = ExtResource("1")
 icon = ExtResource("wheel_icon")
 display_name = "The Governor"
 weapon_class = 2
+wheel_category = 3
 caliber = ".45-70 Govt"
 magazine_size = 6
 closed_bolt = true

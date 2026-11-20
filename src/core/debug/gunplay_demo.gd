@@ -29,6 +29,8 @@ var shots_fired: int = 0
 var _queue: Array[Vector3] = []
 var _frame: int = 0
 var _wait: int = 30
+## Wheel captures: D-pad presses still to make once the wheel is open.
+var _wheel_cycles: int = 0
 
 
 func _ready() -> void:
@@ -45,13 +47,15 @@ func _ready() -> void:
 		if arg.begins_with("--ammo="):  # shell type for guns that take several (Saiga: 0 buck, 1 slug, 2 dragon's breath)
 			room.player.weapon().select_ammo_now(arg.trim_prefix("--ammo=").to_int())
 	if mode == "wheel":
-		# Hold Y with the stick on slot `--wheel-pick=<n>` (the wheel stays open for the capture).
+		# Hold Y with the stick on category `--wheel-pick=<n>` (WeaponData.WheelCategory), then
+		# `--wheel-cycle=<k>` D-pad presses in it (the wheel stays open for the capture).
 		var pick: int = 3
 		for arg: String in OS.get_cmdline_user_args():
 			if arg.begins_with("--wheel-pick="):
 				pick = arg.trim_prefix("--wheel-pick=").to_int()
-		var n: int = room.player.weapon().slots.size()
-		var ang: float = pick * TAU / n
+			elif arg.begins_with("--wheel-cycle="):
+				_wheel_cycles = arg.trim_prefix("--wheel-cycle=").to_int()
+		var ang: float = pick * TAU / PlayerWeapon.wheel_categories()
 		room.player.weapon().script_wheel(true, Vector2(sin(ang), -cos(ang)))
 		return
 	if mode == "hip" or mode == "ads":
@@ -82,6 +86,9 @@ func _physics_process(_delta: float) -> void:
 	var player: Player = room.player
 	var weapon: PlayerWeapon = player.weapon()
 	_frame += 1
+	if mode == "wheel" and _wheel_cycles > 0 and weapon.wheel_open and _frame % 4 == 0:
+		weapon.script_wheel_cycle(1)
+		_wheel_cycles -= 1
 	var aimed: bool = mode == "range" or mode == "ads"
 	if mode == "burst" and not done and _wait <= 0:
 		aim_at(player, room.shooting_range.target_point(0) + Vector3(0.0, 0.1 * sin(_burst * 0.4), 0.0))
