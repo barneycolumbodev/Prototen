@@ -839,7 +839,7 @@ What's in the APK:
 - **X** loads a shell at a time (8 + 1); RT with a shell in stops and fires.
 - **Sound:** a new layered stereo shot (crack, bark, chest punch, sub boom, steel), a long rolling tail, and a heavy "shuck ... CHUNK" pump.
 
-Cloud evidence: `tests/scene/test_spas12.gd` (7 tests, all pass) and `test_weapon_assets.gd`. In-game captures: `docs/previews/spas12_ingame.png` (hip, the shot, raised with the pump back and the hull flying, pump home, aimed, reloading). Renders: `spas12_beauty.png`, `spas12_side.png`, `spas12_left_side.png`, `spas12_rear.png`, `spas12_stock.png`, `spas12_pump.png`, `fp_arms_spas12.png`. Not checked in the cloud: how the sounds actually sound (they were checked by meter and spectrogram, not by ear), rumble, frame rate on the Moto G (17.9k triangles plus 7.8k for the arms).
+Cloud evidence: 537 tests pass (212 unit, 325 scene), including `tests/scene/test_spas12.gd` (7) and the SPAS checks in `test_weapon_assets.gd` (parts, 810 mm, budget, the support arm, 2K VRAM-compressed textures on the phone). In-game captures: `docs/previews/spas12_ingame.png` (hip, the shot, raised with the pump back and the hull flying, pump home, aimed, reloading). Renders: `spas12_beauty.png`, `spas12_side.png`, `spas12_left_side.png`, `spas12_rear.png`, `spas12_stock.png`, `spas12_pump.png`, `fp_arms_spas12.png`. Not checked in the cloud: how the sounds actually sound (they were checked by meter and spectrogram, not by ear), rumble, frame rate on the Moto G (17.9k triangles plus 7.8k for the arms).
 
 Please try:
 1. The rhythm: is 0.74 s between shots right? (Pause → Gun tuning → Pump: start delay, stroke time.)
