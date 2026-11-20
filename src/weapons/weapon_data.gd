@@ -83,6 +83,11 @@ enum WeaponClass { HANDGUN, SHOTGUN, RIFLE, HEAVY }
 ## Fastest the mechanism cycles (seconds between shots). Semi-auto.
 @export_range(0.03, 1.0) var fire_interval: float = 0.1
 @export var automatic: bool = false
+## The AUG's progressive trigger (automatic guns): a light pull fires one
+## round per pull; pulled past `full_auto_pull` (raw right-trigger travel,
+## 0..1) it fires automatic. Mouse and digital triggers are always full.
+@export var progressive_trigger: bool = false
+@export_range(0.4, 1.0) var full_auto_pull: float = 0.85
 ## A trigger pull this early before the gun is ready still fires when it is.
 @export_range(0.0, 0.3) var fire_buffer: float = 0.12
 ## Delay between leaving a sprint and the first shot.
@@ -162,6 +167,24 @@ enum WeaponClass { HANDGUN, SHOTGUN, RIFLE, HEAVY }
 @export_range(0.3, 1.0) var optic_fov_scale: float = 0.9
 @export_range(0.03, 1.0) var optic_ads_time: float = 0.3
 @export_range(0.1, 1.5) var optic_sensitivity: float = 0.75
+## The optic is part of the gun (the AUG's 1.5x scope): aiming always goes
+## through it with the values above, no shell type needed.
+@export var integral_optic: bool = false
+## What the HUD scope view draws: &"chevron" (the Saiga slug optic's ranging
+## reticle) or &"ring" (the AUG's circle, the aim point in its centre).
+@export var scope_reticle: StringName = &"chevron"
+## Ring reticle: angular diameter (degrees of true field) and how much of the
+## screen's height the eyepiece fills.
+@export_range(0.2, 6.0) var scope_ring_deg: float = 1.6
+@export_range(0.2, 0.6) var scope_eyepiece: float = 0.44
+
+@export_group("Clear magazine")
+## A see-through magazine (the AUG's): the viewmodel's "mag_rounds" show the
+## rounds left and its "mag_follower" rides up under the last one, turning
+## `mag_follower_step_deg` per round gone about the line along Z through
+## `mag_arc_center` (weapon space; the magazine's curve).
+@export var mag_arc_center: Vector3 = Vector3.ZERO
+@export_range(-5.0, 5.0) var mag_follower_step_deg: float = 0.0
 
 @export_group("Damage")
 ## Damage per joule the round leaves inside a body.

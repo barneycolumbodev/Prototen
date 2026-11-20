@@ -1,4 +1,4 @@
-[gd_scene load_steps=30 format=3]
+[gd_scene load_steps=33 format=3]
 
 [ext_resource type="Script" path="res://src/player/player.gd" id="1_player"]
 [ext_resource type="Script" path="res://src/player/viewmodel_rig.gd" id="2_rig"]
@@ -27,6 +27,9 @@
 [ext_resource type="Resource" path="res://data/player/viewmodel_governor.tres" id="43_vmgov"]
 [ext_resource type="PackedScene" path="res://assets/weapons/governor/governor.gltf" id="44_gov"]
 [ext_resource type="PackedScene" path="res://assets/weapons/slagger/slagger.gltf" id="45_slag"]
+[ext_resource type="Resource" path="res://data/player/viewmodel_aug.tres" id="46_vmaug"]
+[ext_resource type="PackedScene" path="res://assets/weapons/aug/aug.gltf" id="47_aug"]
+[ext_resource type="PackedScene" path="res://assets/characters/fp_arms_aug/fp_arms_aug.gltf" id="48_armsaug"]
 
 [sub_resource type="CapsuleShape3D" id="capsule"]
 radius = 0.4
@@ -104,6 +107,12 @@ visible = false
 script = ExtResource("2_rig")
 config = ExtResource("3_vmcfg")
 models = Array[PackedScene]([ExtResource("45_slag"), ExtResource("5_arms")])
+
+[node name="ViewmodelAUG" type="Node3D" parent="Head/Camera3D"]
+visible = false
+script = ExtResource("2_rig")
+config = ExtResource("46_vmaug")
+models = Array[PackedScene]([ExtResource("47_aug"), ExtResource("48_armsaug")])
 
 [node name="Weapon" type="Node" parent="."]
 script = ExtResource("6_weapon")
