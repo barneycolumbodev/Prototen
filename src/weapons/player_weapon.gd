@@ -2,7 +2,7 @@ class_name PlayerWeapon
 extends Node
 ## The player's guns (docs/m1-gunplay-plan.md). Holds a small loadout (the
 ## suppressed pistol, the MG42, the Saiga-12K, the RC-6 rail carbine, the M14/P, the MP5, the switched Glock 22, the M32A1,
-## the Governor lever action and the SL-9 Slagger plasma pistol), one viewmodel rig per gun. Reads the
+## the Governor lever action, the SL-9 Slagger plasma pistol and the Steyr AUG), one viewmodel rig per gun. Reads the
 ## controller, runs the active gun's GunMechanism, fires rounds through
 ## Ballistics from the eye (so the round goes exactly where the crosshair or
 ## sights point, plus the gun's spread), and drives every piece of feedback:
@@ -113,11 +113,13 @@ const CHAMBER_SPENT: int = 2
 	preload("res://data/weapons/m32.tres"),
 	preload("res://data/weapons/governor.tres"),
 	preload("res://data/weapons/slagger.tres"),
+	preload("res://data/weapons/aug.tres"),
 ]
 @export var rig_paths: Array[NodePath] = [^"../Head/Camera3D/Viewmodel", ^"../Head/Camera3D/ViewmodelMG42",
 		^"../Head/Camera3D/ViewmodelSaiga", ^"../Head/Camera3D/ViewmodelRail", ^"../Head/Camera3D/ViewmodelM14",
 		^"../Head/Camera3D/ViewmodelMP5", ^"../Head/Camera3D/ViewmodelGlock", ^"../Head/Camera3D/ViewmodelM32",
-		^"../Head/Camera3D/ViewmodelGovernor", ^"../Head/Camera3D/ViewmodelSlagger"]
+		^"../Head/Camera3D/ViewmodelGovernor", ^"../Head/Camera3D/ViewmodelSlagger",
+		^"../Head/Camera3D/ViewmodelAUG"]
 @export var input_enabled: bool = true
 @export var wheel_config: WeaponWheelConfig = preload("res://data/input/weapon_wheel.tres")
 
@@ -314,8 +316,24 @@ func _shown_ammo() -> int:
 	return mechanism.mag_ammo
 
 
+## The trigger is pulled far enough for automatic fire (progressive triggers).
+func full_auto_pull() -> bool:
+	return Input.get_action_raw_strength(&"fire") >= data.full_auto_pull
+
+
+## Rounds in the magazine in view: the old one's count until it's out of
+## sight, then the new one's (what the reload will leave in it).
+func _rounds_in_view() -> int:
+	if is_reloading() and mechanism.reload_progress() > (data.mag_out_point + data.mag_in_point) * 0.5:
+		var room: int = data.magazine_size
+		return room if data.infinite_reserve else mini(room, mechanism.magazine + mechanism.reserve)
+	return mechanism.magazine
+
+
 ## The optic is mounted (the magazine in view holds a load that uses it).
 func optic_on() -> bool:
+	if data.integral_optic:
+		return true
 	var a: AmmoData = slots[current].ammo(_shown_ammo())
 	return a != null and a.use_optic
 
@@ -656,6 +674,8 @@ func _physics_process(delta: float) -> void:
 	elif active:
 		pull = Input.is_action_just_pressed(&"fire")
 		held = Input.is_action_pressed(&"fire")
+		if held and data.progressive_trigger and not full_auto_pull():
+			held = false  # a light pull on the AUG's trigger: one round per pull
 		reload = Input.is_action_just_pressed(&"reload")
 		aim_held = Input.is_action_pressed(&"aim")
 		if Input.is_action_just_pressed(&"item_next"):
@@ -805,6 +825,10 @@ func _process(delta: float) -> void:
 		s.rig.set_optic(shown.use_optic)
 		s.rig.set_shell_color(shown.color)
 		s.rig.set_scoped(scope_amount() > 0.5)
+	elif data.integral_optic:
+		s.rig.set_scoped(scope_amount() > 0.5)
+	if s.rig.has_part(&"mag_rounds"):
+		s.rig.set_mag_rounds(_rounds_in_view(), data.magazine_size, data.mag_arc_center, data.mag_follower_step_deg)
 	if data.cover_open_deg > 0.0:
 		var cover: float = _cover_open()
 		s.rig.set_cover_open(cover * data.cover_open_deg, data.cover_hinge)

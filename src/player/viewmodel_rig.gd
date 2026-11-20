@@ -29,6 +29,10 @@ extends Node3D
 ##   `bolt`     a lever action's bolt: runs back (−X) with the lever
 ##   `hammer`   an exposed hammer: falls forward on the shot, cocked by the lever
 ##   `load_round` the cartridge going in at a loading gate during a reload
+##   `mag_shell`  a clear magazine's body: gets an amber, see-through material
+##   `mag_rounds` the rounds inside it, one mesh: a shader hides the fired ones
+##                (UV.x = slot from the top; mag_rounds.gdshader)
+##   `mag_follower` rides up the magazine's curve under the last round
 
 @export var config: ViewmodelConfig
 @export var models: Array[PackedScene] = []
@@ -74,6 +78,11 @@ var _round_rest: Array[Transform3D] = []
 var _tinted: Array[GeometryInstance3D] = []
 var _tint_mat: StandardMaterial3D
 var _scoped: bool = false
+var _mag_rounds: GeometryInstance3D
+var _rounds_mat: ShaderMaterial
+var _mag_follower: Node3D
+var _follower_rest: Transform3D
+var _shown_rounds: int = -1
 
 
 func _ready() -> void:
@@ -128,6 +137,12 @@ func _ready() -> void:
 			_hammer = model.find_child("hammer", true, false) as Node3D
 		if _load_round == null:
 			_load_round = model.find_child("load_round", true, false) as Node3D
+		if _mag_rounds == null:
+			_mag_rounds = model.find_child("mag_rounds", true, false) as GeometryInstance3D
+			_mag_follower = model.find_child("mag_follower", true, false) as Node3D
+			var shell: GeometryInstance3D = model.find_child("mag_shell", true, false) as GeometryInstance3D
+			if shell:
+				shell.material_override = _clear_polymer()
 		for part: String in ["shell_hull", "mag_tape"]:
 			var g: GeometryInstance3D = model.find_child(part, true, false) as GeometryInstance3D
 			if g:
@@ -155,6 +170,12 @@ func _ready() -> void:
 		_load_round.visible = false
 	if _cylinder:
 		_cylinder_rest = _cylinder.transform
+	if _mag_rounds:
+		_rounds_mat = ShaderMaterial.new()
+		_rounds_mat.shader = preload("res://src/weapons/mag_rounds.gdshader")
+		_mag_rounds.material_override = _rounds_mat
+	if _mag_follower:
+		_follower_rest = _mag_follower.transform
 	if _crane:
 		_crane_rest = _crane.transform
 	if _laser:
@@ -236,7 +257,46 @@ func has_part(part_name: StringName) -> bool:
 			return _cylinder != null
 		&"crane":
 			return _crane != null
+		&"mag_rounds":
+			return _mag_rounds != null
+		&"mag_follower":
+			return _mag_follower != null
 	return false
+
+
+## A clear magazine's body: smoky amber polymer you can see the rounds through.
+static func _clear_polymer() -> StandardMaterial3D:
+	var m: StandardMaterial3D = StandardMaterial3D.new()
+	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	m.albedo_color = Color(0.62, 0.46, 0.26, 0.34)
+	m.roughness = 0.16
+	m.metallic_specular = 0.6
+	m.rim_enabled = true
+	m.rim = 0.35
+	m.rim_tint = 0.6
+	return m
+
+
+## Rounds shown in a clear magazine (the fired ones hidden), and the follower
+## turned up the magazine's curve (`step_deg` per round gone, about the line
+## along Z through `center`, magazine space).
+func set_mag_rounds(count: int, capacity: int, center: Vector3, step_deg: float) -> void:
+	if _rounds_mat == null or count == _shown_rounds:
+		return
+	_shown_rounds = count
+	_rounds_mat.set_shader_parameter(&"rounds", float(count))
+	if _mag_follower:
+		var a: float = deg_to_rad(step_deg) * float(maxi(capacity - count, 0))
+		_mag_follower.transform = Transform3D(Basis(), center) * Transform3D(Basis(Vector3(0, 0, 1), a), Vector3.ZERO) \
+				* Transform3D(Basis(), -center) * _follower_rest
+
+
+func mag_rounds_shown() -> int:
+	return _shown_rounds
+
+
+func follower_transform() -> Transform3D:
+	return _mag_follower.transform if _mag_follower else Transform3D()
 
 
 ## Slide travel back from rest, metres (weapon space −X).

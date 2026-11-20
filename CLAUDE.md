@@ -52,7 +52,7 @@ Commit after each step.
 
 ## 3–6. Game design
 
-Augmentation (§3; the actives in §3.4, §3.4b, §3.4c and §3.4d, the passive library in §3.6, colours in §3.7), test loadouts (§4; the Governor and the Slagger plasma pistol §4.9), combat simulation (§5; the squad hunt §5.6a, tuning `data/enemies/hunt.tres`), art direction (§6), maps (§7) and the Survival mode (§8: runs, marks, drops, doctrines, waves, bosses, the enemy roster) live in [`docs/design.md`](docs/design.md). Survival tuning: `tools/run/gen_pool.py` → `data/run/survival.tres` (don't hand-edit the .tres).
+Augmentation (§3; the actives in §3.4, §3.4b, §3.4c and §3.4d, the passive library in §3.6, colours in §3.7), test loadouts (§4; the Governor and the Slagger plasma pistol §4.9, the Steyr AUG §4.10), combat simulation (§5; the squad hunt §5.6a, tuning `data/enemies/hunt.tres`), art direction (§6), maps (§7) and the Survival mode (§8: runs, marks, drops, doctrines, waves, bosses, the enemy roster) live in [`docs/design.md`](docs/design.md). Survival tuning: `tools/run/gen_pool.py` → `data/run/survival.tres` (don't hand-edit the .tres).
 
 ---
 
@@ -285,6 +285,7 @@ Each milestone ends with an APK on the owner's phone and an entry in `docs/playt
    2026-11-17 (owner): attack dogs, German shepherds that gallop in, leap and bite; Chinatown spawns and Survival from wave 6. The first Tripo3D asset: generated, reduced, auto-rigged, animated in Blender (design §8.8b).
    2026-11-17 (owner: "remake the models you're not impressed by in Tripo"): every triad man and the Incense Master are now Tripo3D men on the triad rig, eleven looks plus the boss, the Blue Lantern in his own (design §5.6b).
    2026-11-18 (owner): map 2, the Golden Dragon Grand Hotel (design §7.2), and two guns with it (design §4.9): the Governor, a black polymer .45-70 lever action (the lever is thrown after every shot: bolt, case, hammer, a heavy clunk in sound and rumble), and the SL-9 Slagger, the first energy weapon, a welder-built plasma pistol (hold to charge, 2.75 s to full; grazes set men alight and panicking, a charged trunk hit burns a hole through, limbs come off cauterised and burning).
+   2026-11-20 (owner: "an automatic rifle, like an assault rifle niche ... a very realistic Steyr AUG"): the AUG A1 (StG 77), traced from reference photos and checked against them by overlay; olive stock, 1.5x integral scope (aiming goes through it, circle reticle), progressive trigger (light pull single, full pull automatic), clear magazine showing the rounds left (design §4.10).
    Next: more triad types and bosses (the Straw Sandal next), theme waves (design §8.8), then tuning from the owner's runs.
    Done when a run has a difficulty curve the owner wants to replay and builds that play differently.
 

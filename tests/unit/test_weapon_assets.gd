@@ -55,6 +55,7 @@ func test_textures_are_vram_compressed() -> void:
 			"res://assets/characters/fp_arms_rail/textures/fp_arms_rail",
 			"res://assets/weapons/m14p/textures/m14p", "res://assets/characters/fp_arms_m14p/textures/fp_arms_m14p",
 			"res://assets/weapons/mp5/textures/mp5", "res://assets/weapons/glock22/textures/glock22",
+			"res://assets/weapons/aug/textures/aug", "res://assets/characters/fp_arms_aug/textures/fp_arms_aug",
 			"res://assets/characters/operative/textures/operative", "res://assets/characters/operative/textures/operative_head"]:
 		for name: String in ["basecolor", "orm", "normal", "emission"]:
 			if prefix.ends_with("operative_head") and name == "emission":
@@ -158,6 +159,40 @@ func test_mp5_parts_budget_and_baked_material() -> void:
 	assert_between(tris, 8000, 25000, "first-person MP5 (%d tris)" % tris)
 
 
+func test_aug_parts_budget_and_clear_magazine() -> void:
+	var gun: Node = (load("res://assets/weapons/aug/aug.gltf") as PackedScene).instantiate()
+	# Body plus the parts the game drives: magazine (with its clear shell, rounds and follower riding on it),
+	# the cocking handle.
+	for part: String in ["body", "magazine", "charging_handle", "mag_shell", "mag_rounds", "mag_follower"]:
+		assert_true(gun.find_child(part, true, false) != null, "has a %s node" % part)
+	var mag: Node = gun.find_child("magazine", true, false)
+	for part: String in ["mag_shell", "mag_rounds", "mag_follower"]:
+		assert_true(mag.is_ancestor_of(gun.find_child(part, true, false)), "%s leaves with the magazine" % part)
+	var body: MeshInstance3D = gun.find_child("body", true, false) as MeshInstance3D
+	var mat: StandardMaterial3D = body.mesh.surface_get_material(0) as StandardMaterial3D
+	assert_not_null(mat.albedo_texture)
+	assert_not_null(mat.normal_texture)
+	assert_not_null(mat.roughness_texture)
+	assert_not_null(mat.metallic_texture, "steel and paint vs polymer comes from the metal map")
+	# 30 rounds, each slot coded in UV.x (mag_rounds.gdshader hides the fired ones).
+	var rounds: MeshInstance3D = gun.find_child("mag_rounds", true, false) as MeshInstance3D
+	var uv: PackedVector2Array = rounds.mesh.surface_get_arrays(0)[Mesh.ARRAY_TEX_UV]
+	var top: float = 0.0
+	for v: Vector2 in uv:
+		top = maxf(top, v.x)
+	assert_between(floorf(top), 29.0, 29.0, "slots 0..29")
+	var tris: int = _tris(gun)
+	gun.free()
+	assert_between(tris, 9000, 18000, "first-person AUG with its rounds (%d tris)" % tris)
+
+
+func test_aug_arms_budget() -> void:
+	var arms: Node = (load("res://assets/characters/fp_arms_aug/fp_arms_aug.gltf") as PackedScene).instantiate()
+	var tris: int = _tris(arms)
+	arms.free()
+	assert_lt(tris, 12000, "first-person arms (AUG hold)")
+
+
 func test_glock22_parts_budget_and_baked_material() -> void:
 	var gun: Node = (load("res://assets/weapons/glock22/glock22.gltf") as PackedScene).instantiate()
 	# Body plus the parts the game drives: the slide (with the switch on its back) and the magazine.
@@ -185,7 +220,8 @@ func test_m14p_arms_budget() -> void:
 
 
 func test_every_gun_has_a_wheel_icon() -> void:
-	for path: String in ["pistol_57", "mg42", "saiga12k", "rail_carbine", "m14p", "mp5", "glock22", "m32"]:
+	for path: String in ["pistol_57", "mg42", "saiga12k", "rail_carbine", "m14p", "mp5", "glock22", "m32", "governor",
+			"slagger", "aug"]:
 		var d: WeaponData = load("res://data/weapons/%s.tres" % path) as WeaponData
 		assert_not_null(d.icon, "%s has a weapon wheel icon" % path)
 

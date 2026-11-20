@@ -166,6 +166,11 @@ func _ready() -> void:
 			ng.room = self
 			ng.shot = arg.trim_prefix("--demo=newguns:")
 			add_child(ng)
+		elif arg.begins_with("--demo=aug:"):
+			var ag: AugDemo = AugDemo.new()
+			ag.room = self
+			ag.shot = arg.trim_prefix("--demo=aug:")
+			add_child(ag)
 		elif arg == "--demo=slide":
 			var sd: SlideDemo = SlideDemo.new()
 			sd.room = self

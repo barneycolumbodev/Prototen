@@ -94,6 +94,12 @@ class ScopeView:
 	var ammo: AmmoData
 	## Illuminated reticle colour (seaglass, crimson over an enemy; set by the HUD).
 	var lit_color: Color = ReticleStyle.SEAGLASS
+	## &"chevron" (the Saiga slug optic) or &"ring" (the AUG's 1.5x: a circle
+	## `ring_deg` across with the aim point in its centre); how much of the
+	## screen height the eyepiece fills (`eyepiece` x 2).
+	var style: StringName = &"chevron"
+	var ring_deg: float = 1.6
+	var eyepiece: float = 0.44
 	const MARKS: Array[float] = [100.0, 200.0, 300.0]
 	var _drops: Dictionary[float, float] = {}
 	var _drops_for: AmmoData
@@ -121,7 +127,7 @@ class ScopeView:
 	func _draw() -> void:
 		var c: Vector2 = size * 0.5
 		var a: float = amount
-		var r: float = minf(size.x, size.y) * 0.44
+		var r: float = minf(size.x, size.y) * eyepiece
 		# Outside the eyepiece: dimmed, not black (1x, both eyes open). Inside: a faint lens tint.
 		var far: float = c.length() + 4.0
 		draw_arc(c, (r + far) * 0.5, 0.0, TAU, 96, Color(0.0, 0.0, 0.0, 0.62 * a), far - r, true)
@@ -133,6 +139,9 @@ class ScopeView:
 		lit.a = a
 		var glow: Color = lit_color
 		glow.a = 0.22 * a
+		if style == &"ring":
+			_ring(c, r, lit, glow, a)
+			return
 		# Main chevron: the tip is the aim point.
 		_chevron(c, 9.0, 10.0, lit, glow, 2.0)
 		# Holdover marks at their true drop (small at 1x), numbered in hundreds
@@ -179,6 +188,22 @@ class ScopeView:
 			var x: float = lerpf(x0, x1, (MARKS[i] - 50.0) / 250.0)
 			draw_line(Vector2(x, base_y), Vector2(x, base_y + 4.0), lit, 1.2, true)
 			draw_string(font, Vector2(x - 3.0, base_y + 16.0), str(i + 1), HORIZONTAL_ALIGNMENT_LEFT, -1, 11, lit)
+
+	## The AUG's circle reticle: a thin ring (dark edged, so it reads on a
+	## bright sky too) round the aim point, a pin-point in the centre, faint
+	## crosshair stubs at the edge of the field for a quick level.
+	func _ring(c: Vector2, field: float, lit: Color, glow: Color, a: float) -> void:
+		var rr: float = maxf(px(deg_to_rad(ring_deg) * 0.5), 9.0)
+		var dark: Color = Color(0.0, 0.0, 0.0, 0.55 * a)
+		draw_arc(c, rr, 0.0, TAU, 64, dark, 4.2, true)
+		draw_arc(c, rr, 0.0, TAU, 64, glow, 5.0, true)
+		draw_arc(c, rr, 0.0, TAU, 64, lit, 1.6, true)
+		draw_circle(c, 2.6, dark, true, -1.0, true)
+		draw_circle(c, 1.4, lit, true, -1.0, true)
+		var stub: Color = lit
+		stub.a = 0.45 * a
+		for d: Vector2 in [Vector2.RIGHT, Vector2.LEFT, Vector2.UP, Vector2.DOWN]:
+			draw_line(c + d * field * 0.86, c + d * field * 0.98, stub, 1.4, true)
 
 	func _chevron(tip: Vector2, w: float, h: float, lit: Color, glow: Color, width: float) -> void:
 		var pts: PackedVector2Array = PackedVector2Array([tip + Vector2(-w, h), tip, tip + Vector2(w, h)])
@@ -392,6 +417,9 @@ func _process(delta: float) -> void:
 			_gauge.venting = weapon.mechanism.venting
 		_scope.amount = weapon.scope_amount()
 		_scope.ammo = weapon.magazine_ammo()
+		_scope.style = weapon.data.scope_reticle
+		_scope.ring_deg = weapon.data.scope_ring_deg
+		_scope.eyepiece = weapon.data.scope_eyepiece
 		_update_shell(delta)
 		_update_stowed()
 
