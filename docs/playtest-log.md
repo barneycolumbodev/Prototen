@@ -825,3 +825,29 @@ Please try:
 - Measured:
 - Notes from the owner:
 - Follow-ups: the reload is a pose and a magazine drop (the hands don't move off the grips), as on the other guns.
+
+## The SPAS-12 — 2026-11-20 (waiting for the owner)
+
+Owner (2026-11-20): "do the same thing for the SPAS 12 ... the stock folded up ... one-to-one with the actual SPAS 12 ... exclusively pump ... after every shot, almost like the old Doom games ... raise the barrel and do the pump ... more damage and a little more range ... a slightly tighter spread ... a smaller reticule ... It also needs a boom." Design: `docs/design.md` §4.11.
+
+What's in the APK:
+- **The SPAS-12** (the weapon wheel; Survival drops from wave 2), stock folded over the top with the hook up.
+- **Traced from a studio photo of a real one, folded**, at its real size (810 mm), and checked by laying the model's side view over the photo (`docs/previews/spas12_overlay.png`: top, the model in orange over the photo; bottom, where they differ in red and blue).
+- **Pump only:** after every shot the gun comes up, your left hand racks the pump back (the red hull flies out) and slams it home, and the gun goes back down. 0.74 s a shot, against the Saiga's 0.16.
+- **Against the Saiga's buck:** about 38 % more damage a shell, 190 m range instead of 160, a tighter pattern (2.6° against 3.4°) and a ring about 23 % smaller, the same shape.
+- **LT** shoulders it; the folded stock covers the sights, so the ring stays on screen, smaller.
+- **X** loads a shell at a time (8 + 1); RT with a shell in stops and fires.
+- **Sound:** a new layered stereo shot (crack, bark, chest punch, sub boom, steel), a long rolling tail, and a heavy "shuck ... CHUNK" pump.
+
+Cloud evidence: `tests/scene/test_spas12.gd` (7 tests, all pass) and `test_weapon_assets.gd`. In-game captures: `docs/previews/spas12_ingame.png` (hip, the shot, raised with the pump back and the hull flying, pump home, aimed, reloading). Renders: `spas12_beauty.png`, `spas12_side.png`, `spas12_left_side.png`, `spas12_rear.png`, `spas12_stock.png`, `spas12_pump.png`, `fp_arms_spas12.png`. Not checked in the cloud: how the sounds actually sound (they were checked by meter and spectrogram, not by ear), rumble, frame rate on the Moto G (17.9k triangles plus 7.8k for the arms).
+
+Please try:
+1. The rhythm: is 0.74 s between shots right? (Pause → Gun tuning → Pump: start delay, stroke time.)
+2. The raise: too much, too little? Does it block your view of the target too long?
+3. The boom: on the phone speaker and on headphones, against the Saiga and the Governor.
+4. Aiming: the gun drops low with the hook under the ring. Keep it, or bring the gun up more?
+
+- Device / renderer / settings:
+- Measured:
+- Notes from the owner:
+- Follow-ups: the reload pose rolls the gun but doesn't show the loading port well; the hands don't move to load shells (as on the Governor).
