@@ -100,12 +100,14 @@ OLIVE = (0.040, 0.041, 0.026)
 M_STOCK = mat("olive_polymer", OLIVE, 0.58, 0.0, bump_scale=2600, bump_strength=0.10)
 M_STOCK_WORN = mat("olive_polymer_worn", OLIVE, 0.5, 0.0, wear=(0.15, 0.155, 0.12), wear_rough=0.38,
                    bump_scale=2600, bump_strength=0.10)
-# Black paint over cast aluminium: edges and the scope tube rubbed through to bare metal.
-M_ALU = mat("black_paint_alu", (0.014, 0.014, 0.016), 0.5, 0.1, wear=(0.52, 0.52, 0.54), wear_rough=0.3,
+# Black paint over cast aluminium. The edge-wear mask (pointiness) spreads across the big flat faces
+# of these sparse hard-surface meshes, so the wear here is only a slightly lighter, smoother black;
+# the scope tube (dense mesh) keeps its rubbed-through edges.
+M_ALU = mat("black_paint_alu", (0.014, 0.014, 0.016), 0.5, 0.1, wear=(0.075, 0.075, 0.08), wear_rough=0.38,
             bump_scale=1700, bump_strength=0.05)
 M_SCOPE = mat("scope_black", (0.016, 0.016, 0.018), 0.36, 0.4, wear=(0.56, 0.56, 0.58), wear_rough=0.25,
               bump_scale=1500, bump_strength=0.04)
-M_STEEL = mat("phosphate_steel", (0.020, 0.020, 0.022), 0.55, 0.6, wear=(0.40, 0.40, 0.42), wear_rough=0.24,
+M_STEEL = mat("phosphate_steel", (0.020, 0.020, 0.022), 0.55, 0.6, wear=(0.09, 0.09, 0.095), wear_rough=0.36,
               brushed=0.03, bump_scale=1400, bump_strength=0.05)
 M_BRIGHT = mat("bright_steel", (0.50, 0.50, 0.52), 0.25, 1.0, brushed=0.04)
 M_BORE = mat("bore_dark", (0.010, 0.010, 0.011), 0.5, 1.0)

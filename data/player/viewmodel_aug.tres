@@ -4,5 +4,5 @@
 
 [resource]
 script = ExtResource("1_vm")
-eye_position = Vector3(-0.52, 0.16, -0.17)
-look_target = Vector3(0.8, 0.07, -0.12)
+eye_position = Vector3(-0.64, 0.13, -0.26)
+look_target = Vector3(0.8, 0.03, -0.04)

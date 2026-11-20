@@ -124,5 +124,5 @@ func test_empty_reload_works_the_cocking_handle() -> void:
 	assert_gt(weapon.rig().charging_handle_back(), 0.05, "handle back")
 	await _press(&"reload")
 	await wait_seconds(weapon.data.reload_empty_time + 0.3)
-	assert_eq(weapon.mechanism.loaded(), 31, "loaded and chambered")
+	assert_eq(weapon.mechanism.loaded(), 30, "a fresh magazine, one of it chambered")
 	assert_almost_eq(weapon.rig().charging_handle_back(), 0.0, 0.001, "handle home")

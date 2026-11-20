@@ -801,3 +801,27 @@ Please try:
 - Measured:
 - Notes from the owner:
 - Follow-ups: the right hand stays on the grip while the lever swings (the M14/P arms are one mesh): split the arms and move the hand with the lever if it reads badly. The Slagger has no HUD charge meter (the ball is the meter). Lightmap tuning from the phone.
+
+## The Steyr AUG A1 — 2026-11-20 (waiting for the owner)
+
+Owner (2026-11-20): "I think there's an automatic rifle, like an assault rifle niche that needs filled ... a really awesome AUG model. It's super realistic. If you need to look at reference pictures and superimpose them, do that." Design: `docs/design.md` §4.10.
+
+What's in the APK:
+- **The AUG A1** (the weapon wheel; Survival drops from wave 2). The Austrian Army StG 77: olive stock, black receiver and carry handle, the 1.5x scope, the folding foregrip, the clear 30-round magazine.
+- **The model was traced from photos of a real StG 77**, not drawn from memory, then rendered on top of the photo to check it (`docs/previews/aug_overlay.png`: the red line is the model's outline over the photo).
+- **Trigger:** squeeze RT part way for single shots, pull it all the way for automatic (680 rpm), like the real AUG's two-stage trigger.
+- **LT** goes through the scope: 1.5x, the StG 77's circle reticle (aim at its centre).
+- **The magazine is see-through:** the rounds you fire disappear from the stack and the follower rides up; a new magazine comes up full. An empty reload pulls the cocking handle on the left.
+
+Cloud evidence: `tools/check.sh`, 528 tests passed, including the new `tests/scene/test_aug.gd` (6 tests: 5.56×45 at 1.77 kJ, 680 rpm, 30 + 1; a full pull fires automatic, a light pull one round, then squeezing through goes automatic; LT ends in the scope view at 1.5x and the viewmodel steps aside; the clear magazine shows 25 rounds after 5 shots and the follower moves up, 30 after a reload; an empty reload works the handle) and `test_weapon_assets.gd` (parts, the shell, rounds and follower ride on the magazine, 30 slot-coded rounds, 15.5k triangles, compressed textures). In-game captures (software Vulkan): `docs/previews/aug_ingame.png` (hip, a burst with 19 left in the clear magazine, the scope, the reload). Renders: `aug_beauty.png`, `aug_side.png`, `aug_left_side.png`, `aug_receiver.png`, `aug_front.png`, `aug_mag.png`, `fp_arms_aug.png`. Not checked in the cloud: the frame rate on the Moto G (15.5k triangles with the rounds, one transparent shell), the sounds and rumble on the controller, where the second stage of the trigger feels right on your controller (85 % travel, `full_auto_pull` in `data/weapons/aug.tres`).
+
+Please try:
+1. Light pull vs full pull on RT: does the switch to automatic land where it should?
+2. The scope: is the circle the right size? The zoom (1.5x) and how long it takes to get behind it (0.24 s)?
+3. The hip view: the bullpup puts the stock close to your face; is it too big on screen?
+4. Recoil and sound against the MP5 and the M14/P.
+
+- Device / renderer / settings:
+- Measured:
+- Notes from the owner:
+- Follow-ups: the reload is a pose and a magazine drop (the hands don't move off the grips), as on the other guns.
