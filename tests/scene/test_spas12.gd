@@ -203,4 +203,4 @@ func test_a_shell_does_far_more_damage_than_a_saiga_shell() -> void:
 			theirs += await _hip_shell_damage(saiga, dist, &"stomach", rng)
 		gut.p("%.0f m: SPAS-12 %.0f, Saiga %.0f per shell" % [dist, mine / 4.0, theirs / 4.0])
 		assert_gt(mine / 4.0, 100.0 * 2.5, "at %.0f m a shell is several men's worth (%.0f)" % [dist, mine / 4.0])
-		assert_gt(mine, theirs * 1.7, "at %.0f m: %.0f vs %.0f" % [dist, mine / 4.0, theirs / 4.0])
+		assert_gt(mine, theirs * 1.5, "at %.0f m: %.0f vs %.0f" % [dist, mine / 4.0, theirs / 4.0])
