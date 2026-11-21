@@ -9,33 +9,119 @@
    "description": "  From  The Free Firearm Sound Library homepage : \n  The firearm sound library was the brainchild of a team of college students with a mutual passion for the audio and \u00a0visual arts. In November, 2013 we launched a Kickstarter campaign to develop an extensive open source firearm sound effects library, and on December 7, 2013 our project was funded by an incredible group of backers and we went into full tilt production. This website serves to connect our backers with our two libraries, as well as to give credit to the backers who made it all possible.  \n   Along with the availability of these sounds comes the need to understand their proper application. The metadata included in the sound files along with some instructional videos will help make these sounds serve you to their full potential.  \n   Our team holds CC0 NO RIGHTS RESERVED for this library. It may be used without royalty or credit (though we would love to hear how you've used our sounds) for any application, personal or professional. Have at it!  \n Please note that OGA is not affiliated with this project, and as such, we encourage you to visit their site so as to make sure you're getting the latest version of the files: \n  http://freefirearmsfx.com \u00a0 raw \u00a0 prepared  \n Also note that their website includes instructions along with the raw versions of the sound effects, which are not archived here. \n Big thanks to  their team  and all of their  Kickstarter supporters  for this amazing collection! \n",
    "files": [
     {
-     "url": "https://opengameart.org/sites/default/files/Prepared%20SFX%20Library.7z",
-     "error": "too large"
-    }
-   ]
-  },
-  {
-   "source": "opengameart",
-   "page": "https://opengameart.org/content/gun-reload-sounds",
-   "title": "Gun reload sounds | OpenGameArt.org",
-   "author": "SpringySpringo",
-   "license": "CC0",
-   "description": "  Some gun reload sounds I made with airsoft guns. Send me the link to the project you are using this with!(Optional) Free to use! But credit will be nice. \n",
-   "files": [
-    {
-     "url": "https://opengameart.org/sites/default/files/assaultriflereload1_0.wav",
-     "path": "raw_assets/audio/fetched/oga_assaultriflereload1_0.wav",
-     "bytes": 274476
-    },
-    {
-     "url": "https://opengameart.org/sites/default/files/gunreload1.wav",
-     "path": "raw_assets/audio/fetched/oga_gunreload1.wav",
-     "bytes": 278572
-    },
-    {
-     "url": "https://opengameart.org/sites/default/files/shotguncock_0.wav",
-     "path": "raw_assets/audio/fetched/oga_shotguncock_0.wav",
-     "bytes": 83628
+     "path": "raw_assets/audio/fetched/oga_Prepared_SFX_Library",
+     "bytes": 193954738,
+     "kept": [
+      "raw_assets/audio/fetched/oga_Prepared_SFX_Library/Prepared_SFX_Library__Mossberg__N_26P.wav",
+      "raw_assets/audio/fetched/oga_Prepared_SFX_Library/Prepared_SFX_Library__Mossberg__N_30P.wav"
+     ],
+     "all_members": [
+      "Prepared SFX Library/1911/A_34P.wav",
+      "Prepared SFX Library/1911/A_42P.wav",
+      "Prepared SFX Library/1917/B_16P.wav",
+      "Prepared SFX Library/1917/B_24P.wav",
+      "Prepared SFX Library/AK-47/C_27P.wav",
+      "Prepared SFX Library/AK-47/C_28P.wav",
+      "Prepared SFX Library/AK-47/C_29P.wav",
+      "Prepared SFX Library/AK-47/C_31P.wav",
+      "Prepared SFX Library/AK-47/C_34P.wav",
+      "Prepared SFX Library/AK-47/C_36P.wav",
+      "Prepared SFX Library/AR-15/D_24P.wav",
+      "Prepared SFX Library/AR-15/D_32P.wav",
+      "Prepared SFX Library/Arisaka/E_18P.wav",
+      "Prepared SFX Library/Arisaka/E_25P.wav",
+      "Prepared SFX Library/Bersa/F_41P.wav",
+      "Prepared SFX Library/Bersa/F_47P.wav",
+      "Prepared SFX Library/Carl Gustav M45/G_20P.wav",
+      "Prepared SFX Library/Carl Gustav M45/G_22P.wav",
+      "Prepared SFX Library/Carl Gustav M45/G_24P.wav",
+      "Prepared SFX Library/Carl Gustav M45/G_31P.wav",
+      "Prepared SFX Library/Carl Gustav M45/G_33P.wav",
+      "Prepared SFX Library/Carl Gustav M45/G_35P.wav",
+      "Prepared SFX Library/CD/H_16P.wav",
+      "Prepared SFX Library/CD/H_21P.wav",
+      "Prepared SFX Library/Marlin 336/I_17P.wav",
+      "Prepared SFX Library/Marlin 336/I_22P.wav",
+      "Prepared SFX Library/Model 12/K_17P.wav",
+      "Prepared SFX Library/Model 12/K_22P.wav",
+      "Prepared SFX Library/Model 1894/L_17P.wav",
+      "Prepared SFX Library/Model 1894/L_23P.wav",
+      "Prepared SFX Library/Mosin Nagant/M_21P.wav",
+      "Prepared SFX Library/Mosin Nagant/M_26P.wav",
+      "Prepared SFX Library/Mossberg/N_26P.wav",
+      "Prepared SFX Library/Mossberg/N_30P.wav",
+      "Prepared SFX Library/Nova/O_17P.wav",
+      "Prepared SFX Library/Nova/O_21P.wav",
+      "Prepared SFX Library/PPSh/P_16P.wav",
+      "Prepared SFX Library/PPSh/P_18P.wav",
+      "Prepared SFX Library/PPSh/P_22P.wav",
+      "Prepared SFX Library/PPSh/P_30P.wav",
+      "Prepared SFX Library/PPSh/P_32P.wav",
+      "Prepared SFX Library/PPSh/P_34P.wav",
+      "Prepared SFX Library/Ruger Mark III/R_30P.wav",
+      "Prepared SFX Library/Ruger Mark III/R_35P.wav",
+      "Prepared SFX Library/Ruger Single Six/S_11P.wav",
+      "Prepared SFX Library/Ruger Single Six/S_14P.wav",
+      "Prepared SFX Library/Savage 10 .300 Blackout/T_17P.wav",
+      "Prepared SFX Library/Savage 10 .300 Blackout/T_27P.wav",
+      "Prepared SFX Library/SKS/U_14P.wav",
+      "Prepared SFX Library/SKS/U_19P.wav",
+      "Prepared SFX Library/Smith & Wesson 642/V_22P.wav",
+      "Prepared SFX Library/Smith & Wesson 642/V_27P.wav",
+      "Prepared SFX Library/Tikka/W_24P.wav",
+      "Prepared SFX Library/Tikka/W_29P.wav",
+      "Prepared SFX Library/Walther PPQ/X_31P.wav",
+      "Prepared SFX Library/Walther PPQ/X_39P.wav",
+      "Prepared SFX Library/desktop.ini",
+      "Prepared SFX Library/Prepared Master Sheet.csv",
+      "Prepared SFX Library/1911/.DS_Store",
+      "Prepared SFX Library/1917/.DS_Store",
+      "Prepared SFX Library/AK-47/.DS_Store",
+      "Prepared SFX Library/AR-15/.DS_Store",
+      "Prepared SFX Library/Arisaka/.DS_Store",
+      "Prepared SFX Library/Bersa/.DS_Store",
+      "Prepared SFX Library/Carl Gustav M45/.DS_Store",
+      "Prepared SFX Library/CD/.DS_Store",
+      "Prepared SFX Library/Marlin 336/.DS_Store",
+      "Prepared SFX Library/Model 12/.DS_Store",
+      "Prepared SFX Library/Model 1894/.DS_Store",
+      "Prepared SFX Library/Mosin Nagant/.DS_Store",
+      "Prepared SFX Library/Mossberg/.DS_Store",
+      "Prepared SFX Library/Nova/.DS_Store",
+      "Prepared SFX Library/PPSh/.DS_Store",
+      "Prepared SFX Library/Ruger Mark III/.DS_Store",
+      "Prepared SFX Library/Ruger Single Six/.DS_Store",
+      "Prepared SFX Library/Savage 10 .300 Blackout/.DS_Store",
+      "Prepared SFX Library/SKS/.DS_Store",
+      "Prepared SFX Library/Smith & Wesson 642/.DS_Store",
+      "Prepared SFX Library/Tikka/.DS_Store",
+      "Prepared SFX Library/Walther PPQ/.DS_Store",
+      "Prepared SFX Library/.DS_Store",
+      "Prepared SFX Library/Walther PPQ",
+      "Prepared SFX Library/Tikka",
+      "Prepared SFX Library/Smith & Wesson 642",
+      "Prepared SFX Library/SKS",
+      "Prepared SFX Library/Savage 10 .300 Blackout",
+      "Prepared SFX Library/Ruger Single Six",
+      "Prepared SFX Library/Ruger Mark III",
+      "Prepared SFX Library/PPSh",
+      "Prepared SFX Library/Nova",
+      "Prepared SFX Library/Mossberg",
+      "Prepared SFX Library/Mosin Nagant",
+      "Prepared SFX Library/Model 1894",
+      "Prepared SFX Library/Model 12",
+      "Prepared SFX Library/Marlin 336",
+      "Prepared SFX Library/CD",
+      "Prepared SFX Library/Carl Gustav M45",
+      "Prepared SFX Library/Bersa",
+      "Prepared SFX Library/Arisaka",
+      "Prepared SFX Library/AR-15",
+      "Prepared SFX Library/AK-47",
+      "Prepared SFX Library/1917",
+      "Prepared SFX Library/1911",
+      "Prepared SFX Library"
+     ],
+     "url": "https://opengameart.org/sites/default/files/Prepared%20SFX%20Library.7z"
     }
    ]
   },
@@ -48,84 +134,9 @@
    "description": "  Sounds of shells being loaded and shotgun being operated. Feel free to use these sounds without attribution, however if you use them in a project I'd love if you sent me a DM when it's finished so I can see it. Enjoy! \n",
    "files": [
     {
-     "url": "https://opengameart.org/sites/default/files/shotgunsounds.zip",
      "path": "raw_assets/audio/fetched/oga_shotgunsounds.zip",
-     "bytes": 324193
-    }
-   ]
-  },
-  {
-   "source": "opengameart",
-   "page": "https://opengameart.org/content/gunshot-sounds",
-   "title": "Gunshot Sounds | OpenGameArt.org",
-   "author": "Tabasco",
-   "license": "CC0",
-   "description": "  This is a collection of gunshot audio that we recorded while target shooting.\u00a0 The recording device didn't handle the volume as well as I might have liked, but it's still usable. \n The archive includes sounds for a CZ-52 pistol, a Mosin Nagant rifle, an SKS, and a shotgun. \n",
-   "files": [
-    {
-     "url": "https://opengameart.org/sites/default/files/sounds.zip",
-     "path": "raw_assets/audio/fetched/oga_sounds.zip",
-     "bytes": 5504243
-    }
-   ]
-  },
-  {
-   "source": "opengameart",
-   "page": "https://opengameart.org/content/gunshots",
-   "title": "Gunshots | OpenGameArt.org",
-   "author": "kurt",
-   "license": "CC0",
-   "description": "  I found these on my computer from several years ago.\u00a0 There is some echo so I'm not sure if they are usable.\u00a0 There are multiple shots in each file.\u00a0 If anyone is able to edit them into something more useful, feel free. I don't expect any new gunshot recordings since these were not my guns. Enjoy :) \n \u00a0 \n",
-   "files": [
-    {
-     "url": "https://opengameart.org/sites/default/files/22%20Magnum.wav",
-     "path": "raw_assets/audio/fetched/oga_22_Magnum.wav",
-     "bytes": 830924
-    },
-    {
-     "url": "https://opengameart.org/sites/default/files/22%20Pistol.wav",
-     "path": "raw_assets/audio/fetched/oga_22_Pistol.wav",
-     "bytes": 818432
-    },
-    {
-     "url": "https://opengameart.org/sites/default/files/Black%20Powder.wav",
-     "path": "raw_assets/audio/fetched/oga_Black_Powder.wav",
-     "bytes": 1545152
-    },
-    {
-     "url": "https://opengameart.org/sites/default/files/Unkown.wav",
-     "path": "raw_assets/audio/fetched/oga_Unkown.wav",
-     "bytes": 2200476
-    }
-   ]
-  },
-  {
-   "source": "freesound",
-   "page": "https://freesound.org/people/KVV_Audio/sounds/790980/",
-   "id": "790980",
-   "author": "KVV_Audio",
-   "title": "GUNShotg_Winchester 1300 Pump Action 01_KVV AUDIO_FREE by KVV_Audio",
-   "license": "https://creativecommons.org/licenses/by/4.0/",
-   "description": "",
-   "files": [
-    {
-     "url": "https://freesound.orghttps://cdn.freesound.org/previews/790/790980_12846320-lq.mp3",
-     "skipped": "not CC0 or no preview"
-    }
-   ]
-  },
-  {
-   "source": "freesound",
-   "page": "https://freesound.org/people/Dentrabert/sounds/673320/",
-   "id": "673320",
-   "author": "Dentrabert",
-   "title": "Shotgun Pump.wav by Dentrabert",
-   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
-   "description": "",
-   "files": [
-    {
-     "url": "https://freesound.orghttps://cdn.freesound.org/previews/673/673320_14265036-hq.mp3",
-     "error": "<urlopen error [Errno -2] Name or service not known>"
+     "bytes": 324193,
+     "url": "https://opengameart.org/sites/default/files/shotgunsounds.zip"
     }
    ]
   },
@@ -139,308 +150,9 @@
    "description": "",
    "files": [
     {
-     "url": "https://freesound.orghttps://cdn.freesound.org/previews/755/755495_15802209-hq.mp3",
-     "error": "<urlopen error [Errno -2] Name or service not known>"
-    }
-   ]
-  },
-  {
-   "source": "freesound",
-   "page": "https://freesound.org/people/Patrick_Corra/sounds/540824/",
-   "id": "540824",
-   "author": "Patrick_Corra",
-   "title": "Weapon reload and pump by Patrick_Corra",
-   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
-   "description": "",
-   "files": [
-    {
-     "url": "https://freesound.orghttps://cdn.freesound.org/previews/540/540824_8711646-hq.mp3",
-     "error": "<urlopen error [Errno -2] Name or service not known>"
-    }
-   ]
-  },
-  {
-   "source": "freesound",
-   "page": "https://freesound.org/people/db465/sounds/865986/",
-   "id": "865986",
-   "author": "db465",
-   "title": "shotgun_fire by db465",
-   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
-   "description": "",
-   "files": [
-    {
-     "url": "https://freesound.orghttps://cdn.freesound.org/previews/865/865986_19132311-hq.mp3",
-     "error": "<urlopen error [Errno -2] Name or service not known>"
-    }
-   ]
-  },
-  {
-   "source": "freesound",
-   "page": "https://freesound.org/people/hiramjustus/sounds/55341/",
-   "id": "55341",
-   "author": "hiramjustus",
-   "title": "shotgun.wav by hiramjustus",
-   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
-   "description": "",
-   "files": [
-    {
-     "url": "https://freesound.orghttps://cdn.freesound.org/previews/55/55341_662292-hq.mp3",
-     "error": "<urlopen error [Errno -2] Name or service not known>"
-    }
-   ]
-  },
-  {
-   "source": "freesound",
-   "page": "https://freesound.org/people/AbuNijmeh/sounds/318973/",
-   "id": "318973",
-   "author": "AbuNijmeh",
-   "title": "Shotgun - Fire.wav by AbuNijmeh",
-   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
-   "description": "",
-   "files": [
-    {
-     "url": "https://freesound.orghttps://cdn.freesound.org/previews/318/318973_4039477-hq.mp3",
-     "error": "<urlopen error [Errno -2] Name or service not known>"
-    }
-   ]
-  },
-  {
-   "source": "freesound",
-   "page": "https://freesound.org/people/lensflare8642/sounds/145209/",
-   "id": "145209",
-   "author": "lensflare8642",
-   "title": "shotgun sounds by lensflare8642",
-   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
-   "description": "",
-   "files": [
-    {
-     "url": "https://freesound.orghttps://cdn.freesound.org/previews/145/145209_2598732-hq.mp3",
-     "error": "<urlopen error [Errno -2] Name or service not known>"
-    }
-   ]
-  },
-  {
-   "source": "freesound",
-   "page": "https://freesound.org/people/shelbyshark/sounds/513354/",
-   "id": "513354",
-   "author": "shelbyshark",
-   "title": "Racking Shotgun.wav by shelbyshark",
-   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
-   "description": "",
-   "files": [
-    {
-     "url": "https://freesound.orghttps://cdn.freesound.org/previews/513/513354_8644110-hq.mp3",
-     "error": "<urlopen error [Errno -2] Name or service not known>"
-    }
-   ]
-  },
-  {
-   "source": "freesound",
-   "page": "https://freesound.org/people/zekybomb/sounds/677662/",
-   "id": "677662",
-   "author": "zekybomb",
-   "title": "rack 12-guage shotgun.mp3 by zekybomb",
-   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
-   "description": "",
-   "files": [
-    {
-     "url": "https://freesound.orghttps://cdn.freesound.org/previews/677/677662_14511172-hq.mp3",
-     "error": "<urlopen error [Errno -2] Name or service not known>"
-    }
-   ]
-  },
-  {
-   "source": "freesound",
-   "page": "https://freesound.org/people/Pacifici/sounds/351226/",
-   "id": "351226",
-   "author": "Pacifici",
-   "title": "shotgun_rack.wav by Pacifici",
-   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
-   "description": "",
-   "files": [
-    {
-     "url": "https://freesound.orghttps://cdn.freesound.org/previews/351/351226_4978050-hq.mp3",
-     "error": "<urlopen error [Errno -2] Name or service not known>"
-    }
-   ]
-  },
-  {
-   "source": "freesound",
-   "page": "https://freesound.org/people/qubodup/sounds/854653/",
-   "id": "854653",
-   "author": "qubodup",
-   "title": "Shotgun Shot First Person 2 by qubodup",
-   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
-   "description": "",
-   "files": [
-    {
-     "url": "https://freesound.orghttps://cdn.freesound.org/previews/854/854653_71257-hq.mp3",
-     "error": "<urlopen error [Errno -2] Name or service not known>"
-    }
-   ]
-  },
-  {
-   "source": "freesound",
-   "page": "https://freesound.org/people/mchrpt/sounds/660971/",
-   "id": "660971",
-   "author": "mchrpt",
-   "title": "rack_3.ogg by mchrpt",
-   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
-   "description": "",
-   "files": [
-    {
-     "url": "https://freesound.orghttps://cdn.freesound.org/previews/660/660971_14428325-hq.mp3",
-     "error": "<urlopen error [Errno -2] Name or service not known>"
-    }
-   ]
-  },
-  {
-   "source": "freesound",
-   "page": "https://freesound.org/people/dasBUTCHER84/sounds/449614/",
-   "id": "449614",
-   "author": "dasBUTCHER84",
-   "title": "SXP_SHOTGUN_RACK_01 by dasBUTCHER84",
-   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
-   "description": "",
-   "files": [
-    {
-     "url": "https://freesound.orghttps://cdn.freesound.org/previews/449/449614_9348290-hq.mp3",
-     "error": "<urlopen error [Errno -2] Name or service not known>"
-    }
-   ]
-  },
-  {
-   "source": "freesound",
-   "page": "https://freesound.org/people/rammbostein/sounds/436074/",
-   "id": "436074",
-   "author": "rammbostein",
-   "title": "Shotgun rack and shell drop by rammbostein",
-   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
-   "description": "",
-   "files": [
-    {
-     "url": "https://freesound.orghttps://cdn.freesound.org/previews/436/436074_4174990-hq.mp3",
-     "error": "<urlopen error [Errno -2] Name or service not known>"
-    }
-   ]
-  },
-  {
-   "source": "freesound",
-   "page": "https://freesound.org/people/TheGreenEyedGhost/sounds/707783/",
-   "id": "707783",
-   "author": "TheGreenEyedGhost",
-   "title": "Different_speeds_of_cocking_a_ shotgun_(slow to fast)_1 by TheGreenEyedGhost",
-   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
-   "description": "",
-   "files": [
-    {
-     "url": "https://freesound.orghttps://cdn.freesound.org/previews/707/707783_14713637-hq.mp3",
-     "error": "<urlopen error [Errno -2] Name or service not known>"
-    }
-   ]
-  },
-  {
-   "source": "freesound",
-   "page": "https://freesound.org/people/JBarmore/sounds/216421/",
-   "id": "216421",
-   "author": "JBarmore",
-   "title": "Cocking Automatic Shotgun_Slow by JBarmore",
-   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
-   "description": "",
-   "files": [
-    {
-     "url": "https://freesound.orghttps://cdn.freesound.org/previews/216/216421_4041055-hq.mp3",
-     "error": "<urlopen error [Errno -2] Name or service not known>"
-    }
-   ]
-  },
-  {
-   "source": "freesound",
-   "page": "https://freesound.org/people/Yin_Yang_Jake007/sounds/406108/",
-   "id": "406108",
-   "author": "Yin_Yang_Jake007",
-   "title": "Gun Cocking.wav by Yin_Yang_Jake007",
-   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
-   "description": "",
-   "files": [
-    {
-     "url": "https://freesound.orghttps://cdn.freesound.org/previews/406/406108_7919598-hq.mp3",
-     "error": "<urlopen error [Errno -2] Name or service not known>"
-    }
-   ]
-  },
-  {
-   "source": "freesound",
-   "page": "https://freesound.org/people/DDT197/sounds/445784/",
-   "id": "445784",
-   "author": "DDT197",
-   "title": "Shotgun cocking.WAV by DDT197",
-   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
-   "description": "",
-   "files": [
-    {
-     "url": "https://freesound.orghttps://cdn.freesound.org/previews/445/445784_8292592-hq.mp3",
-     "error": "<urlopen error [Errno -2] Name or service not known>"
-    }
-   ]
-  },
-  {
-   "source": "freesound",
-   "page": "https://freesound.org/people/JumboSizedFish/sounds/693507/",
-   "id": "693507",
-   "author": "JumboSizedFish",
-   "title": "Toy Double Barrel Shotgun Reloading by JumboSizedFish",
-   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
-   "description": "",
-   "files": [
-    {
-     "url": "https://freesound.orghttps://cdn.freesound.org/previews/693/693507_14845144-hq.mp3",
-     "error": "<urlopen error [Errno -2] Name or service not known>"
-    }
-   ]
-  },
-  {
-   "source": "freesound",
-   "page": "https://freesound.org/people/Paul368/sounds/200966/",
-   "id": "200966",
-   "author": "Paul368",
-   "title": "Shotgun Cock Reload Layered (Powerful) by Paul368",
-   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
-   "description": "",
-   "files": [
-    {
-     "url": "https://freesound.orghttps://cdn.freesound.org/previews/200/200966_2971294-hq.mp3",
-     "error": "<urlopen error [Errno -2] Name or service not known>"
-    }
-   ]
-  },
-  {
-   "source": "freesound",
-   "page": "https://freesound.org/people/mtadder/sounds/99217/",
-   "id": "99217",
-   "author": "mtadder",
-   "title": "shotgun_racking.wav by mtadder",
-   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
-   "description": "",
-   "files": [
-    {
-     "url": "https://freesound.orghttps://cdn.freesound.org/previews/99/99217_1667590-hq.mp3",
-     "error": "<urlopen error [Errno -2] Name or service not known>"
-    }
-   ]
-  },
-  {
-   "source": "freesound",
-   "page": "https://freesound.org/people/el_boss/sounds/628640/",
-   "id": "628640",
-   "author": "el_boss",
-   "title": "Bug-a-salt reload - Plastic Shotgun by el_boss",
-   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
-   "description": "",
-   "files": [
-    {
-     "url": "https://freesound.orghttps://cdn.freesound.org/previews/628/628640_9129912-hq.mp3",
-     "error": "<urlopen error [Errno -2] Name or service not known>"
+     "url": "https://cdn.freesound.org/previews/755/755495_15802209-hq.mp3",
+     "path": "raw_assets/audio/fetched/fs_755495_Remington_870_12_gauge_shotgun_pump_racking_cha_chock_by_Tot.mp3",
+     "bytes": 464976
     }
    ]
   },
@@ -454,173 +166,25 @@
    "description": "",
    "files": [
     {
-     "url": "https://freesound.orghttps://cdn.freesound.org/previews/508/508245_8644110-hq.mp3",
-     "error": "<urlopen error [Errno -2] Name or service not known>"
+     "url": "https://cdn.freesound.org/previews/508/508245_8644110-hq.mp3",
+     "path": "raw_assets/audio/fetched/fs_508245_Remington_870_12_Gauge_Shotgun_Ejecting_Round_Then_Chamberin.mp3",
+     "bytes": 261729
     }
    ]
   },
   {
    "source": "freesound",
-   "page": "https://freesound.org/people/qubodup/sounds/842751/",
-   "id": "842751",
-   "author": "qubodup",
-   "title": "128bpm shotgun handling sound music loop gun sync by qubodup",
+   "page": "https://freesound.org/people/shelbyshark/sounds/513354/",
+   "id": "513354",
+   "author": "shelbyshark",
+   "title": "Racking Shotgun.wav by shelbyshark",
    "license": "http://creativecommons.org/publicdomain/zero/1.0/",
    "description": "",
    "files": [
     {
-     "url": "https://freesound.orghttps://cdn.freesound.org/previews/842/842751_71257-hq.mp3",
-     "error": "<urlopen error [Errno -2] Name or service not known>"
-    }
-   ]
-  },
-  {
-   "source": "freesound",
-   "page": "https://freesound.org/people/areniporgen/sounds/702672/",
-   "id": "702672",
-   "author": "areniporgen",
-   "title": "Remington 870 by areniporgen",
-   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
-   "description": "",
-   "files": [
-    {
-     "url": "https://freesound.orghttps://cdn.freesound.org/previews/702/702672_15072041-hq.mp3",
-     "error": "<urlopen error [Errno -2] Name or service not known>"
-    }
-   ]
-  },
-  {
-   "source": "freesound",
-   "page": "https://freesound.org/people/qubodup/sounds/844181/",
-   "id": "844181",
-   "author": "qubodup",
-   "title": "R870 Pump 4 by qubodup",
-   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
-   "description": "",
-   "files": [
-    {
-     "url": "https://freesound.orghttps://cdn.freesound.org/previews/844/844181_71257-hq.mp3",
-     "error": "<urlopen error [Errno -2] Name or service not known>"
-    }
-   ]
-  },
-  {
-   "source": "freesound",
-   "page": "https://freesound.org/people/Stoniac/sounds/842738/",
-   "id": "842738",
-   "author": "Stoniac",
-   "title": "Remington870_Trigger by Stoniac",
-   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
-   "description": "",
-   "files": [
-    {
-     "url": "https://freesound.orghttps://cdn.freesound.org/previews/842/842738_15508415-hq.mp3",
-     "error": "<urlopen error [Errno -2] Name or service not known>"
-    }
-   ]
-  },
-  {
-   "source": "freesound",
-   "page": "https://freesound.org/people/Pjkasinski3/sounds/171630/",
-   "id": "171630",
-   "author": "Pjkasinski3",
-   "title": "Rem870 Slide Forward 1.mp3 by Pjkasinski3",
-   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
-   "description": "",
-   "files": [
-    {
-     "url": "https://freesound.orghttps://cdn.freesound.org/previews/171/171630_968159-hq.mp3",
-     "error": "<urlopen error [Errno -2] Name or service not known>"
-    }
-   ]
-  },
-  {
-   "source": "freesound",
-   "page": "https://freesound.org/people/AnthonyChan0/sounds/159710/",
-   "id": "159710",
-   "author": "AnthonyChan0",
-   "title": "Mossberg 500A - 1 shot and pump by AnthonyChan0",
-   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
-   "description": "",
-   "files": [
-    {
-     "url": "https://freesound.orghttps://cdn.freesound.org/previews/159/159710_2886479-hq.mp3",
-     "error": "<urlopen error [Errno -2] Name or service not known>"
-    }
-   ]
-  },
-  {
-   "source": "freesound",
-   "page": "https://freesound.org/people/ceremonialchapstick/sounds/142894/",
-   "id": "142894",
-   "author": "ceremonialchapstick",
-   "title": "mossberg .12 gauge pump.aif by ceremonialchapstick",
-   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
-   "description": "",
-   "files": [
-    {
-     "url": "https://freesound.orghttps://cdn.freesound.org/previews/142/142894_2578302-hq.mp3",
-     "error": "<urlopen error [Errno -2] Name or service not known>"
-    }
-   ]
-  },
-  {
-   "source": "freesound",
-   "page": "https://freesound.org/people/avh9911/sounds/579508/",
-   "id": "579508",
-   "author": "avh9911",
-   "title": "SHOTGUN RACKING by avh9911",
-   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
-   "description": "",
-   "files": [
-    {
-     "url": "https://freesound.orghttps://cdn.freesound.org/previews/579/579508_3628726-hq.mp3",
-     "error": "<urlopen error [Errno -2] Name or service not known>"
-    }
-   ]
-  },
-  {
-   "source": "freesound",
-   "page": "https://freesound.org/people/cedarstudios/sounds/148841/",
-   "id": "148841",
-   "author": "cedarstudios",
-   "title": "shotgun targetside.mp3 by cedarstudios",
-   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
-   "description": "",
-   "files": [
-    {
-     "url": "https://freesound.orghttps://cdn.freesound.org/previews/148/148841_2676248-hq.mp3",
-     "error": "<urlopen error [Errno -2] Name or service not known>"
-    }
-   ]
-  },
-  {
-   "source": "freesound",
-   "page": "https://freesound.org/people/mrrap4food/sounds/619041/",
-   "id": "619041",
-   "author": "mrrap4food",
-   "title": "Shot Gun - 12 Gauge- Fire Four Shots Quickly by mrrap4food",
-   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
-   "description": "",
-   "files": [
-    {
-     "url": "https://freesound.orghttps://cdn.freesound.org/previews/619/619041_781461-hq.mp3",
-     "error": "<urlopen error [Errno -2] Name or service not known>"
-    }
-   ]
-  },
-  {
-   "source": "freesound",
-   "page": "https://freesound.org/people/db465/sounds/865991/",
-   "id": "865991",
-   "author": "db465",
-   "title": "aa12_fire by db465",
-   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
-   "description": "",
-   "files": [
-    {
-     "url": "https://freesound.orghttps://cdn.freesound.org/previews/865/865991_19132311-hq.mp3",
-     "error": "<urlopen error [Errno -2] Name or service not known>"
+     "url": "https://cdn.freesound.org/previews/513/513354_8644110-hq.mp3",
+     "path": "raw_assets/audio/fetched/fs_513354_Racking_Shotgun.wav_by_shelbyshark.mp3",
+     "bytes": 255571
     }
    ]
   },
@@ -634,23 +198,313 @@
    "description": "",
    "files": [
     {
-     "url": "https://freesound.orghttps://cdn.freesound.org/previews/513/513351_8644110-hq.mp3",
-     "error": "<urlopen error [Errno -2] Name or service not known>"
+     "url": "https://cdn.freesound.org/previews/513/513351_8644110-hq.mp3",
+     "path": "raw_assets/audio/fetched/fs_513351_12_Gauge_Shotgun_Chamber_Round_Slowly.mp3_by_shelbyshark.mp3",
+     "bytes": 221912
     }
    ]
   },
   {
    "source": "freesound",
-   "page": "https://freesound.org/people/CraftyIndividual/sounds/418435/",
-   "id": "418435",
-   "author": "CraftyIndividual",
-   "title": "shotgun with clink.mp3 by CraftyIndividual",
+   "page": "https://freesound.org/people/AnthonyChan0/sounds/159710/",
+   "id": "159710",
+   "author": "AnthonyChan0",
+   "title": "Mossberg 500A - 1 shot and pump by AnthonyChan0",
    "license": "http://creativecommons.org/publicdomain/zero/1.0/",
    "description": "",
    "files": [
     {
-     "url": "https://freesound.orghttps://cdn.freesound.org/previews/418/418435_6481539-hq.mp3",
-     "error": "<urlopen error [Errno -2] Name or service not known>"
+     "url": "https://cdn.freesound.org/previews/159/159710_2886479-hq.mp3",
+     "path": "raw_assets/audio/fetched/fs_159710_Mossberg_500A_-_1_shot_and_pump_by_AnthonyChan0.mp3",
+     "bytes": 74496
+    }
+   ]
+  },
+  {
+   "source": "freesound",
+   "page": "https://freesound.org/people/ceremonialchapstick/sounds/142894/",
+   "id": "142894",
+   "author": "ceremonialchapstick",
+   "title": "mossberg .12 gauge pump.aif by ceremonialchapstick",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "description": "",
+   "files": [
+    {
+     "url": "https://cdn.freesound.org/previews/142/142894_2578302-hq.mp3",
+     "path": "raw_assets/audio/fetched/fs_142894_mossberg_.12_gauge_pump.aif_by_ceremonialchapstick.mp3",
+     "bytes": 266234
+    }
+   ]
+  },
+  {
+   "source": "freesound",
+   "page": "https://freesound.org/people/areniporgen/sounds/702672/",
+   "id": "702672",
+   "author": "areniporgen",
+   "title": "Remington 870 by areniporgen",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "description": "",
+   "files": [
+    {
+     "url": "https://cdn.freesound.org/previews/702/702672_15072041-hq.mp3",
+     "path": "raw_assets/audio/fetched/fs_702672_Remington_870_by_areniporgen.mp3",
+     "bytes": 23712
+    }
+   ]
+  },
+  {
+   "source": "freesound",
+   "page": "https://freesound.org/people/qubodup/sounds/844181/",
+   "id": "844181",
+   "author": "qubodup",
+   "title": "R870 Pump 4 by qubodup",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "description": "",
+   "files": [
+    {
+     "url": "https://cdn.freesound.org/previews/844/844181_71257-hq.mp3",
+     "path": "raw_assets/audio/fetched/fs_844181_R870_Pump_4_by_qubodup.mp3",
+     "bytes": 6048
+    }
+   ]
+  },
+  {
+   "source": "freesound",
+   "page": "https://freesound.org/people/qubodup/sounds/854653/",
+   "id": "854653",
+   "author": "qubodup",
+   "title": "Shotgun Shot First Person 2 by qubodup",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "description": "",
+   "files": [
+    {
+     "url": "https://cdn.freesound.org/previews/854/854653_71257-hq.mp3",
+     "path": "raw_assets/audio/fetched/fs_854653_Shotgun_Shot_First_Person_2_by_qubodup.mp3",
+     "bytes": 51648
+    }
+   ]
+  },
+  {
+   "source": "freesound",
+   "page": "https://freesound.org/people/Pjkasinski3/sounds/171630/",
+   "id": "171630",
+   "author": "Pjkasinski3",
+   "title": "Rem870 Slide Forward 1.mp3 by Pjkasinski3",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "description": "",
+   "files": [
+    {
+     "url": "https://cdn.freesound.org/previews/171/171630_968159-hq.mp3",
+     "path": "raw_assets/audio/fetched/fs_171630_Rem870_Slide_Forward_1.mp3_by_Pjkasinski3.mp3",
+     "bytes": 68566
+    }
+   ]
+  },
+  {
+   "source": "freesound",
+   "page": "https://freesound.org/people/Stoniac/sounds/842738/",
+   "id": "842738",
+   "author": "Stoniac",
+   "title": "Remington870_Trigger by Stoniac",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "description": "",
+   "files": [
+    {
+     "url": "https://cdn.freesound.org/previews/842/842738_15508415-hq.mp3",
+     "path": "raw_assets/audio/fetched/fs_842738_Remington870_Trigger_by_Stoniac.mp3",
+     "bytes": 967488
+    }
+   ]
+  },
+  {
+   "source": "freesound",
+   "page": "https://freesound.org/people/Dentrabert/sounds/673320/",
+   "id": "673320",
+   "author": "Dentrabert",
+   "title": "Shotgun Pump.wav by Dentrabert",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "description": "",
+   "files": [
+    {
+     "url": "https://cdn.freesound.org/previews/673/673320_14265036-hq.mp3",
+     "path": "raw_assets/audio/fetched/fs_673320_Shotgun_Pump.wav_by_Dentrabert.mp3",
+     "bytes": 74202
+    }
+   ]
+  },
+  {
+   "source": "freesound",
+   "page": "https://freesound.org/people/mrrap4food/sounds/619041/",
+   "id": "619041",
+   "author": "mrrap4food",
+   "title": "Shot Gun - 12 Gauge- Fire Four Shots Quickly by mrrap4food",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "description": "",
+   "files": [
+    {
+     "url": "https://cdn.freesound.org/previews/619/619041_781461-hq.mp3",
+     "path": "raw_assets/audio/fetched/fs_619041_Shot_Gun_-_12_Gauge-_Fire_Four_Shots_Quickly_by_mrrap4food.mp3",
+     "bytes": 67761
+    }
+   ]
+  },
+  {
+   "source": "freesound",
+   "page": "https://freesound.org/people/db465/sounds/865986/",
+   "id": "865986",
+   "author": "db465",
+   "title": "shotgun_fire by db465",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "description": "",
+   "files": [
+    {
+     "url": "https://cdn.freesound.org/previews/865/865986_19132311-hq.mp3",
+     "path": "raw_assets/audio/fetched/fs_865986_shotgun_fire_by_db465.mp3",
+     "bytes": 102996
+    }
+   ]
+  },
+  {
+   "source": "freesound",
+   "page": "https://freesound.org/people/AbuNijmeh/sounds/318973/",
+   "id": "318973",
+   "author": "AbuNijmeh",
+   "title": "Shotgun - Fire.wav by AbuNijmeh",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "description": "",
+   "files": [
+    {
+     "url": "https://cdn.freesound.org/previews/318/318973_4039477-hq.mp3",
+     "path": "raw_assets/audio/fetched/fs_318973_Shotgun_-_Fire.wav_by_AbuNijmeh.mp3",
+     "bytes": 25881
+    }
+   ]
+  },
+  {
+   "source": "freesound",
+   "page": "https://freesound.org/people/Pacifici/sounds/351226/",
+   "id": "351226",
+   "author": "Pacifici",
+   "title": "shotgun_rack.wav by Pacifici",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "description": "",
+   "files": [
+    {
+     "url": "https://cdn.freesound.org/previews/351/351226_4978050-hq.mp3",
+     "path": "raw_assets/audio/fetched/fs_351226_shotgun_rack.wav_by_Pacifici.mp3",
+     "bytes": 67642
+    }
+   ]
+  },
+  {
+   "source": "freesound",
+   "page": "https://freesound.org/people/dasBUTCHER84/sounds/449614/",
+   "id": "449614",
+   "author": "dasBUTCHER84",
+   "title": "SXP_SHOTGUN_RACK_01 by dasBUTCHER84",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "description": "",
+   "files": [
+    {
+     "url": "https://cdn.freesound.org/previews/449/449614_9348290-hq.mp3",
+     "path": "raw_assets/audio/fetched/fs_449614_SXP_SHOTGUN_RACK_01_by_dasBUTCHER84.mp3",
+     "bytes": 15744
+    }
+   ]
+  },
+  {
+   "source": "freesound",
+   "page": "https://freesound.org/people/rammbostein/sounds/436074/",
+   "id": "436074",
+   "author": "rammbostein",
+   "title": "Shotgun rack and shell drop by rammbostein",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "description": "",
+   "files": [
+    {
+     "url": "https://cdn.freesound.org/previews/436/436074_4174990-hq.mp3",
+     "path": "raw_assets/audio/fetched/fs_436074_Shotgun_rack_and_shell_drop_by_rammbostein.mp3",
+     "bytes": 171792
+    }
+   ]
+  },
+  {
+   "source": "freesound",
+   "page": "https://freesound.org/people/cedarstudios/sounds/148841/",
+   "id": "148841",
+   "author": "cedarstudios",
+   "title": "shotgun targetside.mp3 by cedarstudios",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "description": "",
+   "files": [
+    {
+     "url": "https://cdn.freesound.org/previews/148/148841_2676248-hq.mp3",
+     "path": "raw_assets/audio/fetched/fs_148841_shotgun_targetside.mp3_by_cedarstudios.mp3",
+     "bytes": 359182
+    }
+   ]
+  },
+  {
+   "source": "freesound",
+   "page": "https://freesound.org/people/hiramjustus/sounds/55341/",
+   "id": "55341",
+   "author": "hiramjustus",
+   "title": "shotgun.wav by hiramjustus",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "description": "",
+   "files": [
+    {
+     "url": "https://cdn.freesound.org/previews/55/55341_662292-hq.mp3",
+     "path": "raw_assets/audio/fetched/fs_55341_shotgun.wav_by_hiramjustus.mp3",
+     "bytes": 36556
+    }
+   ]
+  },
+  {
+   "source": "freesound",
+   "page": "https://freesound.org/people/Paul368/sounds/200966/",
+   "id": "200966",
+   "author": "Paul368",
+   "title": "Shotgun Cock Reload Layered (Powerful) by Paul368",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "description": "",
+   "files": [
+    {
+     "url": "https://cdn.freesound.org/previews/200/200966_2971294-hq.mp3",
+     "path": "raw_assets/audio/fetched/fs_200966_Shotgun_Cock_Reload_Layered_Powerful_by_Paul368.mp3",
+     "bytes": 48009
+    }
+   ]
+  },
+  {
+   "source": "freesound",
+   "page": "https://freesound.org/people/mtadder/sounds/99217/",
+   "id": "99217",
+   "author": "mtadder",
+   "title": "shotgun_racking.wav by mtadder",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "description": "",
+   "files": [
+    {
+     "url": "https://cdn.freesound.org/previews/99/99217_1667590-hq.mp3",
+     "path": "raw_assets/audio/fetched/fs_99217_shotgun_racking.wav_by_mtadder.mp3",
+     "bytes": 30891
+    }
+   ]
+  },
+  {
+   "source": "freesound",
+   "page": "https://freesound.org/people/avh9911/sounds/579508/",
+   "id": "579508",
+   "author": "avh9911",
+   "title": "SHOTGUN RACKING by avh9911",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "description": "",
+   "files": [
+    {
+     "url": "https://cdn.freesound.org/previews/579/579508_3628726-hq.mp3",
+     "path": "raw_assets/audio/fetched/fs_579508_SHOTGUN_RACKING_by_avh9911.mp3",
+     "bytes": 28963
     }
    ]
   },
@@ -664,95 +518,60 @@
    "description": "",
    "files": [
     {
-     "url": "https://freesound.orghttps://cdn.freesound.org/previews/773/773873_15468302-hq.mp3",
-     "error": "<urlopen error [Errno -2] Name or service not known>"
+     "url": "https://cdn.freesound.org/previews/773/773873_15468302-hq.mp3",
+     "path": "raw_assets/audio/fetched/fs_773873_shotgun_shoot_by_MrGungus.mp3",
+     "bytes": 28544
     }
    ]
   },
   {
    "source": "freesound",
-   "page": "https://freesound.org/people/SkibkaMusic/sounds/361136/",
-   "id": "361136",
-   "author": "SkibkaMusic",
-   "title": "Attack Pack FX1 by SkibkaMusic",
+   "page": "https://freesound.org/people/TheGreenEyedGhost/sounds/707783/",
+   "id": "707783",
+   "author": "TheGreenEyedGhost",
+   "title": "Different_speeds_of_cocking_a_ shotgun_(slow to fast)_1 by TheGreenEyedGhost",
    "license": "http://creativecommons.org/publicdomain/zero/1.0/",
    "description": "",
    "files": [
     {
-     "url": "https://freesound.orghttps://cdn.freesound.org/previews/361/361136_6607652-hq.mp3",
-     "error": "<urlopen error [Errno -2] Name or service not known>"
+     "url": "https://cdn.freesound.org/previews/707/707783_14713637-hq.mp3",
+     "path": "raw_assets/audio/fetched/fs_707783_Different_speeds_of_cocking_a__shotgun__slow_to_fast__1_by_T.mp3",
+     "bytes": 395880
     }
    ]
   },
   {
    "source": "freesound",
-   "page": "https://freesound.org/people/SignatureSoundsOrg/sounds/876002/",
-   "id": "876002",
-   "author": "SignatureSoundsOrg",
-   "title": "Gun_Shot_83 by SignatureSoundsOrg",
+   "page": "https://freesound.org/people/qubodup/sounds/842751/",
+   "id": "842751",
+   "author": "qubodup",
+   "title": "128bpm shotgun handling sound music loop gun sync by qubodup",
    "license": "http://creativecommons.org/publicdomain/zero/1.0/",
    "description": "",
    "files": [
     {
-     "url": "https://freesound.orghttps://cdn.freesound.org/previews/876/876002_19205925-hq.mp3",
-     "error": "<urlopen error [Errno -2] Name or service not known>"
+     "url": "https://cdn.freesound.org/previews/842/842751_71257-hq.mp3",
+     "path": "raw_assets/audio/fetched/fs_842751_128bpm_shotgun_handling_sound_music_loop_gun_sync_by_qubodup.mp3",
+     "bytes": 36730
     }
    ]
   },
   {
    "source": "freesound",
-   "page": "https://freesound.org/people/SignatureSoundsOrg/sounds/876006/",
-   "id": "876006",
-   "author": "SignatureSoundsOrg",
-   "title": "Gun_Shot_87 by SignatureSoundsOrg",
+   "page": "https://freesound.org/people/FOSSarts/sounds/741074/",
+   "id": "741074",
+   "author": "FOSSarts",
+   "title": "Dry Fire of Diablo 12g pistol 6 inch, cock from halfway point and dry fire 1 by FOSSarts",
    "license": "http://creativecommons.org/publicdomain/zero/1.0/",
    "description": "",
    "files": [
     {
-     "url": "https://freesound.orghttps://cdn.freesound.org/previews/876/876006_19205925-hq.mp3",
-     "error": "<urlopen error [Errno -2] Name or service not known>"
-    }
-   ]
-  },
-  {
-   "source": "freesound",
-   "page": "https://freesound.org/people/SignatureSoundsOrg/sounds/876005/",
-   "id": "876005",
-   "author": "SignatureSoundsOrg",
-   "title": "Gun_Shot_86 by SignatureSoundsOrg",
-   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
-   "description": "",
-   "files": [
-    {
-     "url": "https://freesound.orghttps://cdn.freesound.org/previews/876/876005_19205925-hq.mp3",
-     "error": "<urlopen error [Errno -2] Name or service not known>"
-    }
-   ]
-  },
-  {
-   "source": "freesound",
-   "page": "https://freesound.org/people/SignatureSoundsOrg/sounds/876004/",
-   "id": "876004",
-   "author": "SignatureSoundsOrg",
-   "title": "Gun_Shot_85 by SignatureSoundsOrg",
-   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
-   "description": "",
-   "files": [
-    {
-     "url": "https://freesound.orghttps://cdn.freesound.org/previews/876/876004_19205925-hq.mp3",
-     "error": "<urlopen error [Errno -2] Name or service not known>"
+     "url": "https://cdn.freesound.org/previews/741/741074_14631530-hq.mp3",
+     "path": "raw_assets/audio/fetched/fs_741074_Dry_Fire_of_Diablo_12g_pistol_6_inch_cock_from_halfway_point.mp3",
+     "bytes": 107328
     }
    ]
   }
  ],
- "errors": [
-  {
-   "page": "https://opengameart.org/content/gun-sound-effects",
-   "error": "HTTP Error 403: Forbidden"
-  },
-  {
-   "page": "anon/370344",
-   "error": "HTTP Error 404: Not Found"
-  }
- ]
+ "errors": []
 }
