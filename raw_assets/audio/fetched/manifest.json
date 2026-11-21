@@ -1,0 +1,577 @@
+{
+ "entries": [
+  {
+   "source": "opengameart",
+   "page": "https://opengameart.org/content/the-free-firearm-sound-library",
+   "title": "The Free Firearm Sound Library | OpenGameArt.org",
+   "author": "bart",
+   "license": "CC0",
+   "description": "  From  The Free Firearm Sound Library homepage : \n  The firearm sound library was the brainchild of a team of college students with a mutual passion for the audio and \u00a0visual arts. In November, 2013 we launched a Kickstarter campaign to develop an extensive open source firearm sound effects library, and on December 7, 2013 our project was funded by an incredible group of backers and we went into full tilt production. This website serves to connect our backers with our two libraries, as well as to give credit to the backers who made it all possible.  \n   Along with the availability of these sounds comes the need to understand their proper application. The metadata included in the sound files along with some instructional videos will help make these sounds serve you to their full potential.  \n   Our team holds CC0 NO RIGHTS RESERVED for this library. It may be used without royalty or credit (though we would love to hear how you've used our sounds) for any application, personal or professional. Have at it!  \n Please note that OGA is not affiliated with this project, and as such, we encourage you to visit their site so as to make sure you're getting the latest version of the files: \n  http://freefirearmsfx.com \u00a0 raw \u00a0 prepared  \n Also note that their website includes instructions along with the raw versions of the sound effects, which are not archived here. \n Big thanks to  their team  and all of their  Kickstarter supporters  for this amazing collection! \n",
+   "files": [
+    {
+     "path": "raw_assets/audio/fetched/oga_Prepared_SFX_Library",
+     "bytes": 193954738,
+     "kept": [
+      "raw_assets/audio/fetched/oga_Prepared_SFX_Library/Prepared_SFX_Library__Mossberg__N_26P.wav",
+      "raw_assets/audio/fetched/oga_Prepared_SFX_Library/Prepared_SFX_Library__Mossberg__N_30P.wav"
+     ],
+     "all_members": [
+      "Prepared SFX Library/1911/A_34P.wav",
+      "Prepared SFX Library/1911/A_42P.wav",
+      "Prepared SFX Library/1917/B_16P.wav",
+      "Prepared SFX Library/1917/B_24P.wav",
+      "Prepared SFX Library/AK-47/C_27P.wav",
+      "Prepared SFX Library/AK-47/C_28P.wav",
+      "Prepared SFX Library/AK-47/C_29P.wav",
+      "Prepared SFX Library/AK-47/C_31P.wav",
+      "Prepared SFX Library/AK-47/C_34P.wav",
+      "Prepared SFX Library/AK-47/C_36P.wav",
+      "Prepared SFX Library/AR-15/D_24P.wav",
+      "Prepared SFX Library/AR-15/D_32P.wav",
+      "Prepared SFX Library/Arisaka/E_18P.wav",
+      "Prepared SFX Library/Arisaka/E_25P.wav",
+      "Prepared SFX Library/Bersa/F_41P.wav",
+      "Prepared SFX Library/Bersa/F_47P.wav",
+      "Prepared SFX Library/Carl Gustav M45/G_20P.wav",
+      "Prepared SFX Library/Carl Gustav M45/G_22P.wav",
+      "Prepared SFX Library/Carl Gustav M45/G_24P.wav",
+      "Prepared SFX Library/Carl Gustav M45/G_31P.wav",
+      "Prepared SFX Library/Carl Gustav M45/G_33P.wav",
+      "Prepared SFX Library/Carl Gustav M45/G_35P.wav",
+      "Prepared SFX Library/CD/H_16P.wav",
+      "Prepared SFX Library/CD/H_21P.wav",
+      "Prepared SFX Library/Marlin 336/I_17P.wav",
+      "Prepared SFX Library/Marlin 336/I_22P.wav",
+      "Prepared SFX Library/Model 12/K_17P.wav",
+      "Prepared SFX Library/Model 12/K_22P.wav",
+      "Prepared SFX Library/Model 1894/L_17P.wav",
+      "Prepared SFX Library/Model 1894/L_23P.wav",
+      "Prepared SFX Library/Mosin Nagant/M_21P.wav",
+      "Prepared SFX Library/Mosin Nagant/M_26P.wav",
+      "Prepared SFX Library/Mossberg/N_26P.wav",
+      "Prepared SFX Library/Mossberg/N_30P.wav",
+      "Prepared SFX Library/Nova/O_17P.wav",
+      "Prepared SFX Library/Nova/O_21P.wav",
+      "Prepared SFX Library/PPSh/P_16P.wav",
+      "Prepared SFX Library/PPSh/P_18P.wav",
+      "Prepared SFX Library/PPSh/P_22P.wav",
+      "Prepared SFX Library/PPSh/P_30P.wav",
+      "Prepared SFX Library/PPSh/P_32P.wav",
+      "Prepared SFX Library/PPSh/P_34P.wav",
+      "Prepared SFX Library/Ruger Mark III/R_30P.wav",
+      "Prepared SFX Library/Ruger Mark III/R_35P.wav",
+      "Prepared SFX Library/Ruger Single Six/S_11P.wav",
+      "Prepared SFX Library/Ruger Single Six/S_14P.wav",
+      "Prepared SFX Library/Savage 10 .300 Blackout/T_17P.wav",
+      "Prepared SFX Library/Savage 10 .300 Blackout/T_27P.wav",
+      "Prepared SFX Library/SKS/U_14P.wav",
+      "Prepared SFX Library/SKS/U_19P.wav",
+      "Prepared SFX Library/Smith & Wesson 642/V_22P.wav",
+      "Prepared SFX Library/Smith & Wesson 642/V_27P.wav",
+      "Prepared SFX Library/Tikka/W_24P.wav",
+      "Prepared SFX Library/Tikka/W_29P.wav",
+      "Prepared SFX Library/Walther PPQ/X_31P.wav",
+      "Prepared SFX Library/Walther PPQ/X_39P.wav",
+      "Prepared SFX Library/desktop.ini",
+      "Prepared SFX Library/Prepared Master Sheet.csv",
+      "Prepared SFX Library/1911/.DS_Store",
+      "Prepared SFX Library/1917/.DS_Store",
+      "Prepared SFX Library/AK-47/.DS_Store",
+      "Prepared SFX Library/AR-15/.DS_Store",
+      "Prepared SFX Library/Arisaka/.DS_Store",
+      "Prepared SFX Library/Bersa/.DS_Store",
+      "Prepared SFX Library/Carl Gustav M45/.DS_Store",
+      "Prepared SFX Library/CD/.DS_Store",
+      "Prepared SFX Library/Marlin 336/.DS_Store",
+      "Prepared SFX Library/Model 12/.DS_Store",
+      "Prepared SFX Library/Model 1894/.DS_Store",
+      "Prepared SFX Library/Mosin Nagant/.DS_Store",
+      "Prepared SFX Library/Mossberg/.DS_Store",
+      "Prepared SFX Library/Nova/.DS_Store",
+      "Prepared SFX Library/PPSh/.DS_Store",
+      "Prepared SFX Library/Ruger Mark III/.DS_Store",
+      "Prepared SFX Library/Ruger Single Six/.DS_Store",
+      "Prepared SFX Library/Savage 10 .300 Blackout/.DS_Store",
+      "Prepared SFX Library/SKS/.DS_Store",
+      "Prepared SFX Library/Smith & Wesson 642/.DS_Store",
+      "Prepared SFX Library/Tikka/.DS_Store",
+      "Prepared SFX Library/Walther PPQ/.DS_Store",
+      "Prepared SFX Library/.DS_Store",
+      "Prepared SFX Library/Walther PPQ",
+      "Prepared SFX Library/Tikka",
+      "Prepared SFX Library/Smith & Wesson 642",
+      "Prepared SFX Library/SKS",
+      "Prepared SFX Library/Savage 10 .300 Blackout",
+      "Prepared SFX Library/Ruger Single Six",
+      "Prepared SFX Library/Ruger Mark III",
+      "Prepared SFX Library/PPSh",
+      "Prepared SFX Library/Nova",
+      "Prepared SFX Library/Mossberg",
+      "Prepared SFX Library/Mosin Nagant",
+      "Prepared SFX Library/Model 1894",
+      "Prepared SFX Library/Model 12",
+      "Prepared SFX Library/Marlin 336",
+      "Prepared SFX Library/CD",
+      "Prepared SFX Library/Carl Gustav M45",
+      "Prepared SFX Library/Bersa",
+      "Prepared SFX Library/Arisaka",
+      "Prepared SFX Library/AR-15",
+      "Prepared SFX Library/AK-47",
+      "Prepared SFX Library/1917",
+      "Prepared SFX Library/1911",
+      "Prepared SFX Library"
+     ],
+     "url": "https://opengameart.org/sites/default/files/Prepared%20SFX%20Library.7z"
+    }
+   ]
+  },
+  {
+   "source": "opengameart",
+   "page": "https://opengameart.org/content/shotgun-reload-sound-effects",
+   "title": "Shotgun Reload Sound effects | OpenGameArt.org",
+   "author": "zer0_sol",
+   "license": "CC0",
+   "description": "  Sounds of shells being loaded and shotgun being operated. Feel free to use these sounds without attribution, however if you use them in a project I'd love if you sent me a DM when it's finished so I can see it. Enjoy! \n",
+   "files": [
+    {
+     "path": "raw_assets/audio/fetched/oga_shotgunsounds.zip",
+     "bytes": 324193,
+     "url": "https://opengameart.org/sites/default/files/shotgunsounds.zip"
+    }
+   ]
+  },
+  {
+   "source": "freesound",
+   "page": "https://freesound.org/people/TotallyPhilip/sounds/755495/",
+   "id": "755495",
+   "author": "TotallyPhilip",
+   "title": "Remington 870 12 gauge shotgun pump racking cha chock by TotallyPhilip",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "description": "",
+   "files": [
+    {
+     "url": "https://cdn.freesound.org/previews/755/755495_15802209-hq.mp3",
+     "path": "raw_assets/audio/fetched/fs_755495_Remington_870_12_gauge_shotgun_pump_racking_cha_chock_by_Tot.mp3",
+     "bytes": 464976
+    }
+   ]
+  },
+  {
+   "source": "freesound",
+   "page": "https://freesound.org/people/shelbyshark/sounds/508245/",
+   "id": "508245",
+   "author": "shelbyshark",
+   "title": "Remington 870 12 Gauge Shotgun Ejecting Round Then Chambering Another.wav by shelbyshark",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "description": "",
+   "files": [
+    {
+     "url": "https://cdn.freesound.org/previews/508/508245_8644110-hq.mp3",
+     "path": "raw_assets/audio/fetched/fs_508245_Remington_870_12_Gauge_Shotgun_Ejecting_Round_Then_Chamberin.mp3",
+     "bytes": 261729
+    }
+   ]
+  },
+  {
+   "source": "freesound",
+   "page": "https://freesound.org/people/shelbyshark/sounds/513354/",
+   "id": "513354",
+   "author": "shelbyshark",
+   "title": "Racking Shotgun.wav by shelbyshark",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "description": "",
+   "files": [
+    {
+     "url": "https://cdn.freesound.org/previews/513/513354_8644110-hq.mp3",
+     "path": "raw_assets/audio/fetched/fs_513354_Racking_Shotgun.wav_by_shelbyshark.mp3",
+     "bytes": 255571
+    }
+   ]
+  },
+  {
+   "source": "freesound",
+   "page": "https://freesound.org/people/shelbyshark/sounds/513351/",
+   "id": "513351",
+   "author": "shelbyshark",
+   "title": "12 Gauge Shotgun Chamber Round Slowly.mp3 by shelbyshark",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "description": "",
+   "files": [
+    {
+     "url": "https://cdn.freesound.org/previews/513/513351_8644110-hq.mp3",
+     "path": "raw_assets/audio/fetched/fs_513351_12_Gauge_Shotgun_Chamber_Round_Slowly.mp3_by_shelbyshark.mp3",
+     "bytes": 221912
+    }
+   ]
+  },
+  {
+   "source": "freesound",
+   "page": "https://freesound.org/people/AnthonyChan0/sounds/159710/",
+   "id": "159710",
+   "author": "AnthonyChan0",
+   "title": "Mossberg 500A - 1 shot and pump by AnthonyChan0",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "description": "",
+   "files": [
+    {
+     "url": "https://cdn.freesound.org/previews/159/159710_2886479-hq.mp3",
+     "path": "raw_assets/audio/fetched/fs_159710_Mossberg_500A_-_1_shot_and_pump_by_AnthonyChan0.mp3",
+     "bytes": 74496
+    }
+   ]
+  },
+  {
+   "source": "freesound",
+   "page": "https://freesound.org/people/ceremonialchapstick/sounds/142894/",
+   "id": "142894",
+   "author": "ceremonialchapstick",
+   "title": "mossberg .12 gauge pump.aif by ceremonialchapstick",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "description": "",
+   "files": [
+    {
+     "url": "https://cdn.freesound.org/previews/142/142894_2578302-hq.mp3",
+     "path": "raw_assets/audio/fetched/fs_142894_mossberg_.12_gauge_pump.aif_by_ceremonialchapstick.mp3",
+     "bytes": 266234
+    }
+   ]
+  },
+  {
+   "source": "freesound",
+   "page": "https://freesound.org/people/areniporgen/sounds/702672/",
+   "id": "702672",
+   "author": "areniporgen",
+   "title": "Remington 870 by areniporgen",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "description": "",
+   "files": [
+    {
+     "url": "https://cdn.freesound.org/previews/702/702672_15072041-hq.mp3",
+     "path": "raw_assets/audio/fetched/fs_702672_Remington_870_by_areniporgen.mp3",
+     "bytes": 23712
+    }
+   ]
+  },
+  {
+   "source": "freesound",
+   "page": "https://freesound.org/people/qubodup/sounds/844181/",
+   "id": "844181",
+   "author": "qubodup",
+   "title": "R870 Pump 4 by qubodup",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "description": "",
+   "files": [
+    {
+     "url": "https://cdn.freesound.org/previews/844/844181_71257-hq.mp3",
+     "path": "raw_assets/audio/fetched/fs_844181_R870_Pump_4_by_qubodup.mp3",
+     "bytes": 6048
+    }
+   ]
+  },
+  {
+   "source": "freesound",
+   "page": "https://freesound.org/people/qubodup/sounds/854653/",
+   "id": "854653",
+   "author": "qubodup",
+   "title": "Shotgun Shot First Person 2 by qubodup",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "description": "",
+   "files": [
+    {
+     "url": "https://cdn.freesound.org/previews/854/854653_71257-hq.mp3",
+     "path": "raw_assets/audio/fetched/fs_854653_Shotgun_Shot_First_Person_2_by_qubodup.mp3",
+     "bytes": 51648
+    }
+   ]
+  },
+  {
+   "source": "freesound",
+   "page": "https://freesound.org/people/Pjkasinski3/sounds/171630/",
+   "id": "171630",
+   "author": "Pjkasinski3",
+   "title": "Rem870 Slide Forward 1.mp3 by Pjkasinski3",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "description": "",
+   "files": [
+    {
+     "url": "https://cdn.freesound.org/previews/171/171630_968159-hq.mp3",
+     "path": "raw_assets/audio/fetched/fs_171630_Rem870_Slide_Forward_1.mp3_by_Pjkasinski3.mp3",
+     "bytes": 68566
+    }
+   ]
+  },
+  {
+   "source": "freesound",
+   "page": "https://freesound.org/people/Stoniac/sounds/842738/",
+   "id": "842738",
+   "author": "Stoniac",
+   "title": "Remington870_Trigger by Stoniac",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "description": "",
+   "files": [
+    {
+     "url": "https://cdn.freesound.org/previews/842/842738_15508415-hq.mp3",
+     "path": "raw_assets/audio/fetched/fs_842738_Remington870_Trigger_by_Stoniac.mp3",
+     "bytes": 967488
+    }
+   ]
+  },
+  {
+   "source": "freesound",
+   "page": "https://freesound.org/people/Dentrabert/sounds/673320/",
+   "id": "673320",
+   "author": "Dentrabert",
+   "title": "Shotgun Pump.wav by Dentrabert",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "description": "",
+   "files": [
+    {
+     "url": "https://cdn.freesound.org/previews/673/673320_14265036-hq.mp3",
+     "path": "raw_assets/audio/fetched/fs_673320_Shotgun_Pump.wav_by_Dentrabert.mp3",
+     "bytes": 74202
+    }
+   ]
+  },
+  {
+   "source": "freesound",
+   "page": "https://freesound.org/people/mrrap4food/sounds/619041/",
+   "id": "619041",
+   "author": "mrrap4food",
+   "title": "Shot Gun - 12 Gauge- Fire Four Shots Quickly by mrrap4food",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "description": "",
+   "files": [
+    {
+     "url": "https://cdn.freesound.org/previews/619/619041_781461-hq.mp3",
+     "path": "raw_assets/audio/fetched/fs_619041_Shot_Gun_-_12_Gauge-_Fire_Four_Shots_Quickly_by_mrrap4food.mp3",
+     "bytes": 67761
+    }
+   ]
+  },
+  {
+   "source": "freesound",
+   "page": "https://freesound.org/people/db465/sounds/865986/",
+   "id": "865986",
+   "author": "db465",
+   "title": "shotgun_fire by db465",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "description": "",
+   "files": [
+    {
+     "url": "https://cdn.freesound.org/previews/865/865986_19132311-hq.mp3",
+     "path": "raw_assets/audio/fetched/fs_865986_shotgun_fire_by_db465.mp3",
+     "bytes": 102996
+    }
+   ]
+  },
+  {
+   "source": "freesound",
+   "page": "https://freesound.org/people/AbuNijmeh/sounds/318973/",
+   "id": "318973",
+   "author": "AbuNijmeh",
+   "title": "Shotgun - Fire.wav by AbuNijmeh",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "description": "",
+   "files": [
+    {
+     "url": "https://cdn.freesound.org/previews/318/318973_4039477-hq.mp3",
+     "path": "raw_assets/audio/fetched/fs_318973_Shotgun_-_Fire.wav_by_AbuNijmeh.mp3",
+     "bytes": 25881
+    }
+   ]
+  },
+  {
+   "source": "freesound",
+   "page": "https://freesound.org/people/Pacifici/sounds/351226/",
+   "id": "351226",
+   "author": "Pacifici",
+   "title": "shotgun_rack.wav by Pacifici",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "description": "",
+   "files": [
+    {
+     "url": "https://cdn.freesound.org/previews/351/351226_4978050-hq.mp3",
+     "path": "raw_assets/audio/fetched/fs_351226_shotgun_rack.wav_by_Pacifici.mp3",
+     "bytes": 67642
+    }
+   ]
+  },
+  {
+   "source": "freesound",
+   "page": "https://freesound.org/people/dasBUTCHER84/sounds/449614/",
+   "id": "449614",
+   "author": "dasBUTCHER84",
+   "title": "SXP_SHOTGUN_RACK_01 by dasBUTCHER84",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "description": "",
+   "files": [
+    {
+     "url": "https://cdn.freesound.org/previews/449/449614_9348290-hq.mp3",
+     "path": "raw_assets/audio/fetched/fs_449614_SXP_SHOTGUN_RACK_01_by_dasBUTCHER84.mp3",
+     "bytes": 15744
+    }
+   ]
+  },
+  {
+   "source": "freesound",
+   "page": "https://freesound.org/people/rammbostein/sounds/436074/",
+   "id": "436074",
+   "author": "rammbostein",
+   "title": "Shotgun rack and shell drop by rammbostein",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "description": "",
+   "files": [
+    {
+     "url": "https://cdn.freesound.org/previews/436/436074_4174990-hq.mp3",
+     "path": "raw_assets/audio/fetched/fs_436074_Shotgun_rack_and_shell_drop_by_rammbostein.mp3",
+     "bytes": 171792
+    }
+   ]
+  },
+  {
+   "source": "freesound",
+   "page": "https://freesound.org/people/cedarstudios/sounds/148841/",
+   "id": "148841",
+   "author": "cedarstudios",
+   "title": "shotgun targetside.mp3 by cedarstudios",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "description": "",
+   "files": [
+    {
+     "url": "https://cdn.freesound.org/previews/148/148841_2676248-hq.mp3",
+     "path": "raw_assets/audio/fetched/fs_148841_shotgun_targetside.mp3_by_cedarstudios.mp3",
+     "bytes": 359182
+    }
+   ]
+  },
+  {
+   "source": "freesound",
+   "page": "https://freesound.org/people/hiramjustus/sounds/55341/",
+   "id": "55341",
+   "author": "hiramjustus",
+   "title": "shotgun.wav by hiramjustus",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "description": "",
+   "files": [
+    {
+     "url": "https://cdn.freesound.org/previews/55/55341_662292-hq.mp3",
+     "path": "raw_assets/audio/fetched/fs_55341_shotgun.wav_by_hiramjustus.mp3",
+     "bytes": 36556
+    }
+   ]
+  },
+  {
+   "source": "freesound",
+   "page": "https://freesound.org/people/Paul368/sounds/200966/",
+   "id": "200966",
+   "author": "Paul368",
+   "title": "Shotgun Cock Reload Layered (Powerful) by Paul368",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "description": "",
+   "files": [
+    {
+     "url": "https://cdn.freesound.org/previews/200/200966_2971294-hq.mp3",
+     "path": "raw_assets/audio/fetched/fs_200966_Shotgun_Cock_Reload_Layered_Powerful_by_Paul368.mp3",
+     "bytes": 48009
+    }
+   ]
+  },
+  {
+   "source": "freesound",
+   "page": "https://freesound.org/people/mtadder/sounds/99217/",
+   "id": "99217",
+   "author": "mtadder",
+   "title": "shotgun_racking.wav by mtadder",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "description": "",
+   "files": [
+    {
+     "url": "https://cdn.freesound.org/previews/99/99217_1667590-hq.mp3",
+     "path": "raw_assets/audio/fetched/fs_99217_shotgun_racking.wav_by_mtadder.mp3",
+     "bytes": 30891
+    }
+   ]
+  },
+  {
+   "source": "freesound",
+   "page": "https://freesound.org/people/avh9911/sounds/579508/",
+   "id": "579508",
+   "author": "avh9911",
+   "title": "SHOTGUN RACKING by avh9911",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "description": "",
+   "files": [
+    {
+     "url": "https://cdn.freesound.org/previews/579/579508_3628726-hq.mp3",
+     "path": "raw_assets/audio/fetched/fs_579508_SHOTGUN_RACKING_by_avh9911.mp3",
+     "bytes": 28963
+    }
+   ]
+  },
+  {
+   "source": "freesound",
+   "page": "https://freesound.org/people/MrGungus/sounds/773873/",
+   "id": "773873",
+   "author": "MrGungus",
+   "title": "shotgun shoot by MrGungus",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "description": "",
+   "files": [
+    {
+     "url": "https://cdn.freesound.org/previews/773/773873_15468302-hq.mp3",
+     "path": "raw_assets/audio/fetched/fs_773873_shotgun_shoot_by_MrGungus.mp3",
+     "bytes": 28544
+    }
+   ]
+  },
+  {
+   "source": "freesound",
+   "page": "https://freesound.org/people/TheGreenEyedGhost/sounds/707783/",
+   "id": "707783",
+   "author": "TheGreenEyedGhost",
+   "title": "Different_speeds_of_cocking_a_ shotgun_(slow to fast)_1 by TheGreenEyedGhost",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "description": "",
+   "files": [
+    {
+     "url": "https://cdn.freesound.org/previews/707/707783_14713637-hq.mp3",
+     "path": "raw_assets/audio/fetched/fs_707783_Different_speeds_of_cocking_a__shotgun__slow_to_fast__1_by_T.mp3",
+     "bytes": 395880
+    }
+   ]
+  },
+  {
+   "source": "freesound",
+   "page": "https://freesound.org/people/qubodup/sounds/842751/",
+   "id": "842751",
+   "author": "qubodup",
+   "title": "128bpm shotgun handling sound music loop gun sync by qubodup",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "description": "",
+   "files": [
+    {
+     "url": "https://cdn.freesound.org/previews/842/842751_71257-hq.mp3",
+     "path": "raw_assets/audio/fetched/fs_842751_128bpm_shotgun_handling_sound_music_loop_gun_sync_by_qubodup.mp3",
+     "bytes": 36730
+    }
+   ]
+  },
+  {
+   "source": "freesound",
+   "page": "https://freesound.org/people/FOSSarts/sounds/741074/",
+   "id": "741074",
+   "author": "FOSSarts",
+   "title": "Dry Fire of Diablo 12g pistol 6 inch, cock from halfway point and dry fire 1 by FOSSarts",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "description": "",
+   "files": [
+    {
+     "url": "https://cdn.freesound.org/previews/741/741074_14631530-hq.mp3",
+     "path": "raw_assets/audio/fetched/fs_741074_Dry_Fire_of_Diablo_12g_pistol_6_inch_cock_from_halfway_point.mp3",
+     "bytes": 107328
+    }
+   ]
+  }
+ ],
+ "errors": []
+}

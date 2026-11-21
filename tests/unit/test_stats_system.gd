@@ -206,3 +206,20 @@ func test_old_saved_slide_tuning_is_dropped() -> void:
 	var from_one: Array[String] = TuningMenu.stale_movement_keys(1)
 	assert_true("slide_friction" in from_one and "slide_boost" in from_one and "ground_accel" in from_one, "saved before both: both dropped")
 	assert_true(TuningMenu.stale_movement_keys(TuningMenu.MOVEMENT_VERSION).is_empty(), "saved since: kept")
+
+
+func test_saved_gun_tuning_keeps_only_moved_values_and_drops_the_old_spas() -> void:
+	# Before 2026-11-21 closing the Tuning screen saved every value of every gun.
+	var stale: Array[String] = TuningMenu.stale_weapon_keys("weapon_spas12", 1)
+	assert_true("damage_per_joule" in stale and "ragdoll_push" in stale, "the old SPAS-12 damage gives way")
+	assert_true(TuningMenu.stale_weapon_keys("weapon_spas12", TuningMenu.WEAPON_VERSION).is_empty(), "saved since: kept")
+	assert_true(TuningMenu.stale_weapon_keys("weapon_saiga12k", 1).is_empty(), "other guns keep theirs")
+	var gun: WeaponData = ResourceLoader.load("res://data/weapons/spas12.tres", "", ResourceLoader.CACHE_MODE_IGNORE) as WeaponData
+	var cfg: ConfigFile = ConfigFile.new()
+	TuningMenu.save_weapon(cfg, gun)
+	assert_eq(cfg.get_section_keys("weapon_spas12"), PackedStringArray([TuningMenu.WEAPON_VERSION_KEY]), "nothing moved: nothing saved")
+	gun.kick_pitch_deg += 1.0
+	TuningMenu.save_weapon(cfg, gun)
+	assert_eq(cfg.get_section_keys("weapon_spas12").size(), 2, "only the moved value")
+	var saved: float = cfg.get_value("weapon_spas12", "kick_pitch_deg")
+	assert_almost_eq(saved, gun.kick_pitch_deg, 0.0001)

@@ -212,12 +212,7 @@ func save() -> void:
 	if cfg.has_section("weapon"):
 		cfg.erase_section("weapon")  # pre-MG42 single-gun section, migrated below
 	for slot: PlayerWeapon.Slot in _weapon.slots:
-		var section: String = section_for(slot.data)
-		for p: Array in WEAPON_PARAMS:
-			var prop: String = p[1]
-			var holder: Resource = param_target(p, slot.data)
-			if holder:
-				cfg.set_value(section, key_prefix(p) + prop, holder.get(prop))
+		save_weapon(cfg, slot.data)
 	if _assist:
 		cfg.set_value("aim_assist", "enabled", _assist.enabled)
 		for p: Array in ASSIST_PARAMS:
@@ -232,6 +227,59 @@ func save() -> void:
 		var prop: String = p[1]
 		cfg.set_value("gore", prop, Gore.config.get(prop))
 	cfg.save(SAVE_PATH)
+
+
+## Writes one gun's section: only the values the sliders moved away from the
+## gun's own file, so a changed default in data/weapons still reaches a phone
+## that has saved before (owner, 2026-11-21: the SPAS-12 fix has to arrive).
+static func save_weapon(cfg: ConfigFile, data: WeaponData) -> void:
+	var section: String = section_for(data)
+	if cfg.has_section(section):
+		cfg.erase_section(section)
+	var defaults: WeaponData = ResourceLoader.load(data.resource_path, "", ResourceLoader.CACHE_MODE_IGNORE_DEEP) as WeaponData
+	for p: Array in WEAPON_PARAMS:
+		var prop: String = p[1]
+		var holder: Resource = param_target(p, data)
+		if holder == null:
+			continue
+		var base: Resource = param_target(p, defaults) if defaults else null
+		var value: Variant = holder.get(prop)
+		if base and _same(value, base.get(prop)):
+			continue
+		cfg.set_value(section, key_prefix(p) + prop, value)
+	cfg.set_value(section, WEAPON_VERSION_KEY, WEAPON_VERSION)
+
+
+static func _same(a: Variant, b: Variant) -> bool:
+	if a is float and b is float:
+		var fa: float = a
+		var fb: float = b
+		return is_equal_approx(fa, fb)
+	return typeof(a) == typeof(b) and a == b
+
+
+## Sections saved before WEAPON_VERSION 2 hold every value of every gun, not
+## just the tuned ones, so they froze each gun as it was the day the Tuning
+## screen was first closed. From version 2 only moved values are saved; for
+## older sections the values listed here are dropped so the new defaults apply.
+const WEAPON_VERSION_KEY: String = "_version"
+const WEAPON_VERSION: int = 2
+## version -> section -> the values saved before it that no longer apply.
+const WEAPON_RESETS: Dictionary[int, Dictionary] = {
+	# Owner, 2026-11-21: the SPAS-12 "has to be noticeably more lethal per
+	# shot than the Saiga".
+	2: {"weapon_spas12": ["damage_per_joule", "impulse_scale", "ragdoll_push", "stagger_push"]},
+}
+
+
+## Weapon values saved under `saved_version` in `section` that newer defaults replace.
+static func stale_weapon_keys(section: String, saved_version: int) -> Array[String]:
+	var out: Array[String] = []
+	for v: int in WEAPON_RESETS:
+		if saved_version < v and WEAPON_RESETS[v].has(section):
+			for k: String in WEAPON_RESETS[v][section]:
+				out.append(k)
+	return out
 
 
 ## Launcher values live in the gun's GrenadeData, plasma values in its
@@ -349,7 +397,11 @@ static func load_saved(data: WeaponData, assist: AimAssistConfig) -> void:
 		var section: String = section_for(data)
 		if not cfg.has_section(section) and cfg.has_section("weapon") and section == "weapon_pistol_57":
 			section = "weapon"
+		var saved_version: int = cfg.get_value(section, WEAPON_VERSION_KEY, 1) if cfg.has_section(section) else WEAPON_VERSION
+		var dropped: Array[String] = stale_weapon_keys(section, saved_version)
 		for prop: String in cfg.get_section_keys(section) if cfg.has_section(section) else PackedStringArray():
+			if prop == WEAPON_VERSION_KEY or prop in dropped:
+				continue
 			if prop.begins_with(GRENADE_KEY):
 				var gp: String = prop.trim_prefix(GRENADE_KEY)
 				if data.grenade and gp in data.grenade:

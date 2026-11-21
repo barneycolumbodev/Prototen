@@ -1,7 +1,8 @@
 extends GutTest
 ## Weapon wheel and reticles in the real test room (owner, 2026-11-02):
 ## tap Y swaps back to the previous gun, hold Y opens the wheel (time slows,
-## look stops, the stick picks), letting go draws the pick; reticles are
+## look stops, the stick picks a category, the D-pad scrolls the guns in it
+## (owner, 2026-11-20: GTA V's wheel), letting go draws the pick; reticles are
 ## seaglass and turn crimson over an enemy; the shotgun's reticle is a
 ## circle, a dot with slugs.
 
@@ -56,6 +57,90 @@ func _real_wait(seconds: float) -> void:
 		await get_tree().process_frame
 
 
+## Holds Y with the stick on a category's wedge.
+func _point_at(category: int) -> void:
+	var ang: float = category * TAU / PlayerWeapon.wheel_categories()
+	weapon.script_wheel(true, Vector2(sin(ang), -cos(ang)))
+	await _frames()
+
+
+func _names(slots_in: Array[int]) -> PackedStringArray:
+	var out: PackedStringArray = PackedStringArray()
+	for i: int in slots_in:
+		out.append(weapon.slots[i].data.display_name)
+	return out
+
+
+func test_guns_are_grouped_by_category() -> void:
+	assert_eq(PlayerWeapon.wheel_categories(), 6)
+	assert_eq(_names(weapon.wheel_guns(WeaponData.WheelCategory.PISTOLS)), PackedStringArray(["Five-seveN SR", "Glock 22 (switch)"]))
+	assert_eq(_names(weapon.wheel_guns(WeaponData.WheelCategory.SMGS)), PackedStringArray(["MP5/SD-L"]))
+	assert_eq(_names(weapon.wheel_guns(WeaponData.WheelCategory.SHOTGUNS)), PackedStringArray(["Saiga-12K", "SPAS-12"]))
+	assert_eq(_names(weapon.wheel_guns(WeaponData.WheelCategory.RIFLES)), PackedStringArray(["M14/P", "The Governor", "AUG A1"]))
+	assert_eq(_names(weapon.wheel_guns(WeaponData.WheelCategory.HEAVY)), PackedStringArray(["MG42/A", "M32A1 MGL"]))
+	assert_eq(_names(weapon.wheel_guns(WeaponData.WheelCategory.SPECIAL)), PackedStringArray(["RC-6 Lance", "SL-9 Slagger"]))
+	var total: int = 0
+	for c: int in PlayerWeapon.wheel_categories():
+		total += weapon.wheel_guns(c).size()
+	assert_eq(total, weapon.slots.size(), "every gun is in exactly one category")
+
+
+func test_dpad_scrolls_the_guns_in_a_category() -> void:
+	weapon.script_wheel(true)
+	await _real_wait(weapon.wheel_config.hold_time + 0.1)
+	assert_true(weapon.wheel_open)
+	await _point_at(WeaponData.WheelCategory.RIFLES)
+	assert_eq(weapon.slots[weapon.wheel_pick].data.display_name, "M14/P", "first rifle shown")
+	var order: PackedStringArray = PackedStringArray()
+	for step: int in [1, 1, 1, -1]:
+		weapon.script_wheel_cycle(step)
+		await _frames()
+		order.append(weapon.slots[weapon.wheel_pick].data.display_name)
+	assert_eq(order, PackedStringArray(["The Governor", "AUG A1", "M14/P", "AUG A1"]), "right, right, wraps, left")
+	assert_eq(weapon.wheel_category, WeaponData.WheelCategory.RIFLES, "the D-pad stays in the category")
+	weapon.script_wheel(false)
+	await wait_seconds(weapon.data.holster_time + weapon.loadout[weapon.index_of("AUG A1")].draw_time + 0.3)
+	assert_eq(weapon.data.display_name, "AUG A1", "letting go draws the gun shown")
+	# Back on the wheel: the rifles remember the AUG, the pistols the Five-seveN.
+	weapon.script_wheel(true)
+	await _real_wait(weapon.wheel_config.hold_time + 0.1)
+	await _point_at(WeaponData.WheelCategory.PISTOLS)
+	assert_eq(weapon.slots[weapon.wheel_pick].data.display_name, "Five-seveN SR")
+	await _point_at(WeaponData.WheelCategory.RIFLES)
+	assert_eq(weapon.slots[weapon.wheel_pick].data.display_name, "AUG A1", "the category remembers its last pick")
+	weapon.script_wheel(false)
+
+
+func test_dpad_on_the_wheel_scrolls_and_leaves_the_actives_alone() -> void:
+	var before: int = player.augments.selected
+	weapon.script_wheel(true)
+	await _real_wait(weapon.wheel_config.hold_time + 0.1)
+	await _point_at(WeaponData.WheelCategory.RIFLES)
+	var first: int = weapon.wheel_pick
+	Input.action_press(&"active_select_3")
+	await wait_physics_frames(2)
+	Input.action_release(&"active_select_3")
+	await _frames()
+	assert_ne(weapon.wheel_pick, first, "D-pad right scrolled the rifles")
+	assert_eq(player.augments.selected, before, "the active part selection didn't change")
+	weapon.script_wheel(false)
+
+
+func test_an_empty_category_is_skipped() -> void:
+	var keep: Array[WeaponData] = [weapon.loadout[weapon.index_of("Five-seveN SR")],
+			weapon.loadout[weapon.index_of("AUG A1")], weapon.loadout[weapon.index_of("MG42/A")]]
+	weapon.set_guns(keep)
+	await wait_seconds(0.6)
+	weapon.script_wheel(true)
+	await _real_wait(weapon.wheel_config.hold_time + 0.1)
+	assert_true(weapon.wheel_open)
+	await _point_at(WeaponData.WheelCategory.RIFLES)
+	assert_eq(weapon.slots[weapon.wheel_pick].data.display_name, "AUG A1")
+	await _point_at(WeaponData.WheelCategory.SHOTGUNS)
+	assert_eq(weapon.wheel_category, WeaponData.WheelCategory.RIFLES, "no shotgun carried: the highlight stays")
+	weapon.script_wheel(false)
+
+
 func test_stick_directions_map_to_wheel_slots() -> void:
 	assert_eq(PlayerWeapon.wheel_slot(Vector2(0, -1), 5), 0, "up = slot 0")
 	assert_eq(PlayerWeapon.wheel_slot(Vector2(1, -0.3), 5), 1, "right-ish = next clockwise")
@@ -94,10 +179,9 @@ func test_hold_y_opens_the_wheel_slows_time_and_the_stick_picks() -> void:
 	assert_almost_eq(Engine.time_scale, weapon.wheel_config.time_scale, 0.01, "game slowed")
 	assert_true(player.look_blocked, "the right stick picks instead of looking")
 	var target: int = weapon.index_of("Saiga-12K")
-	var ang: float = target * TAU / weapon.slots.size()
-	weapon.script_wheel(true, Vector2(sin(ang), -cos(ang)))
-	await _frames()
-	assert_eq(weapon.wheel_pick, target, "stick points at the Saiga's wedge")
+	await _point_at(WeaponData.WheelCategory.SHOTGUNS)
+	assert_eq(weapon.wheel_category, WeaponData.WheelCategory.SHOTGUNS, "stick points at the shotguns")
+	assert_eq(weapon.wheel_pick, target, "the Saiga is the shotgun shown")
 	# Firing is held while the wheel is up.
 	var loaded: int = weapon.mechanism.loaded()
 	Input.action_press(&"fire")

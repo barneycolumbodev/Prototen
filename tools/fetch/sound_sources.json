@@ -1,0 +1,11 @@
+{
+ "out": "raw_assets/audio/fetched",
+ "opengameart": [
+  "https://opengameart.org/content/the-free-firearm-sound-library"
+ ],
+ "freesound_ids": [],
+ "freesound_queries": [],
+ "per_query": 6,
+ "keep": "mossberg|nova|model 12|master sheet",
+ "manifest": "manifest_firearm_library.json"
+}

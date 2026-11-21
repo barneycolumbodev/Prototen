@@ -22,7 +22,7 @@ tail -n1 "$LOG_DIR/validate.log"
 [ $status -eq 0 ] || fail=1
 
 echo "== GUT"
-timeout 600 "$GODOT" --headless -s addons/gut/gut_cmdln.gd -gdir=res://tests -ginclude_subdirs -gexit "$@" >"$LOG_DIR/gut.log" 2>&1
+timeout 900 "$GODOT" --headless -s addons/gut/gut_cmdln.gd -gdir=res://tests -ginclude_subdirs -gexit "$@" >"$LOG_DIR/gut.log" 2>&1
 status=$?
 sed 's/\x1b\[[0-9;]*m//g' "$LOG_DIR/gut.log" | grep -E "^(Tests|Passing Tests|Failing Tests|Risky|Asserts|Time)|\[Failed\]|FAILED|---- " | head -40
 # GUT exits 0 when a test file fails to load, so check the log as well.

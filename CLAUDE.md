@@ -161,7 +161,7 @@ Put an empty `.gdignore` file in `raw_assets/`, `tools/` and `docs/` so Godot do
 | A | Jump (wall-run on contact) |
 | B | Slide (a tap runs it out) / crouch |
 | X | Reload (hold to interact; the M32A1, the Governor and the SPAS-12 load a round at a time, RT stops and fires) |
-| Y | Tap: previous weapon. Hold: weapon wheel (owner, 2026-11-02; the MG barrel change needs another input in M3) |
+| Y | Tap: previous weapon. Hold: weapon wheel (owner, 2026-11-02; the MG barrel change needs another input in M3). Since 2026-11-20 the wheel is GTA V style: the stick picks a category (pistols, SMGs, shotguns, rifles, heavy, special), D-pad left/right scrolls the guns in it (design §4.7) |
 | D-pad | Left / down / right: select active part 1 / 2 / 3 for LB, in the order they were installed (default: RX-9 / GX-4 arm / empty; 2026-11-10: any three of nine; 2026-11-13: of ten; 2026-11-14: of eleven). Up: shell type on guns that take several (Saiga-12K) (owner, 2026-11-07) |
 | Menu / View | Pause / body status and loadout (in Survival the body can be viewed, not changed) (built 2026-11-05; loadout 2026-11-08; LB there: colours, 2026-11-10; 2026-11-11: every part on one grid, A installs or removes, RB jumps to the part that supplies a missing requirement) |
 
@@ -287,6 +287,7 @@ Each milestone ends with an APK on the owner's phone and an entry in `docs/playt
    2026-11-18 (owner): map 2, the Golden Dragon Grand Hotel (design §7.2), and two guns with it (design §4.9): the Governor, a black polymer .45-70 lever action (the lever is thrown after every shot: bolt, case, hammer, a heavy clunk in sound and rumble), and the SL-9 Slagger, the first energy weapon, a welder-built plasma pistol (hold to charge, 2.75 s to full; grazes set men alight and panicking, a charged trunk hit burns a hole through, limbs come off cauterised and burning).
    2026-11-20 (owner: "an automatic rifle, like an assault rifle niche ... a very realistic Steyr AUG"): the AUG A1 (StG 77), traced from reference photos and checked against them by overlay; olive stock, 1.5x integral scope (aiming goes through it, circle reticle), progressive trigger (light pull single, full pull automatic), clear magazine showing the rounds left (design §4.10).
    2026-11-20 (owner: "the SPAS 12 ... stock folded up ... one-to-one with the actual SPAS 12"): the SPAS-12, traced from a studio photo with the stock folded and checked by overlay; pump only, and after every shot the gun comes up while the left hand racks the pump (Doom style); slower than the Saiga, more damage, a little more range, a tighter pattern and a smaller ring; a layered stereo boom (design §4.11).
+   2026-11-21 (owner: the SPAS-12 "not nearly lethal enough ... birdshot", its sounds "an arcade game with coins"): far more damage per shell than the Saiga (game balance, not ballistics), kills throw men, hits stagger; the shot and pump replaced with real CC0 recordings (a Remington 870 rack; a Nova and a Mossberg on a range), design §4.11. The GTA-style category wheel of 2026-11-20 never reached a build (committed after its PR merged); it is in now.
    Next: more triad types and bosses (the Straw Sandal next), theme waves (design §8.8), then tuning from the owner's runs.
    Done when a run has a difficulty curve the owner wants to replay and builds that play differently.
 

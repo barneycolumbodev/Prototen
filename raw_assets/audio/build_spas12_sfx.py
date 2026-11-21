@@ -37,7 +37,9 @@ from scipy import signal
 from scipy.io import wavfile
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-out = sys.argv[1] if len(sys.argv) > 1 else "assets/audio/sfx"
+sys_args = sys.argv[1:]
+_paths = [a for a in sys_args if not a.startswith("--")]
+out = _paths[0] if _paths else "assets/audio/sfx"
 sys.argv = sys.argv[:1]
 import build_weapon_sfx as w  # noqa: E402
 
@@ -246,11 +248,15 @@ def round_in():
 def write_all():
     w.OUT = out
     os.makedirs(out, exist_ok=True)
-    for v in (1, 2, 3):
-        save_stereo(f"spas12_shot_{v}", shot(v), -0.5)
-    save_stereo("spas12_tail_1", tail(), -2.0)
-    w.save("spas12_pump_back_1", pump_back(), -1.5)
-    w.save("spas12_pump_forward_1", pump_forward(), -0.5)
+    # Since 2026-11-21 the shot, tail and pump come from real recordings
+    # (build_spas12_real_sfx.py); these synthesized ones are only written
+    # with --synth-shot, for comparison.
+    if "--synth-shot" in sys_args:
+        for v in (1, 2, 3):
+            save_stereo(f"spas12_shot_{v}", shot(v), -0.5)
+        save_stereo("spas12_tail_1", tail(), -2.0)
+        w.save("spas12_pump_back_1", pump_back(), -1.5)
+        w.save("spas12_pump_forward_1", pump_forward(), -0.5)
     w.save("spas12_round_in_1", round_in(), -4)
     w.save("spas12_dry_fire_1", w.at(0.15, (0, metal(0.08, (1500, 2700, 4400), 0.012, [0.6, 0.4, 0.2]))), -7)
     rustle = w.band(w.noise(0.2), 250, 2400) * np.hanning(int(0.2 * SR))

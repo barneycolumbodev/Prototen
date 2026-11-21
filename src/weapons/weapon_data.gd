@@ -10,9 +10,14 @@ extends Resource
 ## Which body proficiency stat it uses (docs/design.md §3.6): handgun,
 ## shotgun, rifle (rifles and rail guns) or heavy (machine guns).
 enum WeaponClass { HANDGUN, SHOTGUN, RIFLE, HEAVY }
+## Weapon wheel category (owner, 2026-11-20: categories like GTA V's wheel;
+## the stick picks a category, the D-pad scrolls the guns in it).
+enum WheelCategory { PISTOLS, SMGS, SHOTGUNS, RIFLES, HEAVY, SPECIAL }
+const WHEEL_NAMES: PackedStringArray = ["PISTOLS", "SMGs", "SHOTGUNS", "RIFLES", "HEAVY", "SPECIAL"]
 
 @export var display_name: String = "Five-seveN SR"
 @export var weapon_class: WeaponClass = WeaponClass.HANDGUN
+@export var wheel_category: WheelCategory = WheelCategory.PISTOLS
 @export var caliber: String = "5.7×28mm"
 ## Weapon wheel icon (raw_assets/ui/weapon_icons/build.py renders one per gun).
 @export var icon: Texture2D
@@ -95,6 +100,12 @@ enum WeaponClass { HANDGUN, SHOTGUN, RIFLE, HEAVY }
 @export_range(0.0, 0.2) var pump_travel: float = 0.085
 @export var pump_raise_deg: Vector3 = Vector3(-8.0, 6.0, 26.0)
 @export var pump_raise_offset: Vector3 = Vector3(-0.015, 0.035, 0.02)
+## Where in the stroke (0..1 of pump_time) the "pump_back" and "pump_forward"
+## sounds start. Recorded racks (2026-11-21) begin at the unlock and the start
+## of the forward push, so they start early enough that their hard stop and
+## lock land when the fore-end reaches the rear (0.42) and home (0.62).
+@export_range(0.0, 1.0) var pump_back_sound_t: float = 0.41
+@export_range(0.0, 1.0) var pump_forward_sound_t: float = 0.6
 @export var rumble_pump_back: Vector3 = Vector3(0.3, 0.6, 0.07)
 @export var rumble_pump_forward: Vector3 = Vector3(0.6, 1.0, 0.1)
 ## Colour of the spent hull the pump throws out.
