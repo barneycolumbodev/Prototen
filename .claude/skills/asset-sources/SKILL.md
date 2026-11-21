@@ -30,3 +30,5 @@ Prefer CC0. Avoid licenses that need attribution in-game unless the owner agrees
 ## If a host is blocked
 
 The session's network allowlist is set by the owner (CLAUDE.md §10.1). If a download is blocked, say which host, and either ask the owner to add it or do the download in a GitHub Actions workflow and commit the result.
+
+OpenGameArt and Freesound are blocked inside the session (2026-11-21). The "Fetch sounds" workflow (`.github/workflows/fetch_sounds.yml`, `tools/fetch/`) fetches them: list OpenGameArt pages, Freesound sound ids (`user/id`) or search queries in `tools/fetch/sound_sources.json` and push; it downloads only files whose page says CC0 (Freesound: the HQ preview mp3; big archives: only members matching `keep`), writes a manifest of page, author and licence, and commits to the branch. Check the licence file inside an archive too: one OpenGameArt "CC0" pack said CC-BY inside. Delete what you don't use.

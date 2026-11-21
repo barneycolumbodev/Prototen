@@ -43,7 +43,7 @@ func test_it_is_an_eight_plus_one_pump_gun() -> void:
 	assert_false(d.automatic)
 	assert_true(d.loads_singly(), "a shell at a time")
 	assert_eq(weapon.mechanism.loaded(), 9, "8 in the tube + 1")
-	assert_eq(d.pellets, 9, "00 buck")
+	assert_eq(d.pellets, 12, "a magnum 00 buck load: twelve pellets (game balance, owner 2026-11-21)")
 	for part: StringName in [&"pump", &"support_arm", &"bolt", &"load_round"]:
 		assert_true(weapon.rig().has_part(part), "has a %s" % part)
 	assert_gte(d.fire_interval, d.pump_delay + d.pump_time, "the pump finishes before the next shot")
@@ -55,7 +55,11 @@ func test_slower_harder_further_tighter_than_the_saiga() -> void:
 	assert_gt(d.fire_interval, s.fire_interval * 3.0, "much slower: %.2f s vs %.2f s" % [d.fire_interval, s.fire_interval])
 	var dmg: float = d.muzzle_energy() * d.damage_per_joule * d.pellets
 	var sdmg: float = s.muzzle_energy() * s.damage_per_joule * s.pellets
-	assert_between(dmg / sdmg, 1.2, 1.6, "more damage per shell (%.0f vs %.0f)" % [dmg, sdmg])
+	# Owner, 2026-11-21: "noticeably more lethal per shot than the Saiga"
+	# (game balance, not ballistics: one pump shell against a second of fire).
+	assert_gt(dmg / sdmg, 2.0, "far more damage per shell (%.0f vs %.0f)" % [dmg, sdmg])
+	assert_gt(d.ragdoll_push, 2.0, "a kill throws the man")
+	assert_gt(d.stagger_push, 0.0, "a shell that doesn't kill still staggers him")
 	assert_gt(d.max_range, s.max_range, "a little more range")
 	assert_lt(d.max_range, s.max_range * 1.4)
 	assert_lt(d.drag_per_m, s.drag_per_m, "pellets keep their speed further")
@@ -158,3 +162,45 @@ func test_buckshot_at_ten_metres_kills_a_man() -> void:
 			volley = id
 	await wait_physics_frames(6)
 	assert_false(e.alive, "one shell to the chest at 10 m")
+
+
+## Damage one shell from the hip at `dist` m into `zone` does to a gunman who
+## can't die of it (so every pellet counts).
+func _hip_shell_damage(d: WeaponData, dist: float, zone: StringName, rng: RandomNumberGenerator) -> float:
+	var sr: ShootingRange = room.shooting_range
+	sr.clear_targets()
+	await wait_physics_frames(1)
+	var e: Enemy = sr.spawn_target(0)
+	await wait_physics_frames(3)
+	e.health = 1.0e6
+	var at: Vector3 = e.body.hitboxes[zone].global_position
+	var from: Vector3 = at + Vector3(0, 0.15, dist)
+	var dir: Vector3 = Ballistics.random_in_cone((at - from).normalized(), d.spread_deg(0.0, 0.0, false, 0.0), rng)
+	var volley: int = 0
+	var phase: float = rng.randf() * TAU
+	for i: int in d.pellets:
+		var id: int = Ballistics.fire(d, from, Ballistics.pattern_dir(dir, d.pattern_deg, i, d.pellets, phase, rng),
+				player, Vector3.INF, volley)
+		if volley == 0:
+			volley = id
+	await wait_physics_frames(8)
+	var dmg: float = 0.0
+	for z: StringName in e.zone_damage:
+		dmg += e.zone_damage[z]
+	return dmg
+
+
+func test_a_shell_does_far_more_damage_than_a_saiga_shell() -> void:
+	# Owner, 2026-11-21: "noticeably more lethal per shot than the Saiga".
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 7
+	var saiga: WeaponData = _buck().apply_to(_saiga())
+	for dist: float in [6.0, 14.0]:
+		var mine: float = 0.0
+		var theirs: float = 0.0
+		for t: int in 4:
+			mine += await _hip_shell_damage(weapon.data, dist, &"stomach", rng)
+			theirs += await _hip_shell_damage(saiga, dist, &"stomach", rng)
+		gut.p("%.0f m: SPAS-12 %.0f, Saiga %.0f per shell" % [dist, mine / 4.0, theirs / 4.0])
+		assert_gt(mine / 4.0, 100.0 * 2.5, "at %.0f m a shell is several men's worth (%.0f)" % [dist, mine / 4.0])
+		assert_gt(mine, theirs * 1.7, "at %.0f m: %.0f vs %.0f" % [dist, mine / 4.0, theirs / 4.0])

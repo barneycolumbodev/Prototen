@@ -229,6 +229,9 @@ var _lever_wait: float = -1.0
 var lever_t: float = -1.0
 var hammer_down: bool = false
 var _lever_beats: int = 0
+## The pump's two sounds this stroke (they start ahead of the beats: data.pump_*_sound_t).
+var _pump_back_heard: bool = false
+var _pump_forward_heard: bool = false
 ## Pump action (WeaponData.pump_action) runs on the same stroke clock:
 ## `lever_t` is the progress through raise, rack and lower (-1 = ready).
 var pump_t: float:
@@ -1340,6 +1343,8 @@ func _start_lever(wait: float) -> void:
 	_lever_wait = wait
 	lever_t = -1.0
 	_lever_beats = 0
+	_pump_back_heard = false
+	_pump_forward_heard = false
 
 
 ## Put away mid-stroke: the hands finish it (no sounds, no case).
@@ -1445,11 +1450,16 @@ func _update_pump(delta: float, s: Slot) -> void:
 			lever_t = 0.0
 	if lever_t >= 0.0:
 		lever_t += delta / maxf(data.pump_time / handling(), 0.05)
+		if not _pump_back_heard and lever_t >= data.pump_back_sound_t:
+			_pump_back_heard = true
+			_play(&"pump_back")
+		if not _pump_forward_heard and lever_t >= data.pump_forward_sound_t:
+			_pump_forward_heard = true
+			_play(&"pump_forward")
 		# Rear of the stroke: the hull flies out, the action unlocks with a rasp.
 		if _lever_beats == 0 and lever_t >= 0.41:
 			_lever_beats = 1
 			hammer_down = false
-			_play(&"pump_back")
 			_rumble(data.rumble_pump_back)
 			motion.jolt(Vector3(0.0, -0.006, 0.012), Vector3(-1.5, 0.0, -3.0))
 			var gun: Transform3D = s.rig.global_transform
@@ -1458,7 +1468,6 @@ func _update_pump(delta: float, s: Slot) -> void:
 		# Home: the fore-end slams forward and locks, the big chunk-chunk.
 		if _lever_beats == 1 and lever_t >= 0.6:
 			_lever_beats = 2
-			_play(&"pump_forward")
 			_rumble(data.rumble_pump_forward)
 			motion.jolt(Vector3(0.0, 0.012, -0.01), Vector3(4.0, 0.0, 6.0))
 		if lever_t >= 1.0:
