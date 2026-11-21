@@ -193,7 +193,7 @@ def main() -> int:
                     errors.append({"page": sid, "error": str(e)})
         except Exception as e:  # noqa: BLE001
             errors.append({"query": query, "error": str(e)})
-    json.dump({"entries": manifest, "errors": errors}, open(os.path.join(out, "manifest.json"), "w"), indent=1)
+    json.dump({"entries": manifest, "errors": errors}, open(os.path.join(out, cfg.get("manifest", "manifest.json")), "w"), indent=1)
     print(f"{len(manifest)} entries, {len(errors)} errors")
     return 0
 

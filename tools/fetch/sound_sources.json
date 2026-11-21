@@ -1,41 +1,11 @@
 {
  "out": "raw_assets/audio/fetched",
  "opengameart": [
-  "https://opengameart.org/content/the-free-firearm-sound-library",
-  "https://opengameart.org/content/shotgun-reload-sound-effects"
+  "https://opengameart.org/content/the-free-firearm-sound-library"
  ],
- "freesound_ids": [
-  "TotallyPhilip/755495",
-  "shelbyshark/508245",
-  "shelbyshark/513354",
-  "shelbyshark/513351",
-  "AnthonyChan0/159710",
-  "ceremonialchapstick/142894",
-  "areniporgen/702672",
-  "qubodup/844181",
-  "qubodup/854653",
-  "Pjkasinski3/171630",
-  "Stoniac/842738",
-  "Dentrabert/673320",
-  "mrrap4food/619041",
-  "db465/865986",
-  "AbuNijmeh/318973",
-  "Pacifici/351226",
-  "dasBUTCHER84/449614",
-  "rammbostein/436074",
-  "cedarstudios/148841",
-  "hiramjustus/55341",
-  "Paul368/200966",
-  "mtadder/99217",
-  "avh9911/579508",
-  "MrGungus/773873",
-  "TheGreenEyedGhost/707783"
- ],
- "freesound_queries": [
-  "remington 870",
-  "mossberg 500 shot",
-  "shotgun shot outdoor",
-  "12 gauge"
- ],
- "per_query": 6
+ "freesound_ids": [],
+ "freesound_queries": [],
+ "per_query": 6,
+ "keep": "mossberg|nova|model 12|master sheet",
+ "manifest": "manifest_firearm_library.json"
 }
