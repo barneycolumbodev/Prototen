@@ -250,3 +250,18 @@ func test_a_stuck_man_is_moved_out_of_sight() -> void:
 	gut.p("stuck man now at %s (%.1f m from the boat), relocations %d" % [e.global_position, e.global_position.distance_to(boat), map.wave_mode.squad.relocations])
 	assert_gt(map.wave_mode.squad.relocations, 0, "moved")
 	assert_gt(e.global_position.distance_to(boat), 3.0, "off the boat")
+
+
+func test_they_come_in_packs_and_only_two_hunt() -> void:
+	var men: Array[Enemy] = await _spawn(7)
+	var sq: Squad = map.wave_mode.squad
+	sq.update_packs()
+	var packs: Dictionary = {}
+	for e: Enemy in men:
+		packs[e.pack] = packs.get(e.pack, 0) + 1
+	assert_eq(packs.size(), 3, "7 men: packs of 3, 3 and 1")
+	var hunting: int = 0
+	for k: int in packs.keys():
+		if sq.is_hunting(k):
+			hunting += 1
+	assert_eq(hunting, hunt.hunting_packs, "only two packs hunt; the third holds off")

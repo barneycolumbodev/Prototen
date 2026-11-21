@@ -41,6 +41,10 @@ var _recent: Array[int] = []
 ## (TriadMeshBaker), so a spawn costs no merge on the main thread.
 var _looks: Dictionary[String, Array] = {}
 const LOOKS_AHEAD: int = 2
+## Men left to place in the pack being spawned, and where it came in
+## (INF: the next man starts a new pack, away from the others).
+var _pack_left: int = 0
+var _pack_anchor: Vector3 = Vector3.INF
 
 
 func _ready() -> void:
@@ -144,6 +148,7 @@ func _process(delta: float) -> void:
 		return
 	if wants_batch(fighting(), _queue, config):
 		_queue = config.batch
+		_pack_left = 0  # a batch is a pack of its own
 		_timer = minf(_timer, 0.8)
 	if _queue > 0:
 		_timer -= delta
@@ -162,8 +167,10 @@ func _emit() -> void:
 	EventBus.score_changed.emit(kills, fighting() + _queue)
 
 
-## Index of the best hidden spawn point, or -1.
-func pick_spawn() -> int:
+## Index of the best hidden spawn point, or -1. `for_pack`: a new pack
+## comes in away from the men already up; the rest of a pack next to its
+## first man (owner, 2026-11-21: spawns further apart, no massing).
+func pick_spawn(for_pack: bool = true) -> int:
 	var cam: Camera3D = player.camera()
 	var eye: Vector3 = cam.global_position
 	var fwd: Vector3 = -cam.global_basis.z
@@ -183,6 +190,11 @@ func pick_spawn() -> int:
 		var behind: float = 1.0 - clampf(fwd.dot(to), -1.0, 1.0)  # 0 ahead .. 2 behind
 		var band: float = 0.0 if d >= config.preferred_min and d <= config.preferred_max else minf(absf(d - clampf(d, config.preferred_min, config.preferred_max)) / 10.0, 1.5)
 		var score: float = behind - band - (0.8 if i in _recent else 0.0) + _rng.randf() * 0.6
+		if for_pack:
+			if _pack_left <= 0 or _pack_anchor == Vector3.INF:
+				score -= 1.6 * clampf(1.0 - _nearest_man(p) / 18.0, 0.0, 1.0)
+			else:
+				score += 1.2 * clampf(1.0 - p.distance_to(_pack_anchor) / 15.0, 0.0, 1.0)
 		best.append(i)
 		scores.append(score)
 	if best.is_empty():
@@ -207,6 +219,15 @@ static func sees(space: PhysicsDirectSpaceState3D, eye: Vector3, p: Vector3) -> 
 	return false
 
 
+## Distance from `p` to the nearest living man.
+func _nearest_man(p: Vector3) -> float:
+	var best: float = INF
+	for e: Enemy in enemies:
+		if is_instance_valid(e) and e.alive:
+			best = minf(best, e.global_position.distance_to(p))
+	return best
+
+
 func _occupied(p: Vector3) -> bool:
 	for e: Enemy in enemies:
 		if is_instance_valid(e) and e.alive and e.global_position.distance_to(p) < 1.6:
@@ -221,8 +242,15 @@ func _occupied(p: Vector3) -> bool:
 func _spawn_role(role: String, at: Vector3) -> void:
 	if role == AttackDog.ROLE:
 		_spawn_dog(at)
-	else:
-		_spawn(role, at)
+		return
+	var size: int = squad.hunt.pack_size if squad and squad.hunt else 3
+	if _pack_left <= 0:
+		if squad:
+			squad.new_pack()
+		_pack_left = size
+		_pack_anchor = at
+	_pack_left -= 1
+	_spawn(role, at)
 
 
 ## An attack dog: it knows where the operative is (by scent) and comes straight in.
@@ -281,7 +309,7 @@ func _relocate(e: Enemy) -> bool:
 	var space: PhysicsDirectSpaceState3D = level.get_world_3d().direct_space_state
 	if sees(space, player.camera().global_position, e.global_position):
 		return false
-	var i: int = pick_spawn()
+	var i: int = pick_spawn(false)
 	if i < 0:
 		return false
 	e.global_position = spawn_points[i] + Vector3(0, 0.05, 0)

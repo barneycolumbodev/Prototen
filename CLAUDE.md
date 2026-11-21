@@ -29,6 +29,7 @@ Commit after each step.
 - Don't say something works without evidence: a passing test, a screenshot you looked at, a CI log, or the owner's playtest notes.
 - You make the assets (§7). Build each mechanic with simple shapes first so gameplay work isn't blocked, then replace them with finished assets.
 - Tuning values (weapons, parts, enemies, gore, camera feel) go in `.tres` resource files, not in code.
+- Tests: keep them lean (owner, 2026-11-21: usage). Write tests only for what a player meets or what the APK build needs, a few per feature, not dozens. Locally run only the test files the change touches (`tools/check.sh -gselect=<file>`); CI runs the full suite on every push.
 - Typed GDScript. Treat static-typing warnings as errors.
 - Paid APIs (Meshy, ElevenLabs, Tripo3D): ask the owner first and say roughly how many calls you'll make. Tripo: one generation per asset, no variants or retries unless the owner asks (owner, 2026-11-17); the free rig-check before a rig.
 - Don't push git tags. The cloud GitHub proxy rejects them; CI creates release tags.
@@ -288,6 +289,7 @@ Each milestone ends with an APK on the owner's phone and an entry in `docs/playt
    2026-11-20 (owner: "an automatic rifle, like an assault rifle niche ... a very realistic Steyr AUG"): the AUG A1 (StG 77), traced from reference photos and checked against them by overlay; olive stock, 1.5x integral scope (aiming goes through it, circle reticle), progressive trigger (light pull single, full pull automatic), clear magazine showing the rounds left (design §4.10).
    2026-11-20 (owner: "the SPAS 12 ... stock folded up ... one-to-one with the actual SPAS 12"): the SPAS-12, traced from a studio photo with the stock folded and checked by overlay; pump only, and after every shot the gun comes up while the left hand racks the pump (Doom style); slower than the Saiga, more damage, a little more range, a tighter pattern and a smaller ring; a layered stereo boom (design §4.11).
    2026-11-21 (owner: the SPAS-12 "not nearly lethal enough ... birdshot", its sounds "an arcade game with coins"): far more damage per shell than the Saiga (game balance, not ballistics), kills throw men, hits stagger; the shot and pump replaced with real CC0 recordings (a Remington 870 rack; a Nova and a Mossberg on a range), design §4.11. The GTA-style category wheel of 2026-11-20 never reached a build (committed after its PR merged); it is in now.
+   2026-11-21 (owner: enemies "all mass together"): the squad splits into packs of 3; only 2 packs hunt at once, the rest hold 22 m off on their own side; new packs spawn apart (design §5.6a). The SPAS-12 walked back about 17 % (design §4.11).
    Next: more triad types and bosses (the Straw Sandal next), theme waves (design §8.8), then tuning from the owner's runs.
    Done when a run has a difficulty curve the owner wants to replay and builds that play differently.
 
