@@ -2,8 +2,7 @@
  "out": "raw_assets/audio/fetched",
  "opengameart": [
   "https://opengameart.org/content/the-free-firearm-sound-library",
-  "https://opengameart.org/content/shotgun-reload-sound-effects",
-  "https://opengameart.org/content/gunshot-sounds"
+  "https://opengameart.org/content/shotgun-reload-sound-effects"
  ],
  "freesound_ids": [
   "TotallyPhilip/755495",

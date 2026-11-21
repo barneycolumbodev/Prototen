@@ -18,6 +18,9 @@ import time
 import urllib.parse
 import urllib.request
 import zipfile
+import subprocess
+import tempfile
+import shutil
 import io
 
 UA = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36"
@@ -60,6 +63,30 @@ def save_file(data: bytes, path: str, keep: str) -> dict:
             open(dst, "wb").write(z.read(n))
             kept.append(dst)
         return {"path": base, "bytes": len(data), "kept": kept, "all_members": z.namelist()[:2000]}
+    if path.lower().endswith(".7z") and len(data) > 20 * 1024 * 1024:
+        base = path[:-3]
+        os.makedirs(base, exist_ok=True)
+        tmp = tempfile.mkdtemp()
+        arc = os.path.join(tmp, "a.7z")
+        open(arc, "wb").write(data)
+        listing = subprocess.run(["7z", "l", "-slt", arc], capture_output=True, text=True).stdout
+        members = [l[7:] for l in listing.splitlines() if l.startswith("Path = ")][1:]
+        want = [m for m in members if re.search(keep, m, re.I) and re.search(r"\.(wav|ogg|mp3|flac|aif|aiff|txt|pdf)$", m, re.I)]
+        kept = []
+        if want:
+            lst = os.path.join(tmp, "list.txt")
+            open(lst, "w").write("\n".join(want))
+            subprocess.run(["7z", "x", "-y", "-o" + os.path.join(tmp, "x"), arc, "@" + lst], capture_output=True)
+            for m in want:
+                src = os.path.join(tmp, "x", m)
+                if os.path.isfile(src) and os.path.getsize(src) < 40 * 1024 * 1024:
+                    dst = os.path.join(base, safe(m.replace("/", "__").replace("\\", "__")))
+                    shutil.copy(src, dst)
+                    kept.append(dst)
+        shutil.rmtree(tmp, ignore_errors=True)
+        return {"path": base, "bytes": len(data), "kept": kept, "all_members": members[:3000]}
+    if len(data) > 60 * 1024 * 1024:
+        return {"path": "", "bytes": len(data), "skipped": "too large to commit"}
     open(path, "wb").write(data)
     return {"path": path, "bytes": len(data)}
 
