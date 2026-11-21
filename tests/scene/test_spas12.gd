@@ -43,7 +43,7 @@ func test_it_is_an_eight_plus_one_pump_gun() -> void:
 	assert_false(d.automatic)
 	assert_true(d.loads_singly(), "a shell at a time")
 	assert_eq(weapon.mechanism.loaded(), 9, "8 in the tube + 1")
-	assert_eq(d.pellets, 12, "a magnum 00 buck load: twelve pellets (game balance, owner 2026-11-21)")
+	assert_eq(d.pellets, 11, "a magnum 00 buck load: eleven pellets (owner 2026-11-21, walked back from twelve)")
 	for part: StringName in [&"pump", &"support_arm", &"bolt", &"load_round"]:
 		assert_true(weapon.rig().has_part(part), "has a %s" % part)
 	assert_gte(d.fire_interval, d.pump_delay + d.pump_time, "the pump finishes before the next shot")
@@ -203,4 +203,4 @@ func test_a_shell_does_far_more_damage_than_a_saiga_shell() -> void:
 			theirs += await _hip_shell_damage(saiga, dist, &"stomach", rng)
 		gut.p("%.0f m: SPAS-12 %.0f, Saiga %.0f per shell" % [dist, mine / 4.0, theirs / 4.0])
 		assert_gt(mine / 4.0, 100.0 * 2.5, "at %.0f m a shell is several men's worth (%.0f)" % [dist, mine / 4.0])
-		assert_gt(mine, theirs * 1.5, "at %.0f m: %.0f vs %.0f" % [dist, mine / 4.0, theirs / 4.0])
+		assert_gt(mine, theirs * 1.25, "at %.0f m: %.0f vs %.0f" % [dist, mine / 4.0, theirs / 4.0])

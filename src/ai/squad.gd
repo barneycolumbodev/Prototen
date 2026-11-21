@@ -41,6 +41,13 @@ var tips: int = 0
 var relocate: Callable
 var relocations: int = 0
 var _role_timer: float = 0.0
+## Packs (HuntConfig "Packs"): the one being filled, how full it is, each
+## pack's bearing from him, when it last saw him, and which packs hunt.
+var _pack_next: int = 0
+var _pack_fill: int = 0
+var _pack_bearing: Dictionary[int, float] = {}
+var _pack_engaged: Dictionary[int, float] = {}
+var _pack_hunting: Dictionary[int, bool] = {}
 var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
 
 
@@ -67,6 +74,82 @@ func add(e: Enemy) -> void:
 	_prune()
 	members.append(e)
 	e.squad = self
+	if _pack_fill >= (hunt.pack_size if hunt else 3):
+		new_pack()
+	e.pack = _pack_next
+	_pack_fill += 1
+
+
+## The next man added starts a pack of his own (the spawner calls this
+## before each batch, so a batch comes in together).
+func new_pack() -> void:
+	if _pack_fill > 0:
+		_pack_next += 1
+		_pack_fill = 0
+
+
+## Does pack `k` hunt him right now? Everyone does when few are left.
+func is_hunting(k: int) -> bool:
+	if hunt == null or hunt.hunting_packs <= 0:
+		return true
+	var on: bool = _pack_hunting.get(k, false)
+	return on or fighting_count() <= hunt.last_count
+
+
+## Where a holding pack waits: `hold_distance` from him on its own bearing
+## (taken from where `e` is the first time), spread over `hold_scatter`.
+func hold_point(e: Enemy) -> Vector3:
+	var p: Player = player()
+	if p == null:
+		return e.global_position
+	if not _pack_bearing.has(e.pack):
+		var off: Vector3 = _flat(e.global_position - p.global_position)
+		_pack_bearing[e.pack] = atan2(off.x, off.z) if off.length_squared() > 0.01 else _rng.randf() * TAU
+	var b: float = _pack_bearing[e.pack]
+	return _scatter(p.global_position + Vector3(sin(b), 0.0, cos(b)) * hunt.hold_distance, hunt.hold_scatter)
+
+
+## Picks the packs that hunt: those that saw him lately first, then the
+## nearest, up to `hunting_packs`. A pack that starts hunting is sent at
+## him; one that stops is sent back to its holding point.
+func update_packs() -> void:
+	var p: Player = player()
+	if p == null or hunt == null:
+		return
+	var nearest: Dictionary[int, float] = {}
+	for e: Enemy in members:
+		if not e.alive or e.passive or e.state in [Enemy.State.SURRENDER, Enemy.State.CRAWL]:
+			continue
+		var d: float = e.global_position.distance_to(p.global_position)
+		var cur: float = nearest.get(e.pack, INF)
+		nearest[e.pack] = minf(cur, d)
+	var packs: Array = nearest.keys()
+	packs.sort_custom(func(a: int, b: int) -> bool:
+		var ta: float = _pack_engaged.get(a, -99.0)
+		var tb: float = _pack_engaged.get(b, -99.0)
+		var ea: bool = clock - ta < hunt.engaged_memory
+		var eb: bool = clock - tb < hunt.engaged_memory
+		if ea != eb:
+			return ea
+		var na: float = nearest[a]
+		var nb: float = nearest[b]
+		return na < nb)
+	var all: bool = hunt.hunting_packs <= 0 or fighting_count() <= hunt.last_count
+	for i: int in packs.size():
+		var k: int = packs[i]
+		var now: bool = all or i < hunt.hunting_packs
+		var was: Variant = _pack_hunting.get(k)
+		_pack_hunting[k] = now
+		if was != null and was == now:
+			continue
+		for e: Enemy in members:
+			if e.pack != k or not e.alive or e.passive or e.state not in [Enemy.State.IDLE, Enemy.State.ALERT]:
+				continue
+			if now:
+				var at: Vector3 = intel if intel != Vector3.INF else p.global_position
+				e.last_known = _scatter(at, hunt.tip_scatter + hunt.intel_noise * 0.5)
+			else:
+				e.last_known = hold_point(e)
 
 
 ## Drops freed members (bodies cleaned up, range targets replaced).
@@ -329,7 +412,7 @@ func _physics_process(delta: float) -> void:
 		if e.alive and e.sees_player:
 			seen_at = clock
 			intel = p.global_position
-			break
+			_pack_engaged[e.pack] = clock
 	var few: bool = fighting_count() <= hunt.last_count
 	var refresh: float = hunt.last_refresh if few else hunt.intel_refresh
 	if clock - maxf(seen_at, tip_at) > refresh:
@@ -337,6 +420,7 @@ func _physics_process(delta: float) -> void:
 	_role_timer -= delta
 	if _role_timer <= 0.0:
 		_role_timer = hunt.role_interval
+		update_packs()
 		assign_roles()
 
 
@@ -353,7 +437,12 @@ func _lookout_tip(p: Player, noise: float) -> void:
 			continue
 		if e.sees_player:
 			continue
-		e.last_known = _scatter(intel, 1.5)
+		if not is_hunting(e.pack):
+			# Holding off: keep to his side of the map, a step out of reach.
+			if e.state in [Enemy.State.IDLE, Enemy.State.ALERT]:
+				e.last_known = hold_point(e)
+			continue
+		e.last_known = _scatter(intel, hunt.tip_scatter)
 		e.awareness = maxf(e.awareness, 0.9)
 		if e.state == Enemy.State.IDLE:
 			e._enter(Enemy.State.ALERT)
@@ -376,6 +465,8 @@ func unstick(e: Enemy) -> bool:
 ## Where `e` should look next: the latest tip if he hasn't been there, or
 ## somewhere round it he hasn't checked.
 func search_point(e: Enemy) -> Vector3:
+	if hunt and not is_hunting(e.pack):
+		return hold_point(e)
 	var base: Vector3 = intel if intel != Vector3.INF else e.global_position
 	var r: float = hunt.search_radius if hunt else 6.0
 	if e.last_known == Vector3.INF or _flat(e.last_known - base).length() > r:
@@ -415,8 +506,8 @@ func assign_roles() -> void:
 		return
 	var gunmen: Array[Enemy] = []
 	for e: Enemy in members:
-		if not e.alive or e.passive or e.boss != null or e.melee != null or e.state != Enemy.State.COMBAT or not e.has_gun:
-			if e.alive and e.squad_role != Role.NONE and e.state != Enemy.State.COMBAT:
+		if not e.alive or e.passive or e.boss != null or e.melee != null or e.state != Enemy.State.COMBAT or not e.has_gun or not is_hunting(e.pack):
+			if e.alive and e.squad_role != Role.NONE and (e.state != Enemy.State.COMBAT or not is_hunting(e.pack)):
 				e.set_squad_role(Role.NONE)
 			continue
 		gunmen.append(e)
@@ -424,7 +515,7 @@ func assign_roles() -> void:
 	# where to put their rounds and where to go.
 	if clock - seen_at < 0.5 and intel != Vector3.INF:
 		for e: Enemy in members:
-			if e.alive and not e.sees_player and e.state == Enemy.State.COMBAT:
+			if e.alive and not e.sees_player and e.state == Enemy.State.COMBAT and is_hunting(e.pack):
 				e.last_known = intel
 	if not contact_fresh() or gunmen.is_empty():
 		for e: Enemy in gunmen:

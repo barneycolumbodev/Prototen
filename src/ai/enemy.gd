@@ -155,6 +155,8 @@ var _said_lost: bool = false
 ## What the squad has him doing while there's contact (Squad.assign_roles,
 ## docs/design.md §5.6a): pin, flank or push. NONE: his own judgment.
 var squad_role: Squad.Role = Squad.Role.NONE
+## Which pack of the squad he runs with (Squad.add).
+var pack: int = 0
 ## Where a flanker is running to, and when his last flank ended (-1: never).
 var flank_target: Vector3 = Vector3.INF
 var flank_done_at: float = -1.0

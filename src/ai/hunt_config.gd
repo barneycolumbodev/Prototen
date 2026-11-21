@@ -22,6 +22,24 @@ extends Resource
 ## Hunters run when the place they're heading is farther than this.
 @export var run_beyond: float = 10.0
 
+@export_group("Packs")
+## The squad splits into packs of this many (owner, 2026-11-21: "I don't
+## want them all massing together"). Each pack comes from its own side.
+@export var pack_size: int = 3
+## Only this many packs hunt him at once (tips, pin, flank, push), the ones
+## that saw him last or are nearest; the rest hold off in their own
+## direction until a hunting pack thins out or he walks into them.
+## 0: every pack hunts.
+@export var hunting_packs: int = 2
+## A holding pack waits this far from him, on its own bearing.
+@export var hold_distance: float = 22.0
+## How spread out a holding pack waits (metres).
+@export var hold_scatter: float = 4.0
+## A pack that saw him counts as engaged this long.
+@export var engaged_memory: float = 8.0
+## Hunters spread over this radius round a tip, so they don't stack up.
+@export var tip_scatter: float = 3.0
+
 @export_group("Pin and flank")
 ## Seconds between handing out roles.
 @export var role_interval: float = 1.0
