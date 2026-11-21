@@ -36,6 +36,7 @@ GUNS = {
     "governor": "assets/weapons/governor/governor.gltf",
     "slagger": "assets/weapons/slagger/slagger.gltf",
     "aug": "assets/weapons/aug/aug.gltf",
+    "spas12": "assets/weapons/spas12/spas12.gltf",
 }
 # Parts left out of the icon (shown only in some states in game).
 HIDE = {"lens", "reticle", "load_round", "plasma_core", "mag_rounds"}

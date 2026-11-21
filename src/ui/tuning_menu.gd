@@ -34,7 +34,7 @@ const WEAPON_PARAMS: Array = [
 	["Accuracy", "move_spread_deg", 0.0, 4.0, 0.05, "Moving spread (°)"],
 	["Accuracy", "air_spread_deg", 0.0, 6.0, 0.05, "In-the-air spread (°)"],
 	["Accuracy", "bloom_per_shot_deg", 0.0, 2.0, 0.05, "Bloom per shot (°)"],
-	["Fire", "fire_interval", 0.05, 0.6, 0.005, "Fastest follow-up (s)"],
+	["Fire", "fire_interval", 0.05, 1.2, 0.005, "Fastest follow-up (s)"],
 	["Fire", "fire_buffer", 0.0, 0.3, 0.01, "Trigger buffer (s)"],
 	["Carry", "carry_speed_scale", 0.3, 1.0, 0.01, "Move speed with gun"],
 	["Carry", "carry_sprint_scale", 0.3, 1.0, 0.01, "Sprint speed with gun"],
@@ -65,6 +65,9 @@ const WEAPON_PARAMS: Array = [
 	["Lever", "lever_hand_follow", 0.0, 1.0, 0.05, "Hand follows the lever"],
 	["Lever", "ragdoll_push", 0.5, 4.0, 0.1, "Throws the dead (×)"],
 	["Lever", "stagger_push", 0.0, 12.0, 0.5, "Shoves the living (m/s)"],
+	["Pump", "pump_delay", 0.0, 0.4, 0.01, "Pump starts after the shot (s)"],
+	["Pump", "pump_time", 0.25, 1.2, 0.01, "Raise, rack and lower (s)"],
+	["Pump", "pump_travel", 0.03, 0.14, 0.005, "Pump stroke (m)"],
 	["Plasma", "full_charge_time", 0.5, 5.0, 0.05, "Full charge after (s)"],
 	["Plasma", "min_charge", 0.0, 0.5, 0.01, "Fizzles below (charge)"],
 	["Plasma", "overload_time", 0.5, 8.0, 0.25, "Overload after full (s)"],
@@ -258,6 +261,8 @@ static func shows(param: Array, data: WeaponData) -> bool:
 		return data.plasma != null
 	if param[0] == "Lever":
 		return data.lever_action
+	if param[0] == "Pump":
+		return data.pump_action
 	if param[0] == "Ballistics":
 		return data.grenade == null and data.plasma == null
 	return true

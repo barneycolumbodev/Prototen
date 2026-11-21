@@ -393,7 +393,8 @@ func _process(delta: float) -> void:
 		if cam:
 			_reticle.gap_px = spread_to_pixels(weapon.reticle_spread, cam.fov, _reticle.size.y) + 3.0
 			_scope.fov_deg = cam.fov
-		_reticle.alpha = 0.0 if weapon.laser_on() else clampf(1.0 - weapon.ads_visual() * 2.0, 0.0, 1.0)
+		_reticle.alpha = 0.0 if weapon.laser_on() else (1.0 if weapon.data.reticle_when_aimed
+				else clampf(1.0 - weapon.ads_visual() * 2.0, 0.0, 1.0))
 		_reticle.aim_offset = aim_offset_px(weapon, cam, _reticle.size)
 		_reticle.reload = weapon.mechanism.reload_progress()
 		_reticle.shape = reticle_shape(weapon)
