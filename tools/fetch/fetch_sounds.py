@@ -17,9 +17,13 @@ import sys
 import time
 import urllib.parse
 import urllib.request
+import zipfile
+import io
 
 UA = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36"
-MAX_BYTES = 40 * 1024 * 1024
+MAX_BYTES = 900 * 1024 * 1024
+# Big archives: only members whose path matches this are kept (sound_sources.json "keep").
+KEEP_DEFAULT = r"shotgun|870|mossberg|pump|12 ?ga|benelli|spas"
 
 
 def get(url: str, binary: bool = False):
@@ -40,7 +44,27 @@ def is_cc0(text: str) -> bool:
     return "publicdomain/zero" in t or "cc0" in t or "creative commons 0" in t
 
 
-def oga_page(url: str, out: str, manifest: list) -> None:
+def save_file(data: bytes, path: str, keep: str) -> dict:
+    """Small files as they are; archives over 20 MB only their matching members."""
+    if path.lower().endswith(".zip") and len(data) > 20 * 1024 * 1024:
+        z = zipfile.ZipFile(io.BytesIO(data))
+        base = path[:-4]
+        os.makedirs(base, exist_ok=True)
+        kept = []
+        for n in z.namelist():
+            if n.endswith("/") or not re.search(keep, n, re.I):
+                continue
+            if not re.search(r"\.(wav|ogg|mp3|flac|aif|aiff|txt|pdf)$", n, re.I):
+                continue
+            dst = os.path.join(base, safe(n.replace("/", "__")))
+            open(dst, "wb").write(z.read(n))
+            kept.append(dst)
+        return {"path": base, "bytes": len(data), "kept": kept, "all_members": z.namelist()[:2000]}
+    open(path, "wb").write(data)
+    return {"path": path, "bytes": len(data)}
+
+
+def oga_page(url: str, out: str, manifest: list, keep: str = KEEP_DEFAULT) -> None:
     page = get(url)
     m = re.search(r'field-name-field-art-licenses.*?</div>\s*</div>\s*</div>', page, re.S)
     lic_block = m.group(0) if m else ""
@@ -62,9 +86,9 @@ def oga_page(url: str, out: str, manifest: list) -> None:
             continue
         try:
             data = get(f, True)
-            path = os.path.join(out, "oga_" + name)
-            open(path, "wb").write(data)
-            entry["files"].append({"url": f, "path": path, "bytes": len(data)})
+            info = save_file(data, os.path.join(out, "oga_" + name), keep)
+            info["url"] = f
+            entry["files"].append(info)
         except Exception as e:  # noqa: BLE001
             entry["files"].append({"url": f, "error": str(e)})
         time.sleep(1)
@@ -92,6 +116,9 @@ def freesound_sound(user: str, sid: str, out: str, manifest: list, seen: set) ->
     lic = re.search(r'href="(https?://creativecommons\.org/[^"]+)"', page)
     desc = re.search(r'<meta property="og:description" content="([^"]*)"', page)
     hq = audio.group(1) if audio else ""
+    if hq.startswith("/"):
+        hq = "https://freesound.org" + hq
+    hq = re.sub(r"^https://freesound\.org(?=https?://)", "", hq)
     entry = {"source": "freesound", "page": url, "id": sid, "author": user,
              "title": html.unescape(title.group(1)) if title else "",
              "license": lic.group(1) if lic else "",
@@ -119,7 +146,7 @@ def main() -> int:
     errors: list = []
     for url in cfg.get("opengameart", []):
         try:
-            oga_page(url, out, manifest)
+            oga_page(url, out, manifest, cfg.get("keep", KEEP_DEFAULT))
         except Exception as e:  # noqa: BLE001
             errors.append({"page": url, "error": str(e)})
         time.sleep(1)
