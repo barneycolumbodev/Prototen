@@ -1,0 +1,29 @@
+# Fetch candidate CC0 sound recordings from hosts the cloud session can't
+# reach (CLAUDE.md §10.1) and commit them to the branch that ran it, under
+# raw_assets/audio/fetched/ with a manifest of pages and licenses. Runs when
+# the source list changes, or by hand.
+name: Fetch sounds
+
+on:
+  push:
+    paths: ["tools/fetch/sound_sources.json", "tools/fetch/fetch_sounds.py"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  fetch:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch
+        run: python3 tools/fetch/fetch_sounds.py tools/fetch/sound_sources.json
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add raw_assets/audio/fetched
+          git commit -m "Fetched sound candidates (Fetch sounds workflow)" || exit 0
+          git push origin HEAD:${GITHUB_REF_NAME}

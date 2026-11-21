@@ -1,0 +1,14 @@
+{
+ "out": "raw_assets/audio/fetched",
+ "opengameart": [
+  "https://opengameart.org/content/the-free-firearm-sound-library",
+  "https://opengameart.org/content/gun-reload-sounds",
+  "https://opengameart.org/content/shotgun-reload-sound-effects",
+  "https://opengameart.org/content/gunshot-sounds",
+  "https://opengameart.org/content/gunshots",
+  "https://opengameart.org/content/gun-sound-effects"
+ ],
+ "freesound_ids": ["anon/370344", "KVV_Audio/790980"],
+ "freesound_queries": ["pump shotgun", "shotgun pump", "shotgun rack", "shotgun cocking", "remington 870", "mossberg 500", "12 gauge shotgun shot", "shotgun blast"],
+ "per_query": 8
+}
