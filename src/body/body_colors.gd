@@ -26,9 +26,10 @@ const FINISH_SURF: Array[Vector2] = [Vector2(-1, -1), Vector2(0.8, 0.0), Vector2
 const SUIT_REF: Array[float] = [0.009, 0.03, 0.017, 0.009, 0.009, 0.009, 0.009, 0.014, 0.125, 0.72]
 ## The arms' texture sets were baked from lighter materials.
 const ARMS_REF: Array[float] = [0.024, 0.03, 0.047, 0.024, 0.047, 0.024, 0.024, 0.024, 0.032, 0.55]
-## Material names on unbaked models (the actives' arms) -> suit channel.
+## Material names on unbaked models (the actives' arms, first-person legs) -> suit channel.
 const NAME_CHANNEL: Dictionary[String, StringName] = {
 	"graft": &"arms", "weave": &"undersuit", "polymer": &"hands", "gunmetal": &"trim",
+	"leg_plate": &"legs", "boot": &"boots", "sole": &"boots",
 }
 ## Swatches for the quick palette (name, colour).
 const PALETTE: Array[Array] = [

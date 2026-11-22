@@ -455,11 +455,11 @@ func charge_power(since_shot: float) -> float:
 
 ## Full-width spread cone in degrees for the current state.
 ## `stability` (body stat) divides the movement and air penalties.
-func spread_deg(aim: float, move_fraction: float, airborne: bool, bloom: float, hip_walk: float = 0.0, stability: float = 1.0) -> float:
+func spread_deg(aim: float, move_fraction: float, airborne: bool, bloom: float, hip_walk: float = 0.0, stability: float = 1.0, air_scale: float = 1.0) -> float:
 	var st: float = maxf(stability, 0.1)
 	var extra: float = move_spread_deg * clampf(move_fraction, 0.0, 1.0) / st + bloom + hip_walk
 	if airborne:
-		extra += air_spread_deg / st
+		extra += air_spread_deg * air_scale / st
 	var mech: float = mechanical_moa / 60.0
 	var hip: float = maxf(hip_spread_deg + extra, mech)
 	# Aimed: the gun's own precision plus a fraction of the movement/bloom penalty.

@@ -132,6 +132,11 @@ var _launch_tumble: float = 0.0
 var _launch_axis: Vector3 = Vector3.RIGHT
 var _launch_tilt: float = 0.0
 var _launch_stun: float = 0.0
+var _launch_from: Node
+var _launch_wall_damage: float = 0.0
+var _launch_wall_hit: bool = false
+var _launch_domino: bool = false
+var _launch_domino_hit: Array[Node] = []
 const GRAVITY: float = 20.0
 ## Height (m) of the point his body tumbles about (about his hips).
 const TUMBLE_PIVOT: float = 1.0
@@ -407,16 +412,26 @@ func knock_back(push: Vector3, from: Node, damage: float, morale_loss: float) ->
 		die(null, &"chest", &"impact")
 
 
-## Knocked into the air by a slide (no damage): `v` (m/s, world) sends him
-## up and along; he falls under `gravity`, tumbling back up to `tumble_deg`
-## (feet swept out, head toward whoever hit him), can't shoot or think while
-## he's up, and needs `stun` seconds on the ground after he lands. A kill in
-## the air sends the ragdoll on with his flight (die() uses his velocity).
-func launch(v: Vector3, from: Node, morale_loss: float, gravity: float, tumble_deg: float, stun: float) -> void:
+## Knocked into the air by a slide (no damage) or a dropkick (blunt impact,
+## wall-slam, domino): `v` (m/s, world) sends him up and along; he falls under
+## `gravity`, tumbling back up to `tumble_deg` (feet swept out, head toward
+## whoever hit him), can't shoot or think while he's up, and needs `stun`
+## seconds on the ground after he lands. A kill on impact or in the air sends
+## the ragdoll on with his flight (die() uses his velocity).
+func launch(v: Vector3, from: Node, morale_loss: float, gravity: float, tumble_deg: float, stun: float,
+		damage: float = 0.0, max_speed: float = 10.0, wall_slam_damage: float = 0.0, domino: bool = false) -> void:
 	if not alive or held or _thrown_speed > 0.0 or boss:
 		return
 	if melee:
 		melee.reset()
+	var flat: Vector3 = Vector3(v.x, 0.0, v.z)
+	var dir: Vector3 = flat.normalized() if flat.length() > 0.05 else -global_basis.z
+	if damage > 0.0:
+		health -= damage
+		if health <= 0.0:
+			velocity = Vector3(flat.x, maxf(v.y, 2.5), flat.z).limit_length(max_speed)
+			die(null, &"chest", &"impact")
+			return
 	launched = true
 	_launch_air = true
 	_launch_time = 0.0
@@ -424,13 +439,16 @@ func launch(v: Vector3, from: Node, morale_loss: float, gravity: float, tumble_d
 	_launch_air_time = 2.0 * maxf(v.y, 0.5) / _launch_gravity
 	_launch_tumble = deg_to_rad(tumble_deg) * _rng.randf_range(0.85, 1.15)
 	_launch_stun = stun
-	var flat: Vector3 = Vector3(v.x, 0.0, v.z)
-	var dir: Vector3 = flat.normalized() if flat.length() > 0.05 else -global_basis.z
+	_launch_from = from
+	_launch_wall_damage = wall_slam_damage
+	_launch_wall_hit = false
+	_launch_domino = domino
+	_launch_domino_hit.clear()
 	# Top of the body toward -dir: about dir × up, a little skewed so no two
 	# launches look the same.
 	var axis_world: Vector3 = dir.cross(Vector3.UP).rotated(Vector3.UP, _rng.randf_range(-0.35, 0.35))
 	_launch_axis = (global_basis.inverse() * axis_world).normalized()
-	_knock = flat.limit_length(10.0)
+	_knock = flat.limit_length(max_speed)
 	velocity.y = v.y
 	_stop()
 	body.play_stumble()
@@ -452,6 +470,16 @@ func _update_launch(delta: float) -> bool:
 	if _launch_air:
 		var f: float = clampf(_launch_time / _launch_air_time, 0.0, 1.0)
 		_launch_tilt = _launch_tumble * pow(sin(PI * minf(f * 1.15, 1.0)), 0.6)
+		if _launch_domino and _knock.length() > 4.5:
+			var at: Vector3 = body.chest_position()
+			for n: Node in get_tree().get_nodes_in_group(&"enemies"):
+				var other: Enemy = n as Enemy
+				if other == null or other == self or not other.alive or n in _launch_domino_hit:
+					continue
+				if other.body.chest_position().distance_to(at) < 0.85:
+					_launch_domino_hit.append(n)
+					other.knock_back(_knock * 0.55 + Vector3.UP * 2.2, _launch_from, 14.0, 0.25)
+					Sfx.play_at(&"body_fall", at, -1.0, 0.1)
 		if _launch_time > 0.12 and is_on_floor() and velocity.y <= 0.0:
 			_launch_air = false
 			_launch_time = 0.0
@@ -1632,9 +1660,28 @@ func _move(delta: float) -> void:
 		_knock = _knock.move_toward(Vector3.ZERO, KNOCK_DECAY * (0.1 if _launch_air else 1.0) * delta)
 	var g: float = _launch_gravity if _launch_air else GRAVITY
 	var vy: float = velocity.y - g * delta if (not is_on_floor() or velocity.y > 0.0) else -0.5
+	var pre_knock: Vector3 = _knock
 	velocity = Vector3(horizontal.x, vy, horizontal.z)
 	var before_pos: Vector3 = global_position
 	move_and_slide()
+	if launched and _launch_air and not _launch_wall_hit and _launch_wall_damage > 0.0 \
+			and is_on_wall() and pre_knock.length() > 4.5:
+		for i: int in get_slide_collision_count():
+			var n: Vector3 = get_slide_collision(i).get_normal()
+			if absf(n.y) < 0.4:
+				_launch_wall_hit = true
+				var at: Vector3 = body.chest_position()
+				Sfx.play_at(&"impact_concrete", at, 1.0, 0.08)
+				Sfx.play_at(&"body_fall", at, 1.5, 0.1)
+				Gore.spray(at, n, 1.1, 6)
+				_launch_stun += 0.45
+				_knock = Vector3(pre_knock.x, 0.0, pre_knock.z).bounce(Vector3(n.x, 0.0, n.z).normalized()) * 0.35
+				health -= _launch_wall_damage
+				if health <= 0.0:
+					velocity = n * 2.2 + Vector3.UP * 1.4
+					die(null, &"chest", &"impact")
+					return
+				break
 	if is_on_floor() and want == Vector3.ZERO and _knock.length_squared() < 0.0001 and not launched \
 			and absf(velocity.x) < 0.001 and absf(velocity.z) < 0.001 \
 			and before_pos.distance_squared_to(global_position) < 1e-6:

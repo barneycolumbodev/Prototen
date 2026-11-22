@@ -838,12 +838,16 @@ func _physics_process(delta: float) -> void:
 	_player.auto_sprint_blocked = (held or pull) and not run_gun
 	if ((pull and not run_gun) or aim_held) and _player.is_sprinting():
 		_player.stop_sprint()
-	if _player.is_sprinting() and not run_gun:
+	if _player.is_dropkicking():
+		_sprint_out = 0.0
+		if pull or held or aim_held:
+			_player.dropkick_notify_gun_action()
+	elif _player.is_sprinting() and not run_gun:
 		_sprint_out = data.sprint_to_fire / handling()
 	else:
 		_sprint_out = maxf(0.0, _sprint_out - delta)
 	var sprint_block: bool = _player.is_sprinting() and not run_gun
-	var blocked: bool = sprint_block or _sprint_out > 0.0 or is_switching() or _player.is_mantling() or stowed
+	var blocked: bool = sprint_block or _sprint_out > 0.0 or is_switching() or _player.is_mantling() or _player.dropkick_fire_blocked() or stowed
 	if data.plasma:
 		# Charge while held, fire on letting go (the mechanism sees one pull).
 		pull = _plasma_trigger(delta, held, pull, blocked or wheel_open)
@@ -877,7 +881,13 @@ func _physics_process(delta: float) -> void:
 	var walk: float = minf(sustained * data.hip_walk_deg_s, data.hip_walk_max_deg)
 	var r: WeaponData = round_data()
 	# Stability divides the movement and air penalties; proficiency tightens the whole cone (÷ √).
-	spread = r.spread_deg(ads, _move_fraction(), not _player.is_on_floor(), bloom, walk, _stat(&"stability")) / sqrt(proficiency())
+	# Diving in a dropkick locks the wrists for crisp Max Payne / John Woo aerial gunplay.
+	var move_f: float = _move_fraction()
+	var air_k: float = 1.0
+	if _player.is_dropkicking() and _player.dropkick_config:
+		move_f *= _player.dropkick_config.dive_move_spread_scale
+		air_k = _player.dropkick_config.dive_air_spread_scale
+	spread = r.spread_deg(ads, move_f, not _player.is_on_floor(), bloom, walk, _stat(&"stability"), air_k) / sqrt(proficiency())
 	reticle_spread = spread + (r.pattern_deg if r.pellets > 1 else 0.0)
 	_check_enemy()
 	if data.grenade:
@@ -920,6 +930,26 @@ func _process(delta: float) -> void:
 		var mc: MeleeConfig = _player.melee.cfg
 		s.rig.transform.basis = Basis.from_euler(mc.gun_away_rot_deg * (PI / 180.0) * away) * s.rig.transform.basis
 		s.rig.transform.origin += mc.gun_away_offset * away
+	var dk_cfg: DropkickConfig = _player.dropkick_config
+	if dk_cfg:
+		var tuck: float = _player.dropkick_gun_tuck()
+		var dive: float = _player.dropkick_gun_dive() * (1.0 - a)
+		if tuck > 0.001:
+			var t_e: float = tuck * tuck * (3.0 - 2.0 * tuck)
+			s.rig.transform.basis = Basis.from_euler(dk_cfg.tuck_rot_deg * (PI / 180.0) * t_e) * s.rig.transform.basis
+			s.rig.transform.origin += dk_cfg.tuck_offset * t_e
+		if dive > 0.001:
+			var d_e: float = dive * dive * (3.0 - 2.0 * dive)
+			var cant_k: float = 1.0
+			if data.weapon_class == WeaponData.WeaponClass.HEAVY:
+				cant_k = 0.6
+			elif data.weapon_class == WeaponData.WeaponClass.RIFLE or data.weapon_class == WeaponData.WeaponClass.SHOTGUN:
+				cant_k = 0.78
+			var cant_rad: float = -deg_to_rad(dk_cfg.dive_cant_deg * cant_k) * _player.dropkick_roll_sign() * d_e
+			var piv: Vector3 = data.grip_pivot
+			var cant_x: Transform3D = Transform3D(Basis(), piv) * Transform3D(Basis(Vector3.RIGHT, cant_rad), Vector3.ZERO) * Transform3D(Basis(), -piv)
+			s.rig.transform = s.rig.transform * cant_x
+			s.rig.transform.origin += dk_cfg.dive_offset * d_e
 	s.rig.set_slide(s.motion.slide * data.slide_travel)
 	if data.charging_handle_travel > 0.0:
 		s.rig.set_charging_handle(data.charging_handle_travel if s.motion.slide_locked() else 0.0)
@@ -995,7 +1025,7 @@ func _update_laser(s: Slot) -> void:
 		return
 	var cam: Camera3D = _player.camera()
 	var knife: float = _player.melee.gun_away() if _player.melee else 0.0
-	var away: bool = stowed or is_switching() or not s.rig.visible or knife > 0.5
+	var away: bool = stowed or is_switching() or not s.rig.visible or knife > 0.5 or _player.dropkick_gun_tuck() > 0.5
 	if data.laser_range <= 0.0 or cam == null or not cam.is_inside_tree() or away:
 		laser.hide_laser()
 		return
