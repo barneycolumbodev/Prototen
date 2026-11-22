@@ -448,6 +448,7 @@ func _ready() -> void:
 	add_child(_gauge)
 	Input.joy_connection_changed.connect(func(_device: int, _connected: bool) -> void: _update_pad_notice())
 	EventBus.target_hit.connect(_on_target_hit)
+	EventBus.dropkick_impact.connect(_on_dropkick_impact)
 	_update_pad_notice()
 
 
@@ -648,6 +649,17 @@ func _on_weapon_changed(data: WeaponData) -> void:
 func _on_target_hit(kind: StringName, hit: BallisticHit) -> void:
 	if hit.shooter and hit.shooter.is_in_group(&"player"):
 		_reticle.show_marker(kind)
+
+
+func _on_dropkick_impact(victim: Node, _push: float) -> void:
+	var alive_now: bool = true
+	var e: Enemy = victim as Enemy
+	var d: AttackDog = victim as AttackDog
+	if e != null:
+		alive_now = e.alive
+	elif d != null:
+		alive_now = d.alive
+	_reticle.show_marker(&"hit" if alive_now else &"kill")
 
 
 func _update_pad_notice() -> void:

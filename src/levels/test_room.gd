@@ -180,6 +180,10 @@ func _ready() -> void:
 			var sd: SlideDemo = SlideDemo.new()
 			sd.room = self
 			add_child(sd)
+		elif arg == "--demo=dropkick":
+			var dkd: DropkickDemo = DropkickDemo.new()
+			dkd.room = self
+			add_child(dkd)
 		elif arg.begins_with("--demo="):
 			var demo: GunplayDemo = GunplayDemo.new()
 			demo.room = self

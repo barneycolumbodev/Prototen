@@ -136,6 +136,19 @@ const MOVE_PARAMS: Array = [
 	["Gait", "step_volume_db", -40.0, 0.0, 0.5, "Footstep volume (dB)"],
 ]
 
+## Dropkick feel (data/player/dropkick_default.tres; docs/design.md §5.7b).
+const DROPKICK_PARAMS: Array = [
+	["Dropkick", "launch_speed", 7.0, 20.0, 0.2, "Launch speed (m/s)"],
+	["Dropkick", "launch_up", 0.0, 7.0, 0.1, "Launch up pop (m/s)"],
+	["Dropkick", "gravity_scale", 0.35, 1.2, 0.02, "Dive gravity (×)"],
+	["Dropkick", "launch_forward_speed", 2.0, 12.0, 0.2, "Enemy knockback: along (m/s)"],
+	["Dropkick", "launch_up_speed", 2.0, 10.0, 0.2, "Enemy knockback: up (m/s)"],
+	["Dropkick", "rebound_back", 0.0, 8.0, 0.2, "Rebound back (m/s)"],
+	["Dropkick", "rebound_up", 0.0, 7.0, 0.2, "Rebound up (m/s)"],
+	["Dropkick", "dive_cant_deg", 0.0, 35.0, 1.0, "Gun dive cant (°)"],
+	["Dropkick", "dive_roll_deg", 0.0, 18.0, 0.5, "Camera dive roll (°)"],
+]
+
 ## Dismemberment and blood (data/gore/gore_default.tres; 2026-11-11).
 const GORE_PARAMS: Array = [
 	["Gore", "toughness", 0.3, 3.0, 0.05, "Body toughness (× cut thresholds)"],
@@ -144,6 +157,7 @@ const GORE_PARAMS: Array = [
 
 var _root: Control
 var _move: MovementConfig
+var _dropkick: DropkickConfig
 var _list: VBoxContainer
 var _readout: TextEdit
 var _first_focus: Control
@@ -171,6 +185,7 @@ func open() -> void:
 	_weapon = player.weapon()
 	_assist = player.aim_assist.config if player.aim_assist else null
 	_move = player.movement
+	_dropkick = player.dropkick_config
 	_build()
 	_root.visible = true
 	DebugOverlay.visible = false
@@ -223,6 +238,16 @@ func save() -> void:
 			var prop: String = p[1]
 			cfg.set_value("movement", prop, _move.get(prop))
 		cfg.set_value("movement", MOVEMENT_VERSION_KEY, MOVEMENT_VERSION)
+	if _dropkick:
+		if cfg.has_section("dropkick"):
+			cfg.erase_section("dropkick")
+		var def_dk: DropkickConfig = ResourceLoader.load(_dropkick.resource_path, "", ResourceLoader.CACHE_MODE_IGNORE) as DropkickConfig
+		for p: Array in DROPKICK_PARAMS:
+			var prop: String = p[1]
+			var val: Variant = _dropkick.get(prop)
+			if def_dk and _same(val, def_dk.get(prop)):
+				continue
+			cfg.set_value("dropkick", prop, val)
 	for p: Array in GORE_PARAMS:
 		var prop: String = p[1]
 		cfg.set_value("gore", prop, Gore.config.get(prop))
@@ -338,7 +363,18 @@ static func load_saved_all(weapon: PlayerWeapon, assist: AimAssistConfig) -> voi
 	var player: Player = weapon.get_parent() as Player
 	if player:
 		load_saved_movement(player.movement)
+		load_saved_dropkick(player.dropkick_config)
 	load_saved_gore()
+
+
+## Applies saved dropkick tuning (the player's DropkickConfig).
+static func load_saved_dropkick(dk: DropkickConfig) -> void:
+	var cfg: ConfigFile = ConfigFile.new()
+	if dk == null or cfg.load(SAVE_PATH) != OK or not cfg.has_section("dropkick"):
+		return
+	for prop: String in cfg.get_section_keys("dropkick"):
+		if prop in dk:
+			dk.set(prop, cfg.get_value("dropkick", prop))
 
 
 ## Applies saved gore tuning (Gore.config).
@@ -438,6 +474,11 @@ func values_text() -> String:
 		for p: Array in MOVE_PARAMS:
 			var prop: String = p[1]
 			lines.append("%s = %s" % [prop, var_to_str(_move.get(prop))])
+	if _dropkick:
+		lines.append("# dropkick (data/player/dropkick_default.tres)")
+		for p: Array in DROPKICK_PARAMS:
+			var prop: String = p[1]
+			lines.append("%s = %s" % [prop, var_to_str(_dropkick.get(prop))])
 	lines.append("# gore (data/gore/gore_default.tres)")
 	for p: Array in GORE_PARAMS:
 		var prop: String = p[1]
@@ -487,7 +528,7 @@ func _build() -> void:
 			stats.reset())
 	_button("Restore defaults", _on_defaults)
 	var section: String = ""
-	for p: Array in WEAPON_PARAMS + (ASSIST_PARAMS if _assist else []) + (MOVE_PARAMS if _move else []) + GORE_PARAMS:
+	for p: Array in WEAPON_PARAMS + (ASSIST_PARAMS if _assist else []) + (MOVE_PARAMS if _move else []) + (DROPKICK_PARAMS if _dropkick else []) + GORE_PARAMS:
 		if not shows(p, _weapon.data):
 			continue
 		var sec: String = p[0]
@@ -504,6 +545,8 @@ func _build() -> void:
 				target = _assist
 			"Movement", "Gait":
 				target = _move
+			"Dropkick":
+				target = _dropkick
 			"Gore":
 				target = Gore.config
 		var prop: String = p[1]
@@ -607,6 +650,12 @@ func _on_defaults() -> void:
 			for p: Array in MOVE_PARAMS:
 				var prop: String = p[1]
 				_move.set(prop, fresh_move.get(prop))
+	if _dropkick:
+		var fresh_dk: DropkickConfig = ResourceLoader.load(_dropkick.resource_path, "", ResourceLoader.CACHE_MODE_IGNORE) as DropkickConfig
+		if fresh_dk:
+			for p: Array in DROPKICK_PARAMS:
+				var prop: String = p[1]
+				_dropkick.set(prop, fresh_dk.get(prop))
 	var fresh_gore: GoreConfig = ResourceLoader.load(Gore.config.resource_path, "", ResourceLoader.CACHE_MODE_IGNORE) as GoreConfig
 	if fresh_gore:
 		for p: Array in GORE_PARAMS:

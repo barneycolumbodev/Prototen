@@ -1,0 +1,74 @@
+[gd_resource type="Resource" script_class="DropkickConfig" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://src/player/dropkick_config.gd" id="1_cfg"]
+[ext_resource type="PackedScene" path="res://assets/characters/fp_legs/fp_legs.gltf" id="2_legs"]
+
+[resource]
+script = ExtResource("1_cfg")
+min_air_time = 0.08
+land_grace_height = 0.28
+cooldown = 0.45
+launch_speed = 12.2
+speed_boost = 2.6
+max_speed = 15.5
+launch_up = 2.1
+keep_up_fraction = 0.15
+gravity_scale = 0.72
+air_steer = 1.6
+assist_range = 6.5
+assist_cone_deg = 26.0
+assist_strength = 0.65
+hit_reach = 1.35
+hit_vertical_reach = 1.65
+cluster_window = 0.055
+knock_speed = 9.5
+knock_ref_speed = 12.5
+launch_up_speed = 5.4
+launch_forward_speed = 6.8
+launch_scale_min = 0.85
+launch_scale_max = 1.55
+launch_max_speed = 12.0
+launch_gravity = 11.2
+launch_tumble_deg = 78.0
+launch_stun = 1.15
+damage = 36.0
+lethal_push = 19.0
+wall_slam_damage = 30.0
+morale_loss = 0.35
+rebound_up = 3.3
+rebound_back = 4.2
+rebound_gravity_scale = 0.68
+recover_time = 0.30
+recover_friction = 16.0
+recover_jump_cancel_at = 0.55
+dive_fov_deg = 8.5
+rebound_fov_deg = 5.5
+dive_roll_deg = 8.5
+dive_eye_height = 1.18
+launch_kick_deg = Vector3(4.5, 0, -3.5)
+impact_kick_deg = Vector3(5.5, 0, 5)
+hitstop_time = 0.065
+hitstop_scale = 0.08
+slowmo_time = 0.28
+slowmo_scale = 0.55
+rumble_launch = Vector3(0.35, 0.45, 0.1)
+rumble_impact = Vector3(0.95, 1, 0.22)
+rumble_land = Vector3(0.45, 0.65, 0.12)
+fire_lock_time = 0.06
+tuck_in_time = 0.06
+tuck_hold_time = 0.13
+draw_up_time = 0.14
+tuck_offset = Vector3(0.08, -0.24, 0.07)
+tuck_rot_deg = Vector3(-24, -10, -28)
+dive_offset = Vector3(-0.022, 0.015, -0.022)
+dive_cant_deg = 20.0
+dive_air_spread_scale = 0.2
+dive_move_spread_scale = 0.45
+legs_scene = ExtResource("2_legs")
+chamber_time = 0.055
+extend_time = 0.095
+retract_time = 0.18
+yaw_follow_max_deg = 42.0
+pitch_counter_share = 0.65
+trail_time = 0.08
+trail_color = Color(0.78, 0.9, 1, 0.34)

@@ -36,6 +36,9 @@ signal wave_changed(wave: int, left: int)
 ## The player slid into a living enemy and shoved him (m/s given to him).
 @warning_ignore("unused_signal")
 signal slide_impact(enemy: Node, push: float)
+## The player dropkicked a living enemy in midair (m/s launch shove given to him).
+@warning_ignore("unused_signal")
+signal dropkick_impact(enemy: Node, push: float)
 ## Pause menu: start or stop wave mode.
 @warning_ignore("unused_signal")
 signal wave_mode_requested

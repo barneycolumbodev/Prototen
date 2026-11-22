@@ -68,7 +68,7 @@ func _physics_process(delta: float) -> void:
 	cooldown -= delta
 	var pressed: bool = _scripted or (player.input_enabled and not player.look_blocked and Input.is_action_just_pressed(&"melee"))
 	_scripted = false
-	if pressed and cooldown <= 0.0 and windup_left < 0.0 and not player.dead and not player.is_mantling():
+	if pressed and cooldown <= 0.0 and windup_left < 0.0 and not player.dead and not player.is_mantling() and not player.is_dropkicking():
 		_start()
 	if windup_left >= 0.0:
 		windup_left -= delta
