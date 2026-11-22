@@ -10,7 +10,6 @@ extends ActivePartData
 ## area where you're aiming. It throws back exactly what it caught.
 ## Tuning in data/body/parts/lc6_lorentz_catcher.tres.
 
-@export var scene: PackedScene
 @export var viewmodel: ViewmodelConfig
 
 @export_group("Field")

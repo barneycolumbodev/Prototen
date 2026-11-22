@@ -11,9 +11,12 @@ extends Node
 ## MIN_SCALE. Off in the pause menu (Render scale: fixed), and held still
 ## during benchmarks.
 
-const WINDOW: float = 0.5
+const WINDOW: float = 0.75
 const MIN_SCALE: float = 0.6
-const STEP_UP: float = 0.05
+## Discrete resolution tiers: avoids the 0.90-0.99 band where Mobile Vulkan's
+## extra upscale pass costs nearly as much as rendering at 1.0, and reduces
+## framebuffer reallocations on Mali.
+const STEPS: Array[float] = [0.6, 0.67, 0.75, 0.85, 1.0]
 ## Budget as a share of the frame (leaves room for the CPU and vsync jitter).
 const BUDGET_SHARE: float = 0.88
 ## Missed frames only count against resolution when the GPU timer is silent
@@ -87,6 +90,21 @@ static func is_calm(gpu_ms: float, frame_ms: float, budget_ms: float) -> bool:
 	return gpu_ok and (frame_ms < budget_ms * 1.06 or gpu_idle)
 
 
+static func _snap_down(want: float, current: float) -> float:
+	var limit: float = minf(want, current - 0.001)
+	for i: int in range(STEPS.size() - 1, -1, -1):
+		if STEPS[i] <= limit + 0.001:
+			return STEPS[i]
+	return MIN_SCALE
+
+
+static func _step_up(current: float) -> float:
+	for s: float in STEPS:
+		if s > current + 0.001:
+			return s
+	return STEPS[STEPS.size() - 1]
+
+
 ## The next scale for one window of measurements. Pure, for tests.
 static func step(current: float, gpu_ms: float, frame_ms: float, budget_ms: float, calm_windows: int) -> float:
 	var target: float = budget_ms * BUDGET_SHARE
@@ -96,9 +114,10 @@ static func step(current: float, gpu_ms: float, frame_ms: float, budget_ms: floa
 		load_ms = maxf(load_ms, frame_ms * BUDGET_SHARE)
 	if load_ms > target:
 		var k: float = sqrt(target / load_ms)
-		return maxf(MIN_SCALE, maxf(current * k, current - 0.15))
+		var want: float = maxf(MIN_SCALE, maxf(current * k, current - 0.15))
+		return _snap_down(want, current)
 	if is_calm(gpu_ms, frame_ms, budget_ms) and calm_windows >= 3:
-		return current + STEP_UP
+		return _step_up(current)
 	return current
 
 

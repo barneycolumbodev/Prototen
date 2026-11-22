@@ -4,13 +4,12 @@
 [ext_resource type="Script" path="res://src/body/stat_modifier.gd" id="2"]
 [ext_resource type="Script" path="res://src/body/part_visual.gd" id="3"]
 [ext_resource type="Script" path="res://src/augments/active/time_dilation/time_dilation.gd" id="4"]
-[ext_resource type="PackedScene" path="res://assets/augments/rx9_reflex_overclock/rx9_reflex_overclock.gltf" id="6"]
 [ext_resource type="Script" path="res://src/body/stat_requirement.gd" id="5"]
 
 [sub_resource type="Resource" id="vis_0"]
 script = ExtResource("3")
 socket = &"root"
-scene = ExtResource("6")
+scene_path = "res://assets/augments/rx9_reflex_overclock/rx9_reflex_overclock.gltf"
 model_space = true
 
 [sub_resource type="Resource" id="req_0"]

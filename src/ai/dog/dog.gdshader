@@ -3,7 +3,7 @@ shader_type spatial;
 // normal maps, plus the readability the triad men get (triad.gdshader): a
 // fill light from the viewer so a dark dog on a dark quay is never a black
 // shape, and a cool rim that grows with distance. Both fade when it dies.
-render_mode blend_mix, depth_draw_opaque, cull_back, diffuse_burley, specular_schlick_ggx;
+render_mode blend_mix, depth_draw_opaque, cull_back, diffuse_lambert, specular_schlick_ggx;
 
 uniform sampler2D base_tex : source_color, filter_linear_mipmap;
 uniform sampler2D orm_tex : hint_default_white, filter_linear_mipmap;

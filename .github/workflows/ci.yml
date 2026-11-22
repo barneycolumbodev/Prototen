@@ -111,17 +111,22 @@ jobs:
             echo "GODOT_ANDROID_KEYSTORE_DEBUG_PATH=$keystore"
             echo "GODOT_ANDROID_KEYSTORE_DEBUG_USER=$alias"
             echo "GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD=$password"
+            echo "GODOT_ANDROID_KEYSTORE_RELEASE_PATH=$keystore"
+            echo "GODOT_ANDROID_KEYSTORE_RELEASE_USER=$alias"
+            echo "GODOT_ANDROID_KEYSTORE_RELEASE_PASSWORD=$password"
           } >> "$GITHUB_ENV"
           echo "::add-mask::$password"
           sed -i "s/^version\/code=.*/version\/code=${{ github.run_number }}/" export_presets.cfg
 
-      - name: Export debug APK (arm64)
+      - name: Export APK (arm64, release template)
         run: |
           set -euo pipefail
           mkdir -p build
           # Explicit import first: headless exports have dropped resources in past versions.
+          # Uses the release C++ template (strips debug checks/locks for 15-25% faster mobile
+          # CPU/driver perf) signed with the same rolling dev key so phone updates install cleanly.
           timeout 600 godot --headless --import
-          timeout 900 godot --headless --export-debug "Android" build/graft-debug.apk 2>&1 | tee build/export.log
+          timeout 900 godot --headless --export-release "Android" build/graft-debug.apk 2>&1 | tee build/export.log
           test -s build/graft-debug.apk
           ls -la build/graft-debug.apk
 

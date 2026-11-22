@@ -5,9 +5,7 @@
 [ext_resource type="Script" path="res://src/body/part_visual.gd" id="3"]
 [ext_resource type="Script" path="res://src/augments/active/arc/arc_projector.gd" id="4"]
 [ext_resource type="Script" path="res://src/body/stat_requirement.gd" id="5"]
-[ext_resource type="PackedScene" path="res://assets/augments/ad2_arc_projector/ad2_arc_projector.gltf" id="6"]
 [ext_resource type="Script" path="res://src/player/viewmodel_config.gd" id="7"]
-[ext_resource type="PackedScene" path="res://assets/augments/actives_body/ad2_arc_projector/ad2_arc_projector.gltf" id="8"]
 
 [sub_resource type="Resource" id="view"]
 script = ExtResource("7")
@@ -23,7 +21,7 @@ reason = "the capacitor bank won't charge off less than 600 W"
 [sub_resource type="Resource" id="vis_0"]
 script = ExtResource("3")
 socket = &"root"
-scene = ExtResource("8")
+scene_path = "res://assets/augments/actives_body/ad2_arc_projector/ad2_arc_projector.gltf"
 model_space = true
 
 [resource]
@@ -52,5 +50,5 @@ regen_delay = 1.5
 min_to_start = 1.0
 active_power_w = 0.0
 active_heat_w = 0.0
-scene = ExtResource("6")
+scene_path = "res://assets/augments/ad2_arc_projector/ad2_arc_projector.gltf"
 viewmodel = SubResource("view")

@@ -8,7 +8,7 @@ shader_type spatial;
 // (Values passed from vertex() in custom varyings rendered without the
 // ambient light in the lit pass of the Mobile renderer, so the column comes
 // in through the built-in UV, as in the stock material.)
-render_mode blend_mix, depth_draw_opaque, cull_disabled, diffuse_burley, specular_schlick_ggx;
+render_mode blend_mix, depth_draw_opaque, cull_disabled, diffuse_lambert, specular_schlick_ggx;
 
 uniform sampler2D palette : filter_nearest, repeat_disable;
 

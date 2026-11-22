@@ -7,8 +7,6 @@ const LIMIT: int = 2048
 const WHITELIST: Dictionary[String, String] = {
 	"res://assets/levels/chinatown/lightmap.png": "the baked map lightmap: one texture for the whole map",
 	"res://assets/levels/hotel/lightmap.png": "the baked map lightmap: one texture for the whole map (as Chinatown's)",
-	"res://assets/characters/triad/textures/triad_basecolor.png": "to 2K in Phase 2 (overhaul C-02), checked on the face close-up",
-	"res://assets/characters/triad/textures/triad_skin.png": "to 2K in Phase 2 (overhaul C-02), checked on the face close-up",
 }
 
 

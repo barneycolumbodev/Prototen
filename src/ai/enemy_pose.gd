@@ -23,6 +23,7 @@ var head_flinch: Spring = Spring.new(4.0, 0.38)
 
 var _ids: Array[int] = []
 var _parent_ids: Array[int] = []
+var _springs_active: bool = false
 
 
 func _ready() -> void:
@@ -49,14 +50,26 @@ func flinch(dir: Vector3, torso: float, head: float) -> void:
 		axis = Vector3.RIGHT
 	torso_flinch.kick(axis.normalized() * torso + Vector3.UP * randf_range(-0.5, 0.5) * torso)
 	head_flinch.kick(axis.normalized() * head + Vector3.UP * randf_range(-0.6, 0.6) * head)
+	_springs_active = true
 
 
 func step_springs(delta: float) -> void:
+	if not _springs_active:
+		return
 	torso_flinch.step(delta)
 	head_flinch.step(delta)
+	if torso_flinch.value.length_squared() < 1e-8 and torso_flinch.velocity.length_squared() < 1e-8 \
+			and head_flinch.value.length_squared() < 1e-8 and head_flinch.velocity.length_squared() < 1e-8:
+		torso_flinch.reset()
+		head_flinch.reset()
+		_springs_active = false
 
 
 func _process_modification() -> void:
+	var yaw: float = aim_yaw * aim_weight
+	var pitch: float = aim_pitch * aim_weight
+	if not _springs_active and absf(yaw) < 1e-4 and absf(pitch) < 1e-4:
+		return
 	var sk: Skeleton3D = get_skeleton()
 	if sk == null:
 		return
@@ -64,8 +77,6 @@ func _process_modification() -> void:
 		_bind()
 		if _ids.is_empty() or _ids[0] < 0:
 			return
-	var yaw: float = aim_yaw * aim_weight
-	var pitch: float = aim_pitch * aim_weight
 	# Global (skeleton-space) basis of the first parent; the chain is updated as we go.
 	var parent_basis: Basis = sk.get_bone_global_pose(_parent_ids[0]).basis.orthonormalized()
 	var yawed_right: Vector3 = Vector3.RIGHT.rotated(Vector3.UP, yaw)

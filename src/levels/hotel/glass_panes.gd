@@ -32,6 +32,7 @@ class Pane:
 func _ready() -> void:
 	if _mat == null:
 		_mat = StandardMaterial3D.new()
+		_mat.diffuse_mode = BaseMaterial3D.DIFFUSE_LAMBERT
 		_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 		_mat.albedo_color = Color(0.62, 0.72, 0.74, 0.16)
 		_mat.metallic = 0.4

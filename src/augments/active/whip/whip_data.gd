@@ -9,7 +9,6 @@ extends ActivePartData
 ## across the crosshair. Whatever the filament crosses fast enough is cut.
 ## Tuning in data/body/parts/mw7_monofilament_whip.tres.
 
-@export var scene: PackedScene
 @export var viewmodel: ViewmodelConfig
 
 @export_group("Filament")

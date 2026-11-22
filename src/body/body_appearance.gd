@@ -10,7 +10,7 @@ extends Node3D
 ## now; later by the player's full body (shadows, reflections) and the
 ## loadout screen.
 
-const MODEL: PackedScene = preload("res://assets/characters/operative/operative.gltf")
+const MODEL_PATH: String = "res://assets/characters/operative/operative.gltf"
 
 var loadout: BodyLoadout
 var skeleton: Skeleton3D
@@ -31,7 +31,7 @@ var _mats: Dictionary[String, Material] = {}
 
 
 func _ready() -> void:
-	_model = MODEL.instantiate() as Node3D
+	_model = (load(MODEL_PATH) as PackedScene).instantiate() as Node3D
 	add_child(_model)
 	skeleton = _model.find_child("Skeleton3D", true, false) as Skeleton3D
 	_mats = {

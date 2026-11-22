@@ -8,8 +8,7 @@ extends ActivePartData
 ## data/body/parts/gx4_gauss_arm.tres; the round in data/weapons/gx4_slug.tres.
 
 @export var round: WeaponData
-## The arm model (glTF with its transform animation) and where it sits.
-@export var scene: PackedScene
+## The arm model (glTF with its transform animation, via ActivePartData.scene_path) and where it sits.
 @export var viewmodel: ViewmodelConfig
 
 @export_group("Firing")

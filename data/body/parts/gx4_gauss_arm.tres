@@ -5,7 +5,6 @@
 [ext_resource type="Script" path="res://src/body/part_visual.gd" id="3"]
 [ext_resource type="Script" path="res://src/augments/active/gauss_arm/gauss_arm.gd" id="4"]
 [ext_resource type="Resource" path="res://data/weapons/gx4_slug.tres" id="5"]
-[ext_resource type="PackedScene" path="res://assets/augments/gx4_gauss_arm/gx4_gauss_arm.gltf" id="6"]
 [ext_resource type="Resource" path="res://data/player/viewmodel_gx4.tres" id="7"]
 [ext_resource type="Script" path="res://src/body/stat_requirement.gd" id="8"]
 
@@ -43,7 +42,7 @@ min_to_start = 1.0
 active_power_w = 900.0
 active_heat_w = 600.0
 round = ExtResource("5")
-scene = ExtResource("6")
+scene_path = "res://assets/augments/gx4_gauss_arm/gx4_gauss_arm.gltf"
 viewmodel = ExtResource("7")
 brace_ref = 1.67
 brace_min_kick = 0.45

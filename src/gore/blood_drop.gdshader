@@ -10,7 +10,7 @@ shader_type spatial;
 // screen by how far it moves during one exposure, so fast drops are
 // streaks and slow ones are beads. Lit and opaque (alpha-tested): blood in a
 // dark alley is dark, with a wet highlight where a lamp catches it.
-render_mode skip_vertex_transform, cull_disabled, shadows_disabled;
+render_mode skip_vertex_transform, cull_disabled, diffuse_lambert, shadows_disabled;
 
 uniform float now = 0.0;
 uniform vec3 tint : source_color = vec3(0.36, 0.014, 0.015);

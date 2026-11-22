@@ -5,9 +5,7 @@
 [ext_resource type="Script" path="res://src/body/part_visual.gd" id="3"]
 [ext_resource type="Script" path="res://src/augments/active/setae/setae.gd" id="4"]
 [ext_resource type="Script" path="res://src/body/stat_requirement.gd" id="5"]
-[ext_resource type="PackedScene" path="res://assets/augments/sx8_urticating_setae/sx8_urticating_setae.gltf" id="6"]
 [ext_resource type="Script" path="res://src/player/viewmodel_config.gd" id="7"]
-[ext_resource type="PackedScene" path="res://assets/augments/actives_body/sx8_urticating_setae/sx8_urticating_setae.gltf" id="8"]
 
 [sub_resource type="Resource" id="view"]
 script = ExtResource("7")
@@ -23,7 +21,7 @@ reason = "tracking five bodies through slowed time takes a co-processor"
 [sub_resource type="Resource" id="vis_0"]
 script = ExtResource("3")
 socket = &"root"
-scene = ExtResource("8")
+scene_path = "res://assets/augments/actives_body/sx8_urticating_setae/sx8_urticating_setae.gltf"
 model_space = true
 
 [resource]
@@ -53,5 +51,5 @@ regen_delay = 0.5
 min_to_start = 1.0
 active_power_w = 80.0
 active_heat_w = 220.0
-scene = ExtResource("6")
+scene_path = "res://assets/augments/sx8_urticating_setae/sx8_urticating_setae.gltf"
 viewmodel = SubResource("view")

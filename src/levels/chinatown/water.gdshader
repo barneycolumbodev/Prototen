@@ -7,7 +7,7 @@ shader_type spatial;
 // one tiling normal map, and the streak shimmer from one sample of a noise
 // texture shared by every light (it used to be ~80 procedural noise calls per
 // pixel). At most 12 lights.
-render_mode blend_mix, depth_draw_opaque, cull_back, specular_schlick_ggx, shadows_disabled;
+render_mode blend_mix, depth_draw_opaque, cull_back, diffuse_lambert, specular_schlick_ggx, shadows_disabled;
 
 uniform vec3 deep : source_color = vec3(0.008, 0.014, 0.018);
 uniform float reflect = 1.0;
@@ -37,7 +37,10 @@ void fragment() {
 	METALLIC = 0.0;
 	SPECULAR = 0.7;
 	vec3 glow = vec3(0.0);
-	if (streaks > 0.5) {
+	// Quay lights decay as exp(-along * 0.09) (< 0.001 beyond ~100 m), so far
+	// harbour water skips the 12-light loop completely.
+	float far_fade = (1.0 - smoothstep(105.0, 130.0, p.y)) * (1.0 - smoothstep(105.0, 130.0, abs(p.x)));
+	if (streaks > 0.5 && far_fade > 0.001) {
 		// Mirror each light in the water plane, find how far this point is
 		// (sideways) from the line between the camera and that mirror image.
 		vec3 cam = (INV_VIEW_MATRIX * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
@@ -57,7 +60,7 @@ void fragment() {
 			float s = exp(-side * side / (width * width) - along * 0.09) * step(0.0, t);
 			glow += light_col[i].rgb * (light_col[i].a * s);
 		}
-		glow *= sh;
+		glow *= sh * far_fade;
 	}
 	EMISSION = glow * reflect * 2.2;
 }

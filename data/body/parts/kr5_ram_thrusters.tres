@@ -5,7 +5,6 @@
 [ext_resource type="Script" path="res://src/body/part_visual.gd" id="3"]
 [ext_resource type="Script" path="res://src/augments/active/ram/ram_thrusters.gd" id="4"]
 [ext_resource type="Script" path="res://src/body/stat_requirement.gd" id="5"]
-[ext_resource type="PackedScene" path="res://assets/augments/actives_body/kr5_ram_thrusters/kr5_ram_thrusters.gltf" id="8"]
 
 [sub_resource type="Resource" id="req_0"]
 script = ExtResource("5")
@@ -16,7 +15,7 @@ reason = "the thrust goes through the spine"
 [sub_resource type="Resource" id="vis_0"]
 script = ExtResource("3")
 socket = &"root"
-scene = ExtResource("8")
+scene_path = "res://assets/augments/actives_body/kr5_ram_thrusters/kr5_ram_thrusters.gltf"
 model_space = true
 
 [resource]

@@ -11,6 +11,12 @@ extends CanvasLayer
 var augments: Augments
 var _view: View
 var _flash: float = 0.0
+var _last_vp_y: float = -1.0
+var _last_sel: int = -1
+var _last_flash: float = -1.0
+var _last_sig: PackedInt64Array = PackedInt64Array([-1, -1, -1])
+var _last_name: PackedStringArray = PackedStringArray(["", "", ""])
+var _last_why: PackedStringArray = PackedStringArray(["", "", ""])
 
 
 class View:
@@ -91,7 +97,40 @@ func flash_selection() -> void:
 
 
 func _process(delta: float) -> void:
-	_flash = maxf(0.0, _flash - TimeControl.real_delta(delta) * 3.0)
-	var vp: Vector2 = get_viewport().get_visible_rect().size
-	_view.position = Vector2(26.0, vp.y - 34.0 - 22.0)
-	_view.queue_redraw()
+	if _flash > 0.0:
+		_flash = maxf(0.0, _flash - TimeControl.real_delta(delta) * 3.0)
+	var vp_y: float = get_viewport().get_visible_rect().size.y
+	var dirty: bool = false
+	if vp_y != _last_vp_y:
+		_last_vp_y = vp_y
+		_view.position = Vector2(26.0, vp_y - 34.0 - 22.0)
+		dirty = true
+	if absf(_flash - _last_flash) > 0.002:
+		_last_flash = _flash
+		dirty = true
+	if augments == null:
+		return
+	if augments.selected != _last_sel:
+		_last_sel = augments.selected
+		dirty = true
+	var parts: Dictionary[int, ActivePart] = augments.parts
+	for idx: int in 3:
+		var slot: int = idx + 1
+		if not parts.has(slot):
+			if _last_sig[idx] != -2:
+				_last_sig[idx] = -2
+				_last_name[idx] = ""
+				_last_why[idx] = ""
+				dirty = true
+			continue
+		var p: ActivePart = parts[slot]
+		var sig: int = int(p.state) * 1000000 + roundi(p.charge * 250.0) * 16 + p.hud_pips()
+		var nm: String = p.hud_name()
+		var why: String = p.offline_reason()
+		if sig != _last_sig[idx] or nm != _last_name[idx] or why != _last_why[idx]:
+			_last_sig[idx] = sig
+			_last_name[idx] = nm
+			_last_why[idx] = why
+			dirty = true
+	if dirty:
+		_view.queue_redraw()

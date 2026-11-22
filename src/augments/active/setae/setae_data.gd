@@ -9,7 +9,6 @@ extends ActivePartData
 ## into needles in flight, home on their marks and leave cavitation wounds
 ## that take most men apart. Tuning in data/body/parts/sx8_urticating_setae.tres.
 
-@export var scene: PackedScene
 @export var viewmodel: ViewmodelConfig
 
 @export_group("Dead-eye")

@@ -241,6 +241,10 @@ var pump_t: float:
 var _y_down_ms: int = -1
 ## Countdown from the last shell-type press to the swap (-1 = none pending).
 var _select_left: float = -1.0
+## Resident viewmodel rigs (most-recently-used at the back). Keeping only a few
+## guns instantiated at once keeps weapon VRAM bounded on 4 GB phones.
+const MAX_RESIDENT_RIGS: int = 3
+var _loaded_rigs: Array[ViewmodelRig] = []
 
 
 func _ready() -> void:
@@ -250,6 +254,8 @@ func _ready() -> void:
 		var rig: ViewmodelRig = get_node(rig_paths[i]) as ViewmodelRig
 		slots.append(Slot.new(loadout[i], rig))
 		rig.visible = i == current
+	if not slots.is_empty():
+		_touch_rig(slots[current].rig)
 	cam_recoil = Spring.new(data.camera_spring_hz, data.camera_spring_damping)
 	_belt_shake = Spring.new(14.0, 0.25)
 	laser = WeaponLaser.new()
@@ -492,6 +498,7 @@ func wheel_cycle(step: int) -> void:
 	var at: int = maxi(guns.find(wheel_pick), 0)
 	wheel_pick = guns[posmod(at + step, guns.size())]
 	_category_pick[wheel_category] = wheel_pick
+	slots[wheel_pick].rig.preload_async()
 	Sfx.play_ui(&"wheel_tick", -10.0, 0.02)
 
 
@@ -549,6 +556,7 @@ func _update_wheel() -> void:
 			if cat != wheel_category and shown >= 0:
 				wheel_category = cat
 				wheel_pick = shown
+				slots[wheel_pick].rig.preload_async()
 				Sfx.play_ui(&"wheel_tick", -12.0, 0.02)
 		# D-pad left / right scrolls the guns in the category (the actives ignore it while the wheel is up).
 		var step: int = _script_cycle
@@ -653,6 +661,7 @@ func request_switch(index: int = -1) -> void:
 	_stop_charge_whine()
 	_finish_lever()
 	switching_to = target
+	slots[target].rig.preload_async()
 	_holster_left = data.holster_time / handling()
 	Sfx.play_ui(&"holster", -4.0)
 
@@ -706,6 +715,32 @@ func apply_tuning() -> void:
 	cam_recoil.damping = data.camera_spring_damping
 
 
+## Keeps at most MAX_RESIDENT_RIGS weapons instantiated at once, unloading the
+## least-recently-used hidden rig (never the current, previous or incoming gun).
+func _touch_rig(r: ViewmodelRig) -> void:
+	if r == null:
+		return
+	var idx: int = _loaded_rigs.find(r)
+	if idx >= 0:
+		_loaded_rigs.remove_at(idx)
+	_loaded_rigs.append(r)
+	var prev_rig: ViewmodelRig = slots[previous].rig if previous >= 0 and previous < slots.size() else null
+	var next_rig: ViewmodelRig = slots[switching_to].rig if switching_to >= 0 and switching_to < slots.size() else null
+	var cur_rig: ViewmodelRig = slots[current].rig if current >= 0 and current < slots.size() else null
+	while _loaded_rigs.size() > MAX_RESIDENT_RIGS:
+		var evict: int = -1
+		for i: int in _loaded_rigs.size():
+			var cand: ViewmodelRig = _loaded_rigs[i]
+			if cand != cur_rig and cand != prev_rig and cand != next_rig and not cand.visible:
+				evict = i
+				break
+		if evict < 0:
+			break
+		var old: ViewmodelRig = _loaded_rigs[evict]
+		_loaded_rigs.remove_at(evict)
+		old.unload_models()
+
+
 func _activate(index: int) -> void:
 	if index != current:
 		previous = current
@@ -714,6 +749,7 @@ func _activate(index: int) -> void:
 		slots[i].rig.visible = i == current
 	switching_to = -1
 	_select_left = -1.0
+	_touch_rig(slots[current].rig)
 	bloom = 0.0
 	sustained = 0.0
 	apply_tuning()

@@ -5,7 +5,6 @@
 [ext_resource type="Script" path="res://src/body/part_visual.gd" id="3"]
 [ext_resource type="Script" path="res://src/augments/active/cloak/thermoptic_shroud.gd" id="4"]
 [ext_resource type="Script" path="res://src/body/stat_requirement.gd" id="5"]
-[ext_resource type="PackedScene" path="res://assets/augments/actives_body/tc4_thermoptic_shroud/tc4_thermoptic_shroud.gltf" id="8"]
 
 [sub_resource type="Resource" id="req_0"]
 script = ExtResource("5")
@@ -16,7 +15,7 @@ reason = "it holds your heat in; without extra cooling it cooks you"
 [sub_resource type="Resource" id="vis_0"]
 script = ExtResource("3")
 socket = &"root"
-scene = ExtResource("8")
+scene_path = "res://assets/augments/actives_body/tc4_thermoptic_shroud/tc4_thermoptic_shroud.gltf"
 model_space = true
 
 [resource]

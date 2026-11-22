@@ -23,8 +23,11 @@ extends Node3D
 signal ragdoll_frozen
 
 const MODEL: PackedScene = preload("res://assets/characters/triad/triad.gltf")
-const WARDROBE: PackedScene = preload("res://assets/characters/triad/triad_wardrobe.gltf")
+const WARDROBE_PATH: String = "res://assets/characters/triad/triad_wardrobe.gltf"
 const SHADER: Shader = preload("res://src/ai/triad.gdshader")
+const SHADER_HOLED: Shader = preload("res://src/ai/triad_holed.gdshader")
+const SHADER_TRIPO: Shader = preload("res://src/ai/triad_tripo.gdshader")
+const SHADER_TRIPO_HOLED: Shader = preload("res://src/ai/triad_tripo_holed.gdshader")
 ## Opaque draw order (optimization overhaul R-01): the Mobile renderer draws
 ## lower priorities first, and has no depth pre-pass. The gun and arms stay
 ## at 0, the men come next, the map last, so whatever is nearer and covers
@@ -32,12 +35,15 @@ const SHADER: Shader = preload("res://src/ai/triad.gdshader")
 const RENDER_PRIORITY: int = 1
 ## Seconds after which a wound's blood stops spreading (triad.gdshader).
 const WOUND_GROW_TIME: float = 5.0
-const TEX_BASE: Texture2D = preload("res://assets/characters/triad/textures/triad_basecolor.png")
-const TEX_ORM: Texture2D = preload("res://assets/characters/triad/textures/triad_orm.png")
-const TEX_NORMAL: Texture2D = preload("res://assets/characters/triad/textures/triad_normal.png")
-const TEX_MASK: Texture2D = preload("res://assets/characters/triad/textures/triad_mask.png")
-const TEX_SKIN: Texture2D = preload("res://assets/characters/triad/textures/triad_skin.png")
-const TEX_PRINTS: Texture2D = preload("res://assets/characters/triad/textures/triad_prints.png")
+## Legacy wardrobe maps: loaded lazily only if a non-Tripo wardrobe look spawns.
+const LEGACY_TEX_PATHS: Dictionary[StringName, String] = {
+	&"base": "res://assets/characters/triad/textures/triad_basecolor.png",
+	&"orm": "res://assets/characters/triad/textures/triad_orm.png",
+	&"normal": "res://assets/characters/triad/textures/triad_normal.png",
+	&"mask": "res://assets/characters/triad/textures/triad_mask.png",
+	&"skin": "res://assets/characters/triad/textures/triad_skin.png",
+	&"prints": "res://assets/characters/triad/textures/triad_prints.png",
+}
 ## Merged meshes kept for outfits not in use any more (spawning the same look again is free).
 const CACHE_MAX: int = 24
 const MAX_WOUNDS: int = 8
@@ -103,6 +109,12 @@ const SEGMENT_ORDER: Array[StringName] = [&"head", &"upper_arm_L", &"forearm_L",
 const STANCES: Array[StringName] = [&"loco", &"run", &"idle", &"cover", &"crouch_aim", &"blind_fire",
 		&"gut", &"crawl", &"surrender", &"flee", &"cower", &"melee_ready", &"melee_run", &"melee_crouch",
 		&"brute_ready", &"brute_walk", &"brute_run", &"cannon", &"kneel_down"]
+const GUN_STANCES: Array[StringName] = [&"loco", &"run", &"idle", &"cover", &"crouch_aim", &"blind_fire",
+		&"gut", &"crawl", &"surrender", &"flee", &"cower"]
+const MELEE_TREE_STANCES: Array[StringName] = [&"melee_ready", &"melee_run", &"melee_crouch",
+		&"gut", &"crawl", &"surrender", &"flee", &"cower"]
+const BOSS_TREE_STANCES: Array[StringName] = [&"brute_ready", &"brute_walk", &"brute_run", &"cannon", &"kneel_down",
+		&"gut", &"crawl", &"surrender", &"flee", &"cower"]
 const LOOPS: Array[StringName] = [&"aim", &"idle", &"walk_f", &"walk_b", &"walk_l", &"walk_r", &"run", &"cover",
 		&"crouch_aim", &"blind_fire", &"gut", &"crawl", &"surrender", &"flee", &"cower", &"melee_ready", &"melee_run", &"melee_crouch",
 		&"brute_ready", &"brute_walk", &"brute_run", &"cannon", &"kneel_down"]
@@ -132,6 +144,8 @@ const CRAWL_CLIP_SPEED: float = 0.45
 static var _prepared: Dictionary[String, ArrayMesh] = {}
 ## The wardrobe's meshes by node name (w_<id>, w_<id>__<part>), loaded once.
 static var _wardrobe: Dictionary[StringName, Mesh] = {}
+static var _wardrobe_loaded: bool = false
+static var _legacy_tex_cache: Dictionary[StringName, Texture2D] = {}
 ## Merged meshes by look: the intact man, and every piece for after a cut.
 static var _intact: Dictionary[String, ArrayMesh] = {}
 static var _split_cache: Dictionary[String, ArrayMesh] = {}
@@ -141,6 +155,10 @@ static var _gib_meshes: Dictionary[String, ArrayMesh] = {}
 static var _gib_centres: Dictionary[String, Vector3] = {}
 ## The model's own meshes by node name (triad, part_body, part_head, vest...), read once.
 static var _sources: Dictionary[StringName, Mesh] = {}
+## Shared collision shapes across all enemy instances (identical dimensions).
+static var _zone_shapes: Dictionary[StringName, Shape3D] = {}
+static var _plate_shape: BoxShape3D
+static var _ragdoll_shapes: Dictionary[StringName, CapsuleShape3D] = {}
 
 ## The enemy that owns this body (gets on_part_hit / on_part_burn).
 var owner_node: Node
@@ -176,6 +194,7 @@ var _hole_age: PackedFloat32Array = PackedFloat32Array()
 const MAX_HOLES: int = 4
 const HOLE_COOL_TIME: float = 7.0
 var _wound_age: PackedFloat32Array = PackedFloat32Array()
+var _wounds_growing: bool = false
 var _ragdoll_time: float = 0.0
 var _split: bool = false
 ## Showing the synchronous merge (no LODs) until TriadMeshBaker's arrives.
@@ -184,6 +203,18 @@ var _plates: Array[StaticBody3D] = []
 ## Bone attachments by bone name. Their transforms include the ragdoll and
 ## the aim layer (Skeleton3D.get_bone_global_pose() doesn't, outside modifiers).
 var _attach: Dictionary[StringName, BoneAttachment3D] = {}
+var _has_walk: bool = false
+var _has_reload: bool = false
+var _has_melee_oneshots: bool = false
+var _has_boss_oneshots: bool = false
+var _last_walk_blend: Vector2 = Vector2.INF
+var _last_walk_scale: float = -1.0
+var _last_run_scale: float = -1.0
+var _last_flee_scale: float = -1.0
+var _last_melee_run_scale: float = -1.0
+var _last_crawl_scale: float = -1.0
+var _last_brute_walk_scale: float = -1.0
+var _last_brute_run_scale: float = -1.0
 
 
 ## `p_look`: what he wears; null picks one from the role's outfits (`seed` < 0: random).
@@ -214,11 +245,12 @@ func _ready() -> void:
 	pose = EnemyPose.new()
 	pose.name = "EnemyPose"
 	skeleton.add_child(pose)
-	_setup_ragdoll()
 
 
 func _notification(what: int) -> void:
-	if what == NOTIFICATION_PREDELETE:
+	# Keep the small fixed bank of Tripo whole-body meshes baked so repeat
+	# spawns and dismemberment never re-bake on the main thread.
+	if what == NOTIFICATION_PREDELETE and look != null and look.whole_body() == null:
 		TriadMeshBaker.release(look)
 
 
@@ -276,24 +308,54 @@ func set_motion(local_velocity: Vector3) -> void:
 		var sc: float = config.body_scale
 		var running: bool = speed > (2.6 if stance == &"brute_run" else 3.2)
 		_set_stance(&"brute_run" if running else (&"brute_walk" if speed > (0.35 if stance == &"brute_walk" else 0.6) else &"brute_ready"))
-		_tree.set(&"parameters/brute_walk_speed/scale", clampf(speed / (BRUTE_WALK_SPEED * sc), 0.5, 1.8))
-		_tree.set(&"parameters/brute_run_speed/scale", clampf(speed / (BRUTE_RUN_SPEED * sc), 0.6, 1.6))
+		if stance == &"brute_walk":
+			var ws: float = clampf(speed / (BRUTE_WALK_SPEED * sc), 0.5, 1.8)
+			if absf(ws - _last_brute_walk_scale) > 0.005:
+				_last_brute_walk_scale = ws
+				_tree.set(&"parameters/brute_walk_speed/scale", ws)
+		elif stance == &"brute_run":
+			var rs: float = clampf(speed / (BRUTE_RUN_SPEED * sc), 0.6, 1.6)
+			if absf(rs - _last_brute_run_scale) > 0.005:
+				_last_brute_run_scale = rs
+				_tree.set(&"parameters/brute_run_speed/scale", rs)
 		return
 	if _melee_loco:
 		_set_stance(&"melee_run" if speed > (1.6 if stance == &"melee_run" else 2.2) else &"melee_ready")
-	var dir: Vector2 = Vector2(local_velocity.x, local_velocity.z) / maxf(speed, 0.001)
-	var amount: float = clampf(speed / WALK_CLIP_SPEED, 0.0, 1.0)
-	_tree.set(&"parameters/walk/blend_position", dir * amount)
-	_tree.set(&"parameters/walk_speed/scale", clampf(speed / WALK_CLIP_SPEED, 0.6, 1.6) if speed > 0.2 else 1.0)
-	var run_scale: float = speed / (FLEE_CLIP_SPEED if stance == &"flee" or stance == &"melee_run" else RUN_CLIP_SPEED)
-	_tree.set(&"parameters/run_speed/scale", clampf(run_scale, 0.5, 1.4))
-	_tree.set(&"parameters/run_speed_flee/scale", clampf(run_scale, 0.5, 1.4))
-	_tree.set(&"parameters/melee_run_speed/scale", clampf(run_scale, 0.5, 1.6))
-	_tree.set(&"parameters/crawl_speed/scale", clampf(speed / CRAWL_CLIP_SPEED, 0.2, 1.6) if speed > 0.05 else 0.25)
+	if stance == &"loco" and _has_walk:
+		var dir: Vector2 = Vector2(local_velocity.x, local_velocity.z) / maxf(speed, 0.001)
+		var blend: Vector2 = dir * clampf(speed / WALK_CLIP_SPEED, 0.0, 1.0)
+		if blend.distance_squared_to(_last_walk_blend) > 0.0001:
+			_last_walk_blend = blend
+			_tree.set(&"parameters/walk/blend_position", blend)
+		var ws: float = clampf(speed / WALK_CLIP_SPEED, 0.6, 1.6) if speed > 0.2 else 1.0
+		if absf(ws - _last_walk_scale) > 0.005:
+			_last_walk_scale = ws
+			_tree.set(&"parameters/walk_speed/scale", ws)
+	elif stance == &"run" and _has_walk:
+		var rs: float = clampf(speed / RUN_CLIP_SPEED, 0.5, 1.4)
+		if absf(rs - _last_run_scale) > 0.005:
+			_last_run_scale = rs
+			_tree.set(&"parameters/run_speed/scale", rs)
+	elif stance == &"flee":
+		var fs: float = clampf(speed / FLEE_CLIP_SPEED, 0.5, 1.4)
+		if absf(fs - _last_flee_scale) > 0.005:
+			_last_flee_scale = fs
+			_tree.set(&"parameters/run_speed_flee/scale", fs)
+	elif stance == &"melee_run" and _has_melee_oneshots:
+		var ms: float = clampf(speed / FLEE_CLIP_SPEED, 0.5, 1.6)
+		if absf(ms - _last_melee_run_scale) > 0.005:
+			_last_melee_run_scale = ms
+			_tree.set(&"parameters/melee_run_speed/scale", ms)
+	elif stance == &"crawl":
+		var cs: float = clampf(speed / CRAWL_CLIP_SPEED, 0.2, 1.6) if speed > 0.05 else 0.25
+		if absf(cs - _last_crawl_scale) > 0.005:
+			_last_crawl_scale = cs
+			_tree.set(&"parameters/crawl_speed/scale", cs)
 
 
 func play_reload() -> void:
-	_tree.set(&"parameters/reload/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
+	if _has_reload:
+		_tree.set(&"parameters/reload/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
 
 
 func play_stumble() -> void:
@@ -302,46 +364,63 @@ func play_stumble() -> void:
 
 ## The melee chop (whole body), timed so the blow lands `hit_in` s from now.
 func play_chop(hit_in: float) -> void:
+	if not _has_melee_oneshots:
+		return
 	_tree.set(&"parameters/chop_speed/scale", CHOP_CLIP_HIT / maxf(hit_in, 0.05))
 	_tree.set(&"parameters/chop/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
 
 
 ## Breaks off a chop (he was staggered or knocked down).
 func cancel_chop() -> void:
+	if not _has_melee_oneshots:
+		return
 	_tree.set(&"parameters/chop/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FADE_OUT)
 
 
 ## The boss's ground pound, timed so the fist lands `hit_in` s from now.
 func play_pound(hit_in: float) -> void:
+	if not _has_boss_oneshots:
+		return
 	_tree.set(&"parameters/pound_speed/scale", POUND_CLIP_HIT / maxf(hit_in, 0.05))
 	_tree.set(&"parameters/pound/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
 
 
 ## The boss's haymaker, timed so the fist lands `hit_in` s from now.
 func play_swing(hit_in: float) -> void:
+	if not _has_boss_oneshots:
+		return
 	_tree.set(&"parameters/swing_speed/scale", SWING_CLIP_HIT / maxf(hit_in, 0.05))
 	_tree.set(&"parameters/swing/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
 
 
 ## Breaks off the pound or the haymaker (staggered, downed).
 func cancel_boss_moves() -> void:
-	for one: StringName in [&"pound", &"swing", &"intro"]:
-		_tree.set(StringName("parameters/%s/request" % one), AnimationNodeOneShot.ONE_SHOT_REQUEST_FADE_OUT)
+	if not _has_boss_oneshots:
+		return
+	_tree.set(&"parameters/pound/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FADE_OUT)
+	_tree.set(&"parameters/swing/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FADE_OUT)
+	_tree.set(&"parameters/intro/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FADE_OUT)
 
 
 ## The entrance: starts on its first frame (the landing crouch) and holds it
 ## at `speed` 0 while he falls; set_intro_speed(1) plays the rest.
 func play_intro() -> void:
+	if not _has_boss_oneshots:
+		return
 	_tree.set(&"parameters/intro_speed/scale", 0.0)
 	_tree.set(&"parameters/intro/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
 
 
 func set_intro_speed(scale_now: float) -> void:
+	if not _has_boss_oneshots:
+		return
 	_tree.set(&"parameters/intro_speed/scale", scale_now)
 
 
 ## A vault lasting `seconds`.
 func play_vault(seconds: float) -> void:
+	if not _has_melee_oneshots:
+		return
 	_tree.set(&"parameters/vault_speed/scale", VAULT_CLIP_TIME / maxf(seconds, 0.1))
 	_tree.set(&"parameters/vault/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
 
@@ -444,6 +523,7 @@ func add_wound(zone: StringName, hit_point: Vector3, radius: float, exit_wound: 
 	else:
 		_wounds.append(w)
 		_wound_age.append(0.0)
+	_wounds_growing = true
 	_push_wounds()
 
 
@@ -461,6 +541,8 @@ func add_hole(zone: StringName, hit_point: Vector3, dir: Vector3, radius: float)
 	if spec.is_empty():
 		return
 	set_process(true)
+	if _holes.is_empty():
+		material.shader = SHADER_TRIPO_HOLED if look.whole_body() != null else SHADER_HOLED
 	var zone_bone: StringName = spec[0]
 	var bi: int = skeleton.find_bone(zone_bone)
 	var to_rest: Transform3D = skeleton.global_transform * skeleton.get_bone_global_rest(bi)
@@ -503,6 +585,7 @@ func flinch(dir: Vector3, strength: float, head: bool) -> void:
 func ragdoll(impulse: Vector3, point: Vector3, zone: StringName) -> void:
 	if ragdolling:
 		return
+	_ensure_ragdoll()
 	ragdolling = true
 	frozen = false
 	_ragdoll_time = 0.0
@@ -608,8 +691,9 @@ func unfreeze() -> void:
 
 
 func _process(delta: float) -> void:
-	pose.step_springs(delta)
-	if ragdolling and not frozen:
+	if not ragdolling:
+		pose.step_springs(delta)
+	elif not frozen:
 		_ragdoll_time += delta
 		if _ragdoll_time > RagdollBudget.FREEZE_AFTER and _settled():
 			freeze()
@@ -618,9 +702,14 @@ func _process(delta: float) -> void:
 	if _lod_wait and TriadMeshBaker.is_settled(look):
 		_lod_wait = false
 		_swap_in_baked()
-	if not _wounds.is_empty():
+	if _wounds_growing:
+		var still_growing: bool = false
 		for i: int in _wound_age.size():
-			_wound_age[i] += delta
+			if _wound_age[i] < WOUND_GROW_TIME:
+				_wound_age[i] += delta
+				if _wound_age[i] < WOUND_GROW_TIME:
+					still_growing = true
+		_wounds_growing = still_growing
 		material.set_shader_parameter(&"wound_age", _wound_age)
 	if not _holes.is_empty() and _hole_age[_hole_age.size() - 1] < HOLE_COOL_TIME:
 		for i: int in _hole_age.size():
@@ -638,13 +727,10 @@ func _process(delta: float) -> void:
 ## Frozen, the baked mesh in, and every wound past the age where the shader
 ## stops growing it (triad.gdshader: soak over 4 s, run over 5 s).
 func _can_sleep() -> bool:
-	if _lod_wait:
+	if _lod_wait or _wounds_growing:
 		return false
 	for age: float in _hole_age:
 		if age < HOLE_COOL_TIME:
-			return false
-	for age: float in _wound_age:
-		if age < WOUND_GROW_TIME:
 			return false
 	return true
 
@@ -841,7 +927,7 @@ func burst(velocity: Vector3) -> void:
 		h.collision_layer = 0
 	for pl: StaticBody3D in _plates:
 		pl.collision_layer = 0
-	if ragdolling and not frozen:
+	if ragdolling and not frozen and _sim != null:
 		_sim.physical_bones_stop_simulation()
 		_sim.active = false
 		frozen = true
@@ -1056,11 +1142,14 @@ static func prepared(name: StringName, mesh: Mesh, seg: int, slot: int) -> Array
 
 
 ## A wardrobe mesh by node name (w_<id> intact, w_<id>__<part> a piece), or null.
-## A whole body's (w_tp_<id>...) is loaded from its own glTF the first time.
+## A whole body's (w_tp_<id>...) is loaded from its own glTF the first time,
+## without touching the legacy wardrobe glTF.
 static func wardrobe_mesh(name: StringName) -> Mesh:
+	if String(name).begins_with("w_tp_"):
+		if not _wardrobe.has(name):
+			_load_body(String(name).trim_prefix("w_").get_slice("__", 0))
+		return _wardrobe.get(name)
 	_load_wardrobe()
-	if not _wardrobe.has(name) and String(name).begins_with("w_tp_"):
-		_load_body(String(name).trim_prefix("w_").get_slice("__", 0))
 	return _wardrobe.get(name)
 
 
@@ -1117,12 +1206,20 @@ static func body_textures(mesh_id: StringName) -> Array:
 
 ## The wardrobe glTF's meshes by node name (loaded once; the scene is freed).
 static func _load_wardrobe() -> void:
-	if not _wardrobe.is_empty():
+	if _wardrobe_loaded:
 		return
-	var root: Node = WARDROBE.instantiate()
+	_wardrobe_loaded = true
+	var ps: PackedScene = load(WARDROBE_PATH) as PackedScene
+	var root: Node = ps.instantiate()
 	for mi: Node in root.find_children("*", "MeshInstance3D", true, false):
 		_wardrobe[StringName(mi.name)] = (mi as MeshInstance3D).mesh
 	root.free()
+
+
+static func _legacy_tex(key: StringName) -> Texture2D:
+	if not _legacy_tex_cache.has(key):
+		_legacy_tex_cache[key] = load(LEGACY_TEX_PATHS[key]) as Texture2D
+	return _legacy_tex_cache[key]
 
 
 # ------------------------------------------------------------------ gun
@@ -1159,16 +1256,10 @@ func drop_gun(velocity: Vector3) -> RigidBody3D:
 # ------------------------------------------------------------------ build
 
 func _setup_meshes() -> void:
-	_load_wardrobe()
+	var whole: Garment = look.whole_body()
 	material = ShaderMaterial.new()
-	material.shader = SHADER
+	material.shader = SHADER_TRIPO if whole != null else SHADER
 	material.render_priority = RENDER_PRIORITY
-	material.set_shader_parameter(&"base_tex", TEX_BASE)
-	material.set_shader_parameter(&"orm_tex", TEX_ORM)
-	material.set_shader_parameter(&"normal_tex", TEX_NORMAL)
-	material.set_shader_parameter(&"mask_tex", TEX_MASK)
-	material.set_shader_parameter(&"skin_tex", TEX_SKIN)
-	material.set_shader_parameter(&"prints_tex", TEX_PRINTS)
 	material.set_shader_parameter(&"wound_count", 0)
 	material.set_shader_parameter(&"severed_mask", 0)
 	material.set_shader_parameter(&"rim_color", config.rim_color)
@@ -1177,17 +1268,21 @@ func _setup_meshes() -> void:
 	var empty_w: PackedVector4Array = PackedVector4Array()
 	empty_w.resize(MAX_WOUNDS)
 	material.set_shader_parameter(&"wounds", empty_w)
-	look.apply(material)
-	var whole: Garment = look.whole_body()
 	if whole:
-		# A Tripo man: his own maps; no tint mask, tattoo or beard map (they're in his colour).
+		# A Tripo man: his own maps; triad_tripo.gdshader skips legacy mask/skin/prints.
 		var tex: Array = body_textures(whole.mesh)
 		material.set_shader_parameter(&"base_tex", tex[0])
 		material.set_shader_parameter(&"orm_tex", tex[1])
 		material.set_shader_parameter(&"normal_tex", tex[2])
-		material.set_shader_parameter(&"mask_tex", null)
-		material.set_shader_parameter(&"skin_tex", null)
-		material.set_shader_parameter(&"skin_inset", 0.0)
+	else:
+		_load_wardrobe()
+		material.set_shader_parameter(&"base_tex", _legacy_tex(&"base"))
+		material.set_shader_parameter(&"orm_tex", _legacy_tex(&"orm"))
+		material.set_shader_parameter(&"normal_tex", _legacy_tex(&"normal"))
+		material.set_shader_parameter(&"mask_tex", _legacy_tex(&"mask"))
+		material.set_shader_parameter(&"skin_tex", _legacy_tex(&"skin"))
+		material.set_shader_parameter(&"prints_tex", _legacy_tex(&"prints"))
+		look.apply(material)
 	for child: Node in skeleton.get_children():
 		var mi: MeshInstance3D = child as MeshInstance3D
 		if mi == null:
@@ -1234,27 +1329,34 @@ func _setup_hitboxes() -> void:
 		part.add_to_group(&"gore_body")
 		part.position = spec[3]
 		var cs: CollisionShape3D = CollisionShape3D.new()
-		var dims: Vector3 = spec[2]
-		var kind: String = spec[1]
-		match kind:
-			"sphere":
-				var sp: SphereShape3D = SphereShape3D.new()
-				sp.radius = dims.x
-				cs.shape = sp
-			"capsule":
-				var c: CapsuleShape3D = CapsuleShape3D.new()
-				c.radius = dims.x
-				c.height = maxf(dims.y, dims.x * 2.0 + 0.01)
-				cs.shape = c
-			_:
-				var b: BoxShape3D = BoxShape3D.new()
-				b.size = dims
-				cs.shape = b
+		var shape: Shape3D = _zone_shapes.get(zone)
+		if shape == null:
+			var dims: Vector3 = spec[2]
+			var kind: String = spec[1]
+			match kind:
+				"sphere":
+					var sp: SphereShape3D = SphereShape3D.new()
+					sp.radius = dims.x
+					shape = sp
+				"capsule":
+					var c: CapsuleShape3D = CapsuleShape3D.new()
+					c.radius = dims.x
+					c.height = maxf(dims.y, dims.x * 2.0 + 0.01)
+					shape = c
+				_:
+					var b: BoxShape3D = BoxShape3D.new()
+					b.size = dims
+					shape = b
+			_zone_shapes[zone] = shape
+		cs.shape = shape
 		part.add_child(cs)
 		att.add_child(part)
 		hitboxes[zone] = part
 	if config.plate_carrier:
 		# Steel plates in the carrier, front and back (data/surfaces/armor_plate.tres).
+		if _plate_shape == null:
+			_plate_shape = BoxShape3D.new()
+			_plate_shape.size = Vector3(0.26, 0.31, 0.008)
 		var att_chest: BoneAttachment3D = attachments[&"chest"]
 		for z: float in [0.158, -0.152]:
 			var plate: StaticBody3D = StaticBody3D.new()
@@ -1267,9 +1369,7 @@ func _setup_hitboxes() -> void:
 			plate.set_script(preload("res://src/ai/armor_plate.gd"))
 			plate.set(&"target", owner_node)
 			var cs: CollisionShape3D = CollisionShape3D.new()
-			var b: BoxShape3D = BoxShape3D.new()
-			b.size = Vector3(0.26, 0.31, 0.008)
-			cs.shape = b
+			cs.shape = _plate_shape
 			plate.add_child(cs)
 			plate.position = Vector3(0, 0.03, z)
 			att_chest.add_child(plate)
@@ -1298,25 +1398,34 @@ func _setup_animation() -> void:
 	for clip: StringName in LOOPS:
 		if ap.has_animation(clip):
 			ap.get_animation(clip).loop_mode = Animation.LOOP_LINEAR
+	var is_boss: bool = config != null and config.boss != null
+	var is_melee: bool = config != null and config.melee and not is_boss
+	_has_walk = not is_boss and not is_melee
+	_has_reload = _has_walk
+	_has_melee_oneshots = is_melee
+	_has_boss_oneshots = is_boss
+	var stances: Array[StringName] = BOSS_TREE_STANCES if is_boss else (MELEE_TREE_STANCES if is_melee else GUN_STANCES)
+	stance = &"brute_ready" if is_boss else (&"melee_ready" if is_melee else &"idle")
 	var root: AnimationNodeBlendTree = AnimationNodeBlendTree.new()
-	var walk: AnimationNodeBlendSpace2D = AnimationNodeBlendSpace2D.new()
-	walk.add_blend_point(_anim(&"aim"), Vector2.ZERO, -1, &"aim")
-	walk.add_blend_point(_anim(&"walk_f"), Vector2(0, 1), -1, &"walk_f")
-	walk.add_blend_point(_anim(&"walk_b"), Vector2(0, -1), -1, &"walk_b")
-	walk.add_blend_point(_anim(&"walk_l"), Vector2(1, 0), -1, &"walk_l")
-	walk.add_blend_point(_anim(&"walk_r"), Vector2(-1, 0), -1, &"walk_r")
-	root.add_node(&"walk", walk)
-	root.add_node(&"walk_speed", AnimationNodeTimeScale.new())
-	root.connect_node(&"walk_speed", 0, &"walk")
+	if _has_walk:
+		var walk: AnimationNodeBlendSpace2D = AnimationNodeBlendSpace2D.new()
+		walk.add_blend_point(_anim(&"aim"), Vector2.ZERO, -1, &"aim")
+		walk.add_blend_point(_anim(&"walk_f"), Vector2(0, 1), -1, &"walk_f")
+		walk.add_blend_point(_anim(&"walk_b"), Vector2(0, -1), -1, &"walk_b")
+		walk.add_blend_point(_anim(&"walk_l"), Vector2(1, 0), -1, &"walk_l")
+		walk.add_blend_point(_anim(&"walk_r"), Vector2(-1, 0), -1, &"walk_r")
+		root.add_node(&"walk", walk)
+		root.add_node(&"walk_speed", AnimationNodeTimeScale.new())
+		root.connect_node(&"walk_speed", 0, &"walk")
 	var trans: AnimationNodeTransition = AnimationNodeTransition.new()
 	trans.xfade_time = 0.3
-	for s: StringName in STANCES:
+	for s: StringName in stances:
 		trans.add_input(String(s))
 	root.add_node(&"stance", trans)
-	root.connect_node(&"stance", 0, &"walk_speed")
-	for i: int in STANCES.size():
-		var s: StringName = STANCES[i]
+	for i: int in stances.size():
+		var s: StringName = stances[i]
 		if s == &"loco":
+			root.connect_node(&"stance", i, &"walk_speed")
 			continue
 		var clip_node: StringName = StringName("clip_" + String(s))
 		root.add_node(clip_node, _anim(s))
@@ -1329,41 +1438,38 @@ func _setup_animation() -> void:
 			root.connect_node(ts_name, 0, clip_node)
 			src = ts_name
 		root.connect_node(&"stance", i, src)
+	var head: StringName = &"stance"
+	# Only attach the role's own one-shots so standard gunmen don't evaluate
+	# five idle melee/boss one-shot nodes on every skeleton update.
+	if _has_melee_oneshots:
+		head = _add_timed_oneshot(root, head, &"vault", 0.1, 0.18)
+		head = _add_timed_oneshot(root, head, &"chop", 0.06, 0.18)
+	elif _has_boss_oneshots:
+		head = _add_timed_oneshot(root, head, &"pound", 0.1, 0.18)
+		head = _add_timed_oneshot(root, head, &"swing", 0.1, 0.18)
+		head = _add_timed_oneshot(root, head, &"intro", 0.0, 0.3)
 	var react: AnimationNodeOneShot = AnimationNodeOneShot.new()
 	react.fadein_time = 0.08
 	react.fadeout_time = 0.25
 	root.add_node(&"react", react)
 	root.add_node(&"clip_stumble", _anim(&"stumble"))
-	# Melee one-shots (Hatchet Man): the chop and the vault; the boss's pound,
-	# haymaker and entrance. Whole body, each with its own speed.
-	for one: StringName in [&"vault", &"chop", &"pound", &"swing", &"intro"]:
-		var os: AnimationNodeOneShot = AnimationNodeOneShot.new()
-		os.fadein_time = 0.0 if one == &"intro" else (0.06 if one == &"chop" else 0.1)
-		os.fadeout_time = 0.18 if one != &"intro" else 0.3
-		root.add_node(one, os)
-		root.add_node(StringName("clip_" + String(one)), _anim(one))
-		root.add_node(StringName(String(one) + "_speed"), AnimationNodeTimeScale.new())
-		root.connect_node(StringName(String(one) + "_speed"), 0, StringName("clip_" + String(one)))
-		root.connect_node(one, 1, StringName(String(one) + "_speed"))
-	root.connect_node(&"vault", 0, &"stance")
-	root.connect_node(&"chop", 0, &"vault")
-	root.connect_node(&"pound", 0, &"chop")
-	root.connect_node(&"swing", 0, &"pound")
-	root.connect_node(&"intro", 0, &"swing")
-	root.connect_node(&"react", 0, &"intro")
+	root.connect_node(&"react", 0, head)
 	root.connect_node(&"react", 1, &"clip_stumble")
-	var reload: AnimationNodeOneShot = AnimationNodeOneShot.new()
-	reload.fadein_time = 0.15
-	reload.fadeout_time = 0.2
-	reload.filter_enabled = true
-	var sk_path: String = String(_model.get_path_to(skeleton))
-	for b: StringName in UPPER_BONES:
-		reload.set_filter_path(NodePath(sk_path + ":" + String(b)), true)
-	root.add_node(&"reload", reload)
-	root.add_node(&"clip_reload", _anim(&"reload"))
-	root.connect_node(&"reload", 0, &"react")
-	root.connect_node(&"reload", 1, &"clip_reload")
-	root.connect_node(&"output", 0, &"reload")
+	head = &"react"
+	if _has_reload:
+		var reload: AnimationNodeOneShot = AnimationNodeOneShot.new()
+		reload.fadein_time = 0.15
+		reload.fadeout_time = 0.2
+		reload.filter_enabled = true
+		var sk_path: String = String(_model.get_path_to(skeleton))
+		for b: StringName in UPPER_BONES:
+			reload.set_filter_path(NodePath(sk_path + ":" + String(b)), true)
+		root.add_node(&"reload", reload)
+		root.add_node(&"clip_reload", _anim(&"reload"))
+		root.connect_node(&"reload", 0, head)
+		root.connect_node(&"reload", 1, &"clip_reload")
+		head = &"reload"
+	root.connect_node(&"output", 0, head)
 	_tree = AnimationTree.new()
 	_tree.name = "AnimationTree"
 	_tree.tree_root = root
@@ -1374,13 +1480,30 @@ func _setup_animation() -> void:
 	_tree.set(&"parameters/stance/transition_request", String(stance))
 
 
+func _add_timed_oneshot(root: AnimationNodeBlendTree, prev: StringName, one: StringName, fade_in: float, fade_out: float) -> StringName:
+	var os: AnimationNodeOneShot = AnimationNodeOneShot.new()
+	os.fadein_time = fade_in
+	os.fadeout_time = fade_out
+	root.add_node(one, os)
+	var clip_name: StringName = StringName("clip_" + String(one))
+	var speed_name: StringName = StringName(String(one) + "_speed")
+	root.add_node(clip_name, _anim(one))
+	root.add_node(speed_name, AnimationNodeTimeScale.new())
+	root.connect_node(speed_name, 0, clip_name)
+	root.connect_node(one, 0, prev)
+	root.connect_node(one, 1, speed_name)
+	return one
+
+
 func _anim(clip: StringName) -> AnimationNodeAnimation:
 	var a: AnimationNodeAnimation = AnimationNodeAnimation.new()
 	a.animation = clip
 	return a
 
 
-func _setup_ragdoll() -> void:
+func _ensure_ragdoll() -> void:
+	if _sim != null:
+		return
 	_sim = PhysicalBoneSimulator3D.new()
 	_sim.name = "Ragdoll"
 	skeleton.add_child(_sim)
@@ -1401,9 +1524,12 @@ func _setup_ragdoll() -> void:
 		pb.body_offset = Transform3D(Basis(), Vector3(0, length * 0.5, 0))
 		pb.joint_offset = Transform3D(Basis(), Vector3(0, -length * 0.5, 0))
 		var cs: CollisionShape3D = CollisionShape3D.new()
-		var cap: CapsuleShape3D = CapsuleShape3D.new()
-		cap.radius = radius
-		cap.height = maxf(length, radius * 2.0 + 0.01)
+		var cap: CapsuleShape3D = _ragdoll_shapes.get(bone)
+		if cap == null:
+			cap = CapsuleShape3D.new()
+			cap.radius = radius
+			cap.height = maxf(length, radius * 2.0 + 0.01)
+			_ragdoll_shapes[bone] = cap
 		cs.shape = cap
 		pb.add_child(cs)
 		var joint: String = spec[2]
@@ -1423,4 +1549,10 @@ func _setup_ragdoll() -> void:
 				pb.joint_type = PhysicalBone3D.JOINT_TYPE_NONE
 		_sim.add_child(pb)
 		_bones[bone] = pb
+	for seg: StringName in severed:
+		var sp: Array = SEGMENTS[seg]
+		for rb: StringName in sp[7]:
+			if _bones.has(rb):
+				_bones[rb].collision_layer = 0
+				_bones[rb].collision_mask = 0
 	_sim.active = false

@@ -21,6 +21,8 @@ var _wave_sub: Label
 var _down: Label
 var _hits: Array[Indicator] = []
 var _banner_time: float = 0.0
+var _last_vp: Vector2 = Vector2(-1.0, -1.0)
+var _last_boss_vis: bool = false
 
 
 class Indicator:
@@ -47,13 +49,20 @@ class Vignette:
 	## Left, right, top, bottom: each fades from its screen edge inward.
 	var _edges: Array[ImageTexture] = []
 	var _profile_alpha: float = -1.0
-	var _drawn: Array = []
+	var _drawn_hurt: float = -1.0
+	var _drawn_supp: float = -1.0
+	var _drawn_size: Vector2 = Vector2(-1.0, -1.0)
+	var _drawn_had_arcs: bool = false
 
 	## Redrawn only when something it shows changed (optimization overhaul U-07).
 	func redraw_if_changed() -> void:
-		var now: Array = [hurt, suppression, arcs.duplicate(), size]
-		if now != _drawn:
-			_drawn = now
+		var has_arcs: bool = not arcs.is_empty()
+		if has_arcs or _drawn_had_arcs or absf(hurt - _drawn_hurt) > 0.002 \
+				or absf(suppression - _drawn_supp) > 0.002 or size != _drawn_size:
+			_drawn_hurt = hurt
+			_drawn_supp = suppression
+			_drawn_size = size
+			_drawn_had_arcs = has_arcs
 			queue_redraw()
 
 	func _draw() -> void:
@@ -111,13 +120,14 @@ class HealthBar:
 	var shown: float = 1.0
 	const W: float = 240.0
 	const H: float = 10.0
-	var _drawn: Array = []
+	var _drawn_frac: float = -1.0
+	var _drawn_shown: float = -1.0
 
 	## Redrawn only when something it shows changed (optimization overhaul U-07).
 	func redraw_if_changed() -> void:
-		var now: Array = [fraction, shown]
-		if now != _drawn:
-			_drawn = now
+		if absf(fraction - _drawn_frac) > 0.0005 or absf(shown - _drawn_shown) > 0.0005:
+			_drawn_frac = fraction
+			_drawn_shown = shown
 			queue_redraw()
 
 	func _draw() -> void:
@@ -338,42 +348,52 @@ func _label(size: int) -> Label:
 
 
 func _process(delta: float) -> void:
-	var vp: Vector2 = _root.get_viewport_rect().size
-	_health.position = Vector2(26.0, vp.y - 34.0)
-	_callouts.position = Vector2(vp.x * 0.5 - 320.0, vp.y - 170.0)
-	_callouts.size = Vector2(640.0, 120.0)
 	_boss_bar.step(delta)
-	# Under the boss's bar while he's up.
-	var drop: float = 52.0 if _boss_bar.visible else 0.0
-	_wave.position = Vector2(0, 54 + drop)
-	_wave.size = Vector2(vp.x, 40)
-	_wave_sub.position = Vector2(0, 90 + drop)
-	_wave_sub.size = Vector2(vp.x, 24)
-	_down.position = Vector2(0, vp.y * 0.42)
-	_down.size = Vector2(vp.x, 50)
+	var vp: Vector2 = _root.get_viewport_rect().size
+	if vp != _last_vp or _boss_bar.visible != _last_boss_vis:
+		_last_vp = vp
+		_last_boss_vis = _boss_bar.visible
+		_health.position = Vector2(26.0, vp.y - 34.0)
+		_callouts.position = Vector2(vp.x * 0.5 - 320.0, vp.y - 170.0)
+		_callouts.size = Vector2(640.0, 120.0)
+		# Under the boss's bar while he's up.
+		var drop: float = 52.0 if _boss_bar.visible else 0.0
+		_wave.position = Vector2(0, 54 + drop)
+		_wave.size = Vector2(vp.x, 40)
+		_wave_sub.position = Vector2(0, 90 + drop)
+		_wave_sub.size = Vector2(vp.x, 24)
+		_down.position = Vector2(0, vp.y * 0.42)
+		_down.size = Vector2(vp.x, 50)
 	if player:
 		_health.fraction = player.health_fraction()
 		_health.shown = move_toward(_health.shown, _health.fraction, delta * 0.4)
 		_vignette.hurt = clampf(1.0 - player.health_fraction() * 1.4, 0.0, 1.0)
 		_vignette.suppression = player.suppression
-		if not player.dead:
+		if not player.dead and _down.visible:
 			_down.visible = false
 	_health.redraw_if_changed()
-	_banner_time -= delta
-	_wave.modulate.a = clampf(_banner_time, 0.25, 1.0) if _banner_time > -999.0 else 1.0
+	if _banner_time > -999.0:
+		_banner_time -= delta
+		_wave.modulate.a = clampf(_banner_time, 0.25, 1.0)
 	_update_arcs(delta)
 	_update_marker(delta)
-	for c: Node in _callouts.get_children():
-		var l: Label = c as Label
-		var age: float = l.get_meta(&"age", 0.0)
-		age += delta
-		l.set_meta(&"age", age)
-		l.modulate.a = clampf((CALLOUT_TIME - age) / 0.5, 0.0, 1.0)
-		if age > CALLOUT_TIME:
-			l.queue_free()
+	if _callouts.get_child_count() > 0:
+		for c: Node in _callouts.get_children():
+			var l: Label = c as Label
+			var age: float = l.get_meta(&"age", 0.0)
+			age += delta
+			l.set_meta(&"age", age)
+			l.modulate.a = clampf((CALLOUT_TIME - age) / 0.5, 0.0, 1.0)
+			if age > CALLOUT_TIME:
+				l.queue_free()
 
 
 func _update_arcs(delta: float) -> void:
+	if _hits.is_empty():
+		if not _vignette.arcs.is_empty():
+			_vignette.arcs.clear()
+		_vignette.redraw_if_changed()
+		return
 	var cam: Camera3D = player.camera() if player else null
 	var arcs: Array[Vector2] = []
 	var still: Array[Indicator] = []
@@ -411,7 +431,7 @@ func marked_hostiles() -> Array[Enemy]:
 		return out
 	for n: Node in get_tree().get_nodes_in_group(&"enemies"):
 		var e: Enemy = n as Enemy
-		if e and e.alive and not e.passive and e.state not in [Enemy.State.SURRENDER, Enemy.State.CRAWL]:
+		if e and e.alive and not e.passive and e.state != Enemy.State.SURRENDER and e.state != Enemy.State.CRAWL:
 			out.append(e)
 	return out
 

@@ -31,6 +31,9 @@ var _parent: PackedInt32Array = PackedInt32Array()
 var _bone_node: PackedInt32Array = PackedInt32Array()
 var _rel: Array[Transform3D] = []
 var _vis: Array[bool] = []
+var _prev_rel: Array[Transform3D] = []
+var _prev_vis: Array[bool] = []
+var _synced: bool = false
 
 
 ## Merges the rigid pieces of `root`. Returns null (and leaves the model as
@@ -115,6 +118,8 @@ func _build(pieces: Array[MeshInstance3D]) -> void:
 				order.append(key)
 			_append(groups[key], mesh.surface_get_arrays(s), mesh.surface_get_format(s), rest, bone)
 		mi.mesh = _empty
+	_prev_rel.resize(_bone_node.size())
+	_prev_vis.resize(_bone_node.size())
 	var out: ArrayMesh = ArrayMesh.new()
 	for key: Material in order:
 		var g: Dictionary = groups[key]
@@ -267,18 +272,26 @@ func _walk() -> void:
 			_vis[i] = _vis[p] and n.visible
 
 
-## Copies the pieces' current transforms to the bones.
+## Copies the pieces' current transforms to the bones (skipping unchanged bones).
 func sync() -> void:
 	if skeleton == null:
 		return
 	_walk()
-	for b: int in _bone_node.size():
+	var n: int = _bone_node.size()
+	for b: int in n:
 		var ci: int = _bone_node[b]
-		if _vis[ci]:
-			skeleton.set_bone_pose(b, _rel[ci])
+		var vis: bool = _vis[ci]
+		var rel: Transform3D = _rel[ci]
+		if _synced and vis == _prev_vis[b] and (not vis or rel.is_equal_approx(_prev_rel[b])):
+			continue
+		_prev_vis[b] = vis
+		_prev_rel[b] = rel
+		if vis:
+			skeleton.set_bone_pose(b, rel)
 		else:
-			skeleton.set_bone_pose_position(b, _rel[ci].origin)
+			skeleton.set_bone_pose_position(b, rel.origin)
 			skeleton.set_bone_pose_scale(b, Vector3.ZERO)
+	_synced = true
 
 
 func _process(_delta: float) -> void:

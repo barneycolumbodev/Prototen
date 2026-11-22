@@ -3,6 +3,7 @@ shader_type spatial;
 // its slot from the top (0 = top) plus 0.25 on the brass case and 0.75 on the
 // copper bullet (raw_assets/weapons/aug/build.py). Rounds in slots at or past
 // `rounds` have been fired: their vertices collapse to nothing.
+render_mode blend_mix, depth_draw_opaque, cull_back, diffuse_lambert, specular_schlick_ggx, shadows_disabled;
 
 uniform float rounds = 30.0;
 uniform vec3 brass : source_color = vec3(0.86, 0.66, 0.36);

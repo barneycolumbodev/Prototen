@@ -64,7 +64,14 @@ var _blood: float = 0.0
 ## Its own running velocity (flat); the shove is added on top.
 var _run_vel: Vector3 = Vector3.ZERO
 var _nav_refresh: float = 0.0
+var _run_len: float = 0.5
+var _trot_len: float = 0.7
+var _clear_cache: bool = false
+var _clear_timer: float = 0.0
 var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
+
+static var _blob_mesh: QuadMesh
+static var _blob_mat: StandardMaterial3D
 
 
 func _ready() -> void:
@@ -97,8 +104,20 @@ func _ready() -> void:
 	_growl_in = _rng.randf_range(0.2, 1.0)
 
 
+## Starts loading the dog model and its textures on a worker thread so the
+## first dog spawn never stalls the main thread.
+static func prefetch() -> void:
+	if not ResourceLoader.has_cached(SCENE) \
+			and ResourceLoader.load_threaded_get_status(SCENE) == ResourceLoader.THREAD_LOAD_INVALID_RESOURCE:
+		ResourceLoader.load_threaded_request(SCENE)
+
+
 func _build_model() -> void:
-	var ps: PackedScene = load(SCENE) as PackedScene
+	var ps: PackedScene
+	if ResourceLoader.load_threaded_get_status(SCENE) != ResourceLoader.THREAD_LOAD_INVALID_RESOURCE:
+		ps = ResourceLoader.load_threaded_get(SCENE) as PackedScene
+	else:
+		ps = load(SCENE) as PackedScene
 	model = ps.instantiate() as Node3D
 	model.name = "Model"
 	# The model faces +X; the dog faces +Z like every other body here.
@@ -109,6 +128,10 @@ func _build_model() -> void:
 	for n: StringName in LOOPS:
 		if anim.has_animation(n):
 			anim.get_animation(n).loop_mode = Animation.LOOP_LINEAR
+	if anim.has_animation(&"run"):
+		_run_len = anim.get_animation(&"run").length
+	if anim.has_animation(&"trot"):
+		_trot_len = anim.get_animation(&"trot").length
 	for mi: Node in model.find_children("*", "MeshInstance3D", true, false):
 		var m: MeshInstance3D = mi as MeshInstance3D
 		m.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
@@ -125,6 +148,7 @@ func _dress(m: MeshInstance3D) -> void:
 		return
 	coat = ShaderMaterial.new()
 	coat.shader = SHADER
+	coat.render_priority = EnemyBody.RENDER_PRIORITY
 	coat.set_shader_parameter(&"base_tex", std.albedo_texture)
 	coat.set_shader_parameter(&"orm_tex", std.roughness_texture)
 	coat.set_shader_parameter(&"normal_tex", std.normal_texture)
@@ -142,31 +166,31 @@ func _set_rim(v: float) -> void:
 	_set_coat(&"rim_alive", v)
 
 
-## A soft contact shadow under it (the men's are one shared draw in
-## BlobShadows; a dog keeps its own quad, a few at most at once).
+## A soft contact shadow under it (shared quad/material across all dogs).
 func _build_blob() -> void:
-	var q: QuadMesh = QuadMesh.new()
-	q.size = Vector2(0.7, 1.35)
-	q.orientation = PlaneMesh.FACE_Y
-	var g: GradientTexture2D = GradientTexture2D.new()
-	g.fill = GradientTexture2D.FILL_RADIAL
-	g.fill_from = Vector2(0.5, 0.5)
-	g.fill_to = Vector2(0.5, 0.0)
-	g.width = 64
-	g.height = 64
-	var gr: Gradient = Gradient.new()
-	gr.set_color(0, Color(0, 0, 0, 0.55))
-	gr.set_color(1, Color(0, 0, 0, 0.0))
-	g.gradient = gr
-	var m: StandardMaterial3D = StandardMaterial3D.new()
-	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	m.albedo_texture = g
-	m.depth_draw_mode = BaseMaterial3D.DEPTH_DRAW_DISABLED
+	if _blob_mesh == null:
+		_blob_mesh = QuadMesh.new()
+		_blob_mesh.size = Vector2(0.7, 1.35)
+		_blob_mesh.orientation = PlaneMesh.FACE_Y
+		var g: GradientTexture2D = GradientTexture2D.new()
+		g.fill = GradientTexture2D.FILL_RADIAL
+		g.fill_from = Vector2(0.5, 0.5)
+		g.fill_to = Vector2(0.5, 0.0)
+		g.width = 64
+		g.height = 64
+		var gr: Gradient = Gradient.new()
+		gr.set_color(0, Color(0, 0, 0, 0.55))
+		gr.set_color(1, Color(0, 0, 0, 0.0))
+		g.gradient = gr
+		_blob_mat = StandardMaterial3D.new()
+		_blob_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		_blob_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		_blob_mat.albedo_texture = g
+		_blob_mat.depth_draw_mode = BaseMaterial3D.DEPTH_DRAW_DISABLED
 	var mi: MeshInstance3D = MeshInstance3D.new()
 	mi.name = "Blob"
-	mi.mesh = q
-	mi.material_override = m
+	mi.mesh = _blob_mesh
+	mi.material_override = _blob_mat
 	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	mi.position = Vector3(0, 0.02, 0)
 	add_child(mi)
@@ -286,6 +310,7 @@ func on_part_hit(p: HitboxPart, hit: BallisticHit) -> void:
 	Gore.flesh_hit(hit, sqrt(maxf(dep, 30.0) / 300.0) * config.gore_scale, head)
 	if not alive:
 		_knock += _flat(hit.direction) * clampf(hit.damage.impulse * 0.05, 0.0, 1.5)
+		set_physics_process(true)
 		return
 	var mult: float = config.zone_multipliers.get(zone, 1.0)
 	var dmg: float = hit.damage.amount * mult
@@ -305,6 +330,7 @@ func on_part_burn(_p: HitboxPart, hit: BallisticHit) -> void:
 func strike(damage: float, push: Vector3, from: Node) -> void:
 	if not alive:
 		_knock += push * 0.5
+		set_physics_process(true)
 		return
 	_hurt(damage, push, from, null)
 
@@ -397,7 +423,11 @@ func _chase(delta: float) -> Vector3:
 	var target: Vector3 = _player_pos()
 	var to: Vector3 = _flat(target - global_position)
 	var d: float = to.length()
-	var clear: bool = _clear_to(target)
+	_clear_timer -= delta
+	if _clear_timer <= 0.0 or d < 4.0:
+		_clear_timer = 0.15
+		_clear_cache = _clear_to(target)
+	var clear: bool = _clear_cache
 	if _cooldown <= 0.0 and clear:
 		if d <= config.bite_range:
 			_enter(State.BITE)
@@ -488,6 +518,8 @@ func _move(want: Vector3, delta: float) -> void:
 		if real.length() < _run_vel.length():
 			_run_vel = real
 	if not alive:
+		if is_on_floor() and _knock.length_squared() < 0.001 and _run_vel.length_squared() < 0.001:
+			set_physics_process(false)
 		return
 	var flat: Vector3 = _run_vel
 	var spd: float = flat.length()
@@ -495,13 +527,13 @@ func _move(want: Vector3, delta: float) -> void:
 		if spd > 0.3:
 			_turn_toward(atan2(flat.x, flat.z), delta)
 		if spd > config.trot_speed + 1.0:
-			_play(&"run", 0.15, spd / (config.run_stride / anim.get_animation(&"run").length))
+			_play(&"run", 0.15, spd / (config.run_stride / _run_len))
 		elif spd > 0.4:
-			_play(&"trot", 0.15, spd / (config.trot_stride / anim.get_animation(&"trot").length))
+			_play(&"trot", 0.15, spd / (config.trot_stride / _trot_len))
 		else:
 			_play(&"idle_snarl", 0.2)
 	elif state == State.RECOVER and spd > 0.4:
-		_play(&"trot", 0.15, maxf(spd / (config.trot_stride / anim.get_animation(&"trot").length), 0.6))
+		_play(&"trot", 0.15, maxf(spd / (config.trot_stride / _trot_len), 0.6))
 
 
 func _voice(delta: float) -> void:
