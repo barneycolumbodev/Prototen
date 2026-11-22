@@ -1072,9 +1072,10 @@ static func dropkick_launch_velocity(cfg: DropkickConfig, push: float, dir: Vect
 	return (dir * cfg.launch_forward_speed + Vector3.UP * cfg.launch_up_speed) * r
 
 
-## Blunt chest-kick damage of a dropkick of strength `push`; past lethal_push breaks the body.
-static func dropkick_damage(cfg: DropkickConfig, push: float) -> float:
-	if push >= cfg.lethal_push:
+## Blunt chest-kick damage of a dropkick of strength `push`; past lethal_push
+## breaks the body, unless `dilated` (RX-9 slow-mo: he always flies, design §5.7b).
+static func dropkick_damage(cfg: DropkickConfig, push: float, dilated: bool = false) -> float:
+	if push >= cfg.lethal_push and (cfg.lethal_when_dilated or not dilated):
 		return 9999.0
 	var k: float = push / maxf(cfg.knock_speed, 0.1)
 	return cfg.damage * clampf(k, 0.65, 2.2)
@@ -1224,10 +1225,13 @@ func _dropkick_check_hits(impact_speed: float) -> bool:
 	var travel_dir: Vector3 = _dk_dir if _dk_dir.length_squared() > 0.01 else -global_basis.z
 	travel_dir.y = 0.0
 	travel_dir = travel_dir.normalized()
+	# RX-9's extra push sends him further, it doesn't hurt him more: damage and
+	# the lethal check use the kick without it, and slowed time never kills outright.
 	var dilation_bonus: float = 1.0 + 0.15 * TimeControl.dilation_amount()
-	var push: float = dropkick_strength(cfg, body.mass_kg, body.usable_strength() * body.stat(&"impact"), impact_speed) * dilation_bonus
-	var dmg: float = dropkick_damage(cfg, push)
-	var lethal: bool = push >= cfg.lethal_push
+	var base_push: float = dropkick_strength(cfg, body.mass_kg, body.usable_strength() * body.stat(&"impact"), impact_speed)
+	var push: float = base_push * dilation_bonus
+	var dmg: float = dropkick_damage(cfg, base_push, TimeControl.dilation_amount() >= 0.2)
+	var lethal: bool = dmg >= 9999.0
 	var hit_any: bool = false
 	var hit_point: Vector3 = me + travel_dir * 0.9 + Vector3.UP * 1.1
 	var primary_away: Vector3 = travel_dir
@@ -1262,7 +1266,7 @@ func _dropkick_check_hits(impact_speed: float) -> bool:
 			else:
 				var lv: Vector3 = dropkick_launch_velocity(cfg, push, away)
 				e.launch(lv, self, cfg.morale_loss, cfg.launch_gravity, cfg.launch_tumble_deg,
-						cfg.launch_stun, 9999.0 if lethal else dmg, cfg.launch_max_speed, cfg.wall_slam_damage, true)
+						cfg.launch_stun, dmg, cfg.launch_max_speed, cfg.wall_slam_damage, cfg)
 			Gore.spray(chest, away + Vector3.UP * 0.25, clampf(push / 7.5, 0.7, 2.0), 8 if lethal else 5)
 			Gore.mist(chest, away, 0.9 if lethal else 0.55)
 			EventBus.dropkick_impact.emit(e, push)
@@ -1283,7 +1287,7 @@ func _dropkick_check_hits(impact_speed: float) -> bool:
 				hit_point = chest_d
 				primary_away = away_d
 			hit_any = true
-			d.strike(9999.0 if lethal else dmg, away_d * push + Vector3.UP * 4.2, self)
+			d.strike(dmg, away_d * push + Vector3.UP * 4.2, self)
 			Gore.spray(chest_d, away_d + Vector3.UP * 0.2, 1.0, 5)
 			EventBus.dropkick_impact.emit(d, push)
 

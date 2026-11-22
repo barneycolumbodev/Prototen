@@ -58,6 +58,30 @@ extends Resource
 ## Bonus damage when a dropkicked enemy slams into a wall mid-flight.
 @export var wall_slam_damage: float = 30.0
 @export var morale_loss: float = 0.35
+## With time slowed (RX-9) the kick never breaks the body outright: he flies,
+## to be shot in the air (owner, 2026-11-22). RX-9's extra push adds flight,
+## not damage.
+@export var lethal_when_dilated: bool = false
+
+@export_group("Domino")
+## A dropkicked man who flies into other men bowls them over: each is sent
+## flying the same way and can bowl over the next (owner, 2026-11-22).
+## Contact radius (m, horizontal, centre to centre) while he is in the air.
+@export var domino_radius: float = 0.95
+## How high (m) above another man's (or dog's) feet the flyer's hips can pass and still take him down.
+@export var domino_reach_man: float = 2.45
+@export var domino_reach_dog: float = 1.4
+## A flying man slower than this (m/s, horizontal) no longer bowls anyone over.
+@export var domino_min_speed: float = 3.5
+## Share of the flyer's horizontal speed given to the man he hits, and kept by the flyer.
+@export var domino_transfer: float = 0.8
+@export var domino_keep: float = 0.7
+## Upward speed (m/s) for a man bowled over; his damage and morale loss.
+@export var domino_up_speed: float = 3.8
+@export var domino_damage: float = 14.0
+@export var domino_morale_loss: float = 0.25
+## How far he tips back (°) in flight, as a share of launch_tumble_deg.
+@export var domino_tumble_share: float = 0.85
 
 @export_group("Rebound & Recovery")
 ## Upward pop and backward recoil (m/s) when kicking off an enemy ("falling back").

@@ -135,9 +135,11 @@ var _launch_stun: float = 0.0
 var _launch_from: Node
 var _launch_wall_damage: float = 0.0
 var _launch_wall_hit: bool = false
-var _launch_domino: bool = false
+## Set while a dropkick has him flying: he bowls over the men he reaches (§5.7b).
+var _launch_domino: DropkickConfig
 var _launch_domino_hit: Array[Node] = []
 const GRAVITY: float = 20.0
+const COLLIDE_MASK: int = Ballistics.LAYER_WORLD | Ballistics.LAYER_PROPS | Ballistics.LAYER_ENEMY | Ballistics.LAYER_CLIP
 ## Height (m) of the point his body tumbles about (about his hips).
 const TUMBLE_PIVOT: float = 1.0
 ## State when the killing blow landed (picks the death voice).
@@ -210,7 +212,7 @@ func _ready() -> void:
 	add_to_group(&"suppressible")
 	add_to_group(&"triad")
 	collision_layer = Ballistics.LAYER_ENEMY
-	collision_mask = Ballistics.LAYER_WORLD | Ballistics.LAYER_PROPS | Ballistics.LAYER_ENEMY | Ballistics.LAYER_CLIP
+	collision_mask = COLLIDE_MASK
 	var cs: CollisionShape3D = CollisionShape3D.new()
 	cs.name = "Capsule"
 	var cap: CapsuleShape3D = CapsuleShape3D.new()
@@ -417,9 +419,10 @@ func knock_back(push: Vector3, from: Node, damage: float, morale_loss: float) ->
 ## `gravity`, tumbling back up to `tumble_deg` (feet swept out, head toward
 ## whoever hit him), can't shoot or think while he's up, and needs `stun`
 ## seconds on the ground after he lands. A kill on impact or in the air sends
-## the ragdoll on with his flight (die() uses his velocity).
+## the ragdoll on with his flight (die() uses his velocity). With `domino` he
+## flies through other men instead of landing on them, and bowls them over.
 func launch(v: Vector3, from: Node, morale_loss: float, gravity: float, tumble_deg: float, stun: float,
-		damage: float = 0.0, max_speed: float = 10.0, wall_slam_damage: float = 0.0, domino: bool = false) -> void:
+		damage: float = 0.0, max_speed: float = 10.0, wall_slam_damage: float = 0.0, domino: DropkickConfig = null) -> void:
 	if not alive or held or _thrown_speed > 0.0 or boss:
 		return
 	if melee:
@@ -444,6 +447,8 @@ func launch(v: Vector3, from: Node, morale_loss: float, gravity: float, tumble_d
 	_launch_wall_hit = false
 	_launch_domino = domino
 	_launch_domino_hit.clear()
+	# Other men don't stop him (no standing on heads); _bowl_over() hits them.
+	collision_mask = COLLIDE_MASK & ~Ballistics.LAYER_ENEMY if domino else COLLIDE_MASK
 	# Top of the body toward -dir: about dir × up, a little skewed so no two
 	# launches look the same.
 	var axis_world: Vector3 = dir.cross(Vector3.UP).rotated(Vector3.UP, _rng.randf_range(-0.35, 0.35))
@@ -470,19 +475,13 @@ func _update_launch(delta: float) -> bool:
 	if _launch_air:
 		var f: float = clampf(_launch_time / _launch_air_time, 0.0, 1.0)
 		_launch_tilt = _launch_tumble * pow(sin(PI * minf(f * 1.15, 1.0)), 0.6)
-		if _launch_domino and _knock.length() > 4.5:
-			var at: Vector3 = body.chest_position()
-			for n: Node in get_tree().get_nodes_in_group(&"enemies"):
-				var other: Enemy = n as Enemy
-				if other == null or other == self or not other.alive or n in _launch_domino_hit:
-					continue
-				if other.body.chest_position().distance_to(at) < 0.85:
-					_launch_domino_hit.append(n)
-					other.knock_back(_knock * 0.55 + Vector3.UP * 2.2, _launch_from, 14.0, 0.25)
-					Sfx.play_at(&"body_fall", at, -1.0, 0.1)
+		if _launch_domino:
+			_bowl_over(_launch_domino)
 		if _launch_time > 0.12 and is_on_floor() and velocity.y <= 0.0:
 			_launch_air = false
 			_launch_time = 0.0
+			_launch_domino = null
+			collision_mask = COLLIDE_MASK
 			body.play_stumble()
 			Sfx.play_at(&"body_fall", global_position + Vector3.UP * 0.3, -1.0, 0.1)
 	else:
@@ -491,6 +490,62 @@ func _update_launch(delta: float) -> bool:
 			launched = false
 	_apply_tumble()
 	return launched
+
+
+## Domino (docs/design.md §5.7b): flying into another man sends him flying
+## the same way (a little spread, like pins), and he can bowl over the next;
+## each pass gives up speed, so the chain dies out. Dogs are struck, bosses shoved.
+func _bowl_over(cfg: DropkickConfig) -> void:
+	var flat: Vector3 = Vector3(_knock.x, 0.0, _knock.z)
+	var spd: float = flat.length()
+	if spd < cfg.domino_min_speed:
+		return
+	var me: Vector3 = global_position
+	# He tumbles about his hips, legs flailing: a body skimming a man's head still takes him down.
+	var hip_y: float = me.y + TUMBLE_PIVOT
+	var dir: Vector3 = flat / spd
+	for n: Node in get_tree().get_nodes_in_group(&"enemies"):
+		if n == self or n in _launch_domino_hit:
+			continue
+		var other: Enemy = n as Enemy
+		var dog: AttackDog = n as AttackDog
+		if other == null and dog == null:
+			continue
+		var n3: Node3D = n as Node3D
+		var to: Vector3 = n3.global_position - me
+		var rise: float = hip_y - n3.global_position.y
+		if rise < -0.2 or rise > (cfg.domino_reach_man if other else cfg.domino_reach_dog):
+			continue
+		to.y = 0.0
+		var dist: float = to.length()
+		if dist > cfg.domino_radius:
+			continue
+		if other and (not other.alive or (other.launched and other._launch_air)):
+			continue
+		if dog and not dog.alive:
+			continue
+		_launch_domino_hit.append(n)
+		var side: Vector3 = to / dist if dist > 0.05 else dir
+		var out: Vector3 = (dir * 0.7 + side * 0.3).normalized()
+		var give: float = spd * cfg.domino_transfer
+		var at: Vector3 = (body.chest_position() + n3.global_position + Vector3.UP * (1.2 if other else 0.5)) * 0.5
+		if other and other.boss:
+			other.knock_back(out * give + Vector3.UP * 2.0, _launch_from, cfg.domino_damage, cfg.domino_morale_loss)
+		elif other:
+			other.launch(out * give + Vector3.UP * cfg.domino_up_speed, _launch_from, cfg.domino_morale_loss,
+					_launch_gravity, cfg.launch_tumble_deg * cfg.domino_tumble_share, cfg.launch_stun,
+					cfg.domino_damage, cfg.launch_max_speed, cfg.wall_slam_damage, cfg)
+		else:
+			dog.strike(cfg.domino_damage, out * give + Vector3.UP * cfg.domino_up_speed, _launch_from)
+		Sfx.play_at(&"impact_flesh", at, 1.0, 0.1)
+		Sfx.play_at(&"body_fall", at, 0.0, 0.1)
+		Gore.spray(at, out + Vector3.UP * 0.2, 0.8, 4)
+		# He loses speed in the collision and carries on through.
+		_knock = flat * cfg.domino_keep
+		flat = _knock
+		spd = flat.length()
+		if spd < cfg.domino_min_speed:
+			return
 
 
 func _apply_tumble() -> void:

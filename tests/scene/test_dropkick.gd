@@ -135,3 +135,63 @@ func test_dropkick_preserves_ledge_mantle() -> void:
 	await wait_physics_frames(2)
 	assert_true(player.is_mantling(), "mantle takes priority at a ledge")
 	assert_false(player.is_dropkicking(), "did not hijack mantle")
+
+
+func _gunman(at: Vector3, look: int) -> Enemy:
+	var m: Enemy = Enemy.new()
+	m.config = load("res://data/enemies/gunman.tres") as EnemyConfig
+	m.passive = true
+	m.look_seed = look
+	room.add_child(m)
+	m.global_position = at
+	m.face(0.0)
+	return m
+
+
+## Runs in, jumps and dropkicks straight down -Z at a man standing at z = 1.5.
+func _run_up_and_kick() -> void:
+	room.shooting_range.clear_targets()
+	player.global_position = Vector3(0.0, 0.0, 8.2)
+	player.set_view(0.0, -0.02)
+	player.reset_camera_smoothing()
+	await wait_physics_frames(2)
+	Input.action_press(&"move_forward", 1.0)
+	await wait_physics_frames(14)
+	await _tap_jump()
+	await wait_physics_frames(6)
+	await _tap_jump()
+	Input.action_release(&"move_forward")
+
+
+func test_rx9_dropkick_launches_instead_of_killing() -> void:
+	var rx9: ActivePart = player.augments.selected_part()
+	rx9.toggle()
+	var man: Enemy = _gunman(Vector3(0.0, 0.0, 1.5), 77)
+	await _run_up_and_kick()
+	var peak: float = 0.0
+	for i: int in 120:
+		await wait_physics_frames(1)
+		peak = maxf(peak, man.global_position.y)
+	rx9.stop()
+	assert_true(man.alive, "the kick doesn't kill him outright in RX-9 slow-mo (hp %.0f)" % man.health)
+	assert_lt(man.health, 100.0, "the kick still hurts him")
+	assert_gt(peak, 0.8, "he flies up to be shot (%.2f m)" % peak)
+
+
+func test_dropkicked_man_bowls_over_the_men_behind_him() -> void:
+	var man: Enemy = _gunman(Vector3(0.0, 0.0, 1.5), 77)
+	var behind: Array[Enemy] = [_gunman(Vector3(0.45, 0.0, -0.3), 12), _gunman(Vector3(-0.5, 0.0, -0.6), 31)]
+	var start: Array[Vector3] = [behind[0].global_position, behind[1].global_position]
+	await _run_up_and_kick()
+	var flew: Array[bool] = [false, false]
+	for i: int in 90:
+		await wait_physics_frames(1)
+		for k: int in 2:
+			if behind[k].launched:
+				flew[k] = true
+	for k: int in 2:
+		assert_true(flew[k], "man %d behind is knocked flying" % k)
+		assert_lt(behind[k].health, 100.0, "man %d behind is hurt" % k)
+		var moved: float = Vector2(behind[k].global_position.x - start[k].x, behind[k].global_position.z - start[k].z).length()
+		assert_gt(moved, 1.5, "man %d behind is thrown back (%.2f m)" % [k, moved])
+	assert_true(man.global_position.y < 0.3, "the kicked man isn't left standing on anyone's head")
