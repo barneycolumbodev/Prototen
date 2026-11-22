@@ -26,6 +26,7 @@ func test_dropkick_knockback_and_damage_scale_with_body() -> void:
 	var dmg: float = Player.dropkick_damage(cfg, base)
 	assert_between(dmg, 20.0, 75.0, "healthy enemy survives to fly through the air (%.1f)" % dmg)
 	assert_gt(Player.dropkick_damage(cfg, cfg.lethal_push), 1000.0, "past lethal_push breaks the body")
+	assert_lt(Player.dropkick_damage(cfg, cfg.lethal_push * 1.5, true), 100.0, "RX-9 slow-mo never kills outright: he flies to be shot")
 
 
 func test_dropkick_config_and_assets_load() -> void:
