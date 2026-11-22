@@ -116,6 +116,7 @@ var rounds_caught: int = 0
 var wakes: RoundWakes
 ## Projectiles fired since start (a shotgun shell adds one per pellet).
 var rounds_fired: int = 0
+var _gravity: float = 9.8
 
 
 class Projectile:
@@ -166,6 +167,7 @@ class Projectile:
 
 
 func _ready() -> void:
+	_gravity = ProjectSettings.get_setting("physics/3d/default_gravity", 9.8)
 	process_physics_priority = -10  # step rounds before targets read their state
 	_rng.randomize()
 	_mesh = ImmediateMesh.new()
@@ -545,12 +547,11 @@ func _step(p: Projectile, delta: float) -> void:
 	if not p.alive or delta <= 0.0:
 		return
 	var w: WeaponData = p.weapon
-	var gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity", 9.8)
 	# Drag: dv/dt = -k v², integrated exactly over the step for the speed.
 	var speed: float = p.velocity.length()
 	var new_speed: float = speed / (1.0 + w.drag_per_m * speed * delta)
 	p.velocity = p.velocity * (new_speed / maxf(speed, 0.001))
-	p.velocity.y -= gravity * w.gravity_scale * delta
+	p.velocity.y -= _gravity * w.gravity_scale * delta
 	var remaining: float = p.velocity.length() * delta
 	var space: PhysicsDirectSpaceState3D = get_world_3d().direct_space_state
 	var contacts: int = 0
@@ -618,6 +619,8 @@ func _near_misses(p: Projectile, a: Vector3, b: Vector3) -> void:
 	var len2: float = seg.length_squared()
 	if len2 < 1e-6:
 		return
+	var r2: float = NEAR_MISS_RADIUS * NEAR_MISS_RADIUS
+	var inv_len2: float = 1.0 / len2
 	for n: Node in get_tree().get_nodes_in_group(&"suppressible"):
 		if n == p.shooter or not n.has_method(&"suppress_point"):
 			continue
@@ -625,14 +628,14 @@ func _near_misses(p: Projectile, a: Vector3, b: Vector3) -> void:
 		if id in p.near_missed:
 			continue
 		var c: Vector3 = n.call(&"suppress_point")
-		var t: float = clampf((c - a).dot(seg) / len2, 0.0, 1.0)
+		var t: float = clampf((c - a).dot(seg) * inv_len2, 0.0, 1.0)
 		var closest: Vector3 = a + seg * t
-		var d: float = closest.distance_to(c)
-		if d < NEAR_MISS_RADIUS:
+		var d2: float = closest.distance_squared_to(c)
+		if d2 < r2:
 			p.near_missed.append(id)
 			# The shooter may have been freed while the round was in flight.
 			var shooter: Node = p.shooter if is_instance_valid(p.shooter) else null
-			n.call(&"on_near_miss", shooter, p.weapon, d, closest)
+			n.call(&"on_near_miss", shooter, p.weapon, sqrt(d2), closest)
 
 
 ## Handles one contact. Returns where the round continues from.

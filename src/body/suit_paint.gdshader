@@ -6,6 +6,7 @@ shader_type spatial;
 // scaled by how light the texel is against the channel's own base colour,
 // so grime, edge wear and the weave still show. A part with no region map
 // is painted as one piece (`single_region`).
+render_mode blend_mix, depth_draw_opaque, cull_back, diffuse_lambert, specular_schlick_ggx;
 
 // Plain trilinear: the arms and the suit face the camera, where anisotropic
 // filtering adds cost and nothing visible (optimization overhaul C-04).
@@ -84,10 +85,14 @@ void fragment() {
 	if (s.y >= 0.0) {
 		metal = s.y;
 	}
-	vec3 em = texture(tex_emission, UV).rgb;
-	if (glow_paint.a > 0.0) {
-		float el = max(em.r, max(em.g, em.b));
-		em = glow_paint.rgb * el;
+	vec3 em = vec3(0.0);
+	if (emission_energy > 0.0) {
+		em = texture(tex_emission, UV).rgb;
+		if (glow_paint.a > 0.0) {
+			float el = max(em.r, max(em.g, em.b));
+			em = glow_paint.rgb * el;
+		}
+		em *= emission_energy;
 	}
 	ALBEDO = a.rgb;
 	ROUGHNESS = rough;
@@ -96,5 +101,5 @@ void fragment() {
 	if (use_normal) {
 		NORMAL_MAP = texture(tex_normal, UV).rgb;
 	}
-	EMISSION = em * emission_energy;
+	EMISSION = em;
 }

@@ -109,7 +109,7 @@ func is_down() -> bool:
 
 
 func is_busy() -> bool:
-	return phase in [Phase.SWING, Phase.POUND, Phase.CANNON, Phase.STAGGER]
+	return phase == Phase.SWING or phase == Phase.POUND or phase == Phase.CANNON or phase == Phase.STAGGER
 
 
 func health_fraction() -> float:
@@ -133,7 +133,7 @@ func _enter(p: Phase) -> void:
 
 ## Damage taken (after zones): staggers, rage.
 func on_hurt(damage: float, hit: BallisticHit) -> void:
-	if phase in [Phase.INTRO, Phase.DOWN, Phase.DEAD]:
+	if phase == Phase.INTRO or phase == Phase.DOWN or phase == Phase.DEAD:
 		return
 	_window += damage
 	var gauss: bool = hit != null and hit.weapon != null and hit.weapon.gore_style == &"gauss"

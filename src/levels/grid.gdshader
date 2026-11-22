@@ -1,7 +1,7 @@
 // World-space greybox grid: 1 m minor lines, 4 m major lines, picked per
 // face by its dominant axis. Gives scale and speed cues in test rooms.
 shader_type spatial;
-render_mode cull_back;
+render_mode cull_back, diffuse_lambert;
 
 uniform vec3 base_color : source_color = vec3(0.32, 0.33, 0.35);
 uniform vec3 line_color : source_color = vec3(0.55, 0.57, 0.6);

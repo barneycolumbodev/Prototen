@@ -166,7 +166,12 @@ var _said_suppress: bool = false
 var _stuck_check: float = 1.0
 var _stuck_from: Vector3 = Vector3.INF
 var _stuck_for: float = 0.0
+var _officer_near: bool = false
+var _settled_pos: Vector3 = Vector3.INF
 const MOUTH_UNIT_SIZE: float = 10.0
+
+static var _flash_mesh: ArrayMesh
+static var _flash_mat: StandardMaterial3D
 
 
 ## A stump bleeding after a limb or the head came off. A cut artery pumps
@@ -251,7 +256,7 @@ func ballistic_exclude() -> Array[RID]:
 
 
 func is_threat() -> bool:
-	return alive and has_gun and state in [State.COMBAT, State.ALERT, State.BLIND]
+	return alive and has_gun and (state == State.COMBAT or state == State.ALERT or state == State.BLIND)
 
 
 func state_name() -> String:
@@ -794,7 +799,7 @@ func ignite(part: HitboxPart, hit: BallisticHit, seconds: float, dps: float, ago
 	agony = maxf(agony, agony_s)
 	morale = 0.0
 	suppression = 1.0
-	if was <= 0.0 and state not in [State.CRAWL, State.DEAD, State.SURRENDER]:
+	if was <= 0.0 and state != State.CRAWL and state != State.DEAD and state != State.SURRENDER:
 		if has_gun and _rng.randf() < 0.55:
 			has_gun = false
 			body.drop_gun(Vector3(_rng.randf_range(-1, 1), 1.5, _rng.randf_range(-1, 1)))
@@ -857,7 +862,7 @@ func _update_agony(delta: float) -> void:
 	if agony <= 0.0:
 		return
 	agony -= delta
-	if not alive or state in [State.DEAD, State.CRAWL]:
+	if not alive or state == State.DEAD or state == State.CRAWL:
 		agony = 0.0
 		return
 	_agony_turn -= delta
@@ -1091,7 +1096,7 @@ func _check_stuck(delta: float) -> void:
 	_stuck_check = 1.0
 	var moved: float = global_position.distance_to(_stuck_from) if _stuck_from != Vector3.INF else 99.0
 	_stuck_from = global_position
-	var wants: bool = state in [State.ALERT, State.COMBAT] and not sees_player and not launched \
+	var wants: bool = (state == State.ALERT or state == State.COMBAT) and not sees_player and not launched \
 			and _move_target != Vector3.INF and global_position.distance_to(_move_target) > 2.5
 	if wants and moved < 0.5:
 		_stuck_for += 1.0
@@ -1103,6 +1108,7 @@ func _check_stuck(delta: float) -> void:
 
 
 func _update_perception(dt: float) -> void:
+	_officer_near = squad != null and squad.officer_near(self)
 	var p: Player = squad.player() if squad else null
 	sees_player = false
 	if p == null:
@@ -1128,7 +1134,7 @@ func _update_perception(dt: float) -> void:
 		# A bigger, hotter body is spotted faster (silhouette × signature, docs/design.md §3.6).
 		var rate: float = (3.0 if dist < 12.0 else 1.4) * (2.0 if p.velocity.length() > 7.0 else 1.0) * p.body.detection_scale()
 		awareness = minf(awareness + rate * dt, 1.0)
-		if awareness >= 1.0 and state in [State.IDLE, State.ALERT] and not passive:
+		if awareness >= 1.0 and (state == State.IDLE or state == State.ALERT) and not passive:
 			_enter(State.COMBAT)
 			if squad:
 				squad.report_contact(self, p.global_position)
@@ -1153,15 +1159,15 @@ func _update_morale(delta: float) -> void:
 	if boss:
 		morale = 1.0
 		return
-	if state in [State.SURRENDER, State.CRAWL, State.DEAD]:
+	if state == State.SURRENDER or state == State.CRAWL or state == State.DEAD:
 		return
 	var calm: bool = suppression < 0.2 and not sees_player
-	morale += delta * ((0.02 if calm else 0.0) + (0.03 if squad and squad.officer_near(self) else 0.0))
+	morale += delta * ((0.02 if calm else 0.0) + (0.03 if _officer_near else 0.0))
 	morale -= delta * 0.04 * suppression
 	morale = clampf(morale, 0.0, 1.0)
 	if morale < 0.18 and state == State.COMBAT and not passive:
 		_break()
-	elif state in [State.FLEE, State.COWER, State.BLIND] and has_gun:
+	elif (state == State.FLEE or state == State.COWER or state == State.BLIND) and has_gun:
 		if morale > 0.45 and _state_time > 6.0:
 			_enter(State.COMBAT)
 		elif squad and squad.cornered() and _state_time > squad.hunt.cornered_after:
@@ -1429,7 +1435,7 @@ func _act(delta: float) -> void:
 		look_at_pos = p.camera().global_position - Vector3.UP * 0.3 if sees_player else last_known + Vector3.UP * 1.3
 	if passive and p and state == State.IDLE:
 		look_at_pos = p.camera().global_position
-	if look_at_pos != Vector3.INF and state in [State.COMBAT, State.ALERT, State.GUT, State.SURRENDER, State.IDLE]:
+	if look_at_pos != Vector3.INF and (state == State.COMBAT or state == State.ALERT or state == State.GUT or state == State.SURRENDER or state == State.IDLE):
 		var to: Vector3 = look_at_pos - body.chest_position()
 		var want_yaw: float = atan2(to.x, to.z)
 		var rel: float = wrapf(want_yaw - _yaw, -PI, PI)
@@ -1613,6 +1619,11 @@ func _move(delta: float) -> void:
 		var bv: Vector3 = boss.want_velocity()
 		if bv != Vector3.INF:
 			want = bv
+	if want == Vector3.ZERO and absf(velocity.x) < 0.001 and absf(velocity.z) < 0.001 \
+			and is_on_floor() and _knock.length_squared() < 0.0001 and not launched \
+			and global_position.distance_squared_to(_settled_pos) < 1e-6:
+		body.set_motion(Vector3.ZERO)
+		return
 	var horizontal: Vector3 = Vector3(velocity.x, 0, velocity.z).move_toward(want, (20.0 if melee else 14.0) * delta)
 	if _knock.length_squared() > 0.01:
 		# Shoved: the push wins over his own legs until it dies away.
@@ -1622,11 +1633,18 @@ func _move(delta: float) -> void:
 	var g: float = _launch_gravity if _launch_air else GRAVITY
 	var vy: float = velocity.y - g * delta if (not is_on_floor() or velocity.y > 0.0) else -0.5
 	velocity = Vector3(horizontal.x, vy, horizontal.z)
+	var before_pos: Vector3 = global_position
 	move_and_slide()
+	if is_on_floor() and want == Vector3.ZERO and _knock.length_squared() < 0.0001 and not launched \
+			and absf(velocity.x) < 0.001 and absf(velocity.z) < 0.001 \
+			and before_pos.distance_squared_to(global_position) < 1e-6:
+		_settled_pos = global_position
+	else:
+		_settled_pos = Vector3.INF
 	if launched:
 		body.set_motion(Vector3.ZERO)
 		return
-	if horizontal.length() > 0.3 and (run or state in [State.FLEE, State.CRAWL] or not sees_player) and not (boss and boss.is_busy()):
+	if horizontal.length() > 0.3 and (run or state == State.FLEE or state == State.CRAWL or not sees_player) and not (boss and boss.is_busy()):
 		_turn_toward(atan2(horizontal.x, horizontal.z), delta)
 	var local: Vector3 = global_basis.inverse() * horizontal
 	body.set_motion(local)
@@ -1716,28 +1734,30 @@ func _update_flash(delta: float) -> void:
 
 
 func _build_flash() -> void:
+	if _flash_mesh == null:
+		var st: SurfaceTool = SurfaceTool.new()
+		st.begin(Mesh.PRIMITIVE_TRIANGLES)
+		# Two crossed quads along +X plus a front star.
+		for k: int in 2:
+			var a: float = PI * 0.5 * k
+			var u: Vector3 = Vector3(0, cos(a), sin(a)) * 0.07
+			st.add_vertex(-u)
+			st.add_vertex(u)
+			st.add_vertex(u + Vector3(0.22, 0, 0))
+			st.add_vertex(-u)
+			st.add_vertex(u + Vector3(0.22, 0, 0))
+			st.add_vertex(-u + Vector3(0.22, 0, 0))
+		_flash_mesh = st.commit()
+		_flash_mat = StandardMaterial3D.new()
+		_flash_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		_flash_mat.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+		_flash_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+		_flash_mat.albedo_color = Color(2.6, 1.7, 0.8)
+		_flash_mat.albedo_texture = preload("res://assets/gore/mist.png")
 	_flash = MeshInstance3D.new()
 	_flash.top_level = true
-	var st: SurfaceTool = SurfaceTool.new()
-	st.begin(Mesh.PRIMITIVE_TRIANGLES)
-	# Two crossed quads along +X plus a front star.
-	for k: int in 2:
-		var a: float = PI * 0.5 * k
-		var u: Vector3 = Vector3(0, cos(a), sin(a)) * 0.07
-		st.add_vertex(-u)
-		st.add_vertex(u)
-		st.add_vertex(u + Vector3(0.22, 0, 0))
-		st.add_vertex(-u)
-		st.add_vertex(u + Vector3(0.22, 0, 0))
-		st.add_vertex(-u + Vector3(0.22, 0, 0))
-	_flash.mesh = st.commit()
-	var mat: StandardMaterial3D = StandardMaterial3D.new()
-	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	mat.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
-	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
-	mat.albedo_color = Color(2.6, 1.7, 0.8)
-	mat.albedo_texture = preload("res://assets/gore/mist.png")
-	_flash.material_override = mat
+	_flash.mesh = _flash_mesh
+	_flash.material_override = _flash_mat
 	_flash.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	_flash.visible = false
 	add_child(_flash)

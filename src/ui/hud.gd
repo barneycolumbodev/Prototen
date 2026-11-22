@@ -33,6 +33,8 @@ var _blink: float = 0.0
 var _reticle: Reticle
 var _wheel: WeaponWheelView
 var _gauge: RailGauge
+var _last_gauge_vp: Vector2 = Vector2(-1.0, -1.0)
+var _last_shell_text: String = ""
 
 
 ## Railgun gauge: capacitor charge (cyan, full = bright) and rail heat
@@ -47,14 +49,25 @@ class RailGauge:
 	var _t: float = 0.0
 	const W: float = 150.0
 
-	var _drawn: Array = []
+	var _d_charge: float = -1.0
+	var _d_heat: float = -1.0
+	var _d_venting: bool = false
+	var _d_plasma: bool = false
+	var _d_size: Vector2 = Vector2(-1.0, -1.0)
 
 	func _process(delta: float) -> void:
+		if not visible:
+			return
 		_t += delta
 		# Redrawn only when something it shows changed (optimization overhaul U-07).
-		var now: Array = [charge, heat, venting, size, _t if venting or (plasma and heat > 0.0) else 0.0, plasma]
-		if now != _drawn:
-			_drawn = now
+		if venting or (plasma and heat > 0.0) or absf(charge - _d_charge) > 0.001 \
+				or absf(heat - _d_heat) > 0.001 or venting != _d_venting \
+				or plasma != _d_plasma or size != _d_size:
+			_d_charge = charge
+			_d_heat = heat
+			_d_venting = venting
+			_d_plasma = plasma
+			_d_size = size
 			queue_redraw()
 
 	func _draw() -> void:
@@ -103,10 +116,32 @@ class ScopeView:
 	const MARKS: Array[float] = [100.0, 200.0, 300.0]
 	var _drops: Dictionary[float, float] = {}
 	var _drops_for: AmmoData
+	var _d_amount: float = -1.0
+	var _d_fov: float = -1.0
+	var _d_ammo: AmmoData
+	var _d_lit: Color = Color(-1, -1, -1, -1)
+	var _d_style: StringName = &""
+	var _d_ring: float = -1.0
+	var _d_eye: float = -1.0
+	var _d_size: Vector2 = Vector2(-1.0, -1.0)
 
 	func _process(_delta: float) -> void:
-		visible = amount > 0.001
-		if visible:
+		var show: bool = amount > 0.001
+		if visible != show:
+			visible = show
+		if not show:
+			return
+		if absf(amount - _d_amount) > 0.001 or absf(fov_deg - _d_fov) > 0.01 \
+				or ammo != _d_ammo or lit_color != _d_lit or style != _d_style \
+				or ring_deg != _d_ring or eyepiece != _d_eye or size != _d_size:
+			_d_amount = amount
+			_d_fov = fov_deg
+			_d_ammo = ammo
+			_d_lit = lit_color
+			_d_style = style
+			_d_ring = ring_deg
+			_d_eye = eyepiece
+			_d_size = size
 			queue_redraw()
 
 	## Pixels below the centre for an angle `rad` below the line of sight.
@@ -236,15 +271,50 @@ class Reticle:
 	var fcs_alpha: float = 0.0
 	const MARKER_SEC: float = 0.28
 
-	var _drawn: Array = []
+	var _d_shape: int = -1
+	var _d_color: Color = Color(-1, -1, -1, -1)
+	var _d_gap: float = -1.0
+	var _d_alpha: float = -1.0
+	var _d_mtime: float = -1.0
+	var _d_mcolor: Color = Color(-1, -1, -1, -1)
+	var _d_mscale: float = -1.0
+	var _d_reload: float = -1.0
+	var _d_offset: Vector2 = Vector2.INF
+	var _d_size: Vector2 = Vector2(-1.0, -1.0)
+	var _d_impact: Vector2 = Vector2.ZERO
+	var _d_itext: String = ""
+	var _d_isafe: bool = false
+	var _d_ftext: String = ""
+	var _d_fsub: String = ""
+	var _d_falpha: float = -1.0
 
 	func _process(delta: float) -> void:
-		marker_time = maxf(0.0, marker_time - delta)
+		if marker_time > 0.0:
+			marker_time = maxf(0.0, marker_time - delta)
 		# Redrawn only when something it shows changed (optimization overhaul U-07).
-		var now: Array = [shape, color, gap_px, alpha, marker_time, marker_color, marker_scale, reload, aim_offset, size,
-				impact_px, impact_text, impact_safe, fcs_text, fcs_sub, fcs_alpha]
-		if now != _drawn:
-			_drawn = now
+		if int(shape) != _d_shape or color != _d_color or absf(gap_px - _d_gap) > 0.05 \
+				or absf(alpha - _d_alpha) > 0.002 or marker_time != _d_mtime \
+				or marker_color != _d_mcolor or marker_scale != _d_mscale \
+				or absf(reload - _d_reload) > 0.002 or aim_offset != _d_offset \
+				or size != _d_size or impact_px != _d_impact or impact_text != _d_itext \
+				or impact_safe != _d_isafe or fcs_text != _d_ftext or fcs_sub != _d_fsub \
+				or absf(fcs_alpha - _d_falpha) > 0.002:
+			_d_shape = int(shape)
+			_d_color = color
+			_d_gap = gap_px
+			_d_alpha = alpha
+			_d_mtime = marker_time
+			_d_mcolor = marker_color
+			_d_mscale = marker_scale
+			_d_reload = reload
+			_d_offset = aim_offset
+			_d_size = size
+			_d_impact = impact_px
+			_d_itext = impact_text
+			_d_isafe = impact_safe
+			_d_ftext = fcs_text
+			_d_fsub = fcs_sub
+			_d_falpha = fcs_alpha
 			queue_redraw()
 
 	func _draw() -> void:
@@ -382,8 +452,9 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
-	_name_time = maxf(0.0, _name_time - delta)
-	_weapon_name.modulate.a = clampf(_name_time, 0.0, 1.0)
+	if _name_time > 0.0:
+		_name_time = maxf(0.0, _name_time - delta)
+		_weapon_name.modulate.a = clampf(_name_time, 0.0, 1.0)
 	if bench and bench.is_running():
 		_status.text = "BENCHMARK %d%%  (don't touch the controller)" % roundi(bench.progress() * 100.0)
 	elif not _status.text.is_empty() and not _status.text.begins_with("Benchmark done"):
@@ -402,20 +473,23 @@ func _process(delta: float) -> void:
 		_update_launcher(cam)
 		_scope.lit_color = _reticle.color
 		_wheel.weapon = weapon
-		_gauge.visible = weapon.data.is_rail() or (weapon.data.plasma != null and (weapon.plasma_charging or weapon.plasma_locked()))
+		var show_gauge: bool = weapon.data.is_rail() or (weapon.data.plasma != null and (weapon.plasma_charging or weapon.plasma_locked()))
+		if _gauge.visible != show_gauge:
+			_gauge.visible = show_gauge
 		_gauge.plasma = weapon.data.plasma != null
-		if _gauge.visible and _gauge.plasma:
-			var vp2: Vector2 = get_viewport().get_visible_rect().size
-			_gauge.position = Vector2(vp2.x - RailGauge.W - 26.0, vp2.y - 118.0)
-			_gauge.charge = weapon.plasma_charge()
-			_gauge.heat = weapon.plasma_strain()
-			_gauge.venting = weapon.plasma_locked()
-		elif _gauge.visible:
-			var vp: Vector2 = get_viewport().get_visible_rect().size
-			_gauge.position = Vector2(vp.x - RailGauge.W - 26.0, vp.y - 118.0)
-			_gauge.charge = weapon.mechanism.charge()
-			_gauge.heat = weapon.mechanism.heat
-			_gauge.venting = weapon.mechanism.venting
+		if show_gauge:
+			var vp_g: Vector2 = get_viewport().get_visible_rect().size
+			if vp_g != _last_gauge_vp:
+				_last_gauge_vp = vp_g
+				_gauge.position = Vector2(vp_g.x - RailGauge.W - 26.0, vp_g.y - 118.0)
+			if _gauge.plasma:
+				_gauge.charge = weapon.plasma_charge()
+				_gauge.heat = weapon.plasma_strain()
+				_gauge.venting = weapon.plasma_locked()
+			else:
+				_gauge.charge = weapon.mechanism.charge()
+				_gauge.heat = weapon.mechanism.heat
+				_gauge.venting = weapon.mechanism.venting
 		_scope.amount = weapon.scope_amount()
 		_scope.ammo = weapon.magazine_ammo()
 		_scope.style = weapon.data.scope_reticle
@@ -435,8 +509,10 @@ func _update_stowed() -> void:
 	if arm:
 		_showing_part = true
 		var n: int = arm.rounds()
-		_ammo.text = "GX-4  %d" % n
-		_ammo.add_theme_color_override("font_color", Color(1.0, 0.45, 0.35) if n <= 2 else Color(0.6, 0.82, 1.0))
+		var txt: String = "GX-4  %d" % n
+		if _ammo.text != txt:
+			_ammo.text = txt
+			_ammo.add_theme_color_override("font_color", Color(1.0, 0.45, 0.35) if n <= 2 else Color(0.6, 0.82, 1.0))
 		_reticle.shape = Reticle.Shape.CROSS
 		_reticle.gap_px = 6.0
 	elif _showing_part:
@@ -447,18 +523,25 @@ func _update_stowed() -> void:
 ## Loaded shell type; while a swap is pending, the one coming in (blinking).
 func _update_shell(delta: float) -> void:
 	var loaded: AmmoData = weapon.chamber_ammo()
-	_shell.visible = loaded != null
+	var show_shell: bool = loaded != null
+	if _shell.visible != show_shell:
+		_shell.visible = show_shell
 	if loaded == null:
 		return
 	var selected: AmmoData = weapon.selected_ammo()
 	if weapon.swap_pending() and selected != loaded:
 		_blink += delta
-		_shell.text = "%s  >  %s" % [loaded.short_name, selected.short_name]
+		var s_txt: String = "%s  >  %s" % [loaded.short_name, selected.short_name]
+		if s_txt != _last_shell_text:
+			_last_shell_text = s_txt
+			_shell.text = s_txt
 		_shell.modulate = selected.color.lerp(Color.WHITE, 0.35) if fmod(_blink, 0.5) < 0.32 else Color(1, 1, 1, 0.8)
 	else:
 		_blink = 0.0
-		_shell.text = loaded.short_name
-		_shell.modulate = loaded.color.lerp(Color.WHITE, 0.35)
+		if loaded.short_name != _last_shell_text:
+			_last_shell_text = loaded.short_name
+			_shell.text = loaded.short_name
+			_shell.modulate = loaded.color.lerp(Color.WHITE, 0.35)
 
 
 ## Launchers: the landing marker at the hip, the fire control's readout aimed.

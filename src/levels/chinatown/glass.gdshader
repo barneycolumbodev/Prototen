@@ -1,7 +1,7 @@
 shader_type spatial;
 // Window and shop glass: dark, reflective (reflection probes), a little dirt.
 // Same vertex layout as world.gdshader; drawn after the opaque world.
-render_mode blend_mix, depth_draw_opaque, cull_back, specular_schlick_ggx;
+render_mode blend_mix, depth_draw_opaque, cull_back, diffuse_lambert, specular_schlick_ggx, shadows_disabled;
 
 uniform sampler2DArray albedo_arr : source_color, filter_linear_mipmap, repeat_enable;
 uniform sampler2DArray orm_arr : hint_default_white, filter_linear_mipmap, repeat_enable;

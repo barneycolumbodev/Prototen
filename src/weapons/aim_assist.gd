@@ -29,14 +29,59 @@ func apply(player: Player, rate: Vector2, delta: float) -> Vector2:
 	var best: Vector3 = Vector3.ZERO
 	var best_angle: float = INF
 	var best_radius: float = 0.0
+	var max_d: float = config.max_distance
+	var coarse_d2: float = (max_d + 2.5) * (max_d + 2.5)
+	var cos_coarse: float = cos(deg_to_rad(minf(config.slowdown_radius_deg * 2.5 + 14.0, 85.0)))
 	for node: Node in player.get_tree().get_nodes_in_group(GROUP):
+		var n3: Node3D = node as Node3D
+		if n3 != null:
+			var coarse_to: Vector3 = n3.global_position + Vector3.UP - eye
+			var d2: float = coarse_to.length_squared()
+			if d2 > coarse_d2:
+				continue
+			if d2 > 16.0 and forward.dot(coarse_to) < cos_coarse * sqrt(d2):
+				continue
+		var enemy: Enemy = node as Enemy
+		if enemy != null:
+			if not enemy.alive or enemy.state == Enemy.State.SURRENDER:
+				continue
+			for k: int in 2:
+				var p: Vector3 = enemy.body.head_position() if k == 0 else enemy.body.chest_position()
+				var to: Vector3 = p - eye
+				var dist: float = to.length()
+				if dist > max_d or dist < 0.3:
+					continue
+				var angle: float = rad_to_deg(forward.angle_to(to))
+				var radius: float = config.slowdown_radius_deg * clampf(10.0 / dist, 0.35, 2.5)
+				if angle < radius and angle < best_angle and _visible(player, eye, p, node):
+					best_angle = angle
+					best = p
+					best_radius = radius
+			continue
+		var dog: AttackDog = node as AttackDog
+		if dog != null:
+			if not dog.alive:
+				continue
+			for k: int in 2:
+				var p: Vector3 = dog.head_position() if k == 0 else dog.chest_position()
+				var to: Vector3 = p - eye
+				var dist: float = to.length()
+				if dist > max_d or dist < 0.3:
+					continue
+				var angle: float = rad_to_deg(forward.angle_to(to))
+				var radius: float = config.slowdown_radius_deg * clampf(10.0 / dist, 0.35, 2.5)
+				if angle < radius and angle < best_angle and _visible(player, eye, p, node):
+					best_angle = angle
+					best = p
+					best_radius = radius
+			continue
 		if not node.has_method(&"aim_points"):
 			continue
 		var points: PackedVector3Array = node.call(&"aim_points")
 		for p: Vector3 in points:
 			var to: Vector3 = p - eye
 			var dist: float = to.length()
-			if dist > config.max_distance or dist < 0.3:
+			if dist > max_d or dist < 0.3:
 				continue
 			var angle: float = rad_to_deg(forward.angle_to(to))
 			var radius: float = config.slowdown_radius_deg * clampf(10.0 / dist, 0.35, 2.5)

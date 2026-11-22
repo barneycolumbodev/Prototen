@@ -24,7 +24,7 @@ shader_type spatial;
 // Two-sided: where cloth folds over itself at the armpits and hips the inside
 // shows (shaded dark, as the inside of a sleeve is) instead of a hole to the
 // skin behind it.
-render_mode blend_mix, depth_draw_opaque, cull_disabled, diffuse_burley, specular_schlick_ggx;
+render_mode blend_mix, depth_draw_opaque, cull_disabled, diffuse_lambert, specular_schlick_ggx;
 
 uniform sampler2D base_tex : source_color, filter_linear_mipmap;
 uniform sampler2D orm_tex : hint_default_white, filter_linear_mipmap;
@@ -45,10 +45,6 @@ uniform int tattoo_bits[3];
 uniform vec3 ink_color : source_color = vec3(0.035, 0.05, 0.06);
 // 0 clean, 1 stubble, 2 stubble with a goatee and moustache.
 uniform int beard = 0;
-// Plasma holes: xyz = rest position, w = radius; dirs: xyz = rest-space axis, w = glow (1 fresh .. 0 cold).
-uniform vec4 holes[4];
-uniform vec4 hole_dirs[4];
-uniform int hole_count = 0;
 // xyz = rest position, w = radius (negative = exit wound).
 uniform vec4 wounds[8];
 // Seconds since each wound (blood soaks out and runs).
@@ -181,27 +177,6 @@ int region(vec3 p) {
 }
 
 void fragment() {
-	// Burned clean through: nothing here. Round the tunnel, char and embers.
-	float hole_char = 0.0;
-	float hole_ember = 0.0;
-	for (int i = 0; i < 4; i++) {
-		if (i >= hole_count) {
-			break;
-		}
-		vec3 hd = rest_pos - holes[i].xyz;
-		vec3 ax = hole_dirs[i].xyz;
-		float along = dot(hd, ax);
-		if (abs(along) > 0.4) {
-			continue;
-		}
-		float rad = length(hd - ax * along);
-		float hr = holes[i].w;
-		if (rad < hr) {
-			discard;
-		}
-		hole_char = max(hole_char, 1.0 - smoothstep(hr, hr * 1.9, rad));
-		hole_ember = max(hole_ember, (1.0 - smoothstep(hr, hr * 1.35, rad)) * hole_dirs[i].w);
-	}
 	int slot = clamp(int(v_slot + 0.5), 0, 7);
 	vec4 m = texture(mask_tex, UV);
 	vec3 col = texture(base_tex, UV).rgb;
@@ -309,7 +284,6 @@ void fragment() {
 	// Fire chars cloth and skin unevenly.
 	float c = char_amount * smoothstep(0.25, 0.75, n1 + 0.35 * char_amount);
 	col = mix(col, vec3(0.03, 0.025, 0.02), c);
-	col = mix(col, vec3(0.025, 0.018, 0.012), hole_char);
 	if (!FRONT_FACING) {
 		col *= 0.35;
 	}
@@ -324,7 +298,7 @@ void fragment() {
 	float rim = fres * fres * fres * rim_strength * rim_alive * (0.25 + 0.75 * smoothstep(4.0, 24.0, dist)) * (1.0 - c);
 	// Fill: as if lit softly from the viewer, a little more with distance.
 	float fill = fill_light * (0.35 + 0.65 * facing) * (0.5 + 0.5 * smoothstep(3.0, 20.0, dist)) * (0.35 + 0.65 * rim_alive);
-	EMISSION = rim_color * rim + col * fill * (1.0 - c) + vec3(1.0, 0.32, 0.05) * hole_ember * 4.0;
+	EMISSION = rim_color * rim + col * fill * (1.0 - c);
 	ROUGHNESS = mix(mix(rough, 0.18, wet), 0.95, c);
 	METALLIC = metal * (1.0 - wet);
 	SPECULAR = mix(0.5, 0.65, wet);

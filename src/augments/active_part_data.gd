@@ -11,6 +11,18 @@ extends PartData
 @export var behaviour: Script
 ## Two letters and a number for the HUD row ("GX-4").
 @export var short_name: String = ""
+## Path to the part's first-person / drone model, loaded lazily when equipped.
+@export_file("*.gltf", "*.glb", "*.tscn") var scene_path: String = ""
+var _scene_override: PackedScene
+var scene: PackedScene:
+	get:
+		if _scene_override != null:
+			return _scene_override
+		if not scene_path.is_empty():
+			return load(scene_path) as PackedScene
+		return null
+	set(v):
+		_scene_override = v
 
 @export_group("Timing (s)")
 @export var deploy_time: float = 0.12

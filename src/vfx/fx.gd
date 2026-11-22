@@ -73,6 +73,7 @@ var _debris_age: Dictionary[RigidBody3D, float] = {}
 var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
 var _fade: Gradient
 var _grow: Curve
+var _gravity: float = 9.8
 
 
 class Shell:
@@ -87,6 +88,7 @@ class Shell:
 
 
 func _ready() -> void:
+	_gravity = ProjectSettings.get_setting("physics/3d/default_gravity", 9.8)
 	_rng.randomize()
 	_fade = Gradient.new()
 	_fade.set_color(0, Color(1, 1, 1, 1))
@@ -234,7 +236,7 @@ func live_shells() -> int:
 
 func _physics_process(delta: float) -> void:
 	var space: PhysicsDirectSpaceState3D = get_world_3d().direct_space_state
-	var g: float = ProjectSettings.get_setting("physics/3d/default_gravity", 9.8)
+	var g: float = _gravity
 	for s: Shell in _shells:
 		if not s.node.visible:
 			continue
@@ -408,6 +410,8 @@ func bullet_hole(target: Node3D, point: Vector3, normal: Vector3, s: SurfaceMate
 		_static_next = (_static_next + 1) % MAX_STATIC_HOLES
 		_static_mm.set_instance_transform(i, xform)
 		_static_mm.set_instance_color(i, s.decal_color)
+		if i + 1 > _static_mm.visible_instance_count:
+			_static_mm.visible_instance_count = i + 1
 		_static_pos[i] = point
 		return
 	var q: MeshInstance3D = _holes[_hole_next]
@@ -641,6 +645,7 @@ func _build_holes() -> void:
 	_static_mm.use_colors = true
 	_static_mm.mesh = _hole_mesh
 	_static_mm.instance_count = MAX_STATIC_HOLES
+	_static_mm.visible_instance_count = 0
 	_static_pos.resize(MAX_STATIC_HOLES)
 	for i: int in MAX_STATIC_HOLES:
 		_static_mm.set_instance_transform(i, Transform3D(Basis().scaled(Vector3.ZERO), Vector3.ZERO))
@@ -650,6 +655,7 @@ func _build_holes() -> void:
 	mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	mmi.top_level = true
 	var m: StandardMaterial3D = StandardMaterial3D.new()
+	m.diffuse_mode = BaseMaterial3D.DIFFUSE_LAMBERT
 	m.albedo_texture = _hole_tex
 	m.vertex_color_use_as_albedo = true
 	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
@@ -672,6 +678,7 @@ func _hole_material(color: Color) -> StandardMaterial3D:
 	if _hole_mats.has(color):
 		return _hole_mats[color]
 	var m: StandardMaterial3D = StandardMaterial3D.new()
+	m.diffuse_mode = BaseMaterial3D.DIFFUSE_LAMBERT
 	m.albedo_texture = _hole_tex
 	m.albedo_color = color
 	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
@@ -797,6 +804,7 @@ func _hull_material(color: Color) -> StandardMaterial3D:
 	if _hull_mats.has(color):
 		return _hull_mats[color]
 	var m: StandardMaterial3D = StandardMaterial3D.new()
+	m.diffuse_mode = BaseMaterial3D.DIFFUSE_LAMBERT
 	m.albedo_color = color
 	m.roughness = 0.5
 	_hull_mats[color] = m
@@ -811,6 +819,7 @@ func _build_shells() -> void:
 	mesh.radial_segments = 8
 	mesh.rings = 1
 	var brass: StandardMaterial3D = StandardMaterial3D.new()
+	brass.diffuse_mode = BaseMaterial3D.DIFFUSE_LAMBERT
 	brass.albedo_color = Color(0.85, 0.66, 0.33)
 	brass.metallic = 1.0
 	brass.roughness = 0.32
@@ -862,6 +871,7 @@ func _new_debris() -> RigidBody3D:
 	var mesh: MeshInstance3D = MeshInstance3D.new()
 	mesh.mesh = BoxMesh.new()
 	var mat: StandardMaterial3D = StandardMaterial3D.new()
+	mat.diffuse_mode = BaseMaterial3D.DIFFUSE_LAMBERT
 	mat.roughness = 0.9
 	mesh.material_override = mat
 	mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF

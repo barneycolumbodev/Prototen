@@ -45,6 +45,8 @@ const LOOKS_AHEAD: int = 2
 ## (INF: the next man starts a new pack, away from the others).
 var _pack_left: int = 0
 var _pack_anchor: Vector3 = Vector3.INF
+var _emitted_kills: int = -1
+var _emitted_left: int = -1
 
 
 func _ready() -> void:
@@ -60,10 +62,13 @@ func start() -> void:
 	_build_squad()
 	kills = 0
 	spawned_total = 0
+	_emitted_kills = -1
+	_emitted_left = -1
 	_queue = config.start_count
 	# The first wave: enough of each role in the oven for the opening spawns.
 	for role: String in ["gunman", "enforcer", "red_pole", "hatchet_man"]:
 		_fill_looks(role, LOOKS_AHEAD + (config.start_count if role == "gunman" else 1))
+	AttackDog.prefetch()
 	_timer = 0.5
 	_emit()
 
@@ -87,6 +92,8 @@ func _build_squad() -> void:
 
 func stop() -> void:
 	running = false
+	_emitted_kills = -1
+	_emitted_left = -1
 	for e: Enemy in enemies:
 		if is_instance_valid(e):
 			e.queue_free()
@@ -164,7 +171,12 @@ func _process(delta: float) -> void:
 
 
 func _emit() -> void:
-	EventBus.score_changed.emit(kills, fighting() + _queue)
+	var left: int = fighting() + _queue
+	if kills == _emitted_kills and left == _emitted_left:
+		return
+	_emitted_kills = kills
+	_emitted_left = left
+	EventBus.score_changed.emit(kills, left)
 
 
 ## Index of the best hidden spawn point, or -1. `for_pack`: a new pack

@@ -4,6 +4,7 @@ extends CanvasLayer
 ## Autoloaded as DebugOverlay. Toggle with F3 or from the pause menu.
 
 const REFRESH_SEC: float = 0.25
+const HIST_SIZE: int = 120
 
 var _label: Label
 var _panel: PanelContainer
@@ -11,11 +12,16 @@ var _since_refresh: float = 0.0
 var _frames: int = 0
 var _frame_sum: float = 0.0
 var _frame_max: float = 0.0
+var _hist: PackedFloat32Array = PackedFloat32Array()
+var _scratch: PackedFloat32Array = PackedFloat32Array()
+var _hist_idx: int = 0
+var _hist_count: int = 0
 
 
 func _ready() -> void:
 	layer = 100
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	_hist.resize(HIST_SIZE)
 	_panel = PanelContainer.new()
 	_panel.position = Vector2(8, 8)
 	_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -39,11 +45,17 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _process(delta: float) -> void:
+	if not _panel.visible:
+		return
 	_frames += 1
 	_frame_sum += delta
 	_frame_max = maxf(_frame_max, delta)
+	_hist[_hist_idx] = delta * 1000.0
+	_hist_idx = (_hist_idx + 1) % HIST_SIZE
+	if _hist_count < HIST_SIZE:
+		_hist_count += 1
 	_since_refresh += delta
-	if _since_refresh < REFRESH_SEC or not _panel.visible:
+	if _since_refresh < REFRESH_SEC:
 		return
 	_label.text = _build_text()
 	_since_refresh = 0.0
@@ -56,14 +68,25 @@ func _build_text() -> String:
 	var tree: SceneTree = get_tree()
 	var vp_rid: RID = get_viewport().get_viewport_rid()
 	var avg_ms: float = _frame_sum / maxi(_frames, 1) * 1000.0
+	var p95_ms: float = avg_ms
+	var low1_fps: int = Engine.get_frames_per_second()
+	if _hist_count > 0:
+		if _scratch.size() != _hist_count:
+			_scratch.resize(_hist_count)
+		for i: int in _hist_count:
+			_scratch[i] = _hist[i]
+		_scratch.sort()
+		p95_ms = _scratch[mini(int(_hist_count * 0.95), _hist_count - 1)]
+		var p99_ms: float = _scratch[mini(int(_hist_count * 0.99), _hist_count - 1)]
+		low1_fps = roundi(1000.0 / maxf(p99_ms, 0.1))
 	var lines: PackedStringArray = PackedStringArray()
 	lines.append("GRAFT %s  %s/%s  %s" % [
 		ProjectSettings.get_setting("application/config/version"),
 		RenderingServer.get_current_rendering_method(),
 		RenderingServer.get_current_rendering_driver_name(),
 		RenderingServer.get_video_adapter_name()])
-	lines.append("FPS %d  frame %.1f ms (max %.1f)  gpu %.1f ms  cpu %.1f ms" % [
-		Engine.get_frames_per_second(), avg_ms, _frame_max * 1000.0,
+	lines.append("FPS %d (1%% %d)  frame %.1f ms (p95 %.1f, max %.1f)  gpu %.1f  cpu %.1f" % [
+		Engine.get_frames_per_second(), low1_fps, avg_ms, p95_ms, _frame_max * 1000.0,
 		RenderingServer.viewport_get_measured_render_time_gpu(vp_rid),
 		RenderingServer.viewport_get_measured_render_time_cpu(vp_rid)])
 	lines.append("draws %d  prims %.1fk  objects %d" % [
@@ -100,3 +123,10 @@ static func format_bench(result: Variant) -> String:
 
 func _sync_visibility() -> void:
 	_panel.visible = Settings.overlay_visible
+	if _panel.visible:
+		_hist_idx = 0
+		_hist_count = 0
+		_since_refresh = 0.0
+		_frames = 0
+		_frame_sum = 0.0
+		_frame_max = 0.0

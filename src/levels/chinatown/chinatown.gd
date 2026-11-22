@@ -25,6 +25,9 @@ const PLAYER_SCENE: PackedScene = preload("res://src/player/player.tscn")
 ## (its lighting is baked).
 const MAP_LAYER: int = 2
 const WORLD_PRIORITY: int = 2
+## Front-to-back Early-Z distance buckets for opaque map cells (priorities 2..5).
+const WORLD_BUCKETS: int = 4
+const BUCKET_DIST2: Array[float] = [324.0, 1156.0, 2704.0]  # 18 m, 34 m, 52 m
 ## Physics layer for invisible walls: they stop people, not bullets.
 const LAYER_CLIP: int = Ballistics.LAYER_CLIP
 const DETAIL_RANGE: float = 42.0
@@ -52,6 +55,12 @@ var _bench: FrameBench
 var _hud: Node
 var _bench_yaw0: float = 0.0
 var _quit_after_bench: bool = false
+var _world_buckets: Array[ShaderMaterial] = []
+var _world_cells: Array[MeshInstance3D] = []
+var _world_centers: PackedVector3Array = PackedVector3Array()
+var _world_cell_bucket: PackedInt32Array = PackedInt32Array()
+var _bucket_cam_pos: Vector3 = Vector3.INF
+var _bucket_timer: float = 0.0
 
 
 static func b2g(v: Array) -> Vector3:
@@ -117,6 +126,22 @@ func world_texture_prefix() -> String:
 	return "res://assets/env/world/world_"
 
 
+## Static world shader (indoor maps override with the lean dry variant).
+func world_shader() -> Shader:
+	return preload("res://src/levels/chinatown/world.gdshader")
+
+
+## Whether the map uses outdoor rain/puddle uniforms.
+func is_outdoor() -> bool:
+	return true
+
+
+## Updates a uniform across every distance-bucketed world material.
+func set_world_param(key: StringName, val: Variant) -> void:
+	for m: ShaderMaterial in _world_buckets:
+		m.set_shader_parameter(key, val)
+
+
 ## Where Squad.build_cover samples cover: [origin, half extent] pairs.
 func level_cover_regions() -> Array:
 	return cover_regions()
@@ -151,6 +176,7 @@ func _ready() -> void:
 	_build_colliders()
 	_build_occluders()
 	_build_markers()
+	_assign_world_buckets(player_start)
 	atmos = NightAtmosphere.new()
 	atmos.name = "Atmosphere"
 	atmos.config = load(atmos_config_path()) as NightAtmosphereConfig
@@ -168,7 +194,7 @@ func _ready() -> void:
 		if a.begins_with("--survival"):
 			# Cloud captures and tests: --survival[=doctrine,gun,active] (indices).
 			var k: PackedStringArray = a.get_slice("=", 1).split(",") if a.contains("=") else PackedStringArray()
-			var cfg: SurvivalConfig = preload("res://data/run/survival.tres")
+			var cfg: SurvivalConfig = load("res://data/run/survival.tres") as SurvivalConfig
 			var d: Doctrine = cfg.doctrines[k[0].to_int() if k.size() > 0 else 0]
 			var g: WeaponData = cfg.starter_weapons[k[1].to_int() if k.size() > 1 else 0]
 			var act: ActivePartData = d.starter_actives[k[2].to_int() if k.size() > 2 else 0]
@@ -346,7 +372,7 @@ func _start_game(survival_mode: bool = false) -> void:
 		if arg == "--nospawn":
 			spawns_on = false
 		if arg.begins_with("--debug-view="):
-			world_material.set_shader_parameter(&"debug_view", arg.trim_prefix("--debug-view=").to_int())
+			set_world_param(&"debug_view", arg.trim_prefix("--debug-view=").to_int())
 		if arg == "--god":
 			player.invulnerable = true
 		if arg == "--demo=hunt":
@@ -437,28 +463,46 @@ func room_size() -> float:
 # ------------------------------------------------------------------ meshes
 
 func _build_map_meshes() -> void:
-	world_material = ShaderMaterial.new()
-	world_material.shader = preload("res://src/levels/chinatown/world.gdshader")
-	# Drawn after the first-person view (0) and the men (EnemyBody.RENDER_PRIORITY):
-	# the Mobile renderer draws lower priorities first (optimization overhaul R-01).
-	world_material.render_priority = WORLD_PRIORITY
 	var tex: String = world_texture_prefix()
-	world_material.set_shader_parameter(&"albedo_arr", load(tex + "albedo.webp"))
-	world_material.set_shader_parameter(&"normal_arr", load(tex + "normal.webp"))
-	world_material.set_shader_parameter(&"orm_arr", load(tex + "orm.webp"))
-	if ResourceLoader.exists(lightmap_path()):
-		world_material.set_shader_parameter(&"lightmap", load(lightmap_path()))
-	world_material.set_shader_parameter(&"noise_tex", NightAtmosphere._noise_texture(0.06, false, 7))
-	world_material.set_shader_parameter(&"hash_tex", hash_texture())
+	var albedo_arr: Resource = load(tex + "albedo.webp")
+	var normal_arr: Resource = load(tex + "normal.webp")
+	var orm_arr: Resource = load(tex + "orm.webp")
+	var lightmap_tex: Resource = load(lightmap_path()) if ResourceLoader.exists(lightmap_path()) else null
+	var outdoor: bool = is_outdoor()
+	var noise_tex: Texture2D = NightAtmosphere._noise_texture(0.06, false, 7) if outdoor else null
+	var h_tex: ImageTexture = hash_texture() if outdoor else null
+	var w_shader: Shader = world_shader()
+	_world_buckets.clear()
+	for b: int in WORLD_BUCKETS:
+		var m: ShaderMaterial = ShaderMaterial.new()
+		m.shader = w_shader
+		# Drawn after the first-person view (0) and the men (EnemyBody.RENDER_PRIORITY):
+		# the Mobile renderer draws lower priorities first (optimization overhaul R-01).
+		# Four distance buckets (2..5) draw near cells first so Mali Early-Z rejects
+		# occluded far geometry before shading it.
+		m.render_priority = WORLD_PRIORITY + b
+		m.set_shader_parameter(&"albedo_arr", albedo_arr)
+		m.set_shader_parameter(&"normal_arr", normal_arr)
+		m.set_shader_parameter(&"orm_arr", orm_arr)
+		if lightmap_tex != null:
+			m.set_shader_parameter(&"lightmap", lightmap_tex)
+		if outdoor:
+			m.set_shader_parameter(&"noise_tex", noise_tex)
+			m.set_shader_parameter(&"hash_tex", h_tex)
+		_world_buckets.append(m)
+	world_material = _world_buckets[0]
 	glass_material = ShaderMaterial.new()
 	glass_material.shader = preload("res://src/levels/chinatown/glass.gdshader")
-	glass_material.set_shader_parameter(&"albedo_arr", load(tex + "albedo.webp"))
-	glass_material.set_shader_parameter(&"orm_arr", load(tex + "orm.webp"))
+	glass_material.set_shader_parameter(&"albedo_arr", albedo_arr)
+	glass_material.set_shader_parameter(&"orm_arr", orm_arr)
 	glass_material.render_priority = 1
 	var scene: PackedScene = load(map_scene_path()) as PackedScene
 	map_root = scene.instantiate() as Node3D
 	map_root.name = "Map"
 	add_child(map_root)
+	_world_cells.clear()
+	_world_centers.clear()
+	_world_cell_bucket.clear()
 	for n: Node in map_root.find_children("*", "MeshInstance3D", true, false):
 		var mi: MeshInstance3D = n as MeshInstance3D
 		mi.layers = MAP_LAYER
@@ -468,10 +512,40 @@ func _build_map_meshes() -> void:
 			mi.material_override = glass_material
 		else:
 			mi.material_override = world_material
+			_world_cells.append(mi)
+			_world_centers.append(mi.global_transform * mi.get_aabb().get_center())
+			_world_cell_bucket.append(0)
 		if nm.ends_with("detail"):
 			mi.visibility_range_end = DETAIL_RANGE
 			mi.visibility_range_end_margin = 4.0
 			mi.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_DISABLED
+
+
+func _assign_world_buckets(origin: Vector3) -> void:
+	_bucket_cam_pos = origin
+	var d0: float = BUCKET_DIST2[0]
+	var d1: float = BUCKET_DIST2[1]
+	var d2: float = BUCKET_DIST2[2]
+	var count: int = _world_cells.size()
+	for i: int in count:
+		var d2_cell: float = _world_centers[i].distance_squared_to(origin)
+		var b: int = 0 if d2_cell < d0 else (1 if d2_cell < d1 else (2 if d2_cell < d2 else 3))
+		if b != _world_cell_bucket[i]:
+			_world_cell_bucket[i] = b
+			_world_cells[i].material_override = _world_buckets[b]
+
+
+func _update_world_buckets(delta: float) -> void:
+	_bucket_timer += delta
+	if _bucket_timer < 0.25:
+		return
+	_bucket_timer = 0.0
+	var cam: Camera3D = get_viewport().get_camera_3d()
+	if cam == null:
+		return
+	var p: Vector3 = cam.global_position
+	if _bucket_cam_pos.distance_squared_to(p) > 6.25:
+		_assign_world_buckets(p)
 
 
 ## 64×64 white noise, one random per channel per texel (the world shader's
@@ -616,6 +690,9 @@ func _character_light(m: Dictionary, p: Vector3) -> void:
 	l.light_cull_mask = 0xFFFFF & ~MAP_LAYER
 	l.shadow_enabled = false
 	l.light_specular = 0.6
+	l.distance_fade_enabled = true
+	l.distance_fade_begin = 26.0
+	l.distance_fade_length = 8.0
 	add_child(l)
 	l.global_position = p
 	if m.has("dir"):
@@ -688,7 +765,8 @@ func connect_spawns() -> int:
 
 # ------------------------------------------------------------------ benchmark (same as the test room)
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
+	_update_world_buckets(delta)
 	if _bench == null:
 		return  # still on the main menu
 	if _bench.is_running() or sweep.is_running():

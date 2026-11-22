@@ -30,11 +30,17 @@ func test_player_has_every_gun_and_arms_without_shadows() -> void:
 	add_child_autofree(player)
 	var rigs: Array[Node] = player.find_children("*", "ViewmodelRig", true, false)
 	assert_eq(rigs.size(), player.weapon().loadout.size(), "one rig per gun in the loadout")
+	var loaded_at_spawn: int = 0
 	for r: Node in rigs:
-		var meshes: Array[Node] = r.find_children("*", "MeshInstance3D", true, false)
-		assert_gte(meshes.size(), 2, "%s: gun + arms" % r.name)
+		var vr: ViewmodelRig = r as ViewmodelRig
+		if vr.is_loaded():
+			loaded_at_spawn += 1
+		vr.ensure_loaded()
+		var meshes: Array[Node] = vr.find_children("*", "MeshInstance3D", true, false)
+		assert_gte(meshes.size(), 2, "%s: gun + arms" % vr.name)
 		for node: Node in meshes:
 			assert_eq((node as GeometryInstance3D).cast_shadow, GeometryInstance3D.SHADOW_CASTING_SETTING_OFF)
+	assert_eq(loaded_at_spawn, 1, "only the active gun loads on spawn")
 	var mg: ViewmodelRig = player.get_node(^"Head/Camera3D/ViewmodelMG42") as ViewmodelRig
 	for part: StringName in [&"cover", &"magazine", &"belt", &"stock"]:
 		assert_true(mg.has_part(part), "MG42 has a moving %s" % part)

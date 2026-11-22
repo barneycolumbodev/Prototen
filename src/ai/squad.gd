@@ -49,6 +49,7 @@ var _pack_bearing: Dictionary[int, float] = {}
 var _pack_engaged: Dictionary[int, float] = {}
 var _pack_hunting: Dictionary[int, bool] = {}
 var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
+var _last_prune_frame: int = -1
 
 
 func _ready() -> void:
@@ -71,7 +72,7 @@ func player() -> Player:
 
 
 func add(e: Enemy) -> void:
-	_prune()
+	_prune(true)
 	members.append(e)
 	e.squad = self
 	if _pack_fill >= (hunt.pack_size if hunt else 3):
@@ -118,7 +119,7 @@ func update_packs() -> void:
 		return
 	var nearest: Dictionary[int, float] = {}
 	for e: Enemy in members:
-		if not e.alive or e.passive or e.state in [Enemy.State.SURRENDER, Enemy.State.CRAWL]:
+		if not is_instance_valid(e) or not e.alive or e.passive or e.state == Enemy.State.SURRENDER or e.state == Enemy.State.CRAWL:
 			continue
 		var d: float = e.global_position.distance_to(p.global_position)
 		var cur: float = nearest.get(e.pack, INF)
@@ -143,7 +144,7 @@ func update_packs() -> void:
 		if was != null and was == now:
 			continue
 		for e: Enemy in members:
-			if e.pack != k or not e.alive or e.passive or e.state not in [Enemy.State.IDLE, Enemy.State.ALERT]:
+			if not is_instance_valid(e) or e.pack != k or not e.alive or e.passive or (e.state != Enemy.State.IDLE and e.state != Enemy.State.ALERT):
 				continue
 			if now:
 				var at: Vector3 = intel if intel != Vector3.INF else p.global_position
@@ -152,23 +153,29 @@ func update_packs() -> void:
 				e.last_known = hold_point(e)
 
 
-## Drops freed members (bodies cleaned up, range targets replaced).
-func _prune() -> void:
-	var keep: Array[Enemy] = []
-	for x: Variant in members:
-		if is_instance_valid(x):
-			var m: Enemy = x
-			keep.append(m)
-	members = keep
-	var shooters: Array[Enemy] = []
-	for x: Variant in _shooters:
-		if is_instance_valid(x):
-			var sh: Enemy = x
-			if sh.alive:
-				shooters.append(sh)
-	_shooters = shooters
-	for k: Variant in _claimed.keys():
-		if not is_instance_valid(_claimed[k]):
+## Drops freed members (bodies cleaned up, range targets replaced) in place.
+func _prune(force: bool = false) -> void:
+	var frame: int = Engine.get_physics_frames()
+	if not force and frame == _last_prune_frame:
+		return
+	_last_prune_frame = frame
+	for i: int in range(members.size() - 1, -1, -1):
+		if not is_instance_valid(members[i]):
+			members.remove_at(i)
+	for i: int in range(_shooters.size() - 1, -1, -1):
+		var sh: Variant = _shooters[i]
+		if not is_instance_valid(sh):
+			_shooters.remove_at(i)
+		else:
+			var e: Enemy = sh
+			if not e.alive:
+				_shooters.remove_at(i)
+	if not _claimed.is_empty():
+		var dead_keys: Array = []
+		for k: Variant in _claimed:
+			if not is_instance_valid(_claimed[k]):
+				dead_keys.append(k)
+		for k: Variant in dead_keys:
 			_claimed.erase(k)
 
 
@@ -194,7 +201,7 @@ func fighting_count() -> int:
 	_prune()
 	var n: int = 0
 	for e: Enemy in members:
-		if is_instance_valid(e) and e.alive and e.state not in [Enemy.State.SURRENDER, Enemy.State.CRAWL]:
+		if is_instance_valid(e) and e.alive and e.state != Enemy.State.SURRENDER and e.state != Enemy.State.CRAWL:
 			n += 1
 	return n
 
@@ -243,7 +250,7 @@ func on_ally_seized(taken: Enemy, by: Node) -> void:
 
 
 func on_death(dead: Enemy, hit: BallisticHit) -> void:
-	_prune()
+	_prune(true)
 	var gory: bool = not dead.body.severed.is_empty() or (hit != null and hit.damage != null and hit.damage.has_flag(DamageInfo.Flags.HEADSHOT))
 	var officer: bool = dead.config.officer
 	for e: Enemy in members:
@@ -338,6 +345,7 @@ func find_cover(e: Enemy, threat: Vector3) -> Vector3:
 	_prune()
 	var best: Vector3 = Vector3.INF
 	var best_score: float = INF
+	var best_i: int = -1
 	var p: Player = player()
 	for i: int in cover_points.size():
 		var c: Vector3 = cover_points[i]
@@ -350,13 +358,16 @@ func find_cover(e: Enemy, threat: Vector3) -> Vector3:
 		var to_threat: float = c.distance_to(threat)
 		if to_threat < 4.0 or to_threat > e.config.max_range:
 			continue
+		var score: float = dist + absf(to_threat - e.config.preferred_range) * 0.5
+		if score >= best_score:
+			continue
 		if p and not cover_hides(c, p):
 			continue
-		var score: float = dist + absf(to_threat - e.config.preferred_range) * 0.5
-		if score < best_score:
-			best_score = score
-			best = c
-			_claim(i, e)
+		best_score = score
+		best = c
+		best_i = i
+	if best_i >= 0:
+		_claim(best_i, e)
 	return best
 
 
@@ -409,7 +420,7 @@ func _physics_process(delta: float) -> void:
 		return
 	_prune()
 	for e: Enemy in members:
-		if e.alive and e.sees_player:
+		if is_instance_valid(e) and e.alive and e.sees_player:
 			seen_at = clock
 			intel = p.global_position
 			_pack_engaged[e.pack] = clock
@@ -433,20 +444,20 @@ func _lookout_tip(p: Player, noise: float) -> void:
 	intel = p.global_position + Vector3(cos(a), 0.0, sin(a)) * noise * sqrt(_rng.randf())
 	var spoke: bool = false
 	for e: Enemy in members:
-		if not e.alive or e.passive or e.state in [Enemy.State.SURRENDER, Enemy.State.CRAWL, Enemy.State.GUT]:
+		if not is_instance_valid(e) or not e.alive or e.passive or e.state == Enemy.State.SURRENDER or e.state == Enemy.State.CRAWL or e.state == Enemy.State.GUT:
 			continue
 		if e.sees_player:
 			continue
 		if not is_hunting(e.pack):
 			# Holding off: keep to his side of the map, a step out of reach.
-			if e.state in [Enemy.State.IDLE, Enemy.State.ALERT]:
+			if e.state == Enemy.State.IDLE or e.state == Enemy.State.ALERT:
 				e.last_known = hold_point(e)
 			continue
 		e.last_known = _scatter(intel, hunt.tip_scatter)
 		e.awareness = maxf(e.awareness, 0.9)
 		if e.state == Enemy.State.IDLE:
 			e._enter(Enemy.State.ALERT)
-		if not spoke and e.state in [Enemy.State.ALERT, Enemy.State.COMBAT] and _rng.randf() < 0.5:
+		if not spoke and (e.state == Enemy.State.ALERT or e.state == Enemy.State.COMBAT) and _rng.randf() < 0.5:
 			callout(e, &"hunt")
 			spoke = true
 

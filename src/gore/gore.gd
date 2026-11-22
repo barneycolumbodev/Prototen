@@ -113,7 +113,6 @@ func _ready() -> void:
 	_rng.randomize()
 	_splat_mm = _make_mm(MAX_SPLATS + MAX_SPOTS, SPLAT_TEX, 4.0, "BloodStains")
 	_splat_mat = _splat_mm.mesh.surface_get_material(0) as ShaderMaterial
-	_splat_mm.visible_instance_count = MAX_SPLATS + MAX_SPOTS
 	_stain_xform.resize(MAX_SPLATS + MAX_SPOTS)
 	_stain_data.resize(MAX_SPLATS + MAX_SPOTS)
 	_pool_mm = _make_mm(MAX_POOLS, POOL_TEX, 1.0, "BloodPools")
@@ -363,6 +362,8 @@ func _stain(ring: Array[int], point: Vector3, n: Vector3, x: Vector3, sx: float,
 	_stain_data[i] = Color(float(cell), 1.0, drops.clock, run_time)
 	_splat_mm.set_instance_transform(i, _stain_xform[i])
 	_splat_mm.set_instance_custom_data(i, _stain_data[i])
+	if i + 1 > _splat_mm.visible_instance_count:
+		_splat_mm.visible_instance_count = i + 1
 	splats_placed += 1
 
 
@@ -514,6 +515,7 @@ func gib_piece(name: StringName) -> Mesh:
 			_gib_lib[StringName(mi.name)] = mi.mesh
 		root.free()
 		_gib_mat = StandardMaterial3D.new()
+		_gib_mat.diffuse_mode = BaseMaterial3D.DIFFUSE_LAMBERT
 		_gib_mat.vertex_color_use_as_albedo = true
 		_gib_mat.roughness = 0.28
 		_gib_mat.metallic_specular = 0.6
@@ -643,6 +645,7 @@ func charred_chunks(at: Vector3, dir: Vector3, count: int, speed: float, burn_s:
 		return
 	if _char_mat == null:
 		_char_mat = StandardMaterial3D.new()
+		_char_mat.diffuse_mode = BaseMaterial3D.DIFFUSE_LAMBERT
 		_char_mat.albedo_color = Color(0.035, 0.028, 0.022)
 		_char_mat.roughness = 0.92
 		_char_mat.emission_enabled = true
@@ -675,6 +678,7 @@ func clear() -> void:
 	for i: int in MAX_SPLATS + MAX_SPOTS:
 		_splat_mm.set_instance_transform(i, gone)
 		_stain_xform[i] = gone
+	_splat_mm.visible_instance_count = 0
 	_pools.clear()
 	_pool_mm.visible_instance_count = 0
 	drops.clear()
@@ -689,9 +693,11 @@ func clear() -> void:
 func _process(delta: float) -> void:
 	for l: BloodDrops.Landing in drops.advance(delta):
 		_on_landing(l)
-	_splat_mat.set_shader_parameter(&"now", drops.clock)
+	if splat_count() > 0:
+		_splat_mat.set_shader_parameter(&"now", drops.clock)
 	bursts_fx.set_clock(drops.clock)
-	_pool_mat.set_shader_parameter(&"now", drops.clock)
+	if not _pools.is_empty():
+		_pool_mat.set_shader_parameter(&"now", drops.clock)
 	if not _fading.is_empty():
 		for i: int in _fading.keys():
 			var left: float = _fading[i] - delta
@@ -819,6 +825,7 @@ func _chunk_material(bone: bool) -> StandardMaterial3D:
 	if _chunk_mats.is_empty():
 		for c: Color in [Color(0.38, 0.03, 0.03), Color(0.8, 0.74, 0.62)]:
 			var m: StandardMaterial3D = StandardMaterial3D.new()
+			m.diffuse_mode = BaseMaterial3D.DIFFUSE_LAMBERT
 			m.albedo_color = c
 			m.roughness = 0.3
 			_chunk_mats.append(m)

@@ -49,6 +49,14 @@ func world_texture_prefix() -> String:
 	return "res://assets/env/hotel/hotel_"
 
 
+func world_shader() -> Shader:
+	return preload("res://src/levels/chinatown/world_dry.gdshader")
+
+
+func is_outdoor() -> bool:
+	return false
+
+
 func room_size() -> float:
 	return 0.6
 

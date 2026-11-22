@@ -10,7 +10,6 @@ extends ActivePartData
 ## body's usable strength and impact. Tuning in
 ## data/body/parts/nt5_mesh_arm.tres.
 
-@export var scene: PackedScene
 @export var viewmodel: ViewmodelConfig
 
 @export_group("Reach")

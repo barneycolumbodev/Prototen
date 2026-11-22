@@ -8,7 +8,6 @@ extends ActivePartData
 ## so two-handed guns go away: use it with the Gauss arm, the whip, or the
 ## R3 strike (a shield bash). Tuning in data/body/parts/bw6_fan_shield.tres.
 
-@export var scene: PackedScene
 @export var viewmodel: ViewmodelConfig
 
 @export_group("Protection")

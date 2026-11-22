@@ -1,38 +1,18 @@
-[gd_scene load_steps=36 format=3]
+[gd_scene load_steps=16 format=3]
 
 [ext_resource type="Script" path="res://src/player/player.gd" id="1_player"]
 [ext_resource type="Script" path="res://src/player/viewmodel_rig.gd" id="2_rig"]
 [ext_resource type="Resource" path="res://data/player/viewmodel_pistol57.tres" id="3_vmcfg"]
-[ext_resource type="PackedScene" path="res://assets/weapons/pistol_57/pistol_57.gltf" id="4_pistol"]
-[ext_resource type="PackedScene" path="res://assets/characters/fp_arms/fp_arms.gltf" id="5_arms"]
 [ext_resource type="Script" path="res://src/weapons/player_weapon.gd" id="6_weapon"]
 [ext_resource type="Resource" path="res://data/player/viewmodel_mg42.tres" id="7_vmmg"]
-[ext_resource type="PackedScene" path="res://assets/weapons/mg42/mg42.gltf" id="8_mg42"]
-[ext_resource type="PackedScene" path="res://assets/characters/fp_arms_mg42/fp_arms_mg42.gltf" id="9_armsmg"]
 [ext_resource type="Resource" path="res://data/player/viewmodel_saiga.tres" id="10_vmsaiga"]
-[ext_resource type="PackedScene" path="res://assets/weapons/saiga12k/saiga12k.gltf" id="11_saiga"]
-[ext_resource type="PackedScene" path="res://assets/characters/fp_arms_saiga/fp_arms_saiga.gltf" id="12_armssaiga"]
 [ext_resource type="Resource" path="res://data/player/viewmodel_rail.tres" id="13_vmrail"]
-[ext_resource type="PackedScene" path="res://assets/weapons/rail_carbine/rail_carbine.gltf" id="14_rail"]
-[ext_resource type="PackedScene" path="res://assets/characters/fp_arms_rail/fp_arms_rail.gltf" id="15_armsrail"]
 [ext_resource type="Resource" path="res://data/player/viewmodel_m14p.tres" id="16_vmm14"]
-[ext_resource type="PackedScene" path="res://assets/weapons/m14p/m14p.gltf" id="17_m14"]
-[ext_resource type="PackedScene" path="res://assets/characters/fp_arms_m14p/fp_arms_m14p.gltf" id="18_armsm14"]
 [ext_resource type="Resource" path="res://data/player/viewmodel_mp5.tres" id="19_vmmp5"]
-[ext_resource type="PackedScene" path="res://assets/weapons/mp5/mp5.gltf" id="20_mp5"]
-[ext_resource type="PackedScene" path="res://assets/characters/fp_arms_mp5/fp_arms_mp5.gltf" id="21_armsmp5"]
-[ext_resource type="PackedScene" path="res://assets/weapons/glock22/glock22.gltf" id="40_glock"]
 [ext_resource type="Resource" path="res://data/player/viewmodel_m32.tres" id="41_vmm32"]
-[ext_resource type="PackedScene" path="res://assets/weapons/m32/m32.gltf" id="42_m32"]
 [ext_resource type="Resource" path="res://data/player/viewmodel_governor.tres" id="43_vmgov"]
-[ext_resource type="PackedScene" path="res://assets/weapons/governor/governor.gltf" id="44_gov"]
-[ext_resource type="PackedScene" path="res://assets/weapons/slagger/slagger.gltf" id="45_slag"]
 [ext_resource type="Resource" path="res://data/player/viewmodel_aug.tres" id="46_vmaug"]
-[ext_resource type="PackedScene" path="res://assets/weapons/aug/aug.gltf" id="47_aug"]
-[ext_resource type="PackedScene" path="res://assets/characters/fp_arms_aug/fp_arms_aug.gltf" id="48_armsaug"]
 [ext_resource type="Resource" path="res://data/player/viewmodel_spas12.tres" id="49_vmspas"]
-[ext_resource type="PackedScene" path="res://assets/weapons/spas12/spas12.gltf" id="50_spas"]
-[ext_resource type="PackedScene" path="res://assets/characters/fp_arms_spas12/fp_arms_spas12.gltf" id="51_armsspas"]
 
 [sub_resource type="CapsuleShape3D" id="capsule"]
 radius = 0.4
@@ -56,72 +36,73 @@ far = 300.0
 [node name="Viewmodel" type="Node3D" parent="Head/Camera3D"]
 script = ExtResource("2_rig")
 config = ExtResource("3_vmcfg")
-models = Array[PackedScene]([ExtResource("4_pistol"), ExtResource("5_arms")])
+model_paths = PackedStringArray("res://assets/weapons/pistol_57/pistol_57.gltf", "res://assets/characters/fp_arms/fp_arms.gltf")
 
 [node name="ViewmodelMG42" type="Node3D" parent="Head/Camera3D"]
 visible = false
 script = ExtResource("2_rig")
 config = ExtResource("7_vmmg")
-models = Array[PackedScene]([ExtResource("8_mg42"), ExtResource("9_armsmg")])
+model_paths = PackedStringArray("res://assets/weapons/mg42/mg42.gltf", "res://assets/characters/fp_arms_mg42/fp_arms_mg42.gltf")
 
 [node name="ViewmodelSaiga" type="Node3D" parent="Head/Camera3D"]
 visible = false
 script = ExtResource("2_rig")
 config = ExtResource("10_vmsaiga")
-models = Array[PackedScene]([ExtResource("11_saiga"), ExtResource("12_armssaiga")])
+model_paths = PackedStringArray("res://assets/weapons/saiga12k/saiga12k.gltf", "res://assets/characters/fp_arms_saiga/fp_arms_saiga.gltf")
 
 [node name="ViewmodelRail" type="Node3D" parent="Head/Camera3D"]
 visible = false
 script = ExtResource("2_rig")
 config = ExtResource("13_vmrail")
-models = Array[PackedScene]([ExtResource("14_rail"), ExtResource("15_armsrail")])
+model_paths = PackedStringArray("res://assets/weapons/rail_carbine/rail_carbine.gltf", "res://assets/characters/fp_arms_rail/fp_arms_rail.gltf")
 
 [node name="ViewmodelM14" type="Node3D" parent="Head/Camera3D"]
 visible = false
 script = ExtResource("2_rig")
 config = ExtResource("16_vmm14")
-models = Array[PackedScene]([ExtResource("17_m14"), ExtResource("18_armsm14")])
+model_paths = PackedStringArray("res://assets/weapons/m14p/m14p.gltf", "res://assets/characters/fp_arms_m14p/fp_arms_m14p.gltf")
 
 [node name="ViewmodelMP5" type="Node3D" parent="Head/Camera3D"]
 visible = false
 script = ExtResource("2_rig")
 config = ExtResource("19_vmmp5")
-models = Array[PackedScene]([ExtResource("20_mp5"), ExtResource("21_armsmp5")])
+model_paths = PackedStringArray("res://assets/weapons/mp5/mp5.gltf", "res://assets/characters/fp_arms_mp5/fp_arms_mp5.gltf")
+
 [node name="ViewmodelGlock" type="Node3D" parent="Head/Camera3D"]
 visible = false
 script = ExtResource("2_rig")
 config = ExtResource("3_vmcfg")
-models = Array[PackedScene]([ExtResource("40_glock"), ExtResource("5_arms")])
+model_paths = PackedStringArray("res://assets/weapons/glock22/glock22.gltf", "res://assets/characters/fp_arms/fp_arms.gltf")
 
 [node name="ViewmodelM32" type="Node3D" parent="Head/Camera3D"]
 visible = false
 script = ExtResource("2_rig")
 config = ExtResource("41_vmm32")
-models = Array[PackedScene]([ExtResource("42_m32"), ExtResource("9_armsmg")])
+model_paths = PackedStringArray("res://assets/weapons/m32/m32.gltf", "res://assets/characters/fp_arms_mg42/fp_arms_mg42.gltf")
 
 [node name="ViewmodelGovernor" type="Node3D" parent="Head/Camera3D"]
 visible = false
 script = ExtResource("2_rig")
 config = ExtResource("43_vmgov")
-models = Array[PackedScene]([ExtResource("44_gov"), ExtResource("18_armsm14")])
+model_paths = PackedStringArray("res://assets/weapons/governor/governor.gltf", "res://assets/characters/fp_arms_m14p/fp_arms_m14p.gltf")
 
 [node name="ViewmodelSlagger" type="Node3D" parent="Head/Camera3D"]
 visible = false
 script = ExtResource("2_rig")
 config = ExtResource("3_vmcfg")
-models = Array[PackedScene]([ExtResource("45_slag"), ExtResource("5_arms")])
+model_paths = PackedStringArray("res://assets/weapons/slagger/slagger.gltf", "res://assets/characters/fp_arms/fp_arms.gltf")
 
 [node name="ViewmodelAUG" type="Node3D" parent="Head/Camera3D"]
 visible = false
 script = ExtResource("2_rig")
 config = ExtResource("46_vmaug")
-models = Array[PackedScene]([ExtResource("47_aug"), ExtResource("48_armsaug")])
+model_paths = PackedStringArray("res://assets/weapons/aug/aug.gltf", "res://assets/characters/fp_arms_aug/fp_arms_aug.gltf")
 
 [node name="ViewmodelSPAS12" type="Node3D" parent="Head/Camera3D"]
 visible = false
 script = ExtResource("2_rig")
 config = ExtResource("49_vmspas")
-models = Array[PackedScene]([ExtResource("50_spas"), ExtResource("51_armsspas")])
+model_paths = PackedStringArray("res://assets/weapons/spas12/spas12.gltf", "res://assets/characters/fp_arms_spas12/fp_arms_spas12.gltf")
 
 [node name="Weapon" type="Node" parent="."]
 script = ExtResource("6_weapon")

@@ -9,7 +9,6 @@ extends ActivePartData
 ## `discharge_j` straight out of the power reserve. Tuning in
 ## data/body/parts/ad2_arc_projector.tres.
 
-@export var scene: PackedScene
 @export var viewmodel: ViewmodelConfig
 
 @export_group("Discharge")

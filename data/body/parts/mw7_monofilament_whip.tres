@@ -5,9 +5,7 @@
 [ext_resource type="Script" path="res://src/body/part_visual.gd" id="3"]
 [ext_resource type="Script" path="res://src/augments/active/whip/whip.gd" id="4"]
 [ext_resource type="Script" path="res://src/body/stat_requirement.gd" id="5"]
-[ext_resource type="PackedScene" path="res://assets/augments/mw7_monofilament_whip/mw7_monofilament_whip.gltf" id="6"]
 [ext_resource type="Script" path="res://src/player/viewmodel_config.gd" id="7"]
-[ext_resource type="PackedScene" path="res://assets/augments/actives_body/mw7_monofilament_whip/mw7_monofilament_whip.gltf" id="8"]
 
 [sub_resource type="Resource" id="view"]
 script = ExtResource("7")
@@ -23,7 +21,7 @@ reason = "the filament is steered by a guidance loop; without a co-processor it 
 [sub_resource type="Resource" id="vis_0"]
 script = ExtResource("3")
 socket = &"root"
-scene = ExtResource("8")
+scene_path = "res://assets/augments/actives_body/mw7_monofilament_whip/mw7_monofilament_whip.gltf"
 model_space = true
 
 [resource]
@@ -53,5 +51,5 @@ regen_delay = 0.0
 min_to_start = 0.0
 active_power_w = 60.0
 active_heat_w = 40.0
-scene = ExtResource("6")
+scene_path = "res://assets/augments/mw7_monofilament_whip/mw7_monofilament_whip.gltf"
 viewmodel = SubResource("view")

@@ -8,7 +8,7 @@ shader_type spatial;
 // INSTANCE_CUSTOM: r = atlas cell, g = alpha (fades the oldest out),
 // b = the clock when it landed, a = seconds it takes to run down (runs on
 // walls are uncovered from the top; 0 = all there at once).
-render_mode blend_mix, depth_draw_never, cull_disabled, shadows_disabled;
+render_mode blend_mix, depth_draw_never, cull_disabled, diffuse_lambert, shadows_disabled;
 
 uniform sampler2D atlas : filter_linear_mipmap, repeat_disable;
 uniform float cells = 4.0;

@@ -69,7 +69,7 @@ func _init(enemy: Enemy) -> void:
 
 
 func is_busy() -> bool:
-	return phase in [Phase.WINDUP, Phase.RECOVER, Phase.VAULT]
+	return phase == Phase.WINDUP or phase == Phase.RECOVER or phase == Phase.VAULT
 
 
 func is_vaulting() -> bool:

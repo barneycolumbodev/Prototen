@@ -1,7 +1,7 @@
 shader_type spatial;
 // The far shore: dark towers with a grid of windows, some lit (warm or
 // fluorescent), red aviation lamps on the tallest. Unshaded; fog softens it.
-render_mode unshaded, cull_back, fog_disabled;
+render_mode unshaded, cull_back, fog_disabled, shadows_disabled;
 
 varying vec3 wpos;
 varying vec3 wnrm;

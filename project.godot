@@ -48,6 +48,9 @@ window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
 window/handheld/orientation=4
 window/vsync/vsync_mode=1
+; Fixed frame pacing (0) honours the 60 fps cap on 120 Hz screens instead of
+; letting Swappy auto-mode silently lock down to 40/45 fps after a single hitch.
+window/frame_pacing/android/swappy_mode=0
 
 [input_devices]
 
@@ -77,11 +80,18 @@ common/max_physics_steps_per_frame=3
 renderer/rendering_method="mobile"
 renderer/rendering_method.mobile="mobile"
 textures/vram_compression/import_etc2_astc=true
+textures/default_filters/anisotropic_filtering_level=1
 anti_aliasing/quality/msaa_3d=0
 scaling_3d/mode=0
 scaling_3d/scale=1.0
-lights_and_shadows/directional_shadow/size=2048
-lights_and_shadows/directional_shadow/soft_shadow_filter_quality=1
+; Maps use baked lightmaps and no real-time shadow-casting lights: keep shadow
+; atlases minimal to save VRAM on 4 GB phones.
+lights_and_shadows/directional_shadow/size=512
+lights_and_shadows/directional_shadow/soft_shadow_filter_quality=0
+lights_and_shadows/positional_shadow/atlas_size=512
+lights_and_shadows/positional_shadow/soft_shadow_filter_quality=0
+reflections/reflection_atlas/reflection_size=128
+reflections/reflection_atlas/reflection_count=16
 environment/defaults/default_clear_color=Color(0.08, 0.09, 0.1, 1)
 occlusion_culling/use_occlusion_culling=true
 mesh_lod/lod_change/threshold_pixels=2.0

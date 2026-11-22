@@ -36,11 +36,11 @@ func _ready() -> void:
 		_build_roof_map.call_deferred()
 		_build_steam()
 	_build_sounds()
-	var wm: ShaderMaterial = map.world_material
-	wm.set_shader_parameter(&"lm_gain", config.lightmap_gain)
-	wm.set_shader_parameter(&"emission_gain", config.emission_gain)
-	wm.set_shader_parameter(&"rain", config.rain_wetness)
-	wm.set_shader_parameter(&"puddles", config.puddles)
+	map.set_world_param(&"lm_gain", config.lightmap_gain)
+	map.set_world_param(&"emission_gain", config.emission_gain)
+	if map.is_outdoor():
+		map.set_world_param(&"rain", config.rain_wetness)
+		map.set_world_param(&"puddles", config.puddles)
 
 
 func follow(n: Node3D) -> void:
@@ -160,6 +160,8 @@ func _build_water() -> void:
 	water.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	var mat: ShaderMaterial = ShaderMaterial.new()
 	mat.shader = preload("res://src/levels/chinatown/water.gdshader")
+	# Draw after every opaque world bucket so buildings and quay reject hidden water via Early-Z.
+	mat.render_priority = ChinatownMap.WORLD_PRIORITY + ChinatownMap.WORLD_BUCKETS
 	mat.set_shader_parameter(&"deep", config.water_color)
 	mat.set_shader_parameter(&"reflect", config.water_reflect)
 	# The brightest lights on the waterfront make streaks on the water.
@@ -222,7 +224,8 @@ func set_feature(feature: StringName, on: bool) -> void:
 			if water_material:
 				water_material.set_shader_parameter(&"streaks", 1.0 if on else 0.0)
 		&"ripples":
-			map.world_material.set_shader_parameter(&"ripple_amount", 1.0 if on else 0.0)
+			if map.is_outdoor():
+				map.set_world_param(&"ripple_amount", 1.0 if on else 0.0)
 		&"rain":
 			if rain:
 				rain.visible = on
@@ -257,6 +260,8 @@ func _build_skyline() -> void:
 	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	var mat: ShaderMaterial = ShaderMaterial.new()
 	mat.shader = preload("res://src/levels/chinatown/skyline.gdshader")
+	# Draw after world and water so buildings reject skyline fragments via Early-Z.
+	mat.render_priority = ChinatownMap.WORLD_PRIORITY + ChinatownMap.WORLD_BUCKETS + 1
 	mi.material_override = mat
 	add_child(mi)
 
@@ -295,14 +300,13 @@ func _build_probes() -> void:
 		[Vector3(0, 3.5, 6), Vector3(32, 8, 15)], [Vector3(0, 3, 19), Vector3(94, 8, 10)],
 		[Vector3(-33, 4, 6), Vector3(26, 9, 16)], [Vector3(34, 4, 6), Vector3(24, 9, 16)],
 		[Vector3(0, 4, -25), Vector3(60, 9, 6)], [Vector3(-18, 2.2, -17), Vector3(12, 4.4, 10)],
-		[Vector3(-33, 4, -6), Vector3(26, 8, 16)],
 	]
 	for p: Array in probes:
 		var rp: ReflectionProbe = ReflectionProbe.new()
 		rp.update_mode = ReflectionProbe.UPDATE_ONCE
 		rp.box_projection = true
 		rp.size = p[1]
-		rp.max_distance = 120.0
+		rp.max_distance = 45.0
 		rp.intensity = 1.0
 		rp.ambient_mode = ReflectionProbe.AMBIENT_DISABLED
 		rp.cull_mask = ChinatownMap.MAP_LAYER

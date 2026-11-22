@@ -10,7 +10,7 @@ shader_type spatial;
 //   origin = the wound      X axis = direction it is thrown (unit)
 //   Y axis = (start time, life, size in m)
 //   Z axis = (fan: 1 thrown one way, 0 all round; seed; rise time)
-render_mode skip_vertex_transform, cull_disabled, shadows_disabled;
+render_mode skip_vertex_transform, cull_disabled, diffuse_lambert, shadows_disabled;
 
 uniform float now = 0.0;
 uniform vec3 tint : source_color = vec3(0.40, 0.016, 0.016);
@@ -65,6 +65,9 @@ void fragment() {
 	float grow = 1.0 - pow(1.0 - clamp(t / v_rise, 0.0, 1.0), 2.0);
 	float thin = 1.0 - smoothstep(0.55, 1.0, t);
 	float r = length(v_l);
+	if (r > max(grow + 0.14, 0.22)) {
+		discard;
+	}
 	float th = atan(v_l.y, v_l.x);
 	// The lump at the wound, shrinking as it is spent.
 	float core_r = 0.16 * (1.0 - 0.75 * smoothstep(0.0, 0.7, t)) * (1.0 + 0.18 * sin(5.0 * th + v_seed * 6.28));

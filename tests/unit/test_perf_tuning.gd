@@ -39,3 +39,12 @@ func test_vignette_profile_matches_the_stacked_strips() -> void:
 					keep *= 1.0 - a * (1.0 - t) * 0.22
 			assert_almost_eq(CombatHud.Vignette.profile(a, x), 1.0 - keep, 0.0001)
 	assert_eq(CombatHud.Vignette.profile(0.8, 1.0), 0.0, "nothing past the strip")
+
+
+func test_discrete_resolution_steps_skip_the_near_native_band() -> void:
+	# Slightly over budget from 1.0 skips the 0.90-0.99 upscale-overhead band.
+	var down: float = AdaptiveResolution.step(1.0, 15.5, 17.5, BUDGET, 0)
+	assert_eq(down, 0.85, "snaps cleanly to 0.85 instead of hovering at 0.96")
+	# Climbing back up from 0.85 goes straight to 1.0.
+	var up: float = AdaptiveResolution.step(0.85, 8.0, 14.0, BUDGET, 3)
+	assert_eq(up, 1.0, "returns straight to native 1.0")

@@ -11,8 +11,6 @@ extends ActivePartData
 ## (BodyModel.link_range_m), and the picture breaks up near the limit.
 ## Tuning in data/body/parts/sd3_shrike_drone.tres.
 
-@export var scene: PackedScene
-
 @export_group("Flight")
 ## Top speed (m/s) and acceleration (m/s²).
 @export var speed: float = 15.0

@@ -4,7 +4,6 @@
 [ext_resource type="Script" path="res://src/body/stat_modifier.gd" id="2"]
 [ext_resource type="Script" path="res://src/body/part_visual.gd" id="3"]
 [ext_resource type="Script" path="res://src/body/stat_requirement.gd" id="4"]
-[ext_resource type="PackedScene" path="res://assets/augments/passives/dl1_dorsal_load_frame/dl1_dorsal_load_frame.gltf" id="5"]
 
 [sub_resource type="Resource" id="mod_0"]
 script = ExtResource("2")
@@ -45,7 +44,7 @@ reason = "the frame anchors to the vertebrae"
 [sub_resource type="Resource" id="vis_0"]
 script = ExtResource("3")
 socket = &"root"
-scene = ExtResource("5")
+scene_path = "res://assets/augments/passives/dl1_dorsal_load_frame/dl1_dorsal_load_frame.gltf"
 model_space = true
 
 [resource]

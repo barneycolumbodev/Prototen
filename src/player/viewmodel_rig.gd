@@ -38,7 +38,12 @@ extends Node3D
 
 @export var config: ViewmodelConfig
 @export var models: Array[PackedScene] = []
+## Lazy model paths (used in player.tscn so unequipped guns stay out of VRAM).
+@export var model_paths: PackedStringArray = PackedStringArray()
 
+var _loaded: bool = false
+var _model_nodes: Array[Node] = []
+var _pending_colors: BodyColors
 var _slide: Node3D
 var _slide_rest: Vector3
 var _magazine: Node3D
@@ -94,10 +99,56 @@ var _shown_rounds: int = -1
 func _ready() -> void:
 	transform = config.weapon_transform()
 	add_to_group(&"suit_painted")
-	for scene: PackedScene in models:
+	if visible or not models.is_empty():
+		ensure_loaded()
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_VISIBILITY_CHANGED and visible and not _loaded:
+		ensure_loaded()
+
+
+func is_loaded() -> bool:
+	return _loaded
+
+
+## Starts loading the gun and arm glTFs on a worker thread (called while the
+## previous gun holsters so switching incurs no main-thread load hitch).
+func preload_async() -> void:
+	if _loaded:
+		return
+	for p: String in model_paths:
+		if not p.is_empty() and not ResourceLoader.has_cached(p):
+			ResourceLoader.load_threaded_request(p)
+
+
+## Instantiates the gun and arm models if they haven't been loaded yet.
+func ensure_loaded() -> void:
+	if _loaded:
+		return
+	var scenes: Array[PackedScene] = []
+	if not models.is_empty():
+		scenes = models
+	else:
+		for p: String in model_paths:
+			if p.is_empty():
+				continue
+			var ps: PackedScene
+			if ResourceLoader.load_threaded_get_status(p) != ResourceLoader.THREAD_LOAD_INVALID_RESOURCE:
+				ps = ResourceLoader.load_threaded_get(p) as PackedScene
+			else:
+				ps = load(p) as PackedScene
+			if ps:
+				scenes.append(ps)
+	if scenes.is_empty():
+		return
+	_loaded = true
+	for idx: int in scenes.size():
+		var scene: PackedScene = scenes[idx]
 		var model: Node = scene.instantiate()
 		add_child(model)
-		if scene != models[0]:
+		_model_nodes.append(model)
+		if idx > 0:
 			_arm_roots.append(model)
 		for node: Node in model.find_children("*", "GeometryInstance3D", true, false):
 			var geo: GeometryInstance3D = node as GeometryInstance3D
@@ -201,6 +252,7 @@ func _ready() -> void:
 	if _glow:
 		# Self-lit strips: no texture needed, the game sets colour and energy.
 		_glow_mat = StandardMaterial3D.new()
+		_glow_mat.diffuse_mode = BaseMaterial3D.DIFFUSE_LAMBERT
 		_glow_mat.albedo_color = Color(0.02, 0.03, 0.035)
 		_glow_mat.roughness = 0.4
 		_glow_mat.emission_enabled = true
@@ -214,26 +266,83 @@ func _ready() -> void:
 		_reticle.material_override = _reticle_mat
 	if _lens:
 		var glass: StandardMaterial3D = StandardMaterial3D.new()
+		glass.diffuse_mode = BaseMaterial3D.DIFFUSE_LAMBERT
 		glass.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 		glass.albedo_color = Color(0.45, 0.6, 0.75, 0.12)
 		glass.metallic = 0.6
 		glass.roughness = 0.05
 		glass.cull_mode = BaseMaterial3D.CULL_DISABLED
 		_lens.material_override = glass
+	if _pending_colors:
+		_pending_colors.apply_to_model(self, false)
+	if _scoped:
+		for n: Node in _model_nodes:
+			var n3: Node3D = n as Node3D
+			if n3:
+				n3.visible = false
+
+
+## Frees the instantiated weapon and arm models when this rig hasn't been used
+## recently (keeps weapon VRAM bounded on 4 GB phones). Only runs while hidden.
+func unload_models() -> void:
+	if not _loaded or visible or not models.is_empty():
+		return
+	for n: Node in _model_nodes:
+		if is_instance_valid(n):
+			n.queue_free()
+	_model_nodes.clear()
+	_arm_roots.clear()
+	_rounds.clear()
+	_round_rest.clear()
+	_tinted.clear()
+	_slide = null
+	_magazine = null
+	_cover = null
+	_belt = null
+	_stock = null
+	_vent = null
+	_glow = null
+	_glow_mat = null
+	_lens = null
+	_reticle = null
+	_reticle_mat = null
+	_optic = null
+	_handle = null
+	_laser = null
+	_cylinder = null
+	_crane = null
+	_lever = null
+	_bolt = null
+	_hammer = null
+	_load_round = null
+	_pump = null
+	_support = null
+	_tint_mat = null
+	_mag_rounds = null
+	_rounds_mat = null
+	_mag_follower = null
+	_bend_ready = false
+	_last_bend = 0.0
+	_shown_rounds = -1
+	_scoped = false
+	_loaded = false
 
 
 ## The suit colours changed (BodyColors): repaint the arms. The guns have no
 ## region maps, so they're left alone.
 func repaint(colors: BodyColors) -> void:
-	if colors:
+	_pending_colors = colors
+	if colors and _loaded:
 		colors.apply_to_model(self, false)
 
 
 func has_moving_slide() -> bool:
+	ensure_loaded()
 	return _slide != null
 
 
 func has_part(part_name: StringName) -> bool:
+	ensure_loaded()
 	match part_name:
 		&"lever":
 			return _lever != null
@@ -285,6 +394,7 @@ func has_part(part_name: StringName) -> bool:
 ## A clear magazine's body: smoky amber polymer you can see the rounds through.
 static func _clear_polymer() -> StandardMaterial3D:
 	var m: StandardMaterial3D = StandardMaterial3D.new()
+	m.diffuse_mode = BaseMaterial3D.DIFFUSE_LAMBERT
 	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	m.albedo_color = Color(0.62, 0.46, 0.26, 0.34)
 	m.roughness = 0.16
@@ -424,6 +534,7 @@ func set_load_round(t: float, from: Vector3) -> void:
 
 
 func has_lever() -> bool:
+	ensure_loaded()
 	return _lever != null
 
 
@@ -479,6 +590,7 @@ func set_shell_color(color: Color) -> void:
 		return
 	if _tint_mat == null:
 		_tint_mat = StandardMaterial3D.new()
+		_tint_mat.diffuse_mode = BaseMaterial3D.DIFFUSE_LAMBERT
 		_tint_mat.roughness = 0.55
 		for g: GeometryInstance3D in _tinted:
 			g.material_override = _tint_mat
