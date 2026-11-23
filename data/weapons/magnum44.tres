@@ -1,9 +1,11 @@
-[gd_resource type="Resource" script_class="WeaponData" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="WeaponData" load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://src/weapons/weapon_data.gd" id="1"]
+[ext_resource type="Texture2D" path="res://assets/ui/weapon_icons/magnum44.png" id="wheel_icon"]
 
 [resource]
 script = ExtResource("1")
+icon = ExtResource("wheel_icon")
 display_name = "Model 629"
 weapon_class = 0
 wheel_category = 0
@@ -13,13 +15,13 @@ closed_bolt = false
 reserve_ammo = 72
 infinite_reserve = true
 cylinder_chambers = 6
-cylinder_axis = Vector3(-0.06, -0.0, 0.0)
+cylinder_axis = Vector3(-0.0924, -0.0129, 0)
 cylinder_index_time = 0.05
-crane_hinge = Vector3(0.0, -0.03, -0.012)
-crane_swing_deg = -82.0
+crane_hinge = Vector3(-0.0224, -0.0371, -0.0085)
+crane_swing_deg = -95.0
 speedloader = true
-reload_load_offset = Vector3(-0.03, -0.01, 0.03)
-reload_load_rotation_deg = Vector3(-30, -14, -40)
+reload_load_offset = Vector3(-0.03, 0.025, 0.03)
+reload_load_rotation_deg = Vector3(-22, -10, 40)
 reload_load_turn = Vector2(0.34, 0.46)
 speedloader_from = Vector3(-0.11, 0.0, 0.0)
 fire_interval = 0.3
@@ -41,9 +43,9 @@ drag_per_m = 0.0028
 gravity_scale = 1.0
 max_range = 450.0
 max_penetrations = 6
-penetration_scale = 1.35
+penetration_scale = 0.5
 max_ricochets = 1
-damage_per_joule = 0.15
+damage_per_joule = 0.18
 min_damage = 70.0
 impulse_scale = 34.0
 ragdoll_push = 2.2
@@ -81,8 +83,8 @@ ads_time = 0.19
 ads_fov_scale = 0.8
 ads_sensitivity = 0.75
 ads_move_speed = 0.65
-ads_eye_position = Vector3(-0.45, 0.03, 0.0)
-ads_look_target = Vector3(1.0, 0.03, 0.0)
+ads_eye_position = Vector3(-0.4424, 0.018, 0)
+ads_look_target = Vector3(0.9776, 0.0306, 0)
 sway_per_turn = 0.022
 sway_max_deg = 6.5
 sway_spring_hz = 4.6
@@ -91,7 +93,7 @@ bob_amount = 0.009
 bob_rate = 1.9
 land_dip = 0.007
 move_inertia = 1.0
-grip_pivot = Vector3(-0.07, -0.06, 0.0)
+grip_pivot = Vector3(-0.0816, -0.0726, 0)
 sprint_offset = Vector3(0.015, -0.05, 0.035)
 sprint_rotation_deg = Vector3(28.0, 18.0, -16.0)
 reload_offset = Vector3(-0.03, 0.02, 0.03)
@@ -100,7 +102,7 @@ draw_offset = Vector3(0.0, -0.2, 0.05)
 draw_rotation_deg = Vector3(0.0, 0.0, -40.0)
 pose_spring_hz = 5.5
 pose_spring_damping = 0.8
-muzzle_point = Vector3(0.24, 0.0, 0.0)
+muzzle_point = Vector3(0.1769, 0.0014, 0)
 ejects_shells = false
 flash_scale = 1.5
 flash_light_energy = 6.0
@@ -109,7 +111,7 @@ flash_light_time = 0.07
 smoke_per_shot = 0
 blast_smoke = 1.0
 barrel_smoke = 1.6
-cylinder_gap_point = Vector3(0.04, 0.0, 0.0)
+cylinder_gap_point = Vector3(0.0221, 0.0014, 0)
 tracer_every = 0
 impact_fx_scale = 1.6
 sound_prefix = "magnum44_"

@@ -171,6 +171,11 @@ func _ready() -> void:
 			ag.room = self
 			ag.shot = arg.trim_prefix("--demo=aug:")
 			add_child(ag)
+		elif arg.begins_with("--demo=magnum44:"):
+			var mg: Magnum44Demo = Magnum44Demo.new()
+			mg.room = self
+			mg.shot = arg.trim_prefix("--demo=magnum44:")
+			add_child(mg)
 		elif arg.begins_with("--demo=spas12:"):
 			var sp: Spas12Demo = Spas12Demo.new()
 			sp.room = self

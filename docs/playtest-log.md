@@ -851,3 +851,29 @@ Please try:
 - Measured:
 - Notes from the owner:
 - Follow-ups: the reload pose rolls the gun but doesn't show the loading port well; the hands don't move to load shells (as on the Governor).
+
+## The .44 Magnum — 2026-11-23 (waiting for the owner)
+
+Owner (2026-11-23): "the revolver, a wheel gun ... a beautiful looking 44 Magnum with ... reflective stainless steel chrome, maybe a nice wooden handle ... really, really punchy recoil and a nice smoke effect smoking from the barrel ... jump out of your hand almost ... modeled after a real picture of one ... blowing people's fucking heads off ... another real sound." Design: `docs/design.md` §4.12.
+
+What's in the APK:
+- **Smith & Wesson Model 629**, .44 Magnum, 6" barrel, polished stainless, red wood target grips with checkered panels. In the weapon wheel under **Pistols**; Survival drops from wave 2.
+- **Traced from a photo of a real one** (a stainless 6" 629 with wood target grips, CC0 on Wikimedia Commons), at its real size (295 mm), checked by drawing the model's outline over the photo (`docs/previews/magnum44_overlay.png`).
+- **The leap:** every shot the gun is thrown about 38° up out of your grip and hauled back down in a quarter second, with a hard camera kick, a view shake, a field-of-view punch and both rumble motors. Back on target for the next pull (0.3 s).
+- **Smoke:** a cloud out of the muzzle every shot, jets from the cylinder gap, and the barrel keeps smoking for a couple of seconds (longer after several shots).
+- **Heads come off:** a hollow point to the head bursts it (tested at 15 m); one to the chest does about 140, more than any triad can take.
+- **Six rounds, speedloader:** X swings the cylinder out, the ejector throws all six cases, a speedloader puts six back at once, the cylinder snaps shut. 1.9 s.
+- **Sound from real recordings:** a real revolver's shot over a big-bore .45's range boom (the loudest gun in the game on a phone speaker), a range tail, and a real latch, ejector, speedloader, snap shut and dry fire. Listen: `docs/previews/magnum44_sound_preview.wav` (three shots, a reload, a shot).
+
+Cloud evidence: `tests/scene/test_magnum44.gd` (4: the gun, the leap/smoke/cylinder, the speedloader reload, head and chest kills) and the 629 checks in `test_weapon_assets.gd` pass. In-game captures: `docs/previews/magnum44_ingame.png` (hip, the leap, the barrel smoking, aimed, swung out, the speedloader going in). Renders: `magnum44_beauty_left.png`, `magnum44_beauty.png`, `magnum44_cylinder.png`.
+
+Please try:
+1. The leap: too much, too little, too slow to come back? (Pause → Gun tuning → Hand cannon.)
+2. The smoke: enough? Too much in your face after a few shots?
+3. The shot on the phone speaker and on headphones, against the SPAS-12 and the Governor.
+4. Aiming: the shared pistol hands; can you see the sights well enough?
+
+- Device / renderer / settings:
+- Measured:
+- Notes from the owner:
+- Follow-ups: the hands are the shared pistol hands and don't move during the reload (the speedloader floats in on its own), as on the other guns; a real reload goes muzzle down, but these hands would then hide the cylinder.

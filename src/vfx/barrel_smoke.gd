@@ -97,8 +97,8 @@ func follow(muzzle: Vector3, delta: float) -> void:
 			while _spawn_acc >= 1.0:
 				_spawn_acc -= 1.0
 				var up: Vector3 = Vector3(_rng.randf_range(-0.03, 0.03), _rng.randf_range(0.1, 0.22), _rng.randf_range(-0.03, 0.03))
-				_spawn(muzzle + Vector3(0.0, 0.006, 0.0), up, _rng.randf_range(1.6, 2.6), 0.008, _rng.randf_range(0.05, 0.09),
-						lerpf(0.05, 0.14, clampf(heat / 1.5, 0.0, 1.0)), 0.6)
+				_spawn(muzzle + Vector3(0.0, 0.006, 0.0), up, _rng.randf_range(1.6, 2.6), 0.012, _rng.randf_range(0.07, 0.12),
+						lerpf(0.14, 0.32, clampf(heat / 1.5, 0.0, 1.0)), 0.6)
 	_step(delta)
 
 

@@ -226,6 +226,32 @@ func test_spas12_arms_have_a_support_arm_and_fit_the_budget() -> void:
 	assert_lt(tris, 12000, "first-person arms (SPAS-12 hold)")
 
 
+func test_magnum44_parts_budget_and_baked_material() -> void:
+	var gun: Node = (load("res://assets/weapons/magnum44/magnum44.gltf") as PackedScene).instantiate()
+	# The parts the game turns and swings, a round per chamber and the speedloader.
+	for part: String in ["body", "cylinder", "crane", "speedloader", "round_0", "round_5"]:
+		assert_true(gun.find_child(part, true, false) != null, "has a %s node" % part)
+	var body: MeshInstance3D = gun.find_child("body", true, false) as MeshInstance3D
+	var mat: StandardMaterial3D = body.mesh.surface_get_material(0) as StandardMaterial3D
+	assert_not_null(mat.albedo_texture)
+	assert_not_null(mat.normal_texture)
+	assert_not_null(mat.metallic_texture, "stainless vs wood comes from the metal map")
+	# A 6" Model 629: about 11.6" (295 mm) from the muzzle to the back of the grip.
+	var lo: float = 1e9
+	var hi: float = -1e9
+	for mi: MeshInstance3D in _meshes(gun):
+		if mi.name == "speedloader":
+			continue
+		var verts: PackedVector3Array = mi.mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX]
+		for v: Vector3 in verts:
+			lo = minf(lo, v.x)
+			hi = maxf(hi, v.x)
+	var tris: int = _tris(gun)
+	gun.free()
+	assert_almost_eq(hi - lo, 0.295, 0.012, "295 mm long (%.3f m)" % (hi - lo))
+	assert_between(tris, 8000, 22000, "first-person Model 629 (%d tris)" % tris)
+
+
 func test_glock22_parts_budget_and_baked_material() -> void:
 	var gun: Node = (load("res://assets/weapons/glock22/glock22.gltf") as PackedScene).instantiate()
 	# Body plus the parts the game drives: the slide (with the switch on its back) and the magazine.
@@ -254,7 +280,7 @@ func test_m14p_arms_budget() -> void:
 
 func test_every_gun_has_a_wheel_icon() -> void:
 	for path: String in ["pistol_57", "mg42", "saiga12k", "rail_carbine", "m14p", "mp5", "glock22", "m32", "governor",
-			"slagger", "aug", "spas12"]:
+			"slagger", "aug", "spas12", "magnum44"]:
 		var d: WeaponData = load("res://data/weapons/%s.tres" % path) as WeaponData
 		assert_not_null(d.icon, "%s has a weapon wheel icon" % path)
 

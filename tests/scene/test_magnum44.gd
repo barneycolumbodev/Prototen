@@ -104,16 +104,26 @@ func test_speedloader_reload_dumps_all_six_and_puts_six_back() -> void:
 func test_a_head_shot_takes_the_head_apart_and_a_chest_shot_kills() -> void:
 	Settings.gore_level = Gore.Level.MAXIMUM
 	var d: WeaponData = weapon.data
+	await wait_physics_frames(10)
 	var e: Enemy = room.shooting_range.targets[0]
+	var gibs: int = Gore.gib_count()
 	var head: Vector3 = e.body.hitboxes[&"head"].global_position
 	var from: Vector3 = head + Vector3(0, 0.1, 15.0)
 	Ballistics.fire(d, from, (head - from).normalized(), player)
 	await wait_physics_frames(5)
 	assert_true(e.dead)
 	assert_true(e.body.is_severed(&"head"), "a .44 to the head at 15 m takes it off")
-	var e2: Enemy = room.shooting_range.targets[1]
+	assert_gt(Gore.gib_count(), gibs + 2, "in pieces: the hollow point bursts it")
+	room.shooting_range.clear_targets()
+	await wait_physics_frames(1)
+	var e2: Enemy = room.shooting_range.spawn_target(0)
+	await wait_physics_frames(3)
 	var chest: Vector3 = e2.body.hitboxes[&"chest"].global_position
 	from = chest + Vector3(0, 0.1, 10.0)
 	Ballistics.fire(d, from, (chest - from).normalized(), player)
 	await wait_physics_frames(5)
 	assert_true(e2.dead, "one to the chest at 10 m")
+	var hp: float = 0.0
+	for z: StringName in e2.zone_damage:
+		hp += e2.zone_damage[z]
+	assert_gt(hp, 120.0, "enough for the toughest triad (%.0f)" % hp)
