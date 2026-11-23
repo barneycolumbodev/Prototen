@@ -1,22 +1,26 @@
 {
  "out": "raw_assets/audio/fetched/magnum",
- "opengameart": [
-  "https://opengameart.org/content/the-free-firearm-sound-library"
- ],
+ "opengameart": [],
  "commons": [],
- "freesound_pages": [],
- "freesound_ids": [],
- "freesound_queries": [
-  "44 magnum",
-  ".44 magnum revolver",
-  "magnum revolver shot",
-  "revolver gunshot",
-  "revolver cylinder",
-  "revolver reload",
-  "revolver hammer cock",
-  "speedloader"
+ "freesound_pages": [
+  "Shark_Anthony/683186",
+  "Shark_Anthony/683175",
+  "DarkShroom/645316",
+  "Nox_Sound/541818",
+  "Jon285/34708",
+  "reishugo/346906",
+  "ser%C3%B8ut%C5%8Dnin--depriv%C9%99d/693125",
+  "ser%C3%B8ut%C5%8Dnin--depriv%C9%99d/677159",
+  "Dredile/177863",
+  "tkane0512/722902",
+  "ajoyce86/240698",
+  "acidsnowflake/402790",
+  "AugustSandberg/508745",
+  "e9118586020/567611",
+  "shelbyshark/501560"
  ],
+ "freesound_ids": [],
+ "freesound_queries": [],
  "per_query": 6,
- "keep": "1917|642|single six|1894|master sheet",
- "manifest": "manifest.json"
+ "manifest": "manifest_provenance.json"
 }
