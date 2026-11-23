@@ -117,7 +117,7 @@ func test_belt_reload_opens_cover_and_drops_the_box() -> void:
 	while weapon.is_reloading() and t < 6.0:
 		await get_tree().physics_frame
 		t += 1.0 / 60.0
-		max_cover = maxf(max_cover, rad_to_deg(cover.transform.basis.get_euler().z - cover_rest.get_euler().z))
+		max_cover = maxf(max_cover, absf(rad_to_deg(cover.transform.basis.get_euler().z - cover_rest.get_euler().z)))
 		max_drop = maxf(max_drop, box_rest - box.position.y)
 	assert_gt(max_cover, 40.0, "feed cover swings open (%.0f°)" % max_cover)
 	assert_gt(max_drop, 0.1, "ammo box comes off")

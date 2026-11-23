@@ -443,7 +443,8 @@ func set_magazine_out(down: float, direction: Vector3 = Vector3.DOWN) -> void:
 		_belt.visible = down < 0.02
 
 
-## Feed cover open angle (degrees, swinging the front up about `hinge`).
+## Feed cover open angle (degrees about `hinge`: positive swings the front up,
+## negative the rear up).
 func set_cover_open(angle_deg: float, hinge: Vector3) -> void:
 	if _cover:
 		var r: Transform3D = Transform3D(Basis(Vector3(0, 0, 1), deg_to_rad(angle_deg)), Vector3.ZERO)

@@ -403,9 +403,10 @@ const WHEEL_NAMES: PackedStringArray = ["PISTOLS", "SMGs", "SHOTGUNS", "RIFLES",
 
 @export_group("Moving parts")
 ## Feed cover (node "cover"): hinge point in weapon space, and how far it
-## opens during a reload (degrees, muzzle up).
+## opens during a reload (degrees; positive swings the front up about a rear
+## hinge, negative the rear up about a front hinge, as on the MG42).
 @export var cover_hinge: Vector3 = Vector3.ZERO
-@export_range(0.0, 120.0) var cover_open_deg: float = 0.0
+@export_range(-120.0, 120.0) var cover_open_deg: float = 0.0
 ## Direction the magazine (node "magazine") leaves the gun during a reload,
 ## weapon space. Down for a pistol; back and up for a top-mounted magazine.
 @export var magazine_travel: Vector3 = Vector3(0.0, -1.0, 0.0)
