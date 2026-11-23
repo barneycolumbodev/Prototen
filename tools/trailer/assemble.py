@@ -131,6 +131,17 @@ def main():
     args += ["-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "256k", "-movflags", "+faststart", out]
     subprocess.run(args, check=True)
     print("trailer: %s (%.2fs)" % (out, total))
+    if quality == "final":
+        # A 9:16 version for phone feeds: the frame centred over a blurred,
+        # darkened fill of itself.
+        vert = out.replace(".mp4", "_vertical.mp4")
+        subprocess.run(["ffmpeg", "-hide_banner", "-loglevel", "error", "-y", "-i", out, "-filter_complex",
+                        "[0:v]split[a][b];[a]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,"
+                        "boxblur=28:4,eq=brightness=-0.12:saturation=0.8[bg];[b]scale=1080:-2[fg];"
+                        "[bg][fg]overlay=(W-w)/2:(H-h)/2,format=yuv420p[v]",
+                        "-map", "[v]", "-map", "0:a", "-c:v", "libx264", "-preset", "slow", "-crf", "16",
+                        "-c:a", "copy", "-movflags", "+faststart", vert], check=True)
+        print("trailer: %s (vertical)" % vert)
 
 
 if __name__ == "__main__":
