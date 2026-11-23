@@ -52,7 +52,7 @@ func show_run(r: RunState) -> void:
 		_center(RunUi.label("\n".join(hist), 14, RunUi.C_DIM))
 	_center(RunUi.label("A  main menu", 14, RunUi.C_DIM))
 	visible = true
-	_open_time = Time.get_ticks_msec()
+	_open_time = TimeControl.now_msec()
 
 
 func _center(l: Label) -> void:
@@ -61,7 +61,7 @@ func _center(l: Label) -> void:
 
 
 func _input(event: InputEvent) -> void:
-	if not visible or Time.get_ticks_msec() - _open_time < 900:
+	if not visible or TimeControl.now_msec() - _open_time < 900:
 		return
 	if event.is_action_pressed(&"ui_accept"):
 		get_viewport().set_input_as_handled()

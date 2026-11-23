@@ -185,7 +185,7 @@ func play_at(name: StringName, at: Vector3, volume_db: float = 0.0, pitch_rand: 
 
 ## A spent case landing near the player: a soft tick, rate-limited.
 func play_casing(bank_name: StringName, at: Vector3) -> void:
-	var now: float = Time.get_ticks_msec() * 0.001
+	var now: float = TimeControl.now_sec()
 	if now - _last_casing < CASING_GAP:
 		return
 	_last_casing = now
@@ -269,7 +269,7 @@ func _apply_concuss() -> void:
 ## Rate limit for dying voices: a shotgun blast into a crowd shouldn't stack
 ## five screams. Returns true (and takes the slot) if one may play now.
 func claim_death_voice() -> bool:
-	var now: float = Time.get_ticks_msec() * 0.001
+	var now: float = TimeControl.now_sec()
 	_death_voices = _death_voices.filter(func(t: float) -> bool: return now - t < DEATH_VOICE_WINDOW)
 	if _death_voices.size() >= DEATH_VOICE_MAX:
 		return false
@@ -297,7 +297,7 @@ func _on_hit(hit: BallisticHit) -> void:
 	# A glancing round: the surface's own impact plus a short whine (not the
 	# range's steel ping, which every grazing street hit used to play).
 	if hit.result == BallisticHit.Result.RICOCHET:
-		var now: float = Time.get_ticks_msec() * 0.001
+		var now: float = TimeControl.now_sec()
 		if now - _last_ricochet > RICOCHET_GAP and _rng.randf() < RICOCHET_AUDIBLE:
 			_last_ricochet = now
 			play_at(&"ricochet", hit.point, vol - 4.0, 0.1)

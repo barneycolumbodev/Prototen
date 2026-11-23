@@ -62,7 +62,7 @@ func show_offers(p_offers: Array[RunState.Offer], p_heading: String, p_sub: Stri
 	pick = 0
 	_build_cards()
 	visible = true
-	_open_time = Time.get_ticks_msec()
+	_open_time = TimeControl.now_msec()
 	get_tree().paused = true
 	Sfx.play_ui(&"draw", -2.0)
 
@@ -132,7 +132,7 @@ func _input(event: InputEvent) -> void:
 	if not visible:
 		return
 	# A beat before input counts, so a held trigger or a mashed A doesn't take a card unseen.
-	if Time.get_ticks_msec() - _open_time < 450:
+	if TimeControl.now_msec() - _open_time < 450:
 		return
 	var handled: bool = true
 	if event.is_action_pressed(&"ui_left"):

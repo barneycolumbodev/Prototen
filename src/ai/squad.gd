@@ -280,7 +280,7 @@ func officer_near(e: Enemy) -> bool:
 ## `from` says a line for `situation` (VoiceLines), unless someone spoke
 ## less than CALLOUT_GAP ago (`force` ignores that).
 func callout(from: Enemy, situation: StringName, force: bool = false) -> void:
-	var now: float = Time.get_ticks_msec() * 0.001
+	var now: float = TimeControl.now_sec()
 	if not force and now - _last_callout < CALLOUT_GAP:
 		return
 	if from.speak(situation) != "":

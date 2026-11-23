@@ -15,6 +15,11 @@ var dilation_player_scale: float = 1.0
 var dilation_impact_boost: float = 1.0
 var _hitstop_scale: float = 1.0
 var _hitstop_until_ms: int = 0
+## Movie Maker (`--write-movie`, the trailer) renders far slower than real
+## time, so the wall clock is meaningless there: `now_msec` counts the
+## unscaled time of the frames drawn instead, exactly what a device would see.
+var _movie: bool = OS.has_feature("movie")
+var _movie_ms: float = 0.0
 
 
 func _ready() -> void:
@@ -26,7 +31,7 @@ func _ready() -> void:
 func hitstop(seconds: float, time_scale: float) -> void:
 	if seconds <= 0.0:
 		return
-	var until: int = Time.get_ticks_msec() + int(seconds * 1000.0)
+	var until: int = now_msec() + int(seconds * 1000.0)
 	if until > _hitstop_until_ms:
 		_hitstop_until_ms = until
 	_hitstop_scale = minf(_hitstop_scale, time_scale) if is_hitstopped() else time_scale
@@ -80,14 +85,26 @@ func player_pitch() -> float:
 
 
 func is_hitstopped() -> bool:
-	return Time.get_ticks_msec() < _hitstop_until_ms
+	return now_msec() < _hitstop_until_ms
 
 
 func scale() -> float:
 	return Engine.time_scale
 
 
-func _process(_delta: float) -> void:
+## Milliseconds of real (unscaled) time: the wall clock on a device, the
+## frames drawn under Movie Maker. Use it for hit-stop and rate limits.
+func now_msec() -> int:
+	return int(_movie_ms) if _movie else Time.get_ticks_msec()
+
+
+func now_sec() -> float:
+	return now_msec() * 0.001
+
+
+func _process(delta: float) -> void:
+	if _movie:
+		_movie_ms += delta / maxf(Engine.time_scale, 0.0001) * 1000.0
 	if _hitstop_scale < 1.0 and not is_hitstopped():
 		_hitstop_scale = 1.0
 		_apply()

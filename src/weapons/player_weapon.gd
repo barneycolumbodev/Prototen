@@ -542,7 +542,7 @@ func _close_wheel(apply: bool) -> void:
 func _update_wheel() -> void:
 	var active: bool = input_enabled and _player.input_enabled and not stowed
 	var held: bool = _script_y if _script_wheel else (active and not _scripted and Input.is_action_pressed(&"switch_weapon"))
-	var now: int = Time.get_ticks_msec()
+	var now: int = TimeControl.now_msec()
 	if held and _y_down_ms < 0:
 		_y_down_ms = now
 	if held and not wheel_open and slots.size() > 2 and now - _y_down_ms >= int(wheel_config.hold_time * 1000.0):

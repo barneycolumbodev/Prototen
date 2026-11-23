@@ -463,7 +463,7 @@ static func is_gauss(w: WeaponData) -> bool:
 func _take(weapon: WeaponData, point: Vector3, velocity: Vector3) -> bool:
 	if weapon == null:
 		return false
-	var now: int = Time.get_ticks_msec()
+	var now: int = TimeControl.now_msec()
 	if held.size() >= capacity():
 		refused += 1
 		if now - _last_full_ms > 400:

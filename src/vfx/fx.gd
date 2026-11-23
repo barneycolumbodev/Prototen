@@ -186,7 +186,7 @@ func muzzle_flash(muzzle: Transform3D, data: WeaponData) -> void:
 		_emit_on(_flame, &"flame", muzzle.origin, muzzle.basis.x, Color(1.0, 0.55, 0.16, 0.9), 34, 1.0)
 	# Suppressor puff / propellant smoke, rate-limited so automatic fire doesn't
 	# take every pooled emitter away from impacts.
-	var now: float = Time.get_ticks_msec() * 0.001
+	var now: float = TimeControl.now_sec()
 	if data.smoke_per_shot > 0 and now - _last_smoke > 0.12:
 		_last_smoke = now
 		_emit(&"smoke", muzzle.origin, muzzle.basis.x, Color(0.7, 0.7, 0.7, 0.16), data.smoke_per_shot, 0.6)
@@ -196,7 +196,7 @@ func muzzle_flash(muzzle: Transform3D, data: WeaponData) -> void:
 func vent_steam(at: Vector3, up: Vector3, strength: float = 1.0) -> void:
 	if not enabled:
 		return
-	var now: float = Time.get_ticks_msec() * 0.001
+	var now: float = TimeControl.now_sec()
 	if now - _last_steam < 0.09:
 		return
 	_last_steam = now
@@ -349,7 +349,7 @@ func _ember_hit(hit: BallisticHit, target: Node3D, reflect: Vector3) -> void:
 func burn_at(target: Node3D, point: Vector3, normal: Vector3, seconds: float, force: bool = false) -> void:
 	if not enabled or seconds <= 0.0:
 		return
-	var now: int = Time.get_ticks_msec()
+	var now: int = TimeControl.now_msec()
 	if now - _last_fire_ms < 90 and not force:
 		return
 	_last_fire_ms = now

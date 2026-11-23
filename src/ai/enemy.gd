@@ -1839,20 +1839,31 @@ func _build_flash() -> void:
 	if _flash_mesh == null:
 		var st: SurfaceTool = SurfaceTool.new()
 		st.begin(Mesh.PRIMITIVE_TRIANGLES)
-		# Two crossed quads along +X plus a front star.
+		# Two crossed quads along +X, UV-mapped so the soft mist texture
+		# shapes each into a glowing tongue of flame (without UVs every
+		# vertex sampled one texel and the flash drew as a solid card).
+		var along: Vector3 = Vector3(0.26, 0, 0)
+		var back: Vector3 = Vector3(-0.03, 0, 0)
 		for k: int in 2:
 			var a: float = PI * 0.5 * k
-			var u: Vector3 = Vector3(0, cos(a), sin(a)) * 0.07
-			st.add_vertex(-u)
-			st.add_vertex(u)
-			st.add_vertex(u + Vector3(0.22, 0, 0))
-			st.add_vertex(-u)
-			st.add_vertex(u + Vector3(0.22, 0, 0))
-			st.add_vertex(-u + Vector3(0.22, 0, 0))
+			var u: Vector3 = Vector3(0, cos(a), sin(a)) * 0.075
+			st.set_uv(Vector2(0, 0))
+			st.add_vertex(back - u)
+			st.set_uv(Vector2(0, 1))
+			st.add_vertex(back + u)
+			st.set_uv(Vector2(1, 1))
+			st.add_vertex(u + along)
+			st.set_uv(Vector2(0, 0))
+			st.add_vertex(back - u)
+			st.set_uv(Vector2(1, 1))
+			st.add_vertex(u + along)
+			st.set_uv(Vector2(1, 0))
+			st.add_vertex(-u + along)
 		_flash_mesh = st.commit()
 		_flash_mat = StandardMaterial3D.new()
 		_flash_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 		_flash_mat.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+		_flash_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 		_flash_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
 		_flash_mat.albedo_color = Color(2.6, 1.7, 0.8)
 		_flash_mat.albedo_texture = preload("res://assets/gore/mist.png")

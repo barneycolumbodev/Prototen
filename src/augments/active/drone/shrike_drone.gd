@@ -106,7 +106,7 @@ class DroneView:
 		draw_string(font, Vector2(0, 46), top, HORIZONTAL_ALIGNMENT_CENTER, vp.x, 16, c)
 		draw_string(font, Vector2(0, vp.y - 30), "RT  DETONATE      LB  CUT LINK      A / B  CLIMB / SINK", HORIZONTAL_ALIGNMENT_CENTER, vp.x, 14, Color(c, 0.75))
 		if drone._alarm > 0.0:
-			draw_string(font, Vector2(0, 84), "BODY UNDER FIRE", HORIZONTAL_ALIGNMENT_CENTER, vp.x, 22, Color(1.0, 0.25, 0.2, 0.6 + 0.4 * sin(Time.get_ticks_msec() * 0.02)))
+			draw_string(font, Vector2(0, 84), "BODY UNDER FIRE", HORIZONTAL_ALIGNMENT_CENTER, vp.x, 22, Color(1.0, 0.25, 0.2, 0.6 + 0.4 * sin(TimeControl.now_msec() * 0.02)))
 		if drone.link < 0.35:
 			draw_string(font, Vector2(0, 112), "LINK WEAK", HORIZONTAL_ALIGNMENT_CENTER, vp.x, 18, Color(1.0, 0.5, 0.2))
 

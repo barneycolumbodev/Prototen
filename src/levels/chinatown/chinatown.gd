@@ -222,7 +222,7 @@ func wants_menu() -> bool:
 	if not menu_on_load or not LoadoutStore.enabled():
 		return false
 	for a: String in args:
-		for flag: String in ["--bench", "--sweep", "--perf", "--line-up", "--waves", "--nospawn", "--god"]:
+		for flag: String in ["--bench", "--sweep", "--perf", "--line-up", "--waves", "--nospawn", "--god", "--trailer"]:
 			if a.begins_with(flag):
 				return false
 	return true
@@ -380,6 +380,15 @@ func _start_game(survival_mode: bool = false) -> void:
 			var hd: HuntDemo = HuntDemo.new()
 			hd.map = self
 			add_child(hd)
+		if arg.begins_with("--trailer="):
+			# A shot of the trailer (src/trailer/, tools/trailer/render.sh).
+			spawns_on = false
+			var shot_script: GDScript = load("res://src/trailer/shots/%s.gd" % arg.trim_prefix("--trailer=")) as GDScript
+			var shot_obj: Object = shot_script.new()
+			var shot: TrailerShot = shot_obj as TrailerShot
+			shot.name = arg.trim_prefix("--trailer=")
+			shot.map = self
+			add_child(shot)
 		if arg == "--demo=dogs":
 			spawns_on = false
 			var dd: DogDemo = DogDemo.new()

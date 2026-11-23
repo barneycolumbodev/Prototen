@@ -20,7 +20,7 @@ var _last_ms: int = 0
 
 
 func _process(_delta: float) -> void:
-	var now: int = Time.get_ticks_msec()
+	var now: int = TimeControl.now_msec()
 	var dt: float = (now - _last_ms) * 0.001 if _last_ms > 0 else 0.0
 	_last_ms = now
 	var target: float = 1.0 if weapon and weapon.wheel_open else 0.0
