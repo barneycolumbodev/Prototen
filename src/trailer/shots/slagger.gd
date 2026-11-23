@@ -18,14 +18,16 @@ func setup() -> void:
 	a = spawn("gunman", bv(5.6, 8.9), start, 5)
 	b = spawn("gunman", bv(2.2, 10.4), start, 9)
 	place_player(start, a.body.chest_position())
+	# On their marks (passive, guns on the operative): the man behind must
+	# not walk up or put rounds into his partner's back.
 	for e: Enemy in [a, b]:
-		alert(e)
+		e.sees_player = true
 
 
 func step() -> void:
 	var w: PlayerWeapon = player.weapon()
 	if _fired < 0 and f > 10:
-		for e: Enemy in [a, b]:
+		for e: Enemy in [a]:
 			if (f + e.look_seed) % 11 == 0:
 				enemy_fire(e, player.camera().global_position + Vector3(0.0, -0.3, 0.6), 3.0)
 	aim(a.body.chest_position() + Vector3(0.0, 0.05, 0.0) if _fired < 0 or f < _fired + 20 else a.global_position + Vector3.UP * 0.5, 10.0 if _fired < 0 else 4.0)
