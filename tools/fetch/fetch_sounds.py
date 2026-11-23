@@ -165,6 +165,45 @@ def freesound_sound(user: str, sid: str, out: str, manifest: list, seen: set) ->
     time.sleep(1.5)
 
 
+COMMONS_API = "https://commons.wikimedia.org/w/api.php?"
+
+
+def commons_file(title: str, out: str, manifest: list) -> None:
+    """A Wikimedia Commons file; public domain / CC0 only. Videos keep only their audio (ffmpeg -> flac)."""
+    q = urllib.parse.urlencode({"action": "query", "titles": title, "prop": "imageinfo", "format": "json",
+                                "iiprop": "url|size|mime|extmetadata"})
+    d = json.loads(get(COMMONS_API + q))
+    ii = list(d["query"]["pages"].values())[0]["imageinfo"][0]
+    em = ii.get("extmetadata", {})
+    lic = em.get("LicenseShortName", {}).get("value", "")
+    entry = {"source": "commons", "page": ii.get("descriptionurl", ""), "title": title, "license": lic,
+             "author": re.sub(r"<[^>]+>", "", em.get("Artist", {}).get("value", ""))[:200],
+             "description": re.sub(r"<[^>]+>", " ", em.get("ImageDescription", {}).get("value", ""))[:800],
+             "files": []}
+    if not re.search(r"cc0|public domain|pd", lic, re.I):
+        entry["files"].append({"url": ii["url"], "skipped": "not CC0 / public domain"})
+        manifest.append(entry)
+        return
+    data = get(ii["url"], True)
+    name = "commons_" + safe(title.split(":", 1)[1].rsplit(".", 1)[0])
+    if ii.get("mime", "").startswith("video") or ii["url"].endswith((".ogv", ".webm")):
+        tmp = tempfile.mkdtemp()
+        src = os.path.join(tmp, "v" + os.path.splitext(ii["url"])[1])
+        open(src, "wb").write(data)
+        dst = os.path.join(out, name + ".flac")
+        r = subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", src, "-vn", "-c:a", "flac", dst],
+                           capture_output=True, text=True)
+        shutil.rmtree(tmp, ignore_errors=True)
+        entry["files"].append({"url": ii["url"], "path": dst, "bytes": len(data), "audio_only": True,
+                               "ffmpeg": r.stderr[-400:]})
+    else:
+        dst = os.path.join(out, name + os.path.splitext(ii["url"])[1])
+        open(dst, "wb").write(data)
+        entry["files"].append({"url": ii["url"], "path": dst, "bytes": len(data)})
+    manifest.append(entry)
+    time.sleep(2)
+
+
 def main() -> int:
     cfg = json.load(open(sys.argv[1] if len(sys.argv) > 1 else "tools/fetch/sound_sources.json"))
     out = cfg.get("out", "raw_assets/audio/fetched")
@@ -177,6 +216,11 @@ def main() -> int:
         except Exception as e:  # noqa: BLE001
             errors.append({"page": url, "error": str(e)})
         time.sleep(1)
+    for title in cfg.get("commons", []):
+        try:
+            commons_file(title, out, manifest)
+        except Exception as e:  # noqa: BLE001
+            errors.append({"page": title, "error": str(e)})
     seen: set = set()
     for item in cfg.get("freesound_ids", []):
         user, sid = item.split("/")

@@ -1,11 +1,12 @@
 {
- "out": "raw_assets/audio/fetched",
- "opengameart": [
-  "https://opengameart.org/content/the-free-firearm-sound-library"
+ "out": "raw_assets/audio/fetched/mg42",
+ "opengameart": [],
+ "commons": [
+  "File:Maschinengewehr 42.ogv",
+  "File:Norwegian Telemark Battalion Live Fire Exercise.webm"
  ],
  "freesound_ids": [],
- "freesound_queries": [],
+ "freesound_queries": ["MG42", "MG 42", "MG3 machine gun", "machine gun burst 7.62", "belt fed machine gun"],
  "per_query": 6,
- "keep": "mossberg|nova|model 12|master sheet",
- "manifest": "manifest_firearm_library.json"
+ "manifest": "manifest.json"
 }
