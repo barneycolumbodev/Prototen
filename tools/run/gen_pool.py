@@ -36,6 +36,7 @@ POOL = [
     (W, "governor", ["precision", "heavy"], 0.9, 3, False, "The Governor: a .45-70 lever action. Seven rounds that throw men off their feet; work the lever between shots.", {}, {}),
     (W, "aug", ["precision", "mobility"], 1.0, 2, False, "Steyr AUG: 5.56 mm bullpup with a 1.5x scope. Squeeze for single shots, pull through for automatic.", {}, {}),
     (W, "spas12", ["close", "heavy"], 1.0, 2, False, "SPAS-12, pump only: slower than the Saiga, but every shell hits harder, flies further and groups tighter.", {}, {}),
+    (W, "magnum44", ["precision", "close"], 1.0, 2, False, "S&W Model 629, .44 Magnum: six rounds that take heads off. It leaps in your hands; a speedloader puts six back at once.", {}, {}),
     (W, "slagger", ["tech", "close"], 0.8, 4, False, "SL-9 plasma pistol. Hold to charge, let go to fire: grazes set men alight, a full charge burns through them.", {}, {}),
     # ---------------------------------------------------------- actives (mk1, mk2 overrides)
     (P, "rx9_reflex_overclock", ["precision", "mobility"], 1.0, 1, False, "",

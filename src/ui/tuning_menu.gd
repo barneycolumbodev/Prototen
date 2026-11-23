@@ -11,7 +11,7 @@ const SAVE_PATH: String = "user://tuning.cfg"
 
 ## [section, property, min, max, step, label]
 const WEAPON_PARAMS: Array = [
-	["Recoil", "kick_pitch_deg", 0.0, 6.0, 0.05, "Kick up (°)"],
+	["Recoil", "kick_pitch_deg", 0.0, 14.0, 0.05, "Kick up (°)"],
 	["Recoil", "kick_yaw_deg", 0.0, 2.0, 0.02, "Kick sideways (± °)"],
 	["Recoil", "kick_yaw_bias_deg", -0.5, 0.5, 0.01, "Drift right (°/shot)"],
 	["Recoil", "kick_permanent", 0.0, 1.0, 0.02, "Climb that stays"],
@@ -68,6 +68,13 @@ const WEAPON_PARAMS: Array = [
 	["Pump", "pump_delay", 0.0, 0.4, 0.01, "Pump starts after the shot (s)"],
 	["Pump", "pump_time", 0.25, 1.2, 0.01, "Raise, rack and lower (s)"],
 	["Pump", "pump_travel", 0.03, 0.14, 0.005, "Pump stroke (m)"],
+	["Hand cannon", "vm_flip_deg", 0.0, 70.0, 1.0, "Gun leaps up (°)"],
+	["Hand cannon", "vm_flip_fall", 0.08, 0.8, 0.01, "Hauled back down in (s)"],
+	["Hand cannon", "vm_flip_roll_deg", -20.0, 20.0, 0.5, "Rolls outward (°)"],
+	["Hand cannon", "shot_shake", 0.0, 1.0, 0.02, "View shake"],
+	["Hand cannon", "shot_fov_punch_deg", 0.0, 8.0, 0.25, "View punch (° FOV)"],
+	["Hand cannon", "blast_smoke", 0.0, 2.5, 0.05, "Muzzle cloud"],
+	["Hand cannon", "barrel_smoke", 0.0, 5.0, 0.1, "Barrel smokes for (s)"],
 	["Plasma", "full_charge_time", 0.5, 5.0, 0.05, "Full charge after (s)"],
 	["Plasma", "min_charge", 0.0, 0.5, 0.01, "Fizzles below (charge)"],
 	["Plasma", "overload_time", 0.5, 8.0, 0.25, "Overload after full (s)"],
@@ -336,6 +343,8 @@ static func shows(param: Array, data: WeaponData) -> bool:
 		return data.lever_action
 	if param[0] == "Pump":
 		return data.pump_action
+	if param[0] == "Hand cannon":
+		return data.vm_flip_deg > 0.0 or data.barrel_smoke > 0.0
 	if param[0] == "Ballistics":
 		return data.grenade == null and data.plasma == null
 	return true

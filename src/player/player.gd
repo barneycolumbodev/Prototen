@@ -68,6 +68,8 @@ var fov_add_deg: float = 0.0
 ## A shot's field-of-view punch (degrees; the arm cannon), and an extra zoom
 ## from an active part's own aiming (1 = none).
 var fov_punch_deg: float = 0.0
+## A gun's shot punch (WeaponData.shot_fov_punch_deg): eases back on its own.
+var shot_fov_punch: float = 0.0
 ## Blast shake (add_shake): strength 0..2 and its clock (real seconds).
 var _shake: float = 0.0
 var _shake_time: float = 0.0
@@ -504,7 +506,8 @@ func _process(delta: float) -> void:
 	elif _sprinting or (not is_on_floor() and h_speed > movement.walk_speed):
 		fov_target = movement.sprint_fov_deg * clampf((h_speed - movement.walk_speed) / maxf(movement.sprint_speed - movement.walk_speed, 0.1), 0.0, 1.0)
 	_move_fov = lerpf(_move_fov, fov_target * fov_scale, 1.0 - exp(-movement.fov_smooth * real_dt))
-	_camera.fov = Settings.vertical_fov * fov_scale * fov_extra_scale + fov_add_deg + fov_punch_deg + _move_fov
+	shot_fov_punch = move_toward(shot_fov_punch, 0.0, (shot_fov_punch * 14.0 + 2.0) * real_dt)
+	_camera.fov = Settings.vertical_fov * fov_scale * fov_extra_scale + fov_add_deg + fov_punch_deg + shot_fov_punch + _move_fov
 	if delta > 0.0:
 		var measured: Vector2 = Vector2(-angle_difference(_last_yaw, yaw), angle_difference(_last_pitch, pitch)) / delta
 		look_velocity = look_velocity.lerp(Vector2(rad_to_deg(measured.x), rad_to_deg(measured.y)), clampf(delta * 20.0, 0.0, 1.0))

@@ -73,7 +73,7 @@ func _names(slots_in: Array[int]) -> PackedStringArray:
 
 func test_guns_are_grouped_by_category() -> void:
 	assert_eq(PlayerWeapon.wheel_categories(), 6)
-	assert_eq(_names(weapon.wheel_guns(WeaponData.WheelCategory.PISTOLS)), PackedStringArray(["Five-seveN SR", "Glock 22 (switch)"]))
+	assert_eq(_names(weapon.wheel_guns(WeaponData.WheelCategory.PISTOLS)), PackedStringArray(["Five-seveN SR", "Glock 22 (switch)", "Model 629"]))
 	assert_eq(_names(weapon.wheel_guns(WeaponData.WheelCategory.SMGS)), PackedStringArray(["MP5/SD-L"]))
 	assert_eq(_names(weapon.wheel_guns(WeaponData.WheelCategory.SHOTGUNS)), PackedStringArray(["Saiga-12K", "SPAS-12"]))
 	assert_eq(_names(weapon.wheel_guns(WeaponData.WheelCategory.RIFLES)), PackedStringArray(["M14/P", "The Governor", "AUG A1"]))

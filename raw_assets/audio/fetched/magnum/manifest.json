@@ -1,0 +1,472 @@
+{
+ "entries": [
+  {
+   "source": "opengameart",
+   "page": "https://opengameart.org/content/the-free-firearm-sound-library",
+   "title": "The Free Firearm Sound Library | OpenGameArt.org",
+   "author": "bart",
+   "license": "CC0",
+   "description": "  From  The Free Firearm Sound Library homepage : \n  The firearm sound library was the brainchild of a team of college students with a mutual passion for the audio and \u00a0visual arts. In November, 2013 we launched a Kickstarter campaign to develop an extensive open source firearm sound effects library, and on December 7, 2013 our project was funded by an incredible group of backers and we went into full tilt production. This website serves to connect our backers with our two libraries, as well as to give credit to the backers who made it all possible.  \n   Along with the availability of these sounds comes the need to understand their proper application. The metadata included in the sound files along with some instructional videos will help make these sounds serve you to their full potential.  \n   Our team holds CC0 NO RIGHTS RESERVED for this library. It may be used without royalty or credit (though we would love to hear how you've used our sounds) for any application, personal or professional. Have at it!  \n Please note that OGA is not affiliated with this project, and as such, we encourage you to visit their site so as to make sure you're getting the latest version of the files: \n  http://freefirearmsfx.com \u00a0 raw \u00a0 prepared  \n Also note that their website includes instructions along with the raw versions of the sound effects, which are not archived here. \n Big thanks to  their team  and all of their  Kickstarter supporters  for this amazing collection! \n",
+   "files": [
+    {
+     "path": "raw_assets/audio/fetched/magnum/oga_Prepared_SFX_Library",
+     "bytes": 193954738,
+     "kept": [
+      "raw_assets/audio/fetched/magnum/oga_Prepared_SFX_Library/Prepared_SFX_Library__1917__B_16P.wav",
+      "raw_assets/audio/fetched/magnum/oga_Prepared_SFX_Library/Prepared_SFX_Library__1917__B_24P.wav",
+      "raw_assets/audio/fetched/magnum/oga_Prepared_SFX_Library/Prepared_SFX_Library__Model_1894__L_17P.wav",
+      "raw_assets/audio/fetched/magnum/oga_Prepared_SFX_Library/Prepared_SFX_Library__Model_1894__L_23P.wav",
+      "raw_assets/audio/fetched/magnum/oga_Prepared_SFX_Library/Prepared_SFX_Library__Ruger_Single_Six__S_11P.wav",
+      "raw_assets/audio/fetched/magnum/oga_Prepared_SFX_Library/Prepared_SFX_Library__Ruger_Single_Six__S_14P.wav",
+      "raw_assets/audio/fetched/magnum/oga_Prepared_SFX_Library/Prepared_SFX_Library__Smith_Wesson_642__V_22P.wav",
+      "raw_assets/audio/fetched/magnum/oga_Prepared_SFX_Library/Prepared_SFX_Library__Smith_Wesson_642__V_27P.wav"
+     ],
+     "all_members": [
+      "Prepared SFX Library/1911/A_34P.wav",
+      "Prepared SFX Library/1911/A_42P.wav",
+      "Prepared SFX Library/1917/B_16P.wav",
+      "Prepared SFX Library/1917/B_24P.wav",
+      "Prepared SFX Library/AK-47/C_27P.wav",
+      "Prepared SFX Library/AK-47/C_28P.wav",
+      "Prepared SFX Library/AK-47/C_29P.wav",
+      "Prepared SFX Library/AK-47/C_31P.wav",
+      "Prepared SFX Library/AK-47/C_34P.wav",
+      "Prepared SFX Library/AK-47/C_36P.wav",
+      "Prepared SFX Library/AR-15/D_24P.wav",
+      "Prepared SFX Library/AR-15/D_32P.wav",
+      "Prepared SFX Library/Arisaka/E_18P.wav",
+      "Prepared SFX Library/Arisaka/E_25P.wav",
+      "Prepared SFX Library/Bersa/F_41P.wav",
+      "Prepared SFX Library/Bersa/F_47P.wav",
+      "Prepared SFX Library/Carl Gustav M45/G_20P.wav",
+      "Prepared SFX Library/Carl Gustav M45/G_22P.wav",
+      "Prepared SFX Library/Carl Gustav M45/G_24P.wav",
+      "Prepared SFX Library/Carl Gustav M45/G_31P.wav",
+      "Prepared SFX Library/Carl Gustav M45/G_33P.wav",
+      "Prepared SFX Library/Carl Gustav M45/G_35P.wav",
+      "Prepared SFX Library/CD/H_16P.wav",
+      "Prepared SFX Library/CD/H_21P.wav",
+      "Prepared SFX Library/Marlin 336/I_17P.wav",
+      "Prepared SFX Library/Marlin 336/I_22P.wav",
+      "Prepared SFX Library/Model 12/K_17P.wav",
+      "Prepared SFX Library/Model 12/K_22P.wav",
+      "Prepared SFX Library/Model 1894/L_17P.wav",
+      "Prepared SFX Library/Model 1894/L_23P.wav",
+      "Prepared SFX Library/Mosin Nagant/M_21P.wav",
+      "Prepared SFX Library/Mosin Nagant/M_26P.wav",
+      "Prepared SFX Library/Mossberg/N_26P.wav",
+      "Prepared SFX Library/Mossberg/N_30P.wav",
+      "Prepared SFX Library/Nova/O_17P.wav",
+      "Prepared SFX Library/Nova/O_21P.wav",
+      "Prepared SFX Library/PPSh/P_16P.wav",
+      "Prepared SFX Library/PPSh/P_18P.wav",
+      "Prepared SFX Library/PPSh/P_22P.wav",
+      "Prepared SFX Library/PPSh/P_30P.wav",
+      "Prepared SFX Library/PPSh/P_32P.wav",
+      "Prepared SFX Library/PPSh/P_34P.wav",
+      "Prepared SFX Library/Ruger Mark III/R_30P.wav",
+      "Prepared SFX Library/Ruger Mark III/R_35P.wav",
+      "Prepared SFX Library/Ruger Single Six/S_11P.wav",
+      "Prepared SFX Library/Ruger Single Six/S_14P.wav",
+      "Prepared SFX Library/Savage 10 .300 Blackout/T_17P.wav",
+      "Prepared SFX Library/Savage 10 .300 Blackout/T_27P.wav",
+      "Prepared SFX Library/SKS/U_14P.wav",
+      "Prepared SFX Library/SKS/U_19P.wav",
+      "Prepared SFX Library/Smith & Wesson 642/V_22P.wav",
+      "Prepared SFX Library/Smith & Wesson 642/V_27P.wav",
+      "Prepared SFX Library/Tikka/W_24P.wav",
+      "Prepared SFX Library/Tikka/W_29P.wav",
+      "Prepared SFX Library/Walther PPQ/X_31P.wav",
+      "Prepared SFX Library/Walther PPQ/X_39P.wav",
+      "Prepared SFX Library/desktop.ini",
+      "Prepared SFX Library/Prepared Master Sheet.csv",
+      "Prepared SFX Library/1911/.DS_Store",
+      "Prepared SFX Library/1917/.DS_Store",
+      "Prepared SFX Library/AK-47/.DS_Store",
+      "Prepared SFX Library/AR-15/.DS_Store",
+      "Prepared SFX Library/Arisaka/.DS_Store",
+      "Prepared SFX Library/Bersa/.DS_Store",
+      "Prepared SFX Library/Carl Gustav M45/.DS_Store",
+      "Prepared SFX Library/CD/.DS_Store",
+      "Prepared SFX Library/Marlin 336/.DS_Store",
+      "Prepared SFX Library/Model 12/.DS_Store",
+      "Prepared SFX Library/Model 1894/.DS_Store",
+      "Prepared SFX Library/Mosin Nagant/.DS_Store",
+      "Prepared SFX Library/Mossberg/.DS_Store",
+      "Prepared SFX Library/Nova/.DS_Store",
+      "Prepared SFX Library/PPSh/.DS_Store",
+      "Prepared SFX Library/Ruger Mark III/.DS_Store",
+      "Prepared SFX Library/Ruger Single Six/.DS_Store",
+      "Prepared SFX Library/Savage 10 .300 Blackout/.DS_Store",
+      "Prepared SFX Library/SKS/.DS_Store",
+      "Prepared SFX Library/Smith & Wesson 642/.DS_Store",
+      "Prepared SFX Library/Tikka/.DS_Store",
+      "Prepared SFX Library/Walther PPQ/.DS_Store",
+      "Prepared SFX Library/.DS_Store",
+      "Prepared SFX Library/Walther PPQ",
+      "Prepared SFX Library/Tikka",
+      "Prepared SFX Library/Smith & Wesson 642",
+      "Prepared SFX Library/SKS",
+      "Prepared SFX Library/Savage 10 .300 Blackout",
+      "Prepared SFX Library/Ruger Single Six",
+      "Prepared SFX Library/Ruger Mark III",
+      "Prepared SFX Library/PPSh",
+      "Prepared SFX Library/Nova",
+      "Prepared SFX Library/Mossberg",
+      "Prepared SFX Library/Mosin Nagant",
+      "Prepared SFX Library/Model 1894",
+      "Prepared SFX Library/Model 12",
+      "Prepared SFX Library/Marlin 336",
+      "Prepared SFX Library/CD",
+      "Prepared SFX Library/Carl Gustav M45",
+      "Prepared SFX Library/Bersa",
+      "Prepared SFX Library/Arisaka",
+      "Prepared SFX Library/AR-15",
+      "Prepared SFX Library/AK-47",
+      "Prepared SFX Library/1917",
+      "Prepared SFX Library/1911",
+      "Prepared SFX Library"
+     ],
+     "url": "https://opengameart.org/sites/default/files/Prepared%20SFX%20Library.7z"
+    }
+   ]
+  },
+  {
+   "source": "freesound",
+   "page": "https://freesound.org/people/ser%C3%B8ut%C5%8Dnin--depriv%C9%99d/sounds/855652/",
+   "id": "855652",
+   "author": "ser%C3%B8ut%C5%8Dnin--depriv%C9%99d",
+   "title": "A Glock handgun being shot 3x // punchy hollywood-esque sounding shots w/ airy forest reverb by ser\u00f8ut\u014dnin--depriv\u0259d",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "description": "",
+   "files": [
+    {
+     "url": "https://cdn.freesound.org/previews/855/855652_7157894-hq.mp3",
+     "path": "raw_assets/audio/fetched/magnum/fs_855652_A_Glock_handgun_being_shot_3x_punchy_hollywood-esque_soundin.mp3",
+     "bytes": 116006
+    }
+   ]
+  },
+  {
+   "source": "freesound",
+   "page": "https://freesound.org/people/DarkShroom/sounds/645316/",
+   "id": "645316",
+   "author": "DarkShroom",
+   "title": "snub_nose_357_magnum_noisegate-17.80.wav by DarkShroom",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "description": "",
+   "files": [
+    {
+     "url": "https://cdn.freesound.org/previews/645/645316_3139426-hq.mp3",
+     "path": "raw_assets/audio/fetched/magnum/fs_645316_snub_nose_357_magnum_noisegate-17.80.wav_by_DarkShroom.mp3",
+     "bytes": 8165
+    }
+   ]
+  },
+  {
+   "source": "freesound",
+   "page": "https://freesound.org/people/Shark_Anthony/sounds/683186/",
+   "id": "683186",
+   "author": "Shark_Anthony",
+   "title": "357 Magnum Revolver Gunshot by Shark_Anthony",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "description": "",
+   "files": [
+    {
+     "url": "https://cdn.freesound.org/previews/683/683186_3692246-hq.mp3",
+     "path": "raw_assets/audio/fetched/magnum/fs_683186_357_Magnum_Revolver_Gunshot_by_Shark_Anthony.mp3",
+     "bytes": 18076
+    }
+   ]
+  },
+  {
+   "source": "freesound",
+   "page": "https://freesound.org/people/Shark_Anthony/sounds/683175/",
+   "id": "683175",
+   "author": "Shark_Anthony",
+   "title": "357 Magnum Revolver Gunshot with Tail by Shark_Anthony",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "description": "",
+   "files": [
+    {
+     "url": "https://cdn.freesound.org/previews/683/683175_3692246-hq.mp3",
+     "path": "raw_assets/audio/fetched/magnum/fs_683175_357_Magnum_Revolver_Gunshot_with_Tail_by_Shark_Anthony.mp3",
+     "bytes": 66322
+    }
+   ]
+  },
+  {
+   "source": "freesound",
+   "page": "https://freesound.org/people/okieactor/sounds/415912/",
+   "id": "415912",
+   "author": "okieactor",
+   "title": "Heathers Gunshot Effect2.wav by okieactor",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "description": "",
+   "files": [
+    {
+     "url": "https://cdn.freesound.org/previews/415/415912_7107077-hq.mp3",
+     "path": "raw_assets/audio/fetched/magnum/fs_415912_Heathers_Gunshot_Effect2.wav_by_okieactor.mp3",
+     "bytes": 46944
+    }
+   ]
+  },
+  {
+   "source": "freesound",
+   "page": "https://freesound.org/people/reishugo/sounds/346906/",
+   "id": "346906",
+   "author": "reishugo",
+   "title": "Revolver calibre 38 - v\u00e1rios disparos_02 by reishugo",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "description": "",
+   "files": [
+    {
+     "url": "https://cdn.freesound.org/previews/346/346906_2963485-hq.mp3",
+     "path": "raw_assets/audio/fetched/magnum/fs_346906_Revolver_calibre_38_-_v_rios_disparos_02_by_reishugo.mp3",
+     "bytes": 92928
+    }
+   ]
+  },
+  {
+   "source": "freesound",
+   "page": "https://freesound.org/people/ser%C3%B8ut%C5%8Dnin--depriv%C9%99d/sounds/881368/",
+   "id": "881368",
+   "author": "ser%C3%B8ut%C5%8Dnin--depriv%C9%99d",
+   "title": "A .22LR Revolver being shot once by ser\u00f8ut\u014dnin--depriv\u0259d",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "description": "",
+   "files": [
+    {
+     "url": "https://cdn.freesound.org/previews/881/881368_7157894-hq.mp3",
+     "path": "raw_assets/audio/fetched/magnum/fs_881368_A_.22LR_Revolver_being_shot_once_by_ser_ut_nin--depriv_d.mp3",
+     "bytes": 25986
+    }
+   ]
+  },
+  {
+   "source": "freesound",
+   "page": "https://freesound.org/people/morganpurkis/sounds/392229/",
+   "id": "392229",
+   "author": "morganpurkis",
+   "title": "Single Pistol Gunshot 3.3.wav by morganpurkis",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "description": "",
+   "files": [
+    {
+     "url": "https://cdn.freesound.org/previews/392/392229_5937039-hq.mp3",
+     "path": "raw_assets/audio/fetched/magnum/fs_392229_Single_Pistol_Gunshot_3.3.wav_by_morganpurkis.mp3",
+     "bytes": 55109
+    }
+   ]
+  },
+  {
+   "source": "freesound",
+   "page": "https://freesound.org/people/Nox_Sound/sounds/541818/",
+   "id": "541818",
+   "author": "Nox_Sound",
+   "title": "Weapon_Revolver_Shots_Stereo.wav by Nox_Sound",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "description": "",
+   "files": [
+    {
+     "url": "https://cdn.freesound.org/previews/541/541818_9250976-hq.mp3",
+     "path": "raw_assets/audio/fetched/magnum/fs_541818_Weapon_Revolver_Shots_Stereo.wav_by_Nox_Sound.mp3",
+     "bytes": 136200
+    }
+   ]
+  },
+  {
+   "source": "freesound",
+   "page": "https://freesound.org/people/Jon285/sounds/34708/",
+   "id": "34708",
+   "author": "Jon285",
+   "title": "44_black_powder.wav by Jon285",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "description": "",
+   "files": [
+    {
+     "url": "https://cdn.freesound.org/previews/34/34708_282197-hq.mp3",
+     "path": "raw_assets/audio/fetched/magnum/fs_34708_44_black_powder.wav_by_Jon285.mp3",
+     "bytes": 465312
+    }
+   ]
+  },
+  {
+   "source": "freesound",
+   "page": "https://freesound.org/people/shelbyshark/sounds/501560/",
+   "id": "501560",
+   "author": "shelbyshark",
+   "title": "Single Action Revolver Cylinder Spinning.wav by shelbyshark",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "description": "",
+   "files": [
+    {
+     "url": "https://cdn.freesound.org/previews/501/501560_8644110-hq.mp3",
+     "path": "raw_assets/audio/fetched/magnum/fs_501560_Single_Action_Revolver_Cylinder_Spinning.wav_by_shelbyshark.mp3",
+     "bytes": 207058
+    }
+   ]
+  },
+  {
+   "source": "freesound",
+   "page": "https://freesound.org/people/ser%C3%B8ut%C5%8Dnin--depriv%C9%99d/sounds/881371/",
+   "id": "881371",
+   "author": "ser%C3%B8ut%C5%8Dnin--depriv%C9%99d",
+   "title": "A .22LR Revolver being reloaded individually with bullets // cylinder shut at the end by ser\u00f8ut\u014dnin--depriv\u0259d",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "description": "",
+   "files": [
+    {
+     "url": "https://cdn.freesound.org/previews/881/881371_7157894-hq.mp3",
+     "path": "raw_assets/audio/fetched/magnum/fs_881371_A_.22LR_Revolver_being_reloaded_individually_with_bullets_cy.mp3",
+     "bytes": 447784
+    }
+   ]
+  },
+  {
+   "source": "freesound",
+   "page": "https://freesound.org/people/ser%C3%B8ut%C5%8Dnin--depriv%C9%99d/sounds/693125/",
+   "id": "693125",
+   "author": "ser%C3%B8ut%C5%8Dnin--depriv%C9%99d",
+   "title": "22lr Revolver ejecting bullets from cylinder by ser\u00f8ut\u014dnin--depriv\u0259d",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "description": "",
+   "files": [
+    {
+     "url": "https://cdn.freesound.org/previews/693/693125_7157894-hq.mp3",
+     "path": "raw_assets/audio/fetched/magnum/fs_693125_22lr_Revolver_ejecting_bullets_from_cylinder_by_ser_ut_nin--.mp3",
+     "bytes": 72438
+    }
+   ]
+  },
+  {
+   "source": "freesound",
+   "page": "https://freesound.org/people/ser%C3%B8ut%C5%8Dnin--depriv%C9%99d/sounds/677159/",
+   "id": "677159",
+   "author": "ser%C3%B8ut%C5%8Dnin--depriv%C9%99d",
+   "title": "22lr revolver handling clicking foley by ser\u00f8ut\u014dnin--depriv\u0259d",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "description": "",
+   "files": [
+    {
+     "url": "https://cdn.freesound.org/previews/677/677159_7157894-hq.mp3",
+     "path": "raw_assets/audio/fetched/magnum/fs_677159_22lr_revolver_handling_clicking_foley_by_ser_ut_nin--depriv_.mp3",
+     "bytes": 25884
+    }
+   ]
+  },
+  {
+   "source": "freesound",
+   "page": "https://freesound.org/people/ajoyce86/sounds/240698/",
+   "id": "240698",
+   "author": "ajoyce86",
+   "title": "Revolver Cocking.wav by ajoyce86",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "description": "",
+   "files": [
+    {
+     "url": "https://cdn.freesound.org/previews/240/240698_3978825-hq.mp3",
+     "path": "raw_assets/audio/fetched/magnum/fs_240698_Revolver_Cocking.wav_by_ajoyce86.mp3",
+     "bytes": 55367
+    }
+   ]
+  },
+  {
+   "source": "freesound",
+   "page": "https://freesound.org/people/tkane0512/sounds/722902/",
+   "id": "722902",
+   "author": "tkane0512",
+   "title": "Revolver Reload Break 2 by tkane0512",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "description": "",
+   "files": [
+    {
+     "url": "https://cdn.freesound.org/previews/722/722902_15683404-hq.mp3",
+     "path": "raw_assets/audio/fetched/magnum/fs_722902_Revolver_Reload_Break_2_by_tkane0512.mp3",
+     "bytes": 49080
+    }
+   ]
+  },
+  {
+   "source": "freesound",
+   "page": "https://freesound.org/people/Dredile/sounds/177863/",
+   "id": "177863",
+   "author": "Dredile",
+   "title": "Clean Revolver Reload by Dredile",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "description": "",
+   "files": [
+    {
+     "url": "https://cdn.freesound.org/previews/177/177863_1046667-hq.mp3",
+     "path": "raw_assets/audio/fetched/magnum/fs_177863_Clean_Revolver_Reload_by_Dredile.mp3",
+     "bytes": 87622
+    }
+   ]
+  },
+  {
+   "source": "freesound",
+   "page": "https://freesound.org/people/acidsnowflake/sounds/402790/",
+   "id": "402790",
+   "author": "acidsnowflake",
+   "title": "Cocking a revolver by acidsnowflake",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "description": "",
+   "files": [
+    {
+     "url": "https://cdn.freesound.org/previews/402/402790_7111288-hq.mp3",
+     "path": "raw_assets/audio/fetched/magnum/fs_402790_Cocking_a_revolver_by_acidsnowflake.mp3",
+     "bytes": 59434
+    }
+   ]
+  },
+  {
+   "source": "freesound",
+   "page": "https://freesound.org/people/AugustSandberg/sounds/508745/",
+   "id": "508745",
+   "author": "AugustSandberg",
+   "title": "Revolver Dryfire by AugustSandberg",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "description": "",
+   "files": [
+    {
+     "url": "https://cdn.freesound.org/previews/508/508745_1934171-hq.mp3",
+     "path": "raw_assets/audio/fetched/magnum/fs_508745_Revolver_Dryfire_by_AugustSandberg.mp3",
+     "bytes": 825408
+    }
+   ]
+  },
+  {
+   "source": "freesound",
+   "page": "https://freesound.org/people/AnthonyChan0/sounds/427505/",
+   "id": "427505",
+   "author": "AnthonyChan0",
+   "title": "S&W M&P\u00ae9 M2.0\u2122 handling (actual: room) by AnthonyChan0",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "description": "",
+   "files": [
+    {
+     "url": "https://cdn.freesound.org/previews/427/427505_2886479-hq.mp3",
+     "path": "raw_assets/audio/fetched/magnum/fs_427505_S_W_M_P_9_M2.0_handling_actual_room_by_AnthonyChan0.mp3",
+     "bytes": 4054416
+    }
+   ]
+  },
+  {
+   "source": "freesound",
+   "page": "https://freesound.org/people/e9118586020/sounds/567611/",
+   "id": "567611",
+   "author": "e9118586020",
+   "title": "Single Action Army (SAA) Various Foley by e9118586020",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "description": "",
+   "files": [
+    {
+     "url": "https://cdn.freesound.org/previews/567/567611_5772061-hq.mp3",
+     "path": "raw_assets/audio/fetched/magnum/fs_567611_Single_Action_Army_SAA_Various_Foley_by_e9118586020.mp3",
+     "bytes": 1941639
+    }
+   ]
+  }
+ ],
+ "errors": []
+}
