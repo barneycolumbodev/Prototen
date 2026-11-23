@@ -191,7 +191,11 @@ def commons_file(title: str, out: str, manifest: list) -> None:
         src = os.path.join(tmp, "v" + os.path.splitext(ii["url"])[1])
         open(src, "wb").write(data)
         dst = os.path.join(out, name + ".flac")
-        r = subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", src, "-vn", "-c:a", "flac", dst],
+        ff = shutil.which("ffmpeg")
+        if not ff:
+            import imageio_ffmpeg  # pip install imageio-ffmpeg (no apt needed)
+            ff = imageio_ffmpeg.get_ffmpeg_exe()
+        r = subprocess.run([ff, "-y", "-loglevel", "error", "-i", src, "-vn", "-c:a", "flac", dst],
                            capture_output=True, text=True)
         shutil.rmtree(tmp, ignore_errors=True)
         entry["files"].append({"url": ii["url"], "path": dst, "bytes": len(data), "audio_only": True,

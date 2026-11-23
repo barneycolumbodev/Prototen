@@ -19,7 +19,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Tools
-        run: sudo apt-get install -y -q p7zip-full ffmpeg >/dev/null
+        run: sudo apt-get install -y -q p7zip-full >/dev/null; pip install -q imageio-ffmpeg
       - name: Fetch
         run: python3 tools/fetch/fetch_sounds.py tools/fetch/sound_sources.json
       - name: Commit
