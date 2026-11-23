@@ -37,9 +37,10 @@ GUNS = {
     "slagger": "assets/weapons/slagger/slagger.gltf",
     "aug": "assets/weapons/aug/aug.gltf",
     "spas12": "assets/weapons/spas12/spas12.gltf",
+    "magnum44": "assets/weapons/magnum44/magnum44.gltf",
 }
 # Parts left out of the icon (shown only in some states in game).
-HIDE = {"lens", "reticle", "load_round", "plasma_core", "mag_rounds"}
+HIDE = {"lens", "reticle", "load_round", "plasma_core", "mag_rounds", "speedloader"}
 
 
 def render(name, path, out_dir, w, h):

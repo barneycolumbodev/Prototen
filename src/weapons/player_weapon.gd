@@ -2,7 +2,8 @@ class_name PlayerWeapon
 extends Node
 ## The player's guns (docs/m1-gunplay-plan.md). Holds a small loadout (the
 ## suppressed pistol, the MG42, the Saiga-12K, the RC-6 rail carbine, the M14/P, the MP5, the switched Glock 22, the M32A1,
-## the Governor lever action, the SL-9 Slagger plasma pistol, the Steyr AUG and the SPAS-12 pump gun), one viewmodel
+## the Governor lever action, the SL-9 Slagger plasma pistol, the Steyr AUG, the SPAS-12 pump gun and the
+## .44 Magnum revolver), one viewmodel
 ## rig per gun. Reads the
 ## controller, runs the active gun's GunMechanism, fires rounds through
 ## Ballistics from the eye (so the round goes exactly where the crosshair or
@@ -46,6 +47,13 @@ extends Node
 ## The cylinder (WeaponData.cylinder_chambers) turns a chamber per shot, swings
 ## out to reload a round at a time, and shows a case head in every loaded or
 ## spent chamber.
+##
+## The .44 Magnum (WeaponData.speedloader): the same cylinder, but a reload is
+## a speedloader: swing out, muzzle up, the ejector throws all six cases, muzzle
+## down, six rounds pushed in at once, the cylinder snapped shut. Every shot
+## leaps the gun up out of the grip (`vm_flip_*`), shakes the view and punches
+## the field of view, throws a cloud out of the muzzle and spits smoke from the
+## cylinder gap, and the barrel keeps smoking after (BarrelSmoke).
 
 signal fired
 signal ammo_changed(loaded: int, reserve: int)
@@ -117,12 +125,13 @@ const CHAMBER_SPENT: int = 2
 	preload("res://data/weapons/slagger.tres"),
 	preload("res://data/weapons/aug.tres"),
 	preload("res://data/weapons/spas12.tres"),
+	preload("res://data/weapons/magnum44.tres"),
 ]
 @export var rig_paths: Array[NodePath] = [^"../Head/Camera3D/Viewmodel", ^"../Head/Camera3D/ViewmodelMG42",
 		^"../Head/Camera3D/ViewmodelSaiga", ^"../Head/Camera3D/ViewmodelRail", ^"../Head/Camera3D/ViewmodelM14",
 		^"../Head/Camera3D/ViewmodelMP5", ^"../Head/Camera3D/ViewmodelGlock", ^"../Head/Camera3D/ViewmodelM32",
 		^"../Head/Camera3D/ViewmodelGovernor", ^"../Head/Camera3D/ViewmodelSlagger",
-		^"../Head/Camera3D/ViewmodelAUG", ^"../Head/Camera3D/ViewmodelSPAS12"]
+		^"../Head/Camera3D/ViewmodelAUG", ^"../Head/Camera3D/ViewmodelSPAS12", ^"../Head/Camera3D/ViewmodelMagnum"]
 @export var input_enabled: bool = true
 @export var wheel_config: WeaponWheelConfig = preload("res://data/input/weapon_wheel.tres")
 
@@ -164,6 +173,8 @@ var wheel_pick: int = 0
 var _category_pick: Dictionary[int, int] = {}
 ## The laser (guns with `laser_range` > 0): beam and dot on the aim line.
 var laser: WeaponLaser
+## Gun smoke (guns with `blast_smoke` / `barrel_smoke`): the shot's cloud and the smoking barrel.
+var smoke: BarrelSmoke
 ## The trigger is held this physics tick (sprint fire keeps the gun up while it is).
 var trigger_held: bool = false
 ## The line of sight is on a live enemy; `enemy_amount` eases 0..1 for colour.
@@ -193,6 +204,7 @@ var _shots: int = 0
 var _tail_cooldown: float = 0.0
 var _belt_shake: Spring
 var _cover_closed_sound: bool = true
+var _crane_closed_sound: bool = true
 ## Railgun charge whine (stopped when the next shot fires).
 var _charge_voice: AudioStreamPlayer
 var _glow_time: float = 0.0
@@ -262,6 +274,9 @@ func _ready() -> void:
 	laser.name = "Laser"
 	add_child(laser)
 	laser.set_data(data)
+	smoke = BarrelSmoke.new()
+	smoke.name = "BarrelSmoke"
+	add_child(smoke)
 	_player.landed.connect(func(speed: float) -> void: motion.landed(speed))
 	EventBus.target_hit.connect(_on_target_hit)
 	_emit_ammo.call_deferred()
@@ -989,6 +1004,7 @@ func _process(delta: float) -> void:
 	if data.plasma:
 		_update_plasma(delta, s)
 	_update_laser(s)
+	_update_smoke(delta, s)
 
 
 ## Rounds leave along this line (world space, unit). The centre of the view,
@@ -1032,6 +1048,16 @@ func _update_laser(s: Slot) -> void:
 	var emitter: Vector3 = s.rig.global_transform * data.laser_point
 	laser.update_laser(emitter, cam.global_position, aim_forward(), cam.get_world_3d().direct_space_state,
 			[_player.get_rid()])
+
+
+## The barrel keeps smoking at the muzzle while the gun is out; the puffs
+## already in the air carry on whatever the gun does.
+func _update_smoke(delta: float, s: Slot) -> void:
+	if smoke == null:
+		return
+	var knife: float = _player.melee.gun_away() if _player.melee else 0.0
+	var away: bool = stowed or is_switching() or not s.rig.visible or knife > 0.5 or data.barrel_smoke <= 0.0
+	smoke.follow(Vector3.INF if away else s.rig.global_transform * data.muzzle_point, delta)
 
 
 ## The laser dot is on a surface (the HUD hides the hip reticle for it).
@@ -1124,6 +1150,9 @@ func _handle(ev: StringName) -> void:
 			motion.jolt(Vector3(0, -0.004, 0), Vector3(-3, 0, 2))
 			if data.cylinder_chambers > 0:
 				_cylinder_cases_out()
+			if data.speedloader:
+				motion.jolt(Vector3(0, 0.006, 0.004), Vector3(0, 0, 6))  # the ejector rod slapped
+				_rumble(Vector3(0.1, 0.3, 0.05))
 		GunMechanism.EV_ROUND_IN:
 			_play(&"round_in")
 			motion.jolt(Vector3(0, 0.003, 0.002), Vector3(1.5, 0, 1.2))
@@ -1134,6 +1163,8 @@ func _handle(ev: StringName) -> void:
 			_play(&"mag_in")
 			motion.jolt(Vector3(0, 0.01, 0), Vector3(4, 0, 5))
 			_rumble(Vector3(0.0, 0.2, 0.04))
+			if data.speedloader:
+				_cylinder_speedloaded()
 			if mechanism.swapping:
 				motion.lock_slide()  # hand pulls the charging handle back to rack the old shell out
 		GunMechanism.EV_EJECT_CHAMBERED:
@@ -1141,6 +1172,8 @@ func _handle(ev: StringName) -> void:
 			var spent: AmmoData = slots[current].ammo(mechanism.ejected_ammo)
 			var vel: Vector3 = gun.basis * (data.ejection_velocity * 0.6) + _player.velocity
 			Fx.eject_shell(gun * data.ejection_point, vel, gun.basis, spent.color if spent and data.shotshell else Color(0, 0, 0, 0))
+		GunMechanism.EV_SLIDE_RELEASE when data.speedloader:
+			pass  # the cylinder's snap shut plays when it closes (_update_cylinder)
 		GunMechanism.EV_SLIDE_RELEASE when data.lever_action or data.pump_action:
 			# Gate loaded: if it went in empty, the lever (or the pump) chambers a round.
 			if mechanism.empty_reload or hammer_down:
@@ -1193,8 +1226,6 @@ func _fire() -> void:
 				Ballistics.random_in_cone(to_aim, spread, _rng), plasma_shot_charge, _player)
 	elif r.grenade:
 		_launch(r, muzzle.origin, forward)
-		if data.cylinder_chambers > 0:
-			_cylinder_fired()
 	else:
 		# Pellets: a pattern around the aim point, all one volley (one shot in the stats).
 		var volley: int = 0
@@ -1204,6 +1235,8 @@ func _fire() -> void:
 			var id: int = Ballistics.fire(r, eye.origin, pellet_dir, _player, trail_from, volley, power)
 			if volley == 0:
 				volley = id
+	if data.cylinder_chambers > 0:
+		_cylinder_fired()
 	EventBus.shot_fired.emit(_player, eye.origin, dir)
 
 	var a: float = ads_visual()
@@ -1224,6 +1257,13 @@ func _fire() -> void:
 		_belt_shake.kick(Vector3(_rng.randf_range(-0.3, 0.3), _rng.randf_range(0.2, 1.0), _rng.randf_range(-1.0, 1.0)) * data.belt_jiggle)
 
 	Fx.muzzle_flash(muzzle, r)
+	if data.blast_smoke > 0.0 or data.barrel_smoke > 0.0:
+		var gap: Vector3 = gun * data.cylinder_gap_point if data.cylinder_gap_point != Vector3.ZERO else Vector3.INF
+		smoke.shot(muzzle, gap, gun.basis.z.normalized(), data, _player.velocity)
+	if data.shot_shake > 0.0:
+		_player.add_shake(data.shot_shake * lerpf(1.0, 0.7, a) * strength)
+	if data.shot_fov_punch_deg > 0.0:
+		_player.shot_fov_punch = maxf(_player.shot_fov_punch, data.shot_fov_punch_deg * lerpf(1.0, 0.5, a))
 	if data.lever_action:
 		hammer_down = true
 		_start_lever(data.lever_delay)
@@ -1662,10 +1702,26 @@ func _predict_impact(g: GrenadeData, eye: Vector3) -> void:
 func _update_cylinder(delta: float, s: Slot) -> void:
 	var step: float = 360.0 / float(data.cylinder_chambers)
 	s.cyl_angle = move_toward(s.cyl_angle, s.cyl_target, step / maxf(data.cylinder_index_time, 0.01) * delta)
-	var swing: float = mechanism.open_amount() * data.crane_swing_deg
+	var open: float = crane_open() if data.speedloader else mechanism.open_amount()
+	var swing: float = open * data.crane_swing_deg
 	s.rig.set_cylinder(-s.cyl_angle, swing, data.cylinder_axis, data.crane_hinge)
 	for k: int in data.cylinder_chambers:
 		s.rig.set_round_visible(k, s.chambers[k] != CHAMBER_EMPTY)
+	if not data.speedloader:
+		return
+	s.motion.reload_turn = reload_turn()
+	var t: float = mechanism.reload_progress()
+	var come: float = data.reload_load_turn.y - 0.06
+	var shown: bool = is_reloading() and t >= come and t < data.mag_in_point
+	var k_in: float = smoothstep(come, data.mag_in_point, t)
+	s.rig.set_speedloader(shown, data.speedloader_from * (1.0 - k_in * k_in * (3.0 - 2.0 * k_in)))
+	if open > 0.5:
+		_crane_closed_sound = false
+	elif not _crane_closed_sound and is_reloading():
+		_crane_closed_sound = true
+		_play(&"slide_release")
+		s.motion.jolt(Vector3(0, -0.004, 0.006), Vector3(-6, 0, -4))
+		_rumble(Vector3(0.35, 0.45, 0.08))
 
 
 func _cylinder_fired() -> void:
@@ -1675,16 +1731,53 @@ func _cylinder_fired() -> void:
 	s.cyl_target += 360.0 / float(data.cylinder_chambers)
 
 
-## The cylinder is out: the spent cases fall from it.
+## Speedloader reloads: 0..1 how far the cylinder is swung out. Out by 80 %
+## of the way to the ejector stroke, snapped shut just after the rounds go in.
+func crane_open() -> float:
+	if not is_reloading():
+		return 0.0
+	var t: float = mechanism.reload_progress()
+	var open_end: float = data.mag_out_point * 0.8
+	var close_start: float = data.mag_in_point + 0.06
+	if t < open_end:
+		return smoothstep(0.0, open_end, t)
+	if t < close_start:
+		return 1.0
+	return 1.0 - smoothstep(close_start, close_start + 0.05, t)
+
+
+## Speedloader reloads: 0 = the eject pose (muzzle up), 1 = the load pose (muzzle down).
+func reload_turn() -> float:
+	if not is_reloading():
+		return 0.0
+	return smoothstep(data.reload_load_turn.x, data.reload_load_turn.y, mechanism.reload_progress())
+
+
+## The speedloader is in: a live round in as many chambers as the gun holds
+## now, from the one on the bore.
+func _cylinder_speedloaded() -> void:
+	var s: Slot = slots[current]
+	var n: int = data.cylinder_chambers
+	var live: int = mini(mechanism.loaded(), n)
+	for i: int in n:
+		s.chambers[(s.bore + i) % n] = CHAMBER_LIVE if i < live else CHAMBER_EMPTY
+
+
+## The cylinder is out: the spent cases fall from it (a speedloader reload
+## throws every case, live ones too: they go back in the pouch, the mechanism
+## counts them back into the reserve).
 func _cylinder_cases_out() -> void:
 	var s: Slot = slots[current]
 	var gun: Transform3D = rig().global_transform
 	var swing: Basis = Basis(Vector3.RIGHT, deg_to_rad(data.crane_swing_deg))
 	var rear: Vector3 = data.crane_hinge + swing * (data.cylinder_axis + Vector3(0.06, 0.0, 0.0) - data.crane_hinge)
 	for k: int in data.cylinder_chambers:
-		if s.chambers[k] != CHAMBER_SPENT:
+		if s.chambers[k] != CHAMBER_SPENT and not (data.speedloader and s.chambers[k] == CHAMBER_LIVE):
 			continue
+		var was_live: bool = s.chambers[k] == CHAMBER_LIVE
 		s.chambers[k] = CHAMBER_EMPTY
+		if was_live:
+			continue
 		var at: Vector3 = gun * (rear + Vector3(0.0, _rng.randf_range(-0.03, 0.03), _rng.randf_range(-0.03, 0.03)))
 		var vel: Vector3 = gun.basis * Vector3(_rng.randf_range(-1.6, -0.8), _rng.randf_range(-1.2, -0.4), _rng.randf_range(0.2, 0.9))
 		Fx.eject_shell(at, vel + _player.velocity, gun.basis, Color(0.6, 0.6, 0.58))

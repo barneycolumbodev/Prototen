@@ -51,6 +51,7 @@ func start_draw() -> void:
 	recoil_rot.reset()
 	_slide_locked = false
 	_slide_time = 1.0
+	_flip_t = 99.0
 
 
 ## Re-reads spring tuning from the data (the tuning menu changes it live).
@@ -76,6 +77,42 @@ func fire(ads: float, rng: RandomNumberGenerator, strength: float = 1.0) -> void
 			rng.randf_range(-0.3, 0.3) * data.vm_kick_roll_deg,
 			data.vm_kick_rise_deg * rng.randf_range(0.85, 1.1)) * s)
 	_slide_time = 0.0
+	if data.vm_flip_deg > 0.0:
+		_flip_from = _flip_curve(_flip_t)
+		_flip_amp = s * rng.randf_range(0.92, 1.08)
+		_flip_t = 0.0
+
+
+## Hand-cannon flip (WeaponData.vm_flip_deg): seconds since the last shot,
+## its strength, and where the flip was when it fired (so it rises from there).
+var _flip_t: float = 99.0
+var _flip_amp: float = 0.0
+var _flip_from: float = 0.0
+## Speedloader reloads: 0..1 from the eject pose (muzzle up) to the load pose
+## (muzzle down); set by the weapon each frame.
+var reload_turn: float = 0.0
+
+
+## The flip's height now (× vm_flip_deg): 0 at rest, 1 at the top.
+func flip_amount() -> float:
+	return _flip_curve(_flip_t)
+
+
+func _flip_curve(t: float) -> float:
+	if _flip_amp <= 0.0:
+		return 0.0
+	var rise: float = data.vm_flip_rise
+	if t < rise:
+		# Snaps up (fastest at the start), from wherever the last one had got to.
+		return lerpf(_flip_from, _flip_amp, sin(t / rise * PI * 0.5))
+	var hold: float = 0.025
+	if t < rise + hold:
+		return _flip_amp
+	var u: float = (t - rise - hold) / maxf(data.vm_flip_fall, 0.01)
+	if u >= 2.2:
+		return 0.0
+	# Hauled back down: crosses the line at 0.71 of the fall, a small dip under it, settles.
+	return _flip_amp * exp(-3.2 * u) * cos(2.2 * u)
 
 
 ## Small extra jolts for reload beats (magazine out, slap in, slide release).
@@ -107,8 +144,9 @@ func update(delta: float, ads: float, look_rate: Vector2, move_fraction: float,
 			pose_pos.target = data.sprint_offset
 			pose_rot.target = data.sprint_rotation_deg
 		2:
-			pose_pos.target = data.reload_offset * (1.0 - ads)
-			pose_rot.target = data.reload_rotation_deg * (1.0 - ads)
+			var k: float = reload_turn if data.speedloader else 0.0
+			pose_pos.target = data.reload_offset.lerp(data.reload_load_offset, k) * (1.0 - ads)
+			pose_rot.target = data.reload_rotation_deg.lerp(data.reload_load_rotation_deg, k) * (1.0 - ads)
 		3:
 			pose_pos.target = data.draw_offset
 			pose_rot.target = data.draw_rotation_deg
@@ -120,6 +158,7 @@ func update(delta: float, ads: float, look_rate: Vector2, move_fraction: float,
 	recoil_pos.step(delta)
 	recoil_rot.step(delta)
 	land.step(delta)
+	_flip_t += delta
 
 	var steady: float = 1.0 - 0.85 * ads
 	if gait != null:
@@ -180,8 +219,10 @@ func aim_rotation_deg() -> Vector3:
 
 func compose(hip: Transform3D, ads_xform: Transform3D, ads: float) -> Transform3D:
 	var base: Transform3D = hip.interpolate_with(ads_xform, ads)
-	var rot: Vector3 = (recoil_rot.value + sway.value + pose_rot.value + gait_rot) * (PI / 180.0)
+	var f: float = _flip_curve(_flip_t)
+	var flip: Vector3 = Vector3(data.vm_flip_roll_deg, 0.0, data.vm_flip_deg) * f
+	var rot: Vector3 = (recoil_rot.value + sway.value + pose_rot.value + gait_rot + flip) * (PI / 180.0)
 	var pivot: Vector3 = data.grip_pivot
 	var local: Transform3D = Transform3D(Basis(), pivot) * Transform3D(Basis.from_euler(rot), Vector3.ZERO) * Transform3D(Basis(), -pivot)
-	var offset: Vector3 = recoil_pos.value + pose_pos.value + land.value + bob + gait_pos
+	var offset: Vector3 = recoil_pos.value + pose_pos.value + land.value + bob + gait_pos + data.vm_flip_offset * maxf(f, 0.0)
 	return Transform3D(Basis(), offset) * base * local

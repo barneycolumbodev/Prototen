@@ -47,6 +47,18 @@ const WHEEL_NAMES: PackedStringArray = ["PISTOLS", "SMGs", "SHOTGUNS", "RIFLES",
 ## rounds turn about a line along X through `crane_hinge` by `crane_swing_deg`).
 @export var crane_hinge: Vector3 = Vector3.ZERO
 @export_range(-180.0, 180.0) var crane_swing_deg: float = 0.0
+## Speedloader (the .44 Magnum; a magazine-style reload, not a round at a
+## time): the cylinder swings out (fully out by `mag_out_point` × 0.8), the
+## ejector throws every case out at `mag_out_point` with the muzzle up
+## (`reload_rotation_deg`), the gun turns muzzle down (`reload_load_*`, between
+## `reload_load_turn` x and y of the reload), node "speedloader" pushes six
+## rounds in from `speedloader_from` (weapon space, relative to where it seats)
+## at `mag_in_point`, and the cylinder snaps shut just after.
+@export var speedloader: bool = false
+@export var reload_load_offset: Vector3 = Vector3.ZERO
+@export var reload_load_rotation_deg: Vector3 = Vector3.ZERO
+@export var reload_load_turn: Vector2 = Vector2(0.3, 0.42)
+@export var speedloader_from: Vector3 = Vector3(-0.1, -0.03, 0.0)
 
 @export_group("Plasma")
 ## A plasma gun (the SL-9 Slagger): hold the trigger to charge, let go to
@@ -296,7 +308,7 @@ const WHEEL_NAMES: PackedStringArray = ["PISTOLS", "SMGs", "SHOTGUNS", "RIFLES",
 
 @export_group("Recoil: camera")
 ## Peak upward kick per shot, degrees.
-@export_range(0.0, 10.0) var kick_pitch_deg: float = 1.1
+@export_range(0.0, 20.0) var kick_pitch_deg: float = 1.1
 ## Random sideways kick, ± degrees.
 @export_range(0.0, 5.0) var kick_yaw_deg: float = 0.28
 ## Consistent drift to the right (+) or left (−), degrees per shot.
@@ -317,6 +329,21 @@ const WHEEL_NAMES: PackedStringArray = ["PISTOLS", "SMGs", "SHOTGUNS", "RIFLES",
 @export_range(0.5, 30.0) var vm_spring_hz: float = 8.5
 @export_range(0.1, 2.0) var vm_spring_damping: float = 0.55
 @export_range(0.0, 2.0) var ads_vm_scale: float = 0.45
+## Hand-cannon flip on top of the spring (the .44 Magnum: the gun leaps up
+## out of the grip and is hauled back down): the muzzle rises `vm_flip_deg`
+## about the grip in `vm_flip_rise` s, hangs a beat and comes back down over
+## `vm_flip_fall` s, dipping a little under the line; the gun rolls
+## `vm_flip_roll_deg` outward and moves `vm_flip_offset` (camera space) at the
+## top. × `ads_vm_scale` aimed. 0 = off.
+@export_range(0.0, 90.0) var vm_flip_deg: float = 0.0
+@export_range(0.01, 0.2) var vm_flip_rise: float = 0.05
+@export_range(0.05, 1.0) var vm_flip_fall: float = 0.3
+@export_range(-30.0, 30.0) var vm_flip_roll_deg: float = 0.0
+@export var vm_flip_offset: Vector3 = Vector3.ZERO
+## Camera shake (Player.add_shake: 1 = a grenade at arm's length) and a
+## field-of-view punch (degrees, back over about 0.2 s) on every shot.
+@export_range(0.0, 1.0) var shot_shake: float = 0.0
+@export_range(0.0, 10.0) var shot_fov_punch_deg: float = 0.0
 ## How far the slide travels back and how long it takes to return, s.
 @export_range(0.0, 0.1) var slide_travel: float = 0.032
 @export_range(0.01, 0.3) var slide_cycle_time: float = 0.065
@@ -385,6 +412,14 @@ const WHEEL_NAMES: PackedStringArray = ["PISTOLS", "SMGs", "SHOTGUNS", "RIFLES",
 @export_range(0, 10) var tracer_every: int = 0
 ## Muzzle smoke puffs per shot (suppressor puff / propellant smoke).
 @export_range(0, 10) var smoke_per_shot: int = 3
+## A big propellant cloud thrown out of the muzzle on every shot (BarrelSmoke;
+## 0 = none), and the smoke that keeps curling up out of the barrel after it:
+## seconds of smoke each shot adds (they stack, up to 3× this).
+@export_range(0.0, 3.0) var blast_smoke: float = 0.0
+@export_range(0.0, 6.0) var barrel_smoke: float = 0.0
+## A revolver's cylinder gap (weapon space): the flash and smoke that spit
+## out sideways between the cylinder and the barrel (ZERO = none).
+@export var cylinder_gap_point: Vector3 = Vector3.ZERO
 ## Ionized-air trail along the whole path of every round, seconds it lingers
 ## (0 = none). Drawn from the muzzle through every wall it crosses.
 @export_range(0.0, 3.0) var beam_trail_time: float = 0.0

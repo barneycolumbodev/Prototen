@@ -25,6 +25,8 @@ extends Node3D
 ##              swings out on the crane to load (M32A1)
 ##   `crane`    the yoke the cylinder swings out on (swings, doesn't turn)
 ##   `round_<n>` the case head in chamber n (turns and swings with the cylinder)
+##   `speedloader` six rounds in a loader, authored where it seats on the
+##              swung-out cylinder; shown and pushed in during a reload (.44 Magnum)
 ##   `lever`    a lever action's lever: swings about a hinge along the gun's side
 ##   `bolt`     a lever action's bolt: runs back (−X) with the lever
 ##   `hammer`   an exposed hammer: falls forward on the shot, cocked by the lever
@@ -68,6 +70,8 @@ var _cylinder: Node3D
 var _cylinder_rest: Transform3D
 var _crane: Node3D
 var _crane_rest: Transform3D
+var _speedloader: Node3D
+var _speedloader_rest: Vector3
 var _lever: Node3D
 var _lever_rest: Transform3D
 var _bolt: Node3D
@@ -186,6 +190,8 @@ func ensure_loaded() -> void:
 					break
 				_rounds.append(r)
 				_round_rest.append(r.transform)
+		if _speedloader == null:
+			_speedloader = model.find_child("speedloader", true, false) as Node3D
 		if _lever == null:
 			_lever = model.find_child("lever", true, false) as Node3D
 		if _bolt == null:
@@ -243,6 +249,9 @@ func ensure_loaded() -> void:
 		_follower_rest = _mag_follower.transform
 	if _crane:
 		_crane_rest = _crane.transform
+	if _speedloader:
+		_speedloader_rest = _speedloader.position
+		_speedloader.visible = false
 	if _laser:
 		# The emitter window glows in the laser's colour whatever the bake did.
 		var lit: StandardMaterial3D = StandardMaterial3D.new()
@@ -311,6 +320,7 @@ func unload_models() -> void:
 	_laser = null
 	_cylinder = null
 	_crane = null
+	_speedloader = null
 	_lever = null
 	_bolt = null
 	_hammer = null
@@ -384,6 +394,8 @@ func has_part(part_name: StringName) -> bool:
 			return _cylinder != null
 		&"crane":
 			return _crane != null
+		&"speedloader":
+			return _speedloader != null
 		&"mag_rounds":
 			return _mag_rounds != null
 		&"mag_follower":
@@ -648,6 +660,17 @@ func set_cylinder(index_deg: float, swing_deg: float, axis: Vector3, hinge: Vect
 		_crane.transform = swing * _crane_rest
 	for k: int in _rounds.size():
 		_rounds[k].transform = swing * spin * _round_rest[k]
+
+
+## The speedloader: shown or not, `offset` (weapon space) from where it seats.
+func set_speedloader(shown: bool, offset: Vector3) -> void:
+	if _speedloader:
+		_speedloader.visible = shown
+		_speedloader.position = _speedloader_rest + offset
+
+
+func speedloader_shown() -> bool:
+	return _speedloader != null and _speedloader.visible
 
 
 ## Shows or hides the case head in chamber `k`.

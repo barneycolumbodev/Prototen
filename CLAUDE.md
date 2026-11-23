@@ -53,7 +53,7 @@ Commit after each step.
 
 ## 3–6. Game design
 
-Augmentation (§3; the actives in §3.4, §3.4b, §3.4c and §3.4d, the passive library in §3.6, colours in §3.7), test loadouts (§4; the Governor and the Slagger plasma pistol §4.9, the Steyr AUG §4.10, the SPAS-12 §4.11), combat simulation (§5; the squad hunt §5.6a, tuning `data/enemies/hunt.tres`), art direction (§6), maps (§7) and the Survival mode (§8: runs, marks, drops, doctrines, waves, bosses, the enemy roster) live in [`docs/design.md`](docs/design.md). Survival tuning: `tools/run/gen_pool.py` → `data/run/survival.tres` (don't hand-edit the .tres).
+Augmentation (§3; the actives in §3.4, §3.4b, §3.4c and §3.4d, the passive library in §3.6, colours in §3.7), test loadouts (§4; the Governor and the Slagger plasma pistol §4.9, the Steyr AUG §4.10, the SPAS-12 §4.11, the .44 Magnum §4.12), combat simulation (§5; the squad hunt §5.6a, tuning `data/enemies/hunt.tres`), art direction (§6), maps (§7) and the Survival mode (§8: runs, marks, drops, doctrines, waves, bosses, the enemy roster) live in [`docs/design.md`](docs/design.md). Survival tuning: `tools/run/gen_pool.py` → `data/run/survival.tres` (don't hand-edit the .tres).
 
 ---
 
