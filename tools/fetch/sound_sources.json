@@ -1,14 +1,17 @@
 {
  "out": "raw_assets/audio/fetched/mg42",
  "opengameart": [],
- "commons": [
-  "File:Norwegian Telemark Battalion Live Fire Exercise.webm",
-  "File:Maschinengewehr 42.ogv",
-  "File:NATO eFP Battlegroup Estonia conducts Exercise Spring Storm (2020-05-05).webm"
- ],
+ "commons": [],
  "freesound_pages": [
-  "morganpurkis/387508", "FranklinRook1984/538302", "ShawnyBoy/165394", "ShawnyBoy/165393",
-  "qubodup/482121", "qubodup/482122", "surrey_film/163687", "surrey_film/86346", "SuperPhat/397657"
+  "morganpurkis/387508",
+  "FranklinRook1984/538302",
+  "ShawnyBoy/165394",
+  "ShawnyBoy/165393",
+  "qubodup/482121",
+  "qubodup/482122",
+  "surrey_film/163687",
+  "surrey_film/86346",
+  "SuperPhat/397657"
  ],
  "freesound_ids": [],
  "freesound_queries": [],
