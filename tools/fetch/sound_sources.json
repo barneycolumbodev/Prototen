@@ -1,19 +1,22 @@
 {
- "out": "raw_assets/audio/fetched/mg42",
- "opengameart": [],
- "commons": [],
- "freesound_pages": [
-  "morganpurkis/387508",
-  "FranklinRook1984/538302",
-  "ShawnyBoy/165394",
-  "ShawnyBoy/165393",
-  "qubodup/482121",
-  "qubodup/482122",
-  "surrey_film/163687",
-  "surrey_film/86346",
-  "SuperPhat/397657"
+ "out": "raw_assets/audio/fetched/magnum",
+ "opengameart": [
+  "https://opengameart.org/content/the-free-firearm-sound-library"
  ],
+ "commons": [],
+ "freesound_pages": [],
  "freesound_ids": [],
- "freesound_queries": [],
- "manifest": "manifest_provenance.json"
+ "freesound_queries": [
+  "44 magnum",
+  ".44 magnum revolver",
+  "magnum revolver shot",
+  "revolver gunshot",
+  "revolver cylinder",
+  "revolver reload",
+  "revolver hammer cock",
+  "speedloader"
+ ],
+ "per_query": 6,
+ "keep": "1917|642|single six|1894|master sheet",
+ "manifest": "manifest.json"
 }
