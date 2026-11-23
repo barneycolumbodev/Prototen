@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-"""Synthesizes the MG42 sounds (no third-party audio; see CREDITS.md).
+"""Synthesizes the MG42's belt reload beats, dry fire and draw/holster (no third-party audio).
+
+Since 2026-11-23 the shot and the room tail are real recordings
+(build_mg42_real_sfx.py); the synthesized ones below are kept behind --synth-shot.
 
 Unsuppressed 7.62x51 at 1,200 rpm: each shot is short (the next one lands
 50 ms later), so the "rip" comes from the shots running together. Layers per
@@ -17,7 +20,8 @@ import sys
 import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-sys.argv = sys.argv[:2]
+SYNTH_FLAGS = [a for a in sys.argv[1:] if a.startswith("--")]
+sys.argv = [sys.argv[0]] + [a for a in sys.argv[1:] if not a.startswith("--")][:1]
 import build_weapon_sfx as w  # noqa: E402
 
 w.rng = np.random.default_rng(42)
@@ -56,9 +60,12 @@ def write_all():
     out = sys.argv[1] if len(sys.argv) > 1 else "assets/audio/sfx"
     w.OUT = out
     os.makedirs(out, exist_ok=True)
-    for v in (1, 2, 3, 4):
-        w.save(f"mg42_shot_{v}", shot(v))
-    w.save("mg42_tail_1", tail(), -3)
+    # The shot and tail come from real recordings since 2026-11-23 (build_mg42_real_sfx.py);
+    # the synthesized ones only with --synth-shot.
+    if "--synth-shot" in SYNTH_FLAGS:
+        for v in (1, 2, 3, 4):
+            w.save(f"mg42_shot_{v}", shot(v))
+        w.save("mg42_tail_1", tail(), -3)
     # Reload beats (names match GunMechanism events through WeaponData.sound_prefix).
     latch = metal(0.06, (1900, 3300, 5100), 0.02)
     hinge = w.band(w.noise(0.18), 900, 3000) * np.sin(np.pi * w.t(0.18) / 0.18) ** 2 * (0.5 + 0.5 * np.sin(2 * np.pi * 31 * w.t(0.18)))
