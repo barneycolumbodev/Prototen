@@ -6,7 +6,7 @@
   "File:Norwegian Telemark Battalion Live Fire Exercise.webm"
  ],
  "freesound_ids": [],
- "freesound_queries": ["MG42", "MG 42", "MG3 machine gun", "machine gun burst 7.62", "belt fed machine gun"],
+ "freesound_queries": ["MG42", "MG3 machine gun", "machine gun burst", "MG34", "M60 machine gun firing", "GPMG"],
  "per_query": 6,
  "manifest": "manifest.json"
 }
