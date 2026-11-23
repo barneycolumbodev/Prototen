@@ -29,10 +29,22 @@ MAX_BYTES = 900 * 1024 * 1024
 KEEP_DEFAULT = r"shotgun|870|mossberg|pump|12 ?ga|benelli|spas"
 
 
-def get(url: str, binary: bool = False):
-    req = urllib.request.Request(url, headers={"User-Agent": UA})
-    with urllib.request.urlopen(req, timeout=60) as r:
-        data = r.read(MAX_BYTES + 1)
+# Wikimedia throttles browser-like agents from scripts; it wants a plain client name.
+UA_WIKI = "GenericAssetFetcher/1.0 (one-off media download; python-urllib)"
+
+
+def get(url: str, binary: bool = False, tries: int = 1):
+    ua = UA_WIKI if "wikimedia.org" in url else UA
+    for i in range(tries):
+        try:
+            req = urllib.request.Request(url, headers={"User-Agent": ua})
+            with urllib.request.urlopen(req, timeout=300) as r:
+                data = r.read(MAX_BYTES + 1)
+            break
+        except urllib.error.HTTPError as e:
+            if e.code != 429 or i == tries - 1:
+                raise
+            time.sleep(30 * (i + 1))
     if len(data) > MAX_BYTES:
         raise RuntimeError("too large")
     return data if binary else data.decode("utf-8", "replace")
@@ -172,7 +184,7 @@ def commons_file(title: str, out: str, manifest: list) -> None:
     """A Wikimedia Commons file; public domain / CC0 only. Videos keep only their audio (ffmpeg -> flac)."""
     q = urllib.parse.urlencode({"action": "query", "titles": title, "prop": "imageinfo", "format": "json",
                                 "iiprop": "url|size|mime|extmetadata"})
-    d = json.loads(get(COMMONS_API + q))
+    d = json.loads(get(COMMONS_API + q, tries=6))
     ii = list(d["query"]["pages"].values())[0]["imageinfo"][0]
     em = ii.get("extmetadata", {})
     lic = em.get("LicenseShortName", {}).get("value", "")
@@ -184,7 +196,7 @@ def commons_file(title: str, out: str, manifest: list) -> None:
         entry["files"].append({"url": ii["url"], "skipped": "not CC0 / public domain"})
         manifest.append(entry)
         return
-    data = get(ii["url"], True)
+    data = get(ii["url"], True, tries=6)
     name = "commons_" + safe(title.split(":", 1)[1].rsplit(".", 1)[0])
     if ii.get("mime", "").startswith("video") or ii["url"].endswith((".ogv", ".webm")):
         tmp = tempfile.mkdtemp()
@@ -208,6 +220,19 @@ def commons_file(title: str, out: str, manifest: list) -> None:
     time.sleep(2)
 
 
+def freesound_page_text(item: str, manifest: list) -> None:
+    """The visible text of a Freesound sound page (description, tags, file details), for provenance."""
+    user, sid = item.split("/")
+    url = f"https://freesound.org/people/{user}/sounds/{sid}/"
+    page = get(url)
+    page = re.sub(r"(?is)<(script|style)[^>]*>.*?</\1>", " ", page)
+    txt = html.unescape(re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", page)))
+    at = txt.find("Description")
+    manifest.append({"source": "freesound_page", "page": url, "id": sid,
+                     "text": txt[max(0, at - 200):at + 3500] if at >= 0 else txt[:4000]})
+    time.sleep(1.5)
+
+
 def main() -> int:
     cfg = json.load(open(sys.argv[1] if len(sys.argv) > 1 else "tools/fetch/sound_sources.json"))
     out = cfg.get("out", "raw_assets/audio/fetched")
@@ -225,6 +250,11 @@ def main() -> int:
             commons_file(title, out, manifest)
         except Exception as e:  # noqa: BLE001
             errors.append({"page": title, "error": str(e)})
+    for item in cfg.get("freesound_pages", []):
+        try:
+            freesound_page_text(item, manifest)
+        except Exception as e:  # noqa: BLE001
+            errors.append({"page": item, "error": str(e)})
     seen: set = set()
     for item in cfg.get("freesound_ids", []):
         user, sid = item.split("/")
