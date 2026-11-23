@@ -1,6 +1,6 @@
 extends TrailerShot
 ## scene: res://src/levels/chinatown/chinatown.tscn
-## frames: 295
+## frames: 300
 ## The fish market: RX-9 slows the world, the GX-4 arm unfolds, and one
 ## round goes through four men in a line. `--cam=side` replays the same
 ## simulation from a slow dolly beside the line (bullet time).
@@ -25,6 +25,20 @@ func setup() -> void:
 		alert(e)
 	if _side:
 		make_cam(30.0)
+		# The replay is a camera beside the line, not the operative's eyes:
+		# RX-9's first-person grade (colour drained, the cyan vignette) stays
+		# off it, so the blood reads red, not black. Set just before each draw.
+		RenderingServer.frame_pre_draw.connect(_replay_grade)
+
+
+func _replay_grade() -> void:
+	var rx: TimeDilation = part("rx9_reflex_overclock") as TimeDilation
+	if rx == null:
+		return
+	if rx._env:
+		rx._env.adjustment_saturation = rx._base_saturation
+	if rx._layer:
+		rx._layer.visible = false
 
 
 func step() -> void:

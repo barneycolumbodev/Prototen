@@ -43,6 +43,10 @@ func _ready() -> void:
 	map.add_child(squad)
 	squad.set_player(player)
 	_hide_hud.call_deferred()
+	# Blood in flight is lit only by dynamic lights, and the maps' light is
+	# baked, so drops read as ink on camera: give them a little of their own.
+	if Gore.drops and Gore.drops._mat:
+		Gore.drops._mat.set_shader_parameter(&"self_light", 0.9)
 	(func() -> void:
 		await get_tree().physics_frame
 		await get_tree().physics_frame

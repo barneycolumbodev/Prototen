@@ -22,6 +22,9 @@ uniform float min_angular = 0.003;
 // phone at fighting distance (owner, 2026-11-13). Its stain keeps the real size.
 uniform float draw_scale = 1.5;
 uniform vec3 chunk_tint : source_color = vec3(0.16, 0.02, 0.022);
+// Light of its own (0 in the game; the trailer lifts it so drops in a
+// baked-lit scene read as blood, not ink: docs/trailer.md).
+uniform float self_light = 0.0;
 
 varying vec2 v_axis;
 varying float v_chunk;
@@ -75,6 +78,7 @@ void fragment() {
 	vec2 bulge = (v_axis * q.x + vec2(-v_axis.y, v_axis.x) * -q.y) * 0.75;
 	NORMAL = normalize(vec3(bulge, sqrt(max(1.0 - d * 0.5625, 0.05))));
 	ALBEDO = v_chunk > 0.5 ? chunk_tint : tint;
+	EMISSION = ALBEDO * self_light;
 	ROUGHNESS = v_chunk > 0.5 ? 0.45 : 0.16;
 	SPECULAR = 0.7;
 }
