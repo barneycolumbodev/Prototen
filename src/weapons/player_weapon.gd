@@ -967,7 +967,7 @@ func _process(delta: float) -> void:
 		s.rig.set_scoped(scope_amount() > 0.5)
 	if s.rig.has_part(&"mag_rounds"):
 		s.rig.set_mag_rounds(_rounds_in_view(), data.magazine_size, data.mag_arc_center, data.mag_follower_step_deg)
-	if data.cover_open_deg > 0.0:
+	if not is_zero_approx(data.cover_open_deg):
 		var cover: float = _cover_open()
 		s.rig.set_cover_open(cover * data.cover_open_deg, data.cover_hinge)
 		if cover > 0.5:

@@ -19,7 +19,9 @@ Every third-party file in the repository, with its source and license (CLAUDE.md
 | Gunplay sounds (29: shots, tail, reload, shells, impacts, confirms) | `assets/audio/sfx/` | Synthesized by `raw_assets/audio/build_weapon_sfx.py` (numpy/scipy). |
 | Attack dog sounds (growls, snarls, barks, bites, yelps, dying whines: `dog_*.wav`) | `assets/audio/sfx/` | Synthesized by `raw_assets/audio/build_dog_sfx.py` (numpy/scipy). |
 | Pistol 57 (model v2, 2K baked textures, body/slide/magazine parts) | `assets/weapons/pistol_57/` | `raw_assets/weapons/pistol_57/build.py` (Blender/bpy, procedural materials, high→low bake). |
-| MG42/A machine gun (model, 4K baked textures, moving parts) | `assets/weapons/mg42/` | `raw_assets/weapons/mg42/build.py` (Blender/bpy, procedural materials, high→low bake). |
+| MG42/A machine gun (model, 4K baked textures, moving parts) | `assets/weapons/mg42/` | `raw_assets/weapons/mg42/build.py` (Blender/bpy, procedural materials, high→low bake). Rebuilt 2026-11-23 traced from a photo of a real MG42 (next row). |
+| MG42 reference photo (tool only, not shipped: outlines traced from it into the build script's coordinates) | not in repo | Wikimedia Commons: "MG42 1 noBG.jpg" (Phanatic, CC BY-SA 4.0; a left-side view of a real MG42, background removed). |
+| Photo-match preview (the traced photo with the model's outline drawn over it) | `docs/previews/mg42_overlay.png` | Derived from "MG42 1 noBG.jpg" by Phanatic (Wikimedia Commons), CC BY-SA 4.0; this image is under the same licence. |
 | First-person arms holding the MG42 | `assets/characters/fp_arms_mg42/` | `raw_assets/characters/fp_arms_mg42/build.py`. |
 | MG42 sounds (13: shots, tail, belt reload beats, draw/holster) | `assets/audio/sfx/mg42_*`, `draw_1`, `holster_1` | Synthesized by `raw_assets/audio/build_mg42_sfx.py` (numpy/scipy). |
 | Bullet hole, flash and particle textures | generated at runtime | `src/vfx/fx.gd` |
