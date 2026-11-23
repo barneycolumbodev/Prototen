@@ -103,6 +103,31 @@ def analyse(pattern):
         print(f"burst {k}: t={bu[0] / SR:7.2f}s  {len(bu):3d} rounds  cycle {np.median(d) if len(d) else 0:5.1f} ms")
 
 
+def shots_from(x, burst, picks, length=CYCLE + 0.012):
+    """One cycle per pick (onset index within the burst), cut at the game's cycle with a short fade."""
+    out = []
+    for k in picks:
+        i = burst[k] - int(0.0015 * SR)
+        out.append(fade(x[i:i + int(length * SR)], 0.0008, 0.012))
+    return out
+
+
+def tail_from(x, burst, sec=1.6):
+    """The recording's own decay after the burst's last round (the room / the range)."""
+    i = burst[-1] + int(0.035 * SR)
+    t = x[i:i + int(sec * SR)]
+    return fade(t, 0.02, sec * 0.5)
+
+
+def build(pattern, burst_index, picks):
+    x = load(pattern)
+    idx, _ = onsets(x)
+    bu = bursts(idx)[burst_index]
+    for n, s in enumerate(shots_from(x, bu, picks), 1):
+        save(f"mg42_shot_{n}", s, -1.0)
+    save("mg42_tail_1", tail_from(x, bu), -3.0)
+
+
 if __name__ == "__main__" and "--analyse" in sys.argv:
     for p in sorted(glob.glob(os.path.join(SRC, "*"))):
         if p.endswith((".flac", ".mp3", ".wav", ".ogg")):
