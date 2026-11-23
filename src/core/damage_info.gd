@@ -3,7 +3,7 @@ extends RefCounted
 ## Everything a hit carries (CLAUDE.md §9.2). Filled by weapons, read by
 ## damage zones, gore, AI and feedback.
 
-enum Type { BALLISTIC, EXPLOSIVE, BLADE, BLUNT, EMP, FALL }
+enum Type { BALLISTIC, EXPLOSIVE, BLADE, BLUNT, EMP, FALL, FIRE }
 
 enum Flags {
 	NONE = 0,

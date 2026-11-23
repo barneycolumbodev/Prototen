@@ -321,6 +321,43 @@ func on_melee_hit(attacker: Node, amount: float, direction: Vector3, push: float
 	return dmg
 
 
+var _burn_left: float = 0.0
+var _burn_dps: float = 0.0
+var _burn_tick: float = 0.0
+var _burn_from: Vector3 = Vector3.FORWARD
+var _burn_sfx_cd: float = 0.0
+
+
+## Direct flame spray or fireball heat hitting the operative (Triad Flamer,
+## docs/design.md §8.8c): scaled by armour like melee, blocked from the front
+## by the BW-6 fan shield, and applies lingering afterburn.
+func on_fire_hit(attacker: Node, amount: float, direction: Vector3, burn_time: float = 0.0, burn_dps: float = 0.0) -> float:
+	if dead or invulnerable:
+		return 0.0
+	var scale: float = body.stat(&"damage_per_kj") / BASE_DAMAGE_PER_KJ if body else 1.0
+	var dmg: float = amount * scale
+	for f: Callable in melee_interceptors:
+		dmg = f.call(attacker, dmg, direction)
+	if dmg > 0.0:
+		take_damage(dmg, -direction)
+		if burn_time > 0.0 and burn_dps > 0.0:
+			_burn_left = maxf(_burn_left, burn_time)
+			_burn_dps = maxf(_burn_dps, burn_dps * scale)
+			_burn_from = -direction
+		if _burn_sfx_cd <= 0.0:
+			_burn_sfx_cd = 0.35
+			Sfx.play_ui(&"player_burn", -3.0, 0.08)
+	return dmg
+
+
+func is_burning() -> bool:
+	return _burn_left > 0.0 and not dead
+
+
+func burn_intensity() -> float:
+	return clampf(_burn_left / 1.5, 0.0, 1.0) if not dead else 0.0
+
+
 func take_damage(amount: float, from_dir: Vector3) -> void:
 	if dead or invulnerable:
 		return
@@ -331,6 +368,7 @@ func take_damage(amount: float, from_dir: Vector3) -> void:
 	if health <= 0.0:
 		health = 0.0
 		dead = true
+		_burn_left = 0.0
 		_dead_time = 0.0
 		input_enabled = false
 		_end_dropkick_immediate()
@@ -402,6 +440,10 @@ func respawn() -> void:
 	dead = false
 	_dash_left = 0.0
 	_end_dropkick_immediate()
+	_burn_left = 0.0
+	_burn_dps = 0.0
+	_burn_tick = 0.0
+	_burn_sfx_cd = 0.0
 	_dk_cd = 0.0
 	_dk_used = false
 	health = max_health()
@@ -535,7 +577,17 @@ func _physics_body(delta: float) -> void:
 		_slide_move()
 		return
 	body.tick(delta)
-	var can_regen: bool = not (body.frame.overheat_stops_regen and body.overheated())
+	_burn_sfx_cd = maxf(0.0, _burn_sfx_cd - delta)
+	if _burn_left > 0.0:
+		_burn_left = maxf(0.0, _burn_left - delta)
+		_burn_tick += delta
+		if _burn_tick >= 0.25:
+			var step_t: float = _burn_tick
+			_burn_tick = 0.0
+			take_damage(_burn_dps * step_t, _burn_from)
+			if dead:
+				return
+	var can_regen: bool = not (body.frame.overheat_stops_regen and body.overheated()) and _burn_left <= 0.0
 	if can_regen and _since_hit > body.stat(&"regen_delay") and health < max_health():
 		health = minf(health + body.stat(&"regen_rate") * delta, max_health())
 	var cfg: MovementConfig = movement

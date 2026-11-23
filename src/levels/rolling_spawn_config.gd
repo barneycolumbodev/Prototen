@@ -26,12 +26,14 @@ extends Resource
 @export var hatchet_man_weight: float = 0.0
 ## Attack dogs (docs/design.md §8.8b), 2026-11-17.
 @export var attack_dog_weight: float = 0.0
+## Triad Flamers (docs/design.md §8.8c), 2026-11-23.
+@export var flamer_weight: float = 0.0
 ## How aware a new arrival is (0..1) and whether it knows where you are.
 @export var arrival_awareness: float = 0.6
 
 
 func pick_role(r: float) -> String:
-	var total: float = gunman_weight + enforcer_weight + red_pole_weight + hatchet_man_weight + attack_dog_weight
+	var total: float = gunman_weight + enforcer_weight + red_pole_weight + hatchet_man_weight + attack_dog_weight + flamer_weight
 	var x: float = r * total
 	if x < gunman_weight:
 		return "gunman"
@@ -41,4 +43,6 @@ func pick_role(r: float) -> String:
 		return "hatchet_man"
 	if x < gunman_weight + enforcer_weight + hatchet_man_weight + attack_dog_weight:
 		return "attack_dog"
+	if x < gunman_weight + enforcer_weight + hatchet_man_weight + attack_dog_weight + flamer_weight:
+		return "flamer"
 	return "red_pole"

@@ -1,0 +1,57 @@
+[gd_resource type="Resource" script_class="EnemyConfig" load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://src/ai/enemy_config.gd" id="1"]
+[ext_resource type="PackedScene" path="res://assets/weapons/enemy/aerosol_can.gltf" id="2"]
+[ext_resource type="PackedScene" path="res://assets/weapons/enemy/lighter.gltf" id="3"]
+[ext_resource type="Script" path="res://src/ai/outfit.gd" id="o0"]
+[ext_resource type="Resource" path="res://data/enemies/outfits/summer.tres" id="o1"]
+[ext_resource type="Resource" path="res://data/enemies/outfits/street.tres" id="o2"]
+
+[resource]
+script = ExtResource("1")
+outfits = Array[ExtResource("o0")]([ExtResource("o1"), ExtResource("o2")])
+display_name = "Flamer"
+callsign = "FLAMER"
+plate_carrier = false
+rim_color = Color(0.95, 0.56, 0.25, 1)
+rim_strength = 1.15
+gun_scene = ExtResource("2")
+muzzle = Vector3(0.059, 0.166, 0.026)
+health = 90.0
+walk_speed = 2.6
+run_speed = 6.2
+turn_speed_deg = 340.0
+burst_min = 1
+burst_max = 1
+magazine = 1
+reaction_time = 0.3
+preferred_range = 5.5
+max_range = 8.0
+aggressive = true
+officer = false
+sight_fov_deg = 150.0
+footstep_hearing = 15.0
+courage = 0.78
+suppression_resist = 0.5
+flank_angle_deg = 55.0
+flamer = true
+lighter_scene = ExtResource("3")
+flamer_range = 7.5
+flamer_engage_range = 8.0
+flamer_cone_deg = 34.0
+flamer_dps = 34.0
+flamer_burn_time = 2.4
+flamer_burn_dps = 9.0
+flamer_ignite_time = 0.34
+flamer_spray_time = Vector2(1.4, 2.3)
+flamer_cooldown = Vector2(0.85, 1.45)
+flamer_strafe_speed = 3.1
+flamer_track_deg = 155.0
+flamer_interrupt = 28.0
+flamer_fireball_radius = 4.2
+flamer_can_self_damage = 140.0
+flamer_splash_damage = 42.0
+flamer_splash_burn_time = 5.0
+flamer_splash_burn_dps = 14.0
+flamer_splash_agony = 3.8
+flamer_player_splash_scale = 0.35

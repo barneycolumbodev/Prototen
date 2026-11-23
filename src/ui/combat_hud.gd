@@ -38,6 +38,8 @@ class Vignette:
 	extends Control
 	var hurt: float = 0.0
 	var suppression: float = 0.0
+	var burn: float = 0.0
+	var _burn_clock: float = 0.0
 	var arcs: Array[Vector2] = []  # x = screen angle (0 = ahead/top), y = alpha
 
 	## The edge fade as textures: what STEPS stacked strips of falling alpha
@@ -51,16 +53,18 @@ class Vignette:
 	var _profile_alpha: float = -1.0
 	var _drawn_hurt: float = -1.0
 	var _drawn_supp: float = -1.0
+	var _drawn_burn: float = -1.0
 	var _drawn_size: Vector2 = Vector2(-1.0, -1.0)
 	var _drawn_had_arcs: bool = false
 
 	## Redrawn only when something it shows changed (optimization overhaul U-07).
 	func redraw_if_changed() -> void:
 		var has_arcs: bool = not arcs.is_empty()
-		if has_arcs or _drawn_had_arcs or absf(hurt - _drawn_hurt) > 0.002 \
-				or absf(suppression - _drawn_supp) > 0.002 or size != _drawn_size:
+		if has_arcs or _drawn_had_arcs or burn > 0.01 or absf(hurt - _drawn_hurt) > 0.002 \
+				or absf(suppression - _drawn_supp) > 0.002 or absf(burn - _drawn_burn) > 0.002 or size != _drawn_size:
 			_drawn_hurt = hurt
 			_drawn_supp = suppression
+			_drawn_burn = burn
 			_drawn_size = size
 			_drawn_had_arcs = has_arcs
 			queue_redraw()
@@ -68,9 +72,13 @@ class Vignette:
 	func _draw() -> void:
 		var r: Rect2 = get_rect()
 		var c: Vector2 = r.size * 0.5
-		var a: float = clampf(hurt * 0.55 + suppression * 0.25, 0.0, 0.8)
+		var flicker: float = 0.8 + 0.2 * sin(_burn_clock * 28.0) if burn > 0.01 else 1.0
+		var a: float = clampf(hurt * 0.55 + suppression * 0.25 + burn * 0.5 * flicker, 0.0, 0.85)
 		if a > 0.01:
 			var col: Color = Color(0.55, 0.0, 0.0, 1.0) if hurt >= suppression * 0.5 else Color(0.0, 0.0, 0.0, 1.0)
+			if burn > 0.05:
+				var fire_col: Color = Color(1.0, 0.42, 0.06, 1.0)
+				col = col.lerp(fire_col, clampf(burn * 0.9, 0.0, 0.92))
 			_update_edges(a)
 			var w: float = minf(r.size.x, r.size.y) * 0.16
 			draw_texture_rect(_edges[0], Rect2(0, 0, w, r.size.y), false, col)
@@ -369,6 +377,9 @@ func _process(delta: float) -> void:
 		_health.shown = move_toward(_health.shown, _health.fraction, delta * 0.4)
 		_vignette.hurt = clampf(1.0 - player.health_fraction() * 1.4, 0.0, 1.0)
 		_vignette.suppression = player.suppression
+		_vignette.burn = player.burn_intensity()
+		if _vignette.burn > 0.01:
+			_vignette._burn_clock += delta
 		if not player.dead and _down.visible:
 			_down.visible = false
 	_health.redraw_if_changed()
