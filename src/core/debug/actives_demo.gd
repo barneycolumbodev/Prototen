@@ -11,7 +11,10 @@ extends Node
 ##                    grown; four marks placed; needles in flight; the
 ##                    first cavity), catch / full / release (catcher: rounds
 ##                    streaming into the field; the field nearly full; just
-##                    after letting go, the rounds on their way back)
+##                    after letting go, the rounds on their way back),
+##                    out / feed / flayed / home (hive: the swarm on its way;
+##                    halfway through stripping him; just after he drops;
+##                    the swarm docking and the health coming back)
 ##   --hold=<frames>  frames to let run after the act before freezing (default 6)
 ##   --paint=channel:rrggbb,...  suit colours (BodyColors channels)
 ##   --cam=x,y,z,tx,ty,tz  shoot from a camera at x,y,z looking at tx,ty,tz
@@ -39,6 +42,7 @@ var _d: Enemy
 var _marked: bool = false
 const SETAE_ACTS: Array[String] = ["deadeye", "mark", "volley", "impact"]
 const CATCH_ACTS: Array[String] = ["catch", "full", "release"]
+const HIVE_ACTS: Array[String] = ["out", "feed", "flayed", "home"]
 var _shots: int = 0
 var _cam: Camera3D
 
@@ -160,6 +164,10 @@ func _place_targets() -> void:
 				_d.global_position = Vector3(-0.2, 0.0, -7.5)
 				_c.face(0.0)
 				_d.face(0.0)
+		"out", "feed", "flayed", "home":
+			_a.global_position = Vector3(-0.6, 0.0, -1.5)
+			_b.global_position = Vector3(2.4, 0.0, -3.5)
+			room.player.health = room.player.max_health() * 0.3
 		"catch", "full", "release":
 			_a.global_position = Vector3(-2.6, 0.0, -5.0)
 			_b.global_position = Vector3(1.0, 0.0, -11.0)
@@ -245,6 +253,17 @@ func _acted() -> bool:
 					return false
 				return true
 			return lc.mode == LorentzCatcher.Mode.RELEASING
+		"out", "feed", "flayed", "home":
+			var hv: HarvesterHive = part as HarvesterHive
+			match act:
+				"out":
+					return hv.phase == HarvesterHive.Phase.OUT and hv.swarm_t >= hv._t_out * 0.55
+				"feed":
+					return hv.phase == HarvesterHive.Phase.FEEDING and hv.flay_now >= 0.55
+				"flayed":
+					return hv.phase == HarvesterHive.Phase.RETURN
+				"home":
+					return hv.healed > 0.0
 		"deadeye", "mark", "volley", "impact":
 			var st: Setae = part as Setae
 			if st.throws == 0 and st.hairs_grown() < st.needles.size() + 40:
@@ -290,6 +309,10 @@ func _shoot_at_player() -> void:
 
 func _freeze() -> void:
 	_phase = 9
+	var hv: HarvesterHive = part as HarvesterHive
+	if hv:
+		print("capture: hive phase %d swarm_t %.2f flay %.2f healed %.1f health %.0f / %.0f" % [hv.phase, hv.swarm_t, hv.flay_now, hv.healed,
+			room.player.health, room.player.max_health()])
 	var st: Setae = part as Setae
 	if st:
 		print("capture: setae mode %d state %d throw_t %.2f deadeye %.2f needles %d cavities %d time %.3f" % [st.mode, st.state,

@@ -1,5 +1,5 @@
 shader_type spatial;
-// Tripo3D enemy shader variant with plasma burn-through holes (EnemyBody.add_hole).
+// Tripo3D enemy shader variant with plasma burn-through holes (EnemyBody.add_hole) and the HV-3 flaying (EnemyBody.set_flay, src/gore/flay.gdshaderinc).
 // Only swapped onto enemies actually pierced by a charged Slagger bolt so the
 // common triad_tripo.gdshader stays free of `discard` and keeps Early-Z/FPK.
 render_mode blend_mix, depth_draw_opaque, cull_disabled, diffuse_lambert, specular_schlick_ggx;
@@ -42,10 +42,13 @@ float vnoise(vec3 p) {
 			mix(hash3(i + vec3(0, 1, 1)), hash3(i + vec3(1, 1, 1)), f.x), f.y), f.z);
 }
 
+#include "res://src/gore/flay.gdshaderinc"
+
 void vertex() {
 	rest_pos = CUSTOM0.xyz;
 	rest_nrm = CUSTOM1.xyz;
 	int seg = int(CUSTOM0.w + 0.5) % 16;
+	VERTEX -= NORMAL * FL_SHRINK * flay_amount;
 	if (seg > 0 && ((severed_mask >> (seg - 1)) & 1) != 0) {
 		VERTEX = vec3(0.0);
 	}
@@ -131,6 +134,8 @@ void fragment() {
 		col = mix(col, blood * (0.8 + 0.4 * n1), bloodied * smoothstep(0.35, 0.75, n1) * 0.8);
 		wet = max(wet, bloodied * 0.6);
 	}
+	float flay_h = 0.0;
+	float flay_m = flay_apply(flay_amount, rest_pos, rest_nrm, col, rough, metal, wet, flay_h);
 	float c = 0.0;
 	if (char_amount > 0.0) {
 		c = char_amount * smoothstep(0.25, 0.75, n1 + 0.35 * char_amount);
@@ -139,6 +144,9 @@ void fragment() {
 	col = mix(col, vec3(0.025, 0.018, 0.012), hole_char);
 	if (!FRONT_FACING) {
 		col *= 0.35;
+	}
+	if (flay_amount > 0.0) {
+		NORMAL = normalize(mix(NORMAL, flay_bump(NORMAL, VERTEX, flay_h, 0.0022), flay_m));
 	}
 	ALBEDO = col;
 	float facing = clamp(dot(NORMAL, VIEW), 0.0, 1.0);
@@ -150,7 +158,7 @@ void fragment() {
 	ROUGHNESS = mix(mix(rough, 0.18, wet), 0.95, c);
 	METALLIC = metal * (1.0 - wet);
 	SPECULAR = mix(0.5, 0.65, wet);
-	AO = orm.r;
+	AO = mix(orm.r, 1.0, flay_m);
 	AO_LIGHT_AFFECT = 0.4;
-	NORMAL_MAP = texture(normal_tex, UV).rgb;
+	NORMAL_MAP = mix(texture(normal_tex, UV).rgb, vec3(0.5, 0.5, 1.0), flay_m);
 }

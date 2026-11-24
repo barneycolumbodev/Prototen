@@ -176,6 +176,8 @@ var frozen: bool = false
 var severed: Dictionary[StringName, bool] = {}
 ## Blown apart (burst): nothing left to show or hit.
 var gibbed: bool = false
+## How far the swarm has stripped him (set_flay).
+var flay: float = 0.0
 var _severed_mask: int = 0
 ## Held by the mesh arm (NT-5): the ragdoll never freezes while this is set.
 var hold_awake: bool = false
@@ -544,9 +546,7 @@ func add_hole(zone: StringName, hit_point: Vector3, dir: Vector3, radius: float)
 	if _holes.is_empty():
 		material.shader = SHADER_TRIPO_HOLED if look.whole_body() != null else SHADER_HOLED
 	var zone_bone: StringName = spec[0]
-	var bi: int = skeleton.find_bone(zone_bone)
-	var to_rest: Transform3D = skeleton.global_transform * skeleton.get_bone_global_rest(bi)
-	to_rest = skeleton.global_transform.affine_inverse() * to_rest * bone_global(zone_bone).affine_inverse()
+	var to_rest: Transform3D = _to_rest(zone_bone)
 	var p: Vector3 = to_rest * hit_point
 	var a: Vector3 = (to_rest.basis * dir).normalized()
 	if _holes.size() >= MAX_HOLES:
@@ -558,6 +558,27 @@ func add_hole(zone: StringName, hit_point: Vector3, dir: Vector3, radius: float)
 	_hole_dirs.append(Vector4(a.x, a.y, a.z, 1.0))
 	_hole_age.append(0.0)
 	_push_holes()
+
+
+## World space to rest space (the shaders' CUSTOM0) through `bone`'s current pose.
+func _to_rest(bone: StringName) -> Transform3D:
+	var bi: int = skeleton.find_bone(bone)
+	var rest: Transform3D = skeleton.global_transform * skeleton.get_bone_global_rest(bi)
+	return skeleton.global_transform.affine_inverse() * rest * bone_global(bone).affine_inverse()
+
+
+## Flayed by the HV-3 swarm (docs/design.md §3.4e): 0 = untouched, 1 =
+## stripped to the muscle. The first call moves this one body onto its
+## special shader (the one plasma holes use: it carries the flaying), so the
+## shader every other man wears pays nothing for it. `bitten_at` (world): where
+## the swarm bit first; the eating spreads out from there.
+func set_flay(amount: float, bitten_at: Vector3 = Vector3.INF) -> void:
+	if material.shader != SHADER_TRIPO_HOLED and material.shader != SHADER_HOLED:
+		material.shader = SHADER_TRIPO_HOLED if look.whole_body() != null else SHADER_HOLED
+	if bitten_at != Vector3.INF:
+		material.set_shader_parameter(&"flay_origin", _to_rest(&"chest") * bitten_at)
+	flay = clampf(amount, 0.0, 1.0)
+	material.set_shader_parameter(&"flay_amount", flay)
 
 
 func hole_count() -> int:

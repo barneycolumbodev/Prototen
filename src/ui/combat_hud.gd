@@ -118,23 +118,39 @@ class HealthBar:
 	extends Control
 	var fraction: float = 1.0
 	var shown: float = 1.0
+	## A heal (the HV-3's harvest): the bar glows from where it was and fades (1 → 0).
+	var heal_glow: float = 0.0
+	var heal_from: float = 1.0
+	var heal_color: Color = Color(1.0, 0.3, 0.22)
 	const W: float = 240.0
 	const H: float = 10.0
 	var _drawn_frac: float = -1.0
 	var _drawn_shown: float = -1.0
+	var _drawn_glow: float = -1.0
 
 	## Redrawn only when something it shows changed (optimization overhaul U-07).
 	func redraw_if_changed() -> void:
-		if absf(fraction - _drawn_frac) > 0.0005 or absf(shown - _drawn_shown) > 0.0005:
+		if absf(fraction - _drawn_frac) > 0.0005 or absf(shown - _drawn_shown) > 0.0005 or absf(heal_glow - _drawn_glow) > 0.01:
 			_drawn_frac = fraction
 			_drawn_shown = shown
+			_drawn_glow = heal_glow
 			queue_redraw()
+
+	func healed(from: float) -> void:
+		heal_from = minf(from, heal_from) if heal_glow > 0.05 else from
+		heal_glow = 1.0
 
 	func _draw() -> void:
 		draw_rect(Rect2(0, 0, W, H), Color(0, 0, 0, 0.45))
 		draw_rect(Rect2(0, 0, W * shown, H), Color(0.85, 0.25, 0.2, 0.7))
 		var col: Color = Color(0.36, 0.86, 0.78) if fraction > 0.35 else Color(1.0, 0.35, 0.3)
 		draw_rect(Rect2(0, 0, W * fraction, H), col)
+		if heal_glow > 0.0 and fraction > heal_from:
+			# What came back, bright, cooling into the bar.
+			var g: Color = heal_color.lerp(Color(1, 0.9, 0.85), heal_glow * 0.4)
+			g.a = heal_glow
+			draw_rect(Rect2(W * heal_from, 0, W * (fraction - heal_from), H), g)
+			draw_rect(Rect2(-2, -2, W + 4, H + 4), Color(heal_color, 0.6 * heal_glow), false, 2.0)
 		draw_rect(Rect2(0, 0, W, H), Color(1, 1, 1, 0.35), false, 1.0)
 
 
@@ -336,6 +352,11 @@ func _ready() -> void:
 	EventBus.score_changed.connect(_on_score)
 
 
+## A heal (not the slow regen): the bar glows over what came back.
+func _on_healed(amount: float) -> void:
+	_health.healed(player.health_fraction() - amount / maxf(player.max_health(), 1.0))
+
+
 func _label(size: int) -> Label:
 	var l: Label = Label.new()
 	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -365,8 +386,12 @@ func _process(delta: float) -> void:
 		_down.position = Vector2(0, vp.y * 0.42)
 		_down.size = Vector2(vp.x, 50)
 	if player:
+		if not player.healed.is_connected(_on_healed):
+			player.healed.connect(_on_healed)
 		_health.fraction = player.health_fraction()
-		_health.shown = move_toward(_health.shown, _health.fraction, delta * 0.4)
+		_health.heal_glow = maxf(_health.heal_glow - delta * 0.9, 0.0)
+		# The damage trail falls slowly; a heal fills it at once.
+		_health.shown = move_toward(_health.shown, _health.fraction, delta * 0.4) if _health.shown > _health.fraction else _health.fraction
 		_vignette.hurt = clampf(1.0 - player.health_fraction() * 1.4, 0.0, 1.0)
 		_vignette.suppression = player.suppression
 		if not player.dead and _down.visible:

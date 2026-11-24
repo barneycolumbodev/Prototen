@@ -36,6 +36,12 @@ enum State { CHASE, WINDUP, LUNGE, RECOVER, BITE, FLINCH, DEAD }
 @export var config: DogConfig
 
 var state: State = State.CHASE
+## Engulfed by the HV-3 swarm (docs/design.md §3.4e): yelping and twisting on the spot until swarm_kill().
+var engulfed: bool = false
+var _engulf_t: float = 0.0
+## How far the swarm has stripped it (set_flay).
+var flay: float = 0.0
+var _flay_ready: bool = false
 var health: float = 60.0
 var alive: bool = true
 var dead: bool:
@@ -367,6 +373,45 @@ func die(hit: BallisticHit = null) -> void:
 	died.emit(self)
 
 
+## The HV-3's harvesters are on it: it stops dead, twisting and yelping,
+## until the swarm kills it (swarm_kill). False if it can't be taken.
+func engulf(_by: Node) -> bool:
+	if not alive or engulfed:
+		return false
+	engulfed = true
+	_engulf_t = 0.0
+	remove_from_group(&"enemies")
+	remove_from_group(&"aim_assist_targets")
+	return true
+
+
+func swarm_kill(hit: BallisticHit) -> void:
+	engulfed = false
+	health = 0.0
+	die(hit)
+	if hit:
+		EventBus.target_hit.emit(&"kill", hit)
+
+
+## Stripped by the swarm (0..1) as the men are (src/gore/flay.gdshaderinc,
+## quadruped): its meshes get rest positions the first time.
+func set_flay(amount: float, bitten_at: Vector3 = Vector3.INF) -> void:
+	if coat == null:
+		return
+	var first: MeshInstance3D = null
+	for n: Node in model.find_children("*", "MeshInstance3D", true, false):
+		var m: MeshInstance3D = n as MeshInstance3D
+		if first == null:
+			first = m
+		if not _flay_ready:
+			m.mesh = EnemyBody.prepared(StringName("dog_" + m.name), m.mesh, 0, 0)
+	_flay_ready = true
+	if bitten_at != Vector3.INF and first:
+		coat.set_shader_parameter(&"flay_origin", first.global_transform.affine_inverse() * bitten_at)
+	flay = clampf(amount, 0.0, 1.0)
+	coat.set_shader_parameter(&"flay_amount", flay)
+
+
 # ------------------------------------------------------------------ behaviour
 
 func _physics_process(delta: float) -> void:
@@ -375,6 +420,14 @@ func _physics_process(delta: float) -> void:
 	if player == null or not is_instance_valid(player):
 		player = get_tree().get_first_node_in_group(&"player") as Player
 	var want: Vector3 = Vector3.ZERO
+	if engulfed:
+		_engulf_t -= delta
+		if _engulf_t <= 0.0:
+			_engulf_t = randf_range(0.18, 0.3)
+			_play(&"flinch", 0.04)
+			Sfx.play_at(&"dog_yelp", head_position(), 2.0, 0.15)
+		_move(Vector3.ZERO, delta)
+		return
 	match state:
 		State.CHASE:
 			want = _chase(delta)

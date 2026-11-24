@@ -251,7 +251,7 @@ func on_ally_seized(taken: Enemy, by: Node) -> void:
 
 func on_death(dead: Enemy, hit: BallisticHit) -> void:
 	_prune(true)
-	var gory: bool = not dead.body.severed.is_empty() or (hit != null and hit.damage != null and hit.damage.has_flag(DamageInfo.Flags.HEADSHOT))
+	var gory: bool = not dead.body.severed.is_empty() or dead.body.flay > 0.5 or (hit != null and hit.damage != null and hit.damage.has_flag(DamageInfo.Flags.HEADSHOT))
 	var officer: bool = dead.config.officer
 	for e: Enemy in members:
 		if not is_instance_valid(e) or not e.alive or e == dead:

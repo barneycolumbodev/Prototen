@@ -147,6 +147,11 @@ var state_before_death: State = State.IDLE
 ## Seized by the mesh arm (NT-5): limp in its grip, alive until he's thrown
 ## or dropped. Out of the fight (no AI, not in the enemies group).
 var held: bool = false
+## Engulfed by the HV-3 swarm (docs/design.md §3.4e): out of the fight, thrashing
+## while it strips him, until swarm_kill().
+var engulfed: bool = false
+var _engulf_thrash: float = 0.0
+var _engulf_cry: float = 0.0
 ## Thrown by the mesh arm: flying. He hits whoever is in the way and dies when he lands.
 var _thrown_by: Node
 var _thrown_speed: float = 0.0
@@ -604,6 +609,73 @@ func release(throw_velocity: Vector3, by: Node) -> void:
 	_thrown_hit.clear()
 
 
+## The HV-3's harvesters are on him (docs/design.md §3.4e): he's out of the
+## fight at once (the gun goes, no more thinking or shooting), and stands
+## there clawing at himself and screaming while they strip him. The swarm
+## kills him when it's done (swarm_kill). Returns false if he can't be taken
+## (dead, held, already engulfed, a boss).
+func engulf(by: Node) -> bool:
+	if not alive or engulfed or held or boss:
+		return false
+	engulfed = true
+	if melee:
+		melee.reset()
+	remove_from_group(&"enemies")
+	remove_from_group(&"aim_assist_targets")
+	remove_from_group(&"suppressible")
+	_release_token()
+	_stop()
+	velocity = Vector3.ZERO
+	agony = 0.0
+	burn_left = 0.0
+	if has_gun:
+		has_gun = false
+		body.drop_gun(Vector3(_rng.randf_range(-1.0, 1.0), 1.4, _rng.randf_range(-1.0, 1.0)))
+	body.set_stance(&"cower")
+	morale = 0.0
+	_engulf_thrash = 0.0
+	_engulf_cry = 0.45
+	if Sfx.claim_death_voice():
+		vocal(&"death_scream", 3.0, 0.08)
+	else:
+		vocal(&"enemy_pain", 2.0, 0.15)
+	if squad:
+		squad.on_ally_seized(self, by)
+	return true
+
+
+## Engulfed: he claws at the swarm and lurches, screaming, on the spot.
+func _update_engulfed(delta: float) -> void:
+	_engulf_thrash -= delta
+	if _engulf_thrash <= 0.0:
+		_engulf_thrash = _rng.randf_range(0.07, 0.16)
+		var dir: Vector3 = Vector3(_rng.randf_range(-1, 1), _rng.randf_range(-0.3, 0.5), _rng.randf_range(-1, 1)).normalized()
+		body.flinch(dir, _rng.randf_range(1.6, 3.0), _rng.randf() < 0.45)
+		if _rng.randf() < 0.12:
+			body.play_stumble()
+	_engulf_cry -= delta
+	if _engulf_cry <= 0.0:
+		_engulf_cry = _rng.randf_range(0.5, 0.8)
+		if Sfx.claim_death_voice():
+			vocal(&"death_scream", 2.0, 0.12)
+		else:
+			vocal(&"enemy_pain", 1.0, 0.2)
+	if not is_on_floor():
+		velocity.y -= GRAVITY * delta
+		move_and_slide()
+
+
+## The swarm has finished with him: he drops, flayed.
+func swarm_kill(hit: BallisticHit) -> void:
+	if not alive:
+		return
+	engulfed = false
+	health = 0.0
+	die(hit, &"chest", &"swarm")
+	if hit:
+		EventBus.target_hit.emit(&"kill", hit)
+
+
 func _update_thrown(delta: float) -> void:
 	_thrown_time += delta
 	var at: Vector3 = body.chest_position()
@@ -1000,7 +1072,7 @@ func burst(push: Vector3, hit: BallisticHit = null, zone: StringName = &"chest")
 	Sfx.play_at(&"gore_sever", body.global_position + Vector3.UP, 3.0, 0.1)
 
 
-## `cause`: &"shot", &"bleed" (bled out) or &"burn" (burned to death).
+## `cause`: &"shot", &"bleed" (bled out), &"burn" (burned to death) or &"swarm" (flayed, §3.4e).
 func die(hit: BallisticHit, zone: StringName, cause: StringName = &"shot") -> void:
 	if not alive:
 		return
@@ -1028,7 +1100,8 @@ func die(hit: BallisticHit, zone: StringName, cause: StringName = &"shot") -> vo
 	body.ragdoll_frozen.connect(_on_frozen, CONNECT_ONE_SHOT)
 	create_tween().tween_method(body.set_rim, 1.0, 0.0, 0.8)
 	Sfx.play_at(&"body_fall", global_position + Vector3.UP * 0.5, -2.0, 0.1)
-	var cry: StringName = death_cry(zone, cause == &"shot" and hit != null, state_before_death, cause == &"burn" or is_burning(), _rng.randf())
+	# Stripped by the swarm: no lips left, a wet gurgle.
+	var cry: StringName = &"death_choke" if cause == &"swarm" else death_cry(zone, cause == &"shot" and hit != null, state_before_death, cause == &"burn" or is_burning(), _rng.randf())
 	if cry != &"" and Sfx.claim_death_voice():
 		vocal(cry, -1.0, 0.08)
 	elif cry == &"" and mouth:
@@ -1105,6 +1178,9 @@ func _physics_process(delta: float) -> void:
 			# A frozen corpse that has stopped bleeding runs no code until a
 			# cut or a throw wakes it (optimization overhaul F-15).
 			set_physics_process(false)
+		return
+	if engulfed:
+		_update_engulfed(delta)
 		return
 	if held or _thrown_speed > 0.0:
 		_update_bleeders(delta)

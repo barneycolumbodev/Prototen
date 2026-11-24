@@ -44,6 +44,8 @@ signal colors_changed
 signal landed(fall_speed: float)
 signal dropkicked
 signal damaged(amount: float, from_dir: Vector3)
+## Health came back (heal()).
+signal healed(amount: float)
 signal died
 signal respawned
 
@@ -319,6 +321,19 @@ func on_melee_hit(attacker: Node, amount: float, direction: Vector3, push: float
 		velocity += flat * push
 		take_damage(dmg, -direction)
 	return dmg
+
+
+## Health back (the HV-3's harvest, docs/design.md §3.4e), up to the max.
+## Returns how much it actually restored.
+func heal(amount: float) -> float:
+	if dead or amount <= 0.0:
+		return 0.0
+	var before: float = health
+	health = minf(health + amount, max_health())
+	var got: float = health - before
+	if got > 0.0:
+		healed.emit(got)
+	return got
 
 
 func take_damage(amount: float, from_dir: Vector3) -> void:

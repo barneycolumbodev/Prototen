@@ -6,7 +6,7 @@ var frame: PlayerBodyConfig = preload("res://data/player/body_default.tres")
 var lib: PartLibrary = preload("res://data/body/part_library.tres")
 const NEW: Array[StringName] = [&"mw7_monofilament_whip", &"nt5_mesh_arm", &"bw6_fan_shield", &"sd3_shrike_drone",
 	&"ad2_arc_projector", &"kr5_ram_thrusters", &"tc4_thermoptic_shroud", &"sx8_urticating_setae",
-	&"lc6_lorentz_catcher"]
+	&"lc6_lorentz_catcher", &"hv3_harvester_hive"]
 
 
 func _operator_with(ids: Array[StringName]) -> BodyLoadout:
@@ -16,9 +16,9 @@ func _operator_with(ids: Array[StringName]) -> BodyLoadout:
 	return lo
 
 
-func test_the_library_has_eleven_actives_with_behaviours() -> void:
+func test_the_library_has_twelve_actives_with_behaviours() -> void:
 	var acts: Array[ActivePartData] = lib.actives()
-	assert_eq(acts.size(), 11, "RX-9, GX-4, the seven of 2026-11-10, the SX-8 and the LC-6")
+	assert_eq(acts.size(), 12, "RX-9, GX-4, the seven of 2026-11-10, the SX-8, the LC-6 and the HV-3")
 	for a: ActivePartData in acts:
 		assert_not_null(a.behaviour, String(a.id))
 		assert_ne(a.short_name, "", String(a.id))

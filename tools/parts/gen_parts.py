@@ -242,12 +242,12 @@ part("oc2_respirocytes", "OC-2 Respirocyte Blood", BLOOD, 0.1, 10, 0, 2,
 # ============================================================== actives (hand-edited files) and presets
 ACTIVES = ["rx9_reflex_overclock", "gx4_gauss_arm", "mw7_monofilament_whip", "nt5_mesh_arm", "bw6_fan_shield", "sd3_shrike_drone",
            "ad2_arc_projector", "kr5_ram_thrusters", "tc4_thermoptic_shroud", "sx8_urticating_setae",
-           "lc6_lorentz_catcher"]
+           "lc6_lorentz_catcher", "hv3_harvester_hive"]
 ORDER = [SUIT, HEAD, EYES, EARS, NERVOUS, SKELETON, MUSCLE, ORGANS, TORSO, ARMS, HANDS, LEGS, SPINE, BACK, SKIN, BLOOD]
 ACTIVE_LOC = {"rx9_reflex_overclock": NERVOUS, "gx4_gauss_arm": ARMS, "mw7_monofilament_whip": ARMS, "nt5_mesh_arm": ARMS,
               "bw6_fan_shield": ARMS, "sd3_shrike_drone": BACK, "ad2_arc_projector": BACK, "kr5_ram_thrusters": BACK,
               "tc4_thermoptic_shroud": SKIN, "sx8_urticating_setae": ARMS,
-              "lc6_lorentz_catcher": ARMS}
+              "lc6_lorentz_catcher": ARMS, "hv3_harvester_hive": HANDS}
 
 PRESETS = {
     "loadout_default": ("Operator", "The all-rounder: titanium frame, fast muscle, cooling, the synaptic accelerator; RX-9 and the GX-4 arm.",
@@ -464,6 +464,20 @@ active("lc6_lorentz_catcher", "LC-6 Lorentz Catcher", "LC-6", ARMS, "catcher/lor
        vis=[("forearm.L", CYL, (0.06, 0.03, 0.06), (0.0, 0.24, 0.0), "hardware"), ("forearm.L", CYL, (0.062, 0.004, 0.062), (0.0, 0.24, 0.0), "glow")])
 
 
+active("hv3_harvester_hive", "HV-3 Harvester Hive", "HV-3", HANDS, "hive/harvester_hive.gd", "hive/harvester_hive_data.gd", 1.4, 10, 5, 2,
+       "A hive grafted into the left hand. Select it on the D-pad and press LB with a man near the crosshair: the hand comes up, "
+       "the iris in the palm blooms open, and a few hundred harvester microdrones pour out at him. They wrap him and strip him to "
+       "the muscle in under a second, then stream back into the palm with what they took, and the hive's reactor turns it into "
+       "repair nanites in your blood: over a third of your health, back at once. An emergency heal that kills.",
+       [("processing", 1.1, "steering six hundred harvesters at once takes a co-processor")],
+       "Needs processing ×1.10 (SA-2). Heals 38 % of max health, so a tougher body gets more back. Connectivity extends the reach (16 m, 20.5 m with an MR-1, "
+       "25 m with an NL-3). The reactor's heat has to go somewhere: cooling sets how fast the hive rebuilds the swarm (about 22 s "
+       "at 380 W, 15 s with HS-5). Takes the left hand while it works: the gun goes down for under two seconds. Whoever sees a man "
+       "eaten loses his nerve.",
+       (0.35, 0.3, 0.3), (1.0, 0.0, 0.045, 1.0, 1.0), (40, 120), mount="hand_left",
+       scene="res://assets/augments/hv3_harvester_hive/hv3_harvester_hive.gltf", view=vm((-0.5, 0.28, 0.3), (1.0, -0.3, -0.15)),
+       vis=[("hand.L", CYL, (0.024, 0.006, 0.024), (0.0, 0.05, -0.02), "glow", (90, 0, 0)), ("forearm.L", BOX, (0.026, 0.18, 0.024), (-0.035, 0.12, 0.0), "hardware")])
+
 def body_scene(pid):
     """The part's hardware modelled on the operative, if it has been built."""
     rel = f"assets/augments/actives_body/{pid}/{pid}.gltf"
@@ -506,7 +520,8 @@ def write_active(p):
     cls = {"whip/whip_data.gd": "WhipData", "mesh_arm/mesh_arm_data.gd": "MeshArmData", "shield/fan_shield_data.gd": "FanShieldData",
            "drone/shrike_drone_data.gd": "ShrikeDroneData", "arc/arc_projector_data.gd": "ArcProjectorData",
            "ram/ram_thrusters_data.gd": "RamThrustersData", "cloak/thermoptic_shroud_data.gd": "ThermopticShroudData",
-           "setae/setae_data.gd": "SetaeData", "catcher/lorentz_catcher_data.gd": "LorentzCatcherData"}[p["data_script"]]
+           "setae/setae_data.gd": "SetaeData", "catcher/lorentz_catcher_data.gd": "LorentzCatcherData",
+           "hive/harvester_hive_data.gd": "HarvesterHiveData"}[p["data_script"]]
     out = [f'[gd_resource type="Resource" script_class="{cls}" load_steps={len(ext) + len(subs) + 1} format=3]', ""] + ext + [""] + subs
     dep, rec, cd = p["timing"]
     cmax, drain, regen, delay, least = p["charge"]
