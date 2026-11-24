@@ -128,6 +128,41 @@ extends Resource
 @export_range(0.4, 1.6) var vault_height: float = 1.25
 @export_range(0.25, 1.5) var vault_time: float = 0.55
 
+@export_group("Flamer")
+## Agile triad arsonist (docs/design.md §8.8c): carries a pressurized aerosol
+## can (`gun_scene`) in the right hand and a flip-top lighter (`lighter_scene`)
+## in the left. Shooting the can ruptures it into a fireball that engulfs him
+## and ignites nearby enemies.
+@export var flamer: bool = false
+@export var lighter_scene: PackedScene
+## Reach (m) and full cone angle (deg) of the aerosol flame stream.
+@export_range(2.0, 16.0) var flamer_range: float = 7.5
+## Distance (m) at which he starts the ignite tell and flame spray.
+@export_range(2.0, 18.0) var flamer_engage_range: float = 8.0
+@export_range(10.0, 80.0) var flamer_cone_deg: float = 34.0
+## Bare-suit direct DPS in the flame stream, plus lingering afterburn (s, DPS).
+@export_range(5.0, 150.0) var flamer_dps: float = 34.0
+@export_range(0.0, 8.0) var flamer_burn_time: float = 2.4
+@export_range(0.0, 40.0) var flamer_burn_dps: float = 9.0
+## Pre-spray tell (flint spark + hiss), spray burst length (s), reposition gap (s).
+@export_range(0.1, 1.5) var flamer_ignite_time: float = 0.34
+@export var flamer_spray_time: Vector2 = Vector2(1.4, 2.3)
+@export var flamer_cooldown: Vector2 = Vector2(0.85, 1.45)
+## Agile sideways strafe speed (m/s) and max turn speed (deg/s) while spraying.
+@export_range(0.5, 6.0) var flamer_strafe_speed: float = 3.1
+@export_range(30.0, 360.0) var flamer_track_deg: float = 155.0
+## Cumulative damage during ignite/spray that staggers him off the burst.
+@export_range(5.0, 150.0) var flamer_interrupt: float = 28.0
+## Precision can-shot fireball: radius (m), self damage (engulfs him in place),
+## splash heat damage, and burn/agony applied to nearby enemies.
+@export_range(1.5, 10.0) var flamer_fireball_radius: float = 4.2
+@export_range(20.0, 400.0) var flamer_can_self_damage: float = 140.0
+@export_range(5.0, 150.0) var flamer_splash_damage: float = 42.0
+@export_range(1.0, 12.0) var flamer_splash_burn_time: float = 5.0
+@export_range(2.0, 40.0) var flamer_splash_burn_dps: float = 14.0
+@export_range(0.0, 8.0) var flamer_splash_agony: float = 3.8
+@export_range(0.0, 1.0) var flamer_player_splash_scale: float = 0.35
+
 @export_group("Boss")
 ## A boss (docs/design.md §8.7): his attacks, entrance and execution
 ## (BossBrain). He doesn't die at zero health: he goes down on one knee and
