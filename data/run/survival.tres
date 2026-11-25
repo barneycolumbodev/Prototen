@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="SurvivalConfig" load_steps=144 format=3]
+[gd_resource type="Resource" script_class="SurvivalConfig" load_steps=145 format=3]
 
 [ext_resource type="Script" path="res://src/run/survival_config.gd" id="e1"]
 [ext_resource type="Script" path="res://src/run/run_item.gd" id="e2"]
@@ -828,11 +828,23 @@ max_count = 3
 max_count_late = 5
 late_wave = 12
 
+[sub_resource type="Resource" id="enemy_6"]
+script = ExtResource("e4")
+role = "flamer"
+cost = 3.0
+first_wave = 7
+weight = 0.8
+weight_per_wave = 0.03
+min_weight = 0.05
+max_count = 2
+max_count_late = 3
+late_wave = 12
+
 [resource]
 script = ExtResource("e1")
 frame = ExtResource("e8")
 doctrines = Array[ExtResource("e3")]([SubResource("doctrine_0"), SubResource("doctrine_1"), SubResource("doctrine_2"), SubResource("doctrine_3"), SubResource("doctrine_4")])
 starter_weapons = Array[ExtResource("e7")]([ExtResource("e9"), ExtResource("e10"), ExtResource("e11")])
 pool = Array[ExtResource("e2")]([SubResource("item_0"), SubResource("item_1"), SubResource("item_2"), SubResource("item_3"), SubResource("item_4"), SubResource("item_5"), SubResource("item_6"), SubResource("item_7"), SubResource("item_8"), SubResource("item_9"), SubResource("item_10"), SubResource("item_11"), SubResource("item_12"), SubResource("item_13"), SubResource("item_14"), SubResource("item_15"), SubResource("item_16"), SubResource("item_17"), SubResource("item_18"), SubResource("item_19"), SubResource("item_20"), SubResource("item_21"), SubResource("item_22"), SubResource("item_23"), SubResource("item_24"), SubResource("item_25"), SubResource("item_26"), SubResource("item_27"), SubResource("item_28"), SubResource("item_29"), SubResource("item_30"), SubResource("item_31"), SubResource("item_32"), SubResource("item_33"), SubResource("item_34"), SubResource("item_35"), SubResource("item_36"), SubResource("item_37"), SubResource("item_38"), SubResource("item_39"), SubResource("item_40"), SubResource("item_41"), SubResource("item_42"), SubResource("item_43"), SubResource("item_44"), SubResource("item_45"), SubResource("item_46"), SubResource("item_47"), SubResource("item_48"), SubResource("item_49"), SubResource("item_50"), SubResource("item_51"), SubResource("item_52"), SubResource("item_53"), SubResource("item_54"), SubResource("item_55"), SubResource("item_56"), SubResource("item_57"), SubResource("item_58"), SubResource("item_59"), SubResource("item_60"), SubResource("item_61")])
-roster = Array[ExtResource("e4")]([SubResource("enemy_0"), SubResource("enemy_1"), SubResource("enemy_2"), SubResource("enemy_3"), SubResource("enemy_4"), SubResource("enemy_5")])
+roster = Array[ExtResource("e4")]([SubResource("enemy_0"), SubResource("enemy_1"), SubResource("enemy_2"), SubResource("enemy_3"), SubResource("enemy_4"), SubResource("enemy_5"), SubResource("enemy_6")])
 bosses = Array[String](["incense_master"])

@@ -517,7 +517,7 @@ func assign_roles() -> void:
 		return
 	var gunmen: Array[Enemy] = []
 	for e: Enemy in members:
-		if not e.alive or e.passive or e.boss != null or e.melee != null or e.state != Enemy.State.COMBAT or not e.has_gun or not is_hunting(e.pack):
+		if not e.alive or e.passive or e.boss != null or e.melee != null or e.flamer != null or e.state != Enemy.State.COMBAT or not e.has_gun or not is_hunting(e.pack):
 			if e.alive and e.squad_role != Role.NONE and (e.state != Enemy.State.COMBAT or not is_hunting(e.pack)):
 				e.set_squad_role(Role.NONE)
 			continue

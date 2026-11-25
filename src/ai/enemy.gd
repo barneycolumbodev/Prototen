@@ -41,6 +41,8 @@ var squad: Squad
 var body: EnemyBody
 ## A man with a blade (EnemyConfig.melee): how he fights instead of shooting.
 var melee: MeleeBrain
+## A triad arsonist (EnemyConfig.flamer): aerosol can + lighter flame stream.
+var flamer: FlamerBrain
 ## A boss (EnemyConfig.boss): his attacks, his knee, his execution.
 var boss: BossBrain
 var nav: NavigationAgent3D
@@ -243,6 +245,9 @@ func _ready() -> void:
 	body.set_stance(&"idle")
 	if config.melee:
 		melee = MeleeBrain.new(self)
+	if config.flamer:
+		flamer = FlamerBrain.new(self)
+		flamer.setup()
 	if config.boss:
 		boss = BossBrain.new(self)
 		boss.setup()
@@ -332,6 +337,8 @@ func on_part_hit(part: HitboxPart, hit: BallisticHit) -> void:
 	body.flinch(hit.direction, clampf(hit.damage.impulse / 3.0 * TimeControl.impact_multiplier(), 0.3, 3.5), head)
 	if melee:
 		melee.on_hurt(dmg)
+	if flamer:
+		flamer.on_hurt(dmg)
 	_alerted_by(hit.shooter)
 	suppression = minf(suppression + 0.45, 1.0)
 	morale -= 0.08 + clampf(dmg / 300.0, 0.0, 0.2)
@@ -401,6 +408,8 @@ func knock_back(push: Vector3, from: Node, damage: float, morale_loss: float) ->
 		return
 	if melee:
 		melee.reset()
+	if flamer:
+		flamer.reset()
 	_knock = Vector3(push.x, 0.0, push.z).limit_length(14.0)
 	velocity.y = maxf(velocity.y, minf(push.y, 6.0))
 	body.play_stumble()
@@ -432,6 +441,8 @@ func launch(v: Vector3, from: Node, morale_loss: float, gravity: float, tumble_d
 		return
 	if melee:
 		melee.reset()
+	if flamer:
+		flamer.reset()
 	var flat: Vector3 = Vector3(v.x, 0.0, v.z)
 	var dir: Vector3 = flat.normalized() if flat.length() > 0.05 else -global_basis.z
 	if damage > 0.0:
@@ -571,6 +582,8 @@ func seize(by: Node) -> bool:
 	held = true
 	if melee:
 		melee.reset()
+	if flamer:
+		flamer.reset()
 	remove_from_group(&"enemies")
 	remove_from_group(&"aim_assist_targets")
 	remove_from_group(&"suppressible")
@@ -723,6 +736,12 @@ func on_plate_hit(_plate: Node, hit: BallisticHit) -> void:
 		EventBus.target_hit.emit(&"armor", hit)
 
 
+## Precision shot hit a Triad Flamer's aerosol can (AerosolCan weak point).
+func on_can_hit(_can: Node, hit: BallisticHit) -> void:
+	if flamer:
+		flamer.on_can_hit(hit)
+
+
 func on_part_burn(part: HitboxPart, hit: BallisticHit) -> void:
 	if not alive:
 		return
@@ -781,6 +800,8 @@ func _react(zone: StringName, dmg: float, hit: BallisticHit) -> void:
 		var drop: float = {&"r_hand": 0.8, &"l_hand": 0.55, &"r_forearm": 0.5, &"l_forearm": 0.35}.get(zone, 0.15)
 		if has_gun and _rng.randf() < drop:
 			has_gun = false
+			if flamer:
+				flamer.on_death()
 			body.drop_gun(hit.direction * 2.0 + Vector3.UP)
 			morale -= 0.25
 			if morale < 0.45 and squad and squad.player() and global_position.distance_to(squad.player().global_position) < 18.0:
@@ -838,6 +859,8 @@ func sever(seg: StringName, velocity_out: Vector3, destroy: bool, hit: Ballistic
 	var group: Array[StringName] = body.attached(seg)
 	if not body.sever(seg, velocity_out, destroy, cauterize):
 		return false
+	if flamer:
+		flamer.on_sever(group)
 	if not cauterize:
 		_bleeders.append(Bleeder.new(seg))
 	set_physics_process(true)
@@ -1088,11 +1111,16 @@ func die(hit: BallisticHit, zone: StringName, cause: StringName = &"shot") -> vo
 	remove_from_group(&"suppressible")
 	_release_token()
 	(get_node(^"Capsule") as CollisionShape3D).disabled = true
+	if flamer:
+		flamer.on_death()
 	if body.gun:
 		body.drop_gun(velocity + (hit.direction if hit else Vector3.ZERO) * 1.5 + Vector3.UP)
 	var impulse: Vector3 = Vector3.ZERO
 	var point: Vector3 = body.chest_position()
-	if hit:
+	if hit and cause == &"burn":
+		impulse = hit.direction * clampf(hit.damage.impulse, 0.0, 2.5) * TimeControl.impact_multiplier()
+		point = hit.point
+	elif hit:
 		var heavy: float = clampf(hit.damage.impulse, 4.0, 40.0) * (hit.weapon.ragdoll_push if hit.weapon else 1.0)
 		impulse = (hit.direction * heavy * 1.4 + Vector3.UP * heavy * 0.15) * TimeControl.impact_multiplier()
 		point = hit.point
@@ -1171,10 +1199,12 @@ func on_ally_down(where: Vector3, gory: bool, officer: bool) -> void:
 
 func _physics_process(delta: float) -> void:
 	if not alive:
+		if flamer and flamer.flame_jet and flamer.flame_jet.intensity > 0.0:
+			flamer.flame_jet.step(delta)
 		_update_bleeders(delta)
 		if _thrown_speed > 0.0:
 			_update_thrown(delta)
-		elif _bleeders.is_empty() and body.frozen and not held:
+		elif _bleeders.is_empty() and body.frozen and not held and (flamer == null or flamer.flame_jet == null or flamer.flame_jet.intensity <= 0.0):
 			# A frozen corpse that has stopped bleeding runs no code until a
 			# cut or a throw wakes it (optimization overhaul F-15).
 			set_physics_process(false)
@@ -1183,6 +1213,8 @@ func _physics_process(delta: float) -> void:
 		_update_engulfed(delta)
 		return
 	if held or _thrown_speed > 0.0:
+		if flamer:
+			flamer.tick(delta)
 		_update_bleeders(delta)
 		if _thrown_speed > 0.0:
 			_update_thrown(delta)
@@ -1205,6 +1237,10 @@ func _physics_process(delta: float) -> void:
 	_update_burn(delta)
 	_update_agony(delta)
 	_update_bleeders(delta)
+	if flamer:
+		flamer.tick(delta)
+		if not alive:
+			return
 	if bleed_dps > 0.0:
 		health -= bleed_dps * delta
 		_drip_dist += global_position.distance_to(_last_pos)
@@ -1342,7 +1378,7 @@ func _break() -> void:
 	if not has_gun or (d < 9.0 and r < 0.5):
 		_enter(State.SURRENDER)
 	elif _cover_point != Vector3.INF and global_position.distance_to(_cover_point) < 1.0 and r < 0.6:
-		_enter(State.BLIND if r < 0.35 and melee == null else State.COWER)
+		_enter(State.BLIND if r < 0.35 and melee == null and flamer == null else State.COWER)
 	else:
 		_enter(State.FLEE)
 
@@ -1357,12 +1393,14 @@ func _enter(s: State) -> void:
 	_state_time = 0.0
 	if melee and s != State.COMBAT:
 		melee.reset()
+	if flamer and s != State.COMBAT:
+		flamer.reset()
 	match s:
 		State.COMBAT:
 			_tactic_time = 0.0
 			if prev == State.IDLE or prev == State.ALERT:
-				# A man with a blade doesn't shout "shoot him".
-				_callout(&"advance" if melee else &"contact")
+				# A man with a blade or flamer pushes in rather than shouting "shoot him".
+				_callout(&"advance" if (melee or flamer) else &"contact")
 		State.FLEE:
 			_release_token()
 			body.set_stance(&"flee")
@@ -1372,6 +1410,8 @@ func _enter(s: State) -> void:
 			_pick_flee_point()
 		State.SURRENDER:
 			_release_token()
+			if flamer:
+				flamer.on_death()
 			if body.gun:
 				has_gun = false
 				body.drop_gun(global_basis.z * 1.5 + Vector3.UP)
@@ -1387,6 +1427,8 @@ func _enter(s: State) -> void:
 		State.CRAWL:
 			_release_token()
 			has_gun = false
+			if flamer:
+				flamer.on_death()
 			if body.gun:
 				body.drop_gun(Vector3.UP)
 			body.set_stance(&"crawl")
@@ -1443,6 +1485,11 @@ func _decide() -> void:
 					_enter(State.FLEE)
 				else:
 					melee.decide()
+			elif flamer and not passive:
+				if not has_gun or not flamer.has_lighter:
+					_enter(State.FLEE)
+				else:
+					flamer.decide()
 			else:
 				_decide_combat()
 		_:
@@ -1564,6 +1611,9 @@ func _act(delta: float) -> void:
 		return
 	if melee and state == State.COMBAT and not passive:
 		melee.act(delta)
+		return
+	if flamer and state == State.COMBAT and not passive:
+		flamer.act(delta)
 		return
 	match state:
 		State.COMBAT:
@@ -1743,6 +1793,9 @@ func _move(delta: float) -> void:
 				elif melee:
 					run = true
 					speed = melee.speed() * (1.0 if state == State.COMBAT else 0.55)
+				elif flamer:
+					run = body.stance == &"run"
+					speed = flamer.speed() * (1.0 if state == State.COMBAT else 0.7) if run else config.walk_speed
 				else:
 					run = body.stance == &"run"
 					speed = config.run_speed if run else config.walk_speed
@@ -1774,6 +1827,10 @@ func _move(delta: float) -> void:
 		var mv: Vector3 = melee.want_velocity()
 		if mv != Vector3.INF:
 			want = mv
+	if flamer and state == State.COMBAT and not passive:
+		var fv: Vector3 = flamer.want_velocity()
+		if fv != Vector3.INF:
+			want = fv
 	if boss and state == State.COMBAT and not passive:
 		var bv: Vector3 = boss.want_velocity()
 		if bv != Vector3.INF:
@@ -1783,7 +1840,7 @@ func _move(delta: float) -> void:
 			and global_position.distance_squared_to(_settled_pos) < 1e-6:
 		body.set_motion(Vector3.ZERO)
 		return
-	var horizontal: Vector3 = Vector3(velocity.x, 0, velocity.z).move_toward(want, (20.0 if melee else 14.0) * delta)
+	var horizontal: Vector3 = Vector3(velocity.x, 0, velocity.z).move_toward(want, (20.0 if (melee or flamer) else 14.0) * delta)
 	if _knock.length_squared() > 0.01:
 		# Shoved: the push wins over his own legs until it dies away.
 		horizontal = _knock
@@ -1822,7 +1879,8 @@ func _move(delta: float) -> void:
 	if launched:
 		body.set_motion(Vector3.ZERO)
 		return
-	if horizontal.length() > 0.3 and (run or state == State.FLEE or state == State.CRAWL or not sees_player) and not (boss and boss.is_busy()):
+	var flamer_locked: bool = flamer != null and (flamer.is_spraying() or flamer.is_igniting())
+	if horizontal.length() > 0.3 and (run or state == State.FLEE or state == State.CRAWL or not sees_player) and not (boss and boss.is_busy()) and not flamer_locked:
 		_turn_toward(atan2(horizontal.x, horizontal.z), delta)
 	var local: Vector3 = global_basis.inverse() * horizontal
 	body.set_motion(local)

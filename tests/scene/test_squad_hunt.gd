@@ -24,6 +24,7 @@ func _spawn(n: int) -> Array[Enemy]:
 	c.low_water = 0
 	c.hatchet_man_weight = 0.0
 	c.attack_dog_weight = 0.0  # the men's tactics; dogs aren't in the squad
+	c.flamer_weight = 0.0
 	map.wave_mode.config = c
 	map.wave_mode.start()
 	await wait_until(func() -> bool: return map.wave_mode.spawned_total >= n, c.spawn_gap * n + 4.0)
