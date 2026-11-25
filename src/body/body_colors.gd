@@ -24,11 +24,12 @@ const FINISH_SURF: Array[Vector2] = [Vector2(-1, -1), Vector2(0.8, 0.0), Vector2
 ## Luminance (linear) of each suit channel's own base colour: the baked
 ## albedo divided by this is the detail the new colour keeps.
 const SUIT_REF: Array[float] = [0.009, 0.03, 0.017, 0.009, 0.009, 0.009, 0.009, 0.014, 0.125, 0.72]
-## The arms' texture sets were baked from lighter materials.
-const ARMS_REF: Array[float] = [0.024, 0.03, 0.047, 0.024, 0.047, 0.024, 0.024, 0.024, 0.032, 0.55]
+## The arms' texture sets were baked from their own materials (the prosthetic
+## arms, raw_assets/_lib/prosthetic.py: weave, forearm shell, hand shell, chassis).
+const ARMS_REF: Array[float] = [0.024, 0.03, 0.027, 0.024, 0.036, 0.032, 0.024, 0.024, 0.115, 0.55]
 ## Material names on unbaked models (the actives' arms, first-person legs) -> suit channel.
 const NAME_CHANNEL: Dictionary[String, StringName] = {
-	"graft": &"arms", "weave": &"undersuit", "polymer": &"hands", "gunmetal": &"trim",
+	"graft": &"arms", "weave": &"undersuit", "polymer": &"hands", "hand_shell": &"hands", "gunmetal": &"trim",
 	"leg_plate": &"legs", "boot": &"boots", "sole": &"boots",
 }
 ## Swatches for the quick palette (name, colour).

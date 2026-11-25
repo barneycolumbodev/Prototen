@@ -136,3 +136,11 @@ func test_region_maps_exist_for_the_suit_and_every_arm_set() -> void:
 			seen[roundi(img.get_pixel(x, y).r * 255.0)] = true
 	for id: int in range(1, 11):
 		assert_true(seen.has(id), "channel %d (%s) is somewhere on the suit" % [id, BodyColors.SUIT_CHANNELS[id - 1]])
+	# The prosthetic arms: hand shells, forearm shells, weave, chassis and lights each paint with their channel.
+	var arms: Image = (load("res://assets/characters/fp_arms/textures/fp_arms_regions.png") as Texture2D).get_image()
+	var on_arms: Dictionary[int, bool] = {}
+	for y: int in range(0, arms.get_height(), 4):
+		for x: int in range(0, arms.get_width(), 4):
+			on_arms[roundi(arms.get_pixel(x, y).r * 255.0)] = true
+	for ch: StringName in [&"undersuit", &"arms", &"hands", &"trim", &"lights"]:
+		assert_true(on_arms.has(BodyColors.SUIT_CHANNELS.find(ch) + 1), "%s is somewhere on the first-person arms" % ch)

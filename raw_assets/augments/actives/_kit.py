@@ -24,6 +24,7 @@ from mathutils import Matrix, Vector
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(HERE, "..", "..", "_lib"))
 import hardsurface as hs  # noqa: E402
+import prosthetic as pro  # noqa: E402
 
 V = Vector
 FPS = 60
@@ -60,6 +61,9 @@ def init(tag, end, default_frames, views_default="fp,hero"):
     M["polymer"] = hs.material("polymer", (0.035, 0.036, 0.04), 0.6, 0.0)
     M["weave"] = hs.material("weave", (0.013, 0.013, 0.015), 0.82, 0.0)
     M["glow"] = hs.material("glow", (0.05, 0.08, 0.12), 0.3, 0.0, emission=((0.36, 0.86, 0.78), 2.5))
+    # The prosthetic hand (prosthetic.KIT_MATS): gloss shells (painted as hand plates) and rubber pads.
+    M["hand_shell"] = hs.material("hand_shell", (0.030, 0.032, 0.036), 0.22, 0.0, coat=0.6)
+    M["grip_pad"] = hs.material("grip_pad", (0.016, 0.016, 0.018), 0.62, 0.0)
     M["tag"] = tag
     return args
 
@@ -248,26 +252,20 @@ PALM_X0, PALM_X1, PALM_HZ = 0.006, 0.090, 0.0165
 
 
 def _finger_segment(name, x0, length, y, z, w, h, tip):
-    pcs = [piece(hs.cyl_y(name + "_joint", h * 0.42, w * 0.92, (x0, y, z), verts=12), "gunmetal", bevel=0.0004),
-           piece(hs.box(name + "_core", (length - 0.004, w * 0.78, h * 0.72), (x0 + length / 2, y, z)), "weave", bevel=0.0010),
-           piece(hs.box(name + "_shell", (length - 0.006, w * 0.94, h * 0.34), (x0 + length / 2, y, z + h * 0.30)), "graft", bevel=0.0010),
-           piece(hs.box(name + "_pad", (length - 0.008, w * 0.80, h * 0.26), (x0 + length / 2, y, z - h * 0.33)), "polymer", bevel=0.0012)]
-    if tip:
-        pcs.append(piece(hs.cyl_y(name + "_tip", h * 0.40, w * 0.82, (x0 + length - 0.002, y, z), verts=12), "graft", bevel=0.0004))
-    return pcs
+    """One prosthetic finger segment (raw_assets/_lib/prosthetic.py): knuckle at (x0, y, z), back +Z."""
+    return pro.kit_finish(pro.kit_segment(x0, length, y, z, w, h, tip), piece)
 
 
 def hand(side=1):
-    """A gloved graft-suit hand on a `wrist` empty at the origin: palm, four fingers of three segments, a thumb.
-    `side` +1 = right hand (thumb on +Y, the inner side), -1 = left (mirrored). Returns
-    (wrist, palm, {finger: [seg1, seg2, seg3]}, [thumb1, thumb2, thumb3]). Fingers curl about +Y (positive =
-    closing); the thumb's first segment is aimed in and down."""
+    """The operative's prosthetic hand on a `wrist` empty at the origin: palm, four fingers of three segments,
+    a thumb (owner, 2026-11-25: the sleek prosthetic look; the node names, pivots and segment lengths are the
+    ones the deploy clips were keyed on). `side` +1 = right hand (thumb on +Y, the inner side), -1 = left
+    (mirrored). Returns (wrist, palm, {finger: [seg1, seg2, seg3]}, [thumb1, thumb2, thumb3]). Fingers curl
+    about +Y (positive = closing); the thumb's first segment is aimed in and down."""
     wrist = empty("wrist", (0.0, 0.0, 0.0))
-    pp = [piece(hs.box("palm_core", (PALM_X1 - PALM_X0 - 0.004, 0.08, PALM_HZ * 2 - 0.006), ((PALM_X0 + PALM_X1) / 2, 0.0, 0.0)), "weave", bevel=0.0016),
-          piece(hs.box("back_plate", (PALM_X1 - PALM_X0 - 0.014, 0.07, 0.004), ((PALM_X0 + PALM_X1) / 2 - 0.002, 0.0, PALM_HZ - 0.0005)), "graft", bevel=0.0008),
-          piece(hs.box("palm_pad", (PALM_X1 - PALM_X0 - 0.016, 0.07, 0.004), ((PALM_X0 + PALM_X1) / 2, 0.0, -PALM_HZ + 0.0005)), "polymer", bevel=0.0012),
-          piece(hs.box("knuckle_glow", (0.0016, 0.066, 0.0014), (PALM_X1 - 0.010, 0.0, PALM_HZ + 0.0016)), "glow", bevel=0.0),
-          piece(hs.cyl_between("thumb_mount", (0.016, side * 0.041, -0.004), (0.034, side * 0.047, -0.010), 0.0085, verts=14), "gunmetal", bevel=0.0006)]
+    knuckles = [(side * y, z, 0.0172) for y, z, _ in FINGERS.values()]
+    mount = ((0.016, side * 0.041, -0.004), (0.034, side * 0.047, -0.010))
+    pp = pro.kit_finish(pro.kit_palm(side, PALM_X0, PALM_X1, 0.040, PALM_HZ, knuckles, mount), piece)
     palm = part("palm", pp)
     parent(palm, wrist)
     fingers = {}

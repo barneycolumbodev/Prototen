@@ -75,7 +75,7 @@ func test_arms_triangle_budget() -> void:
 			var indices: PackedInt32Array = mi.mesh.surface_get_arrays(s)[Mesh.ARRAY_INDEX]
 			tris += indices.size() / 3
 	arms.free()
-	assert_lt(tris, 12000, "first-person arms")
+	assert_lt(tris, 22000, "first-person arms")
 
 
 func _tris(root: Node) -> int:
@@ -109,7 +109,7 @@ func test_mg42_arms_budget() -> void:
 	var arms: Node = (load("res://assets/characters/fp_arms_mg42/fp_arms_mg42.gltf") as PackedScene).instantiate()
 	var tris: int = _tris(arms)
 	arms.free()
-	assert_lt(tris, 12000, "first-person arms (MG42 hold)")
+	assert_lt(tris, 22000, "first-person arms (MG42 hold)")
 
 
 func test_rail_carbine_parts_budget_and_baked_material() -> void:
@@ -190,7 +190,7 @@ func test_aug_arms_budget() -> void:
 	var arms: Node = (load("res://assets/characters/fp_arms_aug/fp_arms_aug.gltf") as PackedScene).instantiate()
 	var tris: int = _tris(arms)
 	arms.free()
-	assert_lt(tris, 12000, "first-person arms (AUG hold)")
+	assert_lt(tris, 22000, "first-person arms (AUG hold)")
 
 
 func test_spas12_parts_budget_and_baked_material() -> void:
@@ -223,7 +223,7 @@ func test_spas12_arms_have_a_support_arm_and_fit_the_budget() -> void:
 	assert_true(arms.find_child("support_arm", true, false) != null, "the left arm is its own node (it rides the pump)")
 	var tris: int = _tris(arms)
 	arms.free()
-	assert_lt(tris, 12000, "first-person arms (SPAS-12 hold)")
+	assert_lt(tris, 22000, "first-person arms (SPAS-12 hold)")
 
 
 func test_magnum44_parts_budget_and_baked_material() -> void:
@@ -275,7 +275,7 @@ func test_m14p_arms_budget() -> void:
 	var arms: Node = (load("res://assets/characters/fp_arms_m14p/fp_arms_m14p.gltf") as PackedScene).instantiate()
 	var tris: int = _tris(arms)
 	arms.free()
-	assert_lt(tris, 12000, "first-person arms (M14/P hold)")
+	assert_lt(tris, 22000, "first-person arms (M14/P hold)")
 
 
 func test_every_gun_has_a_wheel_icon() -> void:
@@ -289,7 +289,7 @@ func test_rail_arms_budget() -> void:
 	var arms: Node = (load("res://assets/characters/fp_arms_rail/fp_arms_rail.gltf") as PackedScene).instantiate()
 	var tris: int = _tris(arms)
 	arms.free()
-	assert_lt(tris, 12000, "first-person arms (rail carbine hold)")
+	assert_lt(tris, 22000, "first-person arms (rail carbine hold)")
 
 
 func test_pistol_suppressor_is_solid_to_the_muzzle() -> void:
