@@ -15,15 +15,54 @@ uniform float fill_light = 0.45;
 // Blood on the coat from hits (0..1), darkening and wetting it.
 uniform float bloodied : hint_range(0.0, 1.0) = 0.0;
 
+// Rest position (CUSTOM0, AttackDog.set_flay gives the mesh one) for the flaying.
+varying vec3 rest_pos;
+varying vec3 rest_nrm;
+
+float hash3(vec3 p) {
+	p = fract(p * 0.3183099 + vec3(0.1, 0.2, 0.3));
+	p *= 17.0;
+	return fract(p.x * p.y * p.z * (p.x + p.y + p.z));
+}
+
+float vnoise(vec3 p) {
+	vec3 i = floor(p);
+	vec3 f = fract(p);
+	f = f * f * (3.0 - 2.0 * f);
+	return mix(mix(mix(hash3(i), hash3(i + vec3(1, 0, 0)), f.x),
+			mix(hash3(i + vec3(0, 1, 0)), hash3(i + vec3(1, 1, 0)), f.x), f.y),
+			mix(mix(hash3(i + vec3(0, 0, 1)), hash3(i + vec3(1, 0, 1)), f.x),
+			mix(hash3(i + vec3(0, 1, 1)), hash3(i + vec3(1, 1, 1)), f.x), f.y), f.z);
+}
+
+#define FLAY_QUADRUPED
+#include "res://src/gore/flay.gdshaderinc"
+
+void vertex() {
+	rest_pos = CUSTOM0.xyz;
+	rest_nrm = CUSTOM1.xyz;
+	VERTEX -= NORMAL * FL_SHRINK * 0.6 * flay_amount;
+}
+
 void fragment() {
 	vec3 col = texture(base_tex, UV).rgb;
 	vec3 orm = texture(orm_tex, UV).rgb;
 	col = mix(col, col * vec3(0.55, 0.12, 0.1), bloodied * 0.6);
+	float rough = mix(orm.g, 0.25, bloodied * 0.5);
+	float metal = orm.b;
+	float wet = 0.0;
+	float flay_h = 0.0;
+	float flay_m = 0.0;
+	if (flay_amount > 0.0) {
+		flay_m = flay_apply(flay_amount, rest_pos, rest_nrm, col, rough, metal, wet, flay_h);
+		NORMAL = normalize(mix(NORMAL, flay_bump(NORMAL, VERTEX, flay_h, 0.0022), flay_m));
+		rough = mix(rough, 0.18, wet);
+	}
 	ALBEDO = col;
-	NORMAL_MAP = texture(normal_tex, UV).rgb;
-	ROUGHNESS = mix(orm.g, 0.25, bloodied * 0.5);
-	METALLIC = orm.b;
-	AO = orm.r;
+	NORMAL_MAP = mix(texture(normal_tex, UV).rgb, vec3(0.5, 0.5, 1.0), flay_m);
+	ROUGHNESS = rough;
+	METALLIC = metal;
+	AO = mix(orm.r, 1.0, flay_m);
 	float facing = clamp(dot(NORMAL, VIEW), 0.0, 1.0);
 	float fres = 1.0 - facing;
 	float dist = length(VERTEX);

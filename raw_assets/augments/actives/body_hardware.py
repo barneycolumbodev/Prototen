@@ -13,6 +13,8 @@ exported as B_<bone>__<part> meshes that BodyAppearance mounts on the bones).
   bw6_fan_shield        the seven leaves folded in a stack along the outer left forearm on their hub
   sx8_urticating_setae  the setae bank on the back of the left forearm: 24 ceramic ports, gill plates, feed lines
   lc6_lorentz_catcher   the drive ring at the left wrist and its eight coil petals folded back along the forearm
+  hv3_harvester_hive    the closed hex iris in the left palm, six cells on the back of the hand, the windowed
+                        canister of sleeping harvesters along the inner left forearm
 
 Run (one part per run; they bake independently):
   tools/blender.sh raw_assets/augments/actives/body_hardware.py --part sd3_shrike_drone \\
@@ -351,6 +353,72 @@ elif PART == "lc6_lorentz_catcher":
     hi, lo = both(build)
     C.add_piece("petals", "forearm.L", hi, lo)
     views = (("side", (1.3, -1.3, 1.25), (0.45, 0.0, 1.13), 60), ("front", (1.0, -3.4, 1.7), (0.0, 0.0, 1.3), 85))
+
+# ====================================================================== HV-3 Harvester Hive, closed
+elif PART == "hv3_harvester_hive":
+    RED = C.mat_glow(PART + "_red", (1.0, 0.16, 0.09))
+    MATS.append(RED)
+    ha, hb = body.joint("hand.L"), body.joint("fingers.L")
+    dh = (hb - ha).normalized()
+    outv = V((1.0, 0.0, 0.0))
+    nb = (outv - dh * outv.dot(dh)).normalized()  # back of the hand
+    wh = dh.cross(nb).normalized()
+    hc = ha + dh * 0.045
+    back, _n1 = body.cast(hc + nb * 0.2, -nb, ("suit",), 0.4)
+    palm, _n2 = body.cast(hc - nb * 0.2, nb, ("suit",), 0.4)
+    back = back if back else hc + nb * 0.018
+    palm = palm if palm else hc - nb * 0.018
+
+    def build_hand(det, out):
+        # The six cells on the back of the hand round a boss.
+        out.append(C.cyl("cell_plate", back, back + nb * 0.0016, 0.019, METAL, det, 6, 0.0004))
+        out.append(C.cyl("cell_boss", back + nb * 0.0016, back + nb * 0.0036, 0.0045, GRAFT, det, 6, 0.0003))
+        for k in range(6):
+            a = math.radians(60 * k + 30)
+            p = back + (dh * math.cos(a) + wh * math.sin(a)) * 0.0108 + nb * 0.0016
+            out.append(C.cyl("cell", p, p + nb * 0.0012, 0.0045, RED, False, 6, 0.0))
+        # The palm: the hex iris, shut, in its rim.
+        out.append(C.cyl("vent_rim", palm, palm - nb * 0.003, 0.023, METAL, det, 6, 0.0006))
+        out.append(C.cyl("iris", palm - nb * 0.003, palm - nb * 0.0045, 0.02, GRAFT, det, 6, 0.0004))
+        if det:
+            for k in range(6):
+                a = math.radians(60 * k)
+                r = dh * math.cos(a) + wh * math.sin(a)
+                out.append(C.slab("seam", palm - nb * 0.0047 + r * 0.01, (r, r.cross(nb).normalized(), nb), (0.02, 0.0008, 0.0006), RED, False))
+
+    hi, lo = both(build_hand)
+    C.add_piece("hive", "hand.L", hi, lo)
+
+    # The canister along the inner side of the forearm (toward the body's front).
+    fa, fb = body.joint("forearm.L"), body.joint("hand.L")
+    d = (fb - fa).normalized()
+    front = V((0.0, -1.0, 0.0))
+    nf = (front - d * front.dot(d)).normalized()
+    wf = d.cross(nf).normalized()
+
+    def surf(t):
+        p = fa.lerp(fb, t)
+        hit, _n = body.cast(p + nf * 0.25, -nf, ("suit",), 0.5)
+        return hit if hit else p + nf * 0.045
+
+    c0, c1 = surf(0.3) + nf * 0.011, surf(0.9) + nf * 0.011
+
+    def build_can(det, out):
+        out.append(C.cyl("canister", c0, c1, 0.0115, GRAFT, det, 6, 0.001))
+        for t in (0.0, 0.5, 1.0):
+            p = c0.lerp(c1, t)
+            out.append(C.cyl("band", p - d * 0.005, p + d * 0.005, 0.0128, METAL, det, 6, 0.0006))
+        L = (c1 - c0).length
+        for k in range(3):
+            p = c0 + d * (L * (0.18 + 0.32 * k)) + nf * 0.0112
+            out.append(C.slab("window", p, (d, wf, nf), (L * 0.22, 0.012, 0.0015), RUBBER, det, 0.0004))
+            out.append(C.slab("strip", p - wf * 0.0062 + nf * 0.0004, (d, wf, nf), (L * 0.2, 0.0012, 0.001), RED, False))
+        if det:
+            out.append(C.cable("feed", [c1 + d * 0.004, c1 + d * 0.03 - nf * 0.004, palm + dh * -0.01 - nb * 0.006], 0.004, RUBBER, True))
+
+    hi, lo = both(build_can)
+    C.add_piece("canister", "forearm.L", hi, lo)
+    views = (("side", (1.3, -1.3, 1.25), (0.45, 0.0, 1.1), 60), ("hand", (0.95, -0.55, 0.95), (0.5, 0.0, 0.92), 40))
 
 else:
     raise SystemExit("unknown part " + PART)

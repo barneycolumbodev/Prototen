@@ -1,5 +1,5 @@
 shader_type spatial;
-// Legacy wardrobe enemy shader with plasma burn-through holes (EnemyBody.add_hole).
+// Legacy wardrobe enemy shader with plasma burn-through holes (EnemyBody.add_hole) and the HV-3 flaying (EnemyBody.set_flay).
 render_mode blend_mix, depth_draw_opaque, cull_disabled, diffuse_lambert, specular_schlick_ggx;
 
 uniform sampler2D base_tex : source_color, filter_linear_mipmap;
@@ -67,6 +67,8 @@ float vnoise(vec3 p) {
 			mix(hash3(i + vec3(0, 1, 1)), hash3(i + vec3(1, 1, 1)), f.x), f.y), f.z);
 }
 
+#include "res://src/gore/flay.gdshaderinc"
+
 float limb_s(vec3 p, vec3 a, vec3 b, vec3 c) {
 	vec3 ab = b - a;
 	vec3 bc = c - b;
@@ -100,6 +102,7 @@ void vertex() {
 		VERTEX -= NORMAL * (skin_inset + covered_inset(rest_pos));
 	}
 	VERTEX -= NORMAL * slot_inset[clamp(code / 16, 0, 7)];
+	VERTEX -= NORMAL * FL_SHRINK * flay_amount;
 	if (seg > 0 && ((severed_mask >> (seg - 1)) & 1) != 0) {
 		VERTEX = vec3(0.0);
 	}
@@ -235,6 +238,8 @@ void fragment() {
 	}
 	col = mix(col, blood * (0.8 + 0.4 * n1), bloodied * smoothstep(0.35, 0.75, n1) * 0.8);
 	wet = max(wet, bloodied * 0.6);
+	float flay_h = 0.0;
+	float flay_m = flay_apply(flay_amount, rest_pos, rest_nrm, col, rough, metal, wet, flay_h);
 	float c = char_amount * smoothstep(0.25, 0.75, n1 + 0.35 * char_amount);
 	col = mix(col, vec3(0.03, 0.025, 0.02), c);
 	col = mix(col, vec3(0.025, 0.018, 0.012), hole_char);
@@ -244,6 +249,9 @@ void fragment() {
 	if (debug_view > 0) {
 		vec4 dk = texture(skin_tex, vec2(UV.x * 2.0, UV.y));
 		col = debug_view == 1 ? vec3(dk.a) : (debug_view == 2 ? dk.rgb : m.rgb + vec3(0.0, 0.0, m.a * 0.5));
+	}
+	if (flay_amount > 0.0) {
+		NORMAL = normalize(mix(NORMAL, flay_bump(NORMAL, VERTEX, flay_h, 0.0022), flay_m));
 	}
 	ALBEDO = col;
 	float facing = clamp(dot(NORMAL, VIEW), 0.0, 1.0);
@@ -255,7 +263,7 @@ void fragment() {
 	ROUGHNESS = mix(mix(rough, 0.18, wet), 0.95, c);
 	METALLIC = metal * (1.0 - wet);
 	SPECULAR = mix(0.5, 0.65, wet);
-	AO = orm.r;
+	AO = mix(orm.r, 1.0, flay_m);
 	AO_LIGHT_AFFECT = 0.4;
-	NORMAL_MAP = texture(normal_tex, UV).rgb;
+	NORMAL_MAP = mix(texture(normal_tex, UV).rgb, vec3(0.5, 0.5, 1.0), flay_m);
 }

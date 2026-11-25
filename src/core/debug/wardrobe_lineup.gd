@@ -8,7 +8,8 @@ extends Node
 ## row), CapWardrobeL / CapWardrobeR (three men close), CapWardrobeBack
 ## (the row from behind), CapWardrobeFar (the row from 22 m, as in a fight).
 ## `--wardrobe-bodies` stands the Tripo cast instead (docs/design.md §5.6b):
-## one of each whole-body man, in his role (BODIES).
+## one of each whole-body man, in his role (BODIES). `--wardrobe-flay=<0..1>`
+## strips every man as the HV-3 swarm does (docs/design.md §3.4e).
 
 const ROLES: Array[String] = ["gunman", "gunman", "red_pole", "enforcer", "gunman", "gunman", "red_pole", "gunman"]
 const STANCES: Array[StringName] = [&"idle", &"loco", &"idle", &"loco", &"idle", &"idle", &"loco", &"idle"]
@@ -64,3 +65,6 @@ func _ready() -> void:
 		for arg: String in OS.get_cmdline_user_args():
 			if arg.begins_with("--wardrobe-debug="):
 				e.body.material.set_shader_parameter(&"debug_view", arg.trim_prefix("--wardrobe-debug=").to_int())
+			elif arg.begins_with("--wardrobe-flay="):
+				# Stripped by the HV-3 swarm (docs/design.md §3.4e), bitten first at the chest.
+				e.body.set_flay(arg.trim_prefix("--wardrobe-flay=").to_float(), e.body.chest_position() + Vector3(0, 0, 0.15))

@@ -1,0 +1,55 @@
+[gd_resource type="Resource" script_class="HarvesterHiveData" load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://src/augments/active/hive/harvester_hive_data.gd" id="1"]
+[ext_resource type="Script" path="res://src/body/stat_modifier.gd" id="2"]
+[ext_resource type="Script" path="res://src/body/part_visual.gd" id="3"]
+[ext_resource type="Script" path="res://src/augments/active/hive/harvester_hive.gd" id="4"]
+[ext_resource type="Script" path="res://src/body/stat_requirement.gd" id="5"]
+[ext_resource type="Script" path="res://src/player/viewmodel_config.gd" id="7"]
+
+[sub_resource type="Resource" id="view"]
+script = ExtResource("7")
+eye_position = Vector3(-0.5, 0.28, 0.3)
+look_target = Vector3(1.0, -0.3, -0.15)
+
+[sub_resource type="Resource" id="req_0"]
+script = ExtResource("5")
+stat = &"processing"
+at_least = 1.1
+reason = "steering six hundred harvesters at once takes a co-processor"
+
+[sub_resource type="Resource" id="vis_0"]
+script = ExtResource("3")
+socket = &"root"
+scene_path = "res://assets/augments/actives_body/hv3_harvester_hive/hv3_harvester_hive.gltf"
+model_space = true
+
+[resource]
+script = ExtResource("1")
+id = &"hv3_harvester_hive"
+display_name = "HV-3 Harvester Hive"
+description = "A hive grafted into the left hand. Select it on the D-pad and press LB with a man near the crosshair: the hand comes up, the iris in the palm blooms open, and a few hundred harvester microdrones pour out at him. They wrap him and strip him to the muscle in under a second, then stream back into the palm with what they took, and the hive's reactor turns it into repair nanites in your blood: over a third of your health, back at once. An emergency heal that kills."
+location = 7
+mount = &"hand_left"
+mass_kg = 1.4
+power_draw_w = 10.0
+heat_w = 5.0
+capacity = 2
+modifiers = Array[ExtResource("2")]([])
+requirements = Array[ExtResource("5")]([SubResource("req_0")])
+synergy = "Needs processing ×1.10 (SA-2). Heals 38 % of max health, so a tougher body gets more back. Connectivity extends the reach (16 m, 20.5 m with an MR-1, 25 m with an NL-3). The reactor's heat has to go somewhere: cooling sets how fast the hive rebuilds the swarm (about 22 s at 380 W, 15 s with HS-5). Takes the left hand while it works: the gun goes down for under two seconds. Whoever sees a man eaten loses his nerve."
+visuals = Array[ExtResource("3")]([SubResource("vis_0")])
+behaviour = ExtResource("4")
+short_name = "HV-3"
+deploy_time = 0.35
+recover_time = 0.3
+cooldown_time = 0.3
+charge_max = 1.0
+drain_per_s = 0.0
+regen_per_s = 0.045
+regen_delay = 1.0
+min_to_start = 1.0
+active_power_w = 40.0
+active_heat_w = 120.0
+scene_path = "res://assets/augments/hv3_harvester_hive/hv3_harvester_hive.gltf"
+viewmodel = SubResource("view")
