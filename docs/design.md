@@ -957,6 +957,28 @@ The foundation, so the loop can be played on the phone before any of it is final
 
 Not yet: bosses (the Incense Master came later the same day, §8.7a), the Dao swordsman and the other new types (the Hatchet Man was built next, §8.8a), theme waves, objective waves, an ammunition economy, any meta-progression, sounds for the drop screens beyond the UI ticks.
 
+### 8.11 Boot camp and first-time tips (owner, 2026-11-26)
+
+Asked for: "a guided 3-minute range sequence: move, slide, shoot, knife, dropkick, D-pad and LB, then a small live wave. Add first-time prompts in Survival."
+
+**Boot camp** (`src/levels/boot_camp/boot_camp.gd`, tuning `data/ui/tutorial.tres`). **BOOT CAMP** is second on the main menu; until it has been finished once, the cursor starts on it and the menu says it takes about three minutes. It loads the test range with the default body (RX-9 on D-left, GX-4 on D-down, whatever the loadout screen saved) and the Five-seveN only; the range's own targets are cleared and the View button shows the body without changing it. Nine steps, each a card in the top right (step n / 9, a line of text, a checklist that ticks as you go, a bar for the whole sequence). Nothing pauses; when a step is done the card ticks, chimes, and the next comes up a second later:
+
+1. **Move**: walk to a ring on the floor (a column of light marks it).
+2. **Sprint**: L3, 8 m of sprinting toward the next ring.
+3. **Slide**: B from a sprint, twice.
+4. **Shoot**: LT and RT, three steel plates down (X reloads).
+5. **Knife**: a passive triad man (he reacts and falls, never fires) on a ring; R3 on him.
+6. **Dropkick**: another passive man; A, then A in midair, into him. Four misses count as done.
+7. **Active parts**: D-pad down selects the GX-4, LB deploys it, RT fires a slug, LB puts it away, in that order.
+8. **RX-9**: D-pad left selects it, LB on for a moment, LB off.
+9. **Live fire**: four triad men (three Gunmen and an Enforcer) from the edges of the room, and these shoot back. Dying restarts the wave. No wave 2.
+
+A man shot dead before his step is done stands up again. Stuck for 16 s on a step: the card adds a hint and "Pause → Skip this step" (the pause menu shows that button only in boot camp). The end card shows the time and any skipped steps, then **Survival** (the main menu opens on the kit screen), **Stay on the range** (the range targets, every gun and the loadout screen come back), or **Main menu**. Finishing is remembered (`user://tutorial.cfg`).
+
+**First-time tips in Survival** (`src/ui/tutorial/first_time_tips.gd`): the same card, headed FIRST TIME, for 7 s, one at a time, each tip once ever. Nothing pauses. The moments: the run starts (what Survival is), Mk I (marks come in drops), the first drop screen, the last hostile of a wave (marked on the HUD), a new gun (tap / hold Y), a new active (the D-pad), the first Hatchet Man (slide out of the chop or strike first), the first dogs (R3 out of the air), the first Flamer (shoot the can), the first boss (one knee, then RB), and health under 30 % (break line of sight). Pause → "First-time tips: show again" brings them all back.
+
+**Evidence:** `tests/scene/test_boot_camp.gd` (steps follow the player: the ring, the sprint, real rounds on the plates, R3 on the man; the active checklist only ticks in order; the live wave, the end card, stay), `tests/unit/test_first_time_tips.gd`, `tests/scene/test_survival.gd` (the first tip in a run), `tests/scene/test_main_menu.gd` (boot camp first until done). Captures: `-- --boot-camp --boot-camp-step=<0..9>` on the test range; `-- --survival --capture-tips` on Chinatown (`docs/previews/boot_camp_*.png`, `survival_first_tip.png`).
+
 ### 8.10 Open questions
 
 - **Meta-progression.** Does anything carry over between runs (unlocking guns and actives for the pool, starting doctrines, cosmetics)? Most roguelites need some. Claude's suggestion: unlocks that widen the pool, never raw power.

@@ -73,8 +73,14 @@ const PLAYER_SCENE: PackedScene = preload("res://src/player/player.tscn")
 const SPAWN: Vector3 = Vector3(0, 0, 12)
 const BENCH_POINT: Vector3 = Vector3(0, 0, 3)
 
+## Boot camp on the main menu: the next time the range loads, it runs boot camp.
+static var boot_camp_pending: bool = false
+const BOOT_CAMP_LOADOUT: String = "res://data/body/loadout_default.tres"
+
 var player: Player
 var shooting_range: ShootingRange
+## The guided sequence (docs/design.md §8.11), or null.
+var boot_camp: BootCamp
 var wave_mode: WaveMode
 var combat_hud: CombatHud
 var _bench: FrameBench
@@ -91,7 +97,12 @@ func _ready() -> void:
 	shooting_range.name = "ShootingRange"
 	add_child(shooting_range)
 	Sfx.set_room(0.6)
+	var camp: bool = boot_camp_pending or "--boot-camp" in OS.get_cmdline_user_args()
+	boot_camp_pending = false
 	player = PLAYER_SCENE.instantiate() as Player
+	if camp:
+		# The default body whatever the loadout screen saved: RX-9 on D-left, GX-4 on D-down.
+		player.loadout = (load(BOOT_CAMP_LOADOUT) as BodyLoadout).copy()
 	add_child(player)
 	player.global_position = SPAWN
 	player.spawn_point = SPAWN
@@ -117,6 +128,8 @@ func _ready() -> void:
 	add_child(wave_mode)
 	EventBus.wave_mode_requested.connect(wave_mode.toggle)
 	EventBus.benchmark_requested.connect(start_benchmark)
+	if camp:
+		start_boot_camp.call_deferred()
 	# `-- --bench=<seconds>`: run the benchmark at startup and quit (cloud/CI use).
 	for arg: String in OS.get_cmdline_user_args():
 		if arg == "--waves":
@@ -201,6 +214,17 @@ func _ready() -> void:
 		if arg.begins_with("--bench="):
 			_quit_after_bench = true
 			start_benchmark.call_deferred(arg.trim_prefix("--bench=").to_float())
+
+
+## Boot camp (docs/design.md §8.11) in this room.
+func start_boot_camp() -> BootCamp:
+	if boot_camp and is_instance_valid(boot_camp):
+		return boot_camp
+	boot_camp = BootCamp.new()
+	boot_camp.name = "BootCamp"
+	boot_camp.room = self
+	add_child(boot_camp)
+	return boot_camp
 
 
 func _process(_delta: float) -> void:

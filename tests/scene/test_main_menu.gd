@@ -100,3 +100,13 @@ func test_options_opens_the_settings_only() -> void:
 	assert_true(PauseMenu.is_open())
 	assert_true(PauseMenu.options_only)
 	PauseMenu.close()
+
+
+func test_boot_camp_comes_first_until_it_is_done() -> void:
+	TutorialStore.clear_for_tests()
+	menu._focus()
+	assert_eq(get_viewport().gui_get_focus_owner(), menu._buttons["boot_camp"], "first time: the cursor on boot camp")
+	TutorialStore.mark(&"boot_camp_done")
+	menu._focus()
+	assert_eq(get_viewport().gui_get_focus_owner(), menu._buttons["survival"], "after: on Survival")
+	TutorialStore.clear_for_tests()

@@ -17,7 +17,13 @@ const SPAWNS: Array[Vector3] = [
 	Vector3(-13.5, 0.0, 6.0), Vector3(14.0, 0.0, 4.0), Vector3(0.0, 3.5, -14.0), Vector3(-2.0, 0.0, -7.5),
 ]
 
+## A wave cleared (one-wave mode only: boot camp's live fire).
+signal one_wave_cleared
+
 var room: TestRoom
+## Set: a single wave of exactly these roles, then it stops (boot camp, docs/design.md §8.11).
+## Dying restarts that wave.
+var one_wave: Array[String] = []
 var squad: Squad
 var wave: int = 0
 var running: bool = false
@@ -91,7 +97,7 @@ static func composition(n: int) -> Array[String]:
 
 func _next_wave() -> void:
 	wave += 1
-	_queue = composition(wave)
+	_queue = one_wave.duplicate() if not one_wave.is_empty() else composition(wave)
 	_spawn_timer = 1.5
 	EventBus.wave_changed.emit(wave, -1)
 
@@ -117,6 +123,11 @@ func _process(delta: float) -> void:
 		return
 	var left: int = squad.fighting_count()
 	if left == 0:
+		if not one_wave.is_empty():
+			running = false
+			EventBus.wave_changed.emit(wave, 0)
+			one_wave_cleared.emit()
+			return
 		if _break <= 0.0:
 			_break = BREAK_TIME
 			EventBus.wave_changed.emit(wave, 0)

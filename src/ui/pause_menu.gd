@@ -14,7 +14,7 @@ var _title: Label
 ## Opened from the main menu's Options: only the settings (owner, 2026-11-14).
 var options_only: bool = false
 ## Buttons that only make sense in a running game.
-const GAME_ONLY: Array[String] = ["tuning", "map", "waves", "bench", "sweep", "main_menu"]
+const GAME_ONLY: Array[String] = ["skip_step", "tuning", "map", "waves", "bench", "sweep", "main_menu"]
 
 
 func _ready() -> void:
@@ -46,6 +46,11 @@ func _show_game_buttons(on: bool) -> void:
 	var survival: bool = get_tree().current_scene != null and get_tree().current_scene.get_node_or_null(^"Survival") != null
 	for id: String in GAME_ONLY:
 		_buttons[id].visible = on and not (survival and id in ["map", "waves", "sweep"])
+	# Boot camp (docs/design.md §8.11): skip the step; no wave toggle.
+	var camp: bool = _boot_camp() != null
+	_buttons["skip_step"].visible = on and camp
+	if camp:
+		_buttons["waves"].visible = false
 	_title.text = "PAUSED" if on else "OPTIONS"
 
 
@@ -100,6 +105,7 @@ func _build() -> void:
 	title.add_theme_font_size_override("font_size", 28)
 	_list.add_child(title)
 	_add("resume", close)
+	_add("skip_step", _on_skip_step)
 	_add("tuning", _on_tuning)
 	_add("map", _on_map)
 	_add("waves", _on_waves)
@@ -118,6 +124,7 @@ func _build() -> void:
 			Settings.step_look_sensitivity(1 if event.is_action_pressed(&"ui_right") else -1)
 			_buttons["look_speed"].accept_event())
 	_add("overlay", func() -> void: Settings.set_overlay_visible(not Settings.overlay_visible))
+	_add("tips", _on_tips)
 	_add("bench", _on_bench)
 	_add("sweep", _on_sweep)
 	_add("main_menu", _on_main_menu)
@@ -169,6 +176,8 @@ func _refresh() -> void:
 	_label("bench", "Run benchmark (%d s)" % roundi(BENCH_SECONDS))
 	_label("sweep", "Map cost test (~%d s, Chinatown)" % roundi(FeatureSweep.total_seconds()))
 	_label("quit", "Quit")
+	_label("skip_step", "Skip this step")
+	_label("tips", "First-time tips: show again")
 
 
 func _on_renderer() -> void:
@@ -207,6 +216,24 @@ func _on_main_menu() -> void:
 	close()
 	ChinatownMap.menu_on_load = true
 	get_tree().change_scene_to_file.call_deferred("res://src/levels/chinatown/chinatown.tscn")
+
+
+## Boot camp's node (untyped: this autoload loads before the game's classes).
+func _boot_camp() -> Node:
+	var sc: Node = get_tree().current_scene
+	return sc.get_node_or_null(^"BootCamp") if sc else null
+
+
+func _on_skip_step() -> void:
+	var camp: Node = _boot_camp()
+	close()
+	if camp and camp.has_method(&"skip_step"):
+		camp.call(&"skip_step")
+
+
+func _on_tips() -> void:
+	TutorialStore.reset_tips()
+	_notice.text = "Every Survival tip will show again, once each."
 
 
 func _on_waves() -> void:

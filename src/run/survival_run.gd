@@ -41,6 +41,8 @@ class PendingDrop:
 
 var _pending: Array[PendingDrop] = []
 var over: bool = false
+## First-time prompts (docs/design.md §8.11); null in cloud captures unless --capture-tips.
+var tips: FirstTimeTips
 
 
 func _ready() -> void:
@@ -71,6 +73,13 @@ func begin(doctrine: Doctrine, gun: WeaponData, active: ActivePartData, seed_val
 	director.wave_cleared.connect(_on_wave_cleared)
 	add_child(director)
 	director.start()
+	if not CaptureDirector.is_capturing() or "--capture-tips" in OS.get_cmdline_user_args():
+		tips = FirstTimeTips.new()
+		tips.name = "Tips"
+		tips.player = player
+		add_child(tips)
+		tips.watch(director)
+		tips.run_started()
 	_after(1.5, _next_wave)
 	if CaptureDirector.is_capturing():
 		_capture_setup()
@@ -172,6 +181,8 @@ func _show_next_drop() -> void:
 		_after(config.next_wave_delay, _next_wave)
 		return
 	var p: PendingDrop = _pending.pop_front()
+	if tips:
+		tips.trigger(&"drop")
 	drop_screen.show_offers(p.offers, p.heading, p.sub, p.accent)
 
 
@@ -180,6 +191,10 @@ func _on_taken(o: RunState.Offer) -> void:
 	_dress_player()
 	if o.item.kind() == RunItem.Kind.WEAPON:
 		player.weapon().give_gun(o.item.item as WeaponData)
+		if tips:
+			tips.trigger(&"new_gun")
+	elif o.item.kind() == RunItem.Kind.ACTIVE and not o.upgrade and tips:
+		tips.trigger(&"new_active")
 	_refill()
 	_show_next_drop()
 
