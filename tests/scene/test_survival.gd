@@ -133,3 +133,12 @@ func test_wave_5_brings_the_incense_master_and_his_drop() -> void:
 	gut.p("boss drop: %s (%d offers)" % [o.title(), run.drop_screen.offers.size()])
 	run.drop_screen.take()
 	assert_true(map.player.loadout.has_part(&"gx4_gauss_arm"), "on the body")
+
+
+func test_first_run_shows_its_first_tip() -> void:
+	TutorialStore.clear_for_tests()
+	var run: SurvivalRun = await _start()
+	assert_not_null(run.tips, "first-time tips in a run")
+	await wait_until(func() -> bool: return run.tips.showing == &"run_start", run.tips.config.run_start_delay + 2.0)
+	assert_eq(run.tips.showing, &"run_start")
+	assert_has(run.tips.queue, &"mark_one", "the Mk I tip waits its turn")

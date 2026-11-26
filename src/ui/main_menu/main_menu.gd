@@ -2,8 +2,9 @@ class_name MainMenu
 extends Node3D
 ## The main menu (owner, 2026-11-14): the game opens on the operative,
 ## helmet off, leaning on the front of the Sea View restaurant on the
-## Chinatown docks at night, smoking. Left: Survival, Sandbox, Loadout,
-## Map, Options, Quit. Survival (docs/design.md §8) opens the kit screen
+## Chinatown docks at night, smoking. Left: Survival, Boot camp, Sandbox,
+## Loadout, Map, Options, Quit. Boot camp (docs/design.md §8.11) has the
+## cursor until it has been finished once. Survival (docs/design.md §8) opens the kit screen
 ## and starts a run on this map. Sandbox is the open mode: Loadout opens the
 ## loadout screen over the scene with him in the clear left quarter, wearing
 ## every part as it's browsed and installed; what's built is saved and goes
@@ -26,6 +27,8 @@ const MAPS: Array[Array] = [
 	["res://src/levels/hotel/hotel.tscn", "Golden Dragon hotel"],
 	["res://src/levels/test_room.tscn", "Test range"],
 ]
+## Boot camp's end card picked Survival: the menu opens on the kit screen.
+static var open_kit_on_load: bool = false
 const C_ACCENT: Color = Color(0.36, 0.86, 0.78)
 const C_TEXT: Color = Color(0.86, 0.88, 0.88)
 const C_DIM: Color = Color(0.52, 0.58, 0.6)
@@ -81,6 +84,9 @@ func _ready() -> void:
 	status.closed.connect(_on_loadout_closed)
 	_refresh()
 	_focus.call_deferred()
+	if open_kit_on_load:
+		open_kit_on_load = false
+		open_kit.call_deferred()
 	# Cloud captures: --capture-menu-loadout opens the loadout screen;
 	# --capture-menu-preset=N also puts the cursor on preset N (he wears it);
 	# --pose-t=<s> holds his cigarette cycle at that time.
@@ -206,6 +212,7 @@ func _build_ui() -> void:
 	_list.add_theme_constant_override("separation", 2)
 	box.add_child(_list)
 	_add("survival", "SURVIVAL", open_kit)
+	_add("boot_camp", "BOOT CAMP", begin_boot_camp)
 	_add("begin", "SANDBOX", begin)
 	_add("loadout", "LOADOUT", open_loadout)
 	_add("map", "MAP", func() -> void: cycle_map(1))
@@ -265,7 +272,8 @@ func _add(id: String, text: String, cb: Callable) -> void:
 
 func _focus() -> void:
 	if _panel.visible and is_inside_tree():
-		_buttons["survival"].grab_focus()
+		# First time in: the cursor starts on boot camp.
+		_buttons["survival" if TutorialStore.boot_camp_done() else "boot_camp"].grab_focus()
 
 
 func map_path() -> String:
@@ -285,6 +293,8 @@ func _refresh() -> void:
 		acts.append(a.display_name)
 	_summary.text = "%s  ·  %d parts\n%s" % [loadout.display_name, loadout.parts.size(),
 			"  ·  ".join(acts) if not acts.is_empty() else "no actives"]
+	if not TutorialStore.boot_camp_done():
+		_summary.text = "New here? Boot camp walks you through the controls in about three minutes.\n\n" + _summary.text
 
 
 func _on_map_input(event: InputEvent) -> void:
@@ -375,6 +385,18 @@ func _on_kit_confirmed(doctrine: Doctrine, gun: WeaponData, active: ActivePartDa
 	var tw: Tween = create_tween()
 	tw.tween_property(_black, "color:a", 1.0, 0.45)
 	tw.tween_callback(func() -> void: survival_requested.emit(doctrine, gun, active))
+
+
+## Boot camp (docs/design.md §8.11): the test range, with the guided sequence.
+func begin_boot_camp() -> void:
+	if _starting:
+		return
+	_starting = true
+	get_viewport().gui_release_focus()
+	TestRoom.boot_camp_pending = true
+	var tw: Tween = create_tween()
+	tw.tween_property(_black, "color:a", 1.0, 0.45)
+	tw.tween_callback(func() -> void: begin_requested.emit("res://src/levels/test_room.tscn"))
 
 
 func begin() -> void:
