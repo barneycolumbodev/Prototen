@@ -8,8 +8,8 @@ the paint channel it belongs to (BodyColors.SUIT_CHANNELS index + 1; 0 = leave a
 
 How a texel is classified:
 - what it is, from the baked ORM and emission maps: each source material has its own roughness/metallic
-  (operative: weave 0.60, plate 0.34, sole 0.88, seal 0.45, trim metal 0.95, visor rough 0.04; arms: glove
-  0.34, plate 0.42 + metal 0.25, cuff 0.50, sleeve 0.88), lights are whatever glows;
+  (operative: weave 0.60, plate 0.34, sole 0.88, seal 0.45, trim metal 0.95, visor rough 0.04; arms: hand shell
+  0.22, forearm shell 0.33, chassis metal 0.44, joints metal 0.28, pads 0.62, weave 0.86), lights are whatever glows;
 - where it is, from the mesh: every triangle is drawn into UV space tagged with its mesh (suit or helmet) and
   the bone that moves it most (torso, arms, hands, legs, boots).
 
@@ -225,11 +225,12 @@ def arms(name):
     rough, metal = orm[..., 1], orm[..., 2]
     used = (rough > 0.02) | (metal > 0.02)
     mask = np.zeros((SIZE, SIZE), np.uint8)
-    mask[used & (rough < 0.38) & (metal < 0.08)] = HANDS            # glove polymer
-    mask[used & (metal >= 0.08)] = ARMS                              # glove plates
-    mask[used & (rough >= 0.46) & (rough < 0.7) & (metal < 0.08)] = TRIM   # cuff
-    mask[used & (rough >= 0.7)] = UNDERSUIT                          # sleeve fabric
-    mask[used & (rough >= 0.38) & (rough < 0.46) & (metal < 0.08)] = HANDS
+    # The prosthetic arms (raw_assets/_lib/prosthetic.py SPEC): bright metal joints and rubber pads keep their look.
+    dielectric = used & (metal < 0.5)
+    mask[dielectric & (rough < 0.27)] = HANDS                        # hand shells
+    mask[dielectric & (rough >= 0.27) & (rough < 0.45)] = ARMS       # forearm shells
+    mask[used & (metal >= 0.5) & (rough >= 0.38)] = TRIM             # dark chassis, collars
+    mask[dielectric & (rough >= 0.75)] = UNDERSUIT                   # weave: wrist neck, sleeve
     mask[em.max(-1) > 0.08] = LIGHTS
     write(name, mask, tex)
 

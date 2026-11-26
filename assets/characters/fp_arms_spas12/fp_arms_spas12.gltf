@@ -60,7 +60,7 @@
 	],
 	"meshes":[
 		{
-			"name":"Cube.010",
+			"name":"R_middle_0_link.001",
 			"primitives":[
 				{
 					"attributes":{
@@ -132,119 +132,119 @@
 		{
 			"bufferView":0,
 			"componentType":5126,
-			"count":3151,
+			"count":9446,
 			"max":[
-				0.010614454746246338,
-				-0.05213150382041931,
-				0.25034472346305847
+				0.009484507143497467,
+				-0.05355962738394737,
+				0.26955023407936096
 			],
 			"min":[
-				-0.40575307607650757,
-				-0.3657507598400116,
-				-0.037843916565179825
+				-0.4346374273300171,
+				-0.3870464861392975,
+				-0.035738103091716766
 			],
 			"type":"VEC3"
 		},
 		{
 			"bufferView":1,
 			"componentType":5126,
-			"count":3151,
+			"count":9446,
 			"type":"VEC3"
 		},
 		{
 			"bufferView":2,
 			"componentType":5126,
-			"count":3151,
+			"count":9446,
 			"type":"VEC2"
 		},
 		{
 			"bufferView":3,
 			"componentType":5123,
-			"count":11256,
+			"count":27636,
 			"type":"SCALAR"
 		},
 		{
 			"bufferView":4,
 			"componentType":5126,
-			"count":3368,
+			"count":9625,
 			"max":[
-				0.35688096284866333,
-				-8.076333324424922e-05,
-				0.04491667076945305
+				0.3562621474266052,
+				-0.001947443000972271,
+				0.04242859035730362
 			],
 			"min":[
-				-0.05302205681800842,
-				-0.3365365266799927,
-				-0.2611929774284363
+				-0.0808061957359314,
+				-0.3599297106266022,
+				-0.27901819348335266
 			],
 			"type":"VEC3"
 		},
 		{
 			"bufferView":5,
 			"componentType":5126,
-			"count":3368,
+			"count":9625,
 			"type":"VEC3"
 		},
 		{
 			"bufferView":6,
 			"componentType":5126,
-			"count":3368,
+			"count":9625,
 			"type":"VEC2"
 		},
 		{
 			"bufferView":7,
 			"componentType":5123,
-			"count":12066,
+			"count":28740,
 			"type":"SCALAR"
 		}
 	],
 	"bufferViews":[
 		{
 			"buffer":0,
-			"byteLength":37812,
+			"byteLength":113352,
 			"byteOffset":0,
 			"target":34962
 		},
 		{
 			"buffer":0,
-			"byteLength":37812,
-			"byteOffset":37812,
+			"byteLength":113352,
+			"byteOffset":113352,
 			"target":34962
 		},
 		{
 			"buffer":0,
-			"byteLength":25208,
-			"byteOffset":75624,
+			"byteLength":75568,
+			"byteOffset":226704,
 			"target":34962
 		},
 		{
 			"buffer":0,
-			"byteLength":22512,
-			"byteOffset":100832,
+			"byteLength":55272,
+			"byteOffset":302272,
 			"target":34963
 		},
 		{
 			"buffer":0,
-			"byteLength":40416,
-			"byteOffset":123344,
+			"byteLength":115500,
+			"byteOffset":357544,
 			"target":34962
 		},
 		{
 			"buffer":0,
-			"byteLength":40416,
-			"byteOffset":163760,
+			"byteLength":115500,
+			"byteOffset":473044,
 			"target":34962
 		},
 		{
 			"buffer":0,
-			"byteLength":26944,
-			"byteOffset":204176,
+			"byteLength":77000,
+			"byteOffset":588544,
 			"target":34962
 		},
 		{
 			"buffer":0,
-			"byteLength":24132,
-			"byteOffset":231120,
+			"byteLength":57480,
+			"byteOffset":665544,
 			"target":34963
 		}
 	],
@@ -256,7 +256,7 @@
 	],
 	"buffers":[
 		{
-			"byteLength":255252,
+			"byteLength":723024,
 			"uri":"fp_arms_spas12.bin"
 		}
 	]
