@@ -110,6 +110,7 @@ func _build() -> void:
 	_add("map", _on_map)
 	_add("waves", _on_waves)
 	_add("gore", Settings.cycle_gore_level)
+	_add("music", Settings.cycle_music_level)
 	_add("renderer", _on_renderer)
 	_add("scale", Settings.cycle_render_scale)
 	_add("adaptive", Settings.toggle_adaptive_resolution)
@@ -159,6 +160,7 @@ func _refresh() -> void:
 	var rolling: bool = wm is RollingSpawner
 	_label("waves", ("Enemies: %s" if rolling else "Wave mode: %s") % (("stop" if on else "start") if not rolling else ("on" if on else "off")))
 	_label("gore", "Gore: %s" % Settings.gore_name())
+	_label("music", "Music: %s" % Settings.music_name())
 	_label("tuning", "Gun tuning")
 	var now: String = Settings.current_renderer()
 	var next: String = Settings.next_start_renderer()

@@ -183,6 +183,7 @@ func _show_next_drop() -> void:
 	var p: PendingDrop = _pending.pop_front()
 	if tips:
 		tips.trigger(&"drop")
+	EventBus.music_cue.emit(&"supply_drop")
 	drop_screen.show_offers(p.offers, p.heading, p.sub, p.accent)
 
 
@@ -195,6 +196,8 @@ func _on_taken(o: RunState.Offer) -> void:
 			tips.trigger(&"new_gun")
 	elif o.item.kind() == RunItem.Kind.ACTIVE and not o.upgrade and tips:
 		tips.trigger(&"new_active")
+	if o.item.kind() == RunItem.Kind.ACTIVE and o.mark >= RunItem.MAX_MARK:
+		EventBus.music_cue.emit(&"mk3")
 	_refill()
 	_show_next_drop()
 

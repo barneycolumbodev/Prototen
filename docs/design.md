@@ -676,6 +676,21 @@ Decided: see "Visuals" in §2. No anime or cel shading.
   2026-11-11 (owner: still "really hard to see", "quite small"): 1.12 scale, a fill light from the viewer (`fill_light`), and clothes from a wardrobe with many bright colours, prints and tattoos instead of one dark jacket per role (§5.6).
 - **Owner on the look** (2026-11-05): the weapons are detailed and look good; the environment has "an eerie PS2 / early-2000s PC" vibe with the black sky. That vibe is acceptable if the game runs well and the gameplay carries, but more polish and a more cohesive style are welcome, never at the cost of frame rate. First step: a lit night sky instead of black (§7.1).
 
+### 6.1 Music: the adaptive score (2026-11-27)
+
+Asked for 2026-11-27: "Adaptive Industrial Combat Score & Event Stingers". Combat ran in silence and the supply drop reused a UI click; music should tell you the threat is rising, make RX-9 feel seismic and punctuate wave clears and boss drops.
+
+- **Three layers, one loop.** Original, synthesized (`raw_assets/audio/build_music.py`, numpy/scipy, OGG Vorbis): D minor with a Phrygian flat second, 120 BPM, 32 bars (64 s), one chord plan so any mix is in key. Played together as one `AudioStreamSynchronized`, so they never drift. 2.6 MB for the stems and stingers (budget 6 MB); Vorbis stays compressed in RAM.
+  - **Tension Pulse**: sub-bass drone that glides with the chords, a heartbeat sub pulse, a distant bowed-steel drone, far-off clanks, a muted machine tick, in a big reverb. Breathers and sneaking.
+  - **Combat Drive**: syncopated industrial kit (distorted kick, clanging snare, anvil hits, sixteenth hats) and a distorted saw bass riding the kick.
+  - **Boss Threat**: low brass braams (detuned saw stacks through a swelling filter, driven), heavy toms, sheet-metal crashes, chains.
+- **When each plays** (`MusicDirector`, autoload): silent on the main menu and in boot camp drills. A wave or the rolling spawns arm it: Tension alone; Combat fades in when a man is in COMBAT (or alert enough) within 70 m, a dog is close, or you take a hit, and holds 7 s after; Tension stays underneath as the floor. Boss Threat comes in hard while a boss is up and drops out when he goes down on one knee. Death plays the run-over stinger and the score fades out.
+- **RX-9**: the Music bus gets a resonant low-pass pulled to 340 Hz and the score's pitch and tempo bend to 0.86 with dilation (half that much under the weapon wheel's slow motion): a thick underwater throb.
+- **Golden Dragon**: the lobby and bar speakers play on a "Lounge" bus. During a wave or a fight it ducks 16 dB and goes muffled behind the score; between waves it swells back over 5 s and the Tension layer drops 8 dB so the jazz carries the breather.
+- **Stingers** (1.6–2.6 s, in key, the layers dip 6 dB under them): wave start (riser into a slam and a braam), wave cleared (a hydraulic release and a ringing fifth), supply drop (three latches and a ping; it replaced the UI click), Mk III (a capacitor charge into a power-chord hit; any active reaching Mk III), boss kneel (a slam, a sheet crash, a braam that sags a semitone), run over (a braam falling a fourth).
+- **Settings**: Pause → Music: Full / Medium / Low / Off.
+- Tuning: `data/audio/music.tres` (layer levels, fades, hold, engage range, dilation filter and pitch, lounge duck, stinger levels).
+
 *(proposal)*
 
 - Detail goes first to the first-person arms, weapons and augment hardware, since they're always on screen. Then hit effects and gore, then lighting, then enemies, then environments.

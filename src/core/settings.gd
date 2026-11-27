@@ -45,6 +45,8 @@ var look_preset: String = "standard"
 var look_sensitivity: float = 1.0
 ## Vertical field of view in degrees. 60 vertical ≈ 104 horizontal on the 20:9 target phone.
 var vertical_fov: float = 60.0
+## Score volume: 0 off, 1 low, 2 medium, 3 full (MusicDirector.LEVEL_DB).
+var music_level: int = 3
 ## Last benchmark per renderer: { "mobile": {...}, "gl_compatibility": {...} }
 var bench_results: Dictionary = {}
 
@@ -72,6 +74,8 @@ func load_settings() -> void:
 	bloom = cfg.get_value("video", "bloom_v2", bloom)
 	var gore: int = cfg.get_value("video", "gore_level", gore_level)
 	gore_level = clampi(gore, 0, 2)
+	var music: int = cfg.get_value("audio", "music_level", music_level)
+	music_level = clampi(music, 0, 3)
 	look_preset = cfg.get_value("input", "look_preset", look_preset)
 	var sens: float = cfg.get_value("input", "look_sensitivity", look_sensitivity)
 	look_sensitivity = clampf(sens, 0.2, 3.0)
@@ -91,6 +95,7 @@ func save_settings() -> void:
 	cfg.set_value("debug", "overlay_visible", overlay_visible)
 	cfg.set_value("video", "bloom_v2", bloom)
 	cfg.set_value("video", "gore_level", gore_level)
+	cfg.set_value("audio", "music_level", music_level)
 	cfg.set_value("debug", "bench_results", bench_results)
 	cfg.set_value("input", "look_preset", look_preset)
 	cfg.set_value("input", "look_sensitivity", look_sensitivity)
@@ -169,6 +174,15 @@ func cycle_gore_level() -> void:
 
 func gore_name() -> String:
 	return ["Off", "Standard", "Maximum"][clampi(gore_level, 0, 2)]
+
+
+func cycle_music_level() -> void:
+	music_level = (music_level + 3) % 4  # full → medium → low → off → full
+	_commit()
+
+
+func music_name() -> String:
+	return ["Off", "Low", "Medium", "Full"][clampi(music_level, 0, 3)]
 
 
 func set_overlay_visible(value: bool) -> void:

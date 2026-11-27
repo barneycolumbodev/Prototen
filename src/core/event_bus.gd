@@ -42,6 +42,11 @@ signal dropkick_impact(enemy: Node, push: float)
 ## Pause menu: start or stop wave mode.
 @warning_ignore("unused_signal")
 signal wave_mode_requested
+## A musical moment (MusicDirector plays sting_<cue>): &"supply_drop",
+## &"mk3", &"boss_kneel" (wave start/clear and run over come from
+## wave_changed and player_died).
+@warning_ignore("unused_signal")
+signal music_cue(cue: StringName)
 ## Rolling spawns (open maps): kills so far, enemies in the fight or on their way.
 @warning_ignore("unused_signal")
 signal score_changed(kills: int, hostiles: int)

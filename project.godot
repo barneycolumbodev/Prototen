@@ -26,6 +26,7 @@ Grenades="*res://src/weapons/grenades.gd"
 TimeControl="*res://src/core/time_control.gd"
 Fx="*res://src/vfx/fx.gd"
 Sfx="*res://src/audio/sfx.gd"
+MusicDirector="*res://src/audio/music_director.gd"
 Gore="*res://src/gore/gore.gd"
 RagdollBudget="*res://src/gore/ragdoll_budget.gd"
 

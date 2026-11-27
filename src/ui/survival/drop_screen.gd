@@ -64,7 +64,7 @@ func show_offers(p_offers: Array[RunState.Offer], p_heading: String, p_sub: Stri
 	visible = true
 	_open_time = Time.get_ticks_msec()
 	get_tree().paused = true
-	Sfx.play_ui(&"draw", -2.0)
+	# Opening sound: the supply-drop stinger (MusicDirector, music_cue from SurvivalRun).
 
 
 func _build_cards() -> void:

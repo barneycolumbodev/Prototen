@@ -435,6 +435,8 @@ func _build_sounds() -> void:
 		a.autoplay = true
 		add_child(a)
 		a.global_position = ChinatownMap.fpos(m)
+		if ChinatownMap.fstr(m, "sound").ends_with("_music"):
+			MusicDirector.register_lounge(a)
 	var beds: Dictionary[String, float] = {"rain": -9.0, "harbour": -12.0}
 	for bed: String in beds:
 		var path2: String = "res://assets/audio/sfx/amb_%s.wav" % bed

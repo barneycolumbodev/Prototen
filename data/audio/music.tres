@@ -1,0 +1,40 @@
+[gd_resource type="Resource" script_class="MusicConfig" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/audio/music_config.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+tension_db = -4.0
+tension_combat_db = -9.0
+tension_boss_db = -14.0
+combat_db = -2.0
+combat_boss_db = -6.0
+boss_db = -1.0
+lounge_tension_db = -8.0
+fade_in = 1.6
+fade_out = 4.0
+boss_fade_in = 0.8
+combat_hold = 7.0
+stop_fade = 3.0
+engage_range = 70.0
+engage_awareness = 0.85
+scan_interval = 0.25
+dilation_cutoff_hz = 340.0
+dilation_resonance = 1.4
+dilation_pitch = 0.86
+slowmo_weight = 0.5
+dilation_ease = 0.25
+lounge_duck_db = -16.0
+lounge_duck_cutoff_hz = 900.0
+lounge_duck_time = 1.2
+lounge_swell_time = 5.0
+stinger_db = Dictionary[StringName, float]({
+&"boss_kneel": -1.0,
+&"mk3": -2.0,
+&"run_over": -1.0,
+&"supply_drop": -5.0,
+&"wave_cleared": -3.0,
+&"wave_start": -2.0
+})
+stinger_duck_db = -6.0
+stinger_duck_time = 1.6

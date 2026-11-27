@@ -877,3 +877,31 @@ Please try:
 - Measured:
 - Notes from the owner:
 - Follow-ups: the hands are the shared pistol hands and don't move during the reload (the speedloader floats in on its own), as on the other guns; a real reload goes muzzle down, but these hands would then hide the cylinder.
+
+## The adaptive score and stingers — 2026-11-27 (waiting for the owner)
+
+Asked (2026-11-27): "Adaptive Industrial Combat Score & Event Stingers" — a music director with three layers that follow the fight, RX-9 dropping the score under water, the hotel's jazz ducking in combat, and short stingers for the big moments.
+
+What's in the APK:
+- **Music in every fight**, silent on the menu. Survival, the waves in the range, and Sandbox on both maps.
+- **Three layers** that fade with the fight: a dark sub-bass and distant-metal **Tension Pulse** while nobody is shooting; a syncopated industrial **Combat Drive** that comes in when men engage you (or you get hit) and stays 7 s after; a low-brass and heavy-drum **Boss Threat** while the Incense Master is up.
+- **RX-9**: the score sinks into a muffled, slower, lower throb while time is dilated.
+- **Golden Dragon**: the lobby and bar jazz drops back and goes muffled during a wave or a fight, and swells back between waves.
+- **Stingers**: wave start, wave cleared, supply drop (instead of the old click), an active reaching Mk III, the boss going down on one knee, and death.
+- **Pause → Music**: Full / Medium / Low / Off.
+
+Listen before playing: `docs/previews/music_preview.mp3` (72 s, mixed offline from the game's own files): tension → wave start → combat → RX-9 at 0:20 → boss at 0:31 → kneel → wave cleared → supply drop → Mk III → run over.
+
+Cloud evidence: `tests/unit/test_music.gd` (4: files and the 6 MB budget, layers following the fight, the RX-9 filter and pitch, the lounge ducking and swelling) passes. A headless run of the hotel captured the Music bus mixing (combat adds about 5 dB over tension) and the Lounge bus at −16 dB with men engaged. I can't hear the music; the spectrograms look as intended, but how it sounds is your call.
+
+Please try:
+1. Is the music too loud or too quiet against the guns? (Pause → Music, and tell me which step felt right.)
+2. Does Combat Drive come in at the right moment, and does it drop out too soon or too late after a fight?
+3. RX-9: does the under-water sound feel heavy, or just muddy?
+4. The stingers: any that annoy after a few waves?
+5. In the hotel: does the jazz come back nicely between waves?
+
+- Device / renderer / settings:
+- Measured:
+- Notes from the owner:
+- Follow-ups: the Straw Sandal (next boss) gets the Boss Threat layer automatically; a theme of his own could come later.

@@ -576,6 +576,7 @@ func go_down() -> void:
 	e._release_token()
 	e.vocal(&"death_groan", 4.0, 0.03)
 	Sfx.play_at(&"body_fall", e.global_position + Vector3.UP * 0.4, 4.0, 0.05)
+	EventBus.music_cue.emit(&"boss_kneel")
 	if hw:
 		hw.set_glow(cfg.glow_idle * 0.4)
 	execution = BossExecution.new()
