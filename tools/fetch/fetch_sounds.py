@@ -29,6 +29,31 @@ MAX_BYTES = 900 * 1024 * 1024
 KEEP_DEFAULT = r"shotgun|870|mossberg|pump|12 ?ga|benelli|spas"
 
 
+# sound_sources.json "flac": true re-encodes kept archive members to 48 kHz FLAC
+# (the library ships 96 kHz/24-bit WAV, about 6x the size, for nothing a game plays).
+TRANSCODE = False
+
+
+def ffmpeg_exe() -> str:
+    ff = shutil.which("ffmpeg")
+    if not ff:
+        import imageio_ffmpeg  # pip install imageio-ffmpeg (no apt needed)
+        ff = imageio_ffmpeg.get_ffmpeg_exe()
+    return ff
+
+
+def maybe_flac(dst: str) -> str:
+    if not TRANSCODE or not re.search(r"\.(wav|aif|aiff)$", dst, re.I):
+        return dst
+    out = re.sub(r"\.(wav|aif|aiff)$", ".flac", dst, flags=re.I)
+    r = subprocess.run([ffmpeg_exe(), "-y", "-loglevel", "error", "-i", dst, "-ar", "48000",
+                        "-sample_fmt", "s16", "-c:a", "flac", out], capture_output=True)
+    if r.returncode == 0 and os.path.isfile(out):
+        os.remove(dst)
+        return out
+    return dst
+
+
 # Wikimedia throttles browser-like agents from scripts; it wants a plain client name.
 UA_WIKI = "GenericAssetFetcher/1.0 (one-off media download; python-urllib)"
 
@@ -69,11 +94,11 @@ def save_file(data: bytes, path: str, keep: str) -> dict:
         for n in z.namelist():
             if n.endswith("/") or not re.search(keep, n, re.I):
                 continue
-            if not re.search(r"\.(wav|ogg|mp3|flac|aif|aiff|txt|pdf)$", n, re.I):
+            if not re.search(r"\.(wav|ogg|mp3|flac|aif|aiff|txt|pdf|csv)$", n, re.I):
                 continue
             dst = os.path.join(base, safe(n.replace("/", "__")))
             open(dst, "wb").write(z.read(n))
-            kept.append(dst)
+            kept.append(maybe_flac(dst))
         return {"path": base, "bytes": len(data), "kept": kept, "all_members": z.namelist()[:2000]}
     if path.lower().endswith(".7z") and len(data) > 20 * 1024 * 1024:
         base = path[:-3]
@@ -83,7 +108,7 @@ def save_file(data: bytes, path: str, keep: str) -> dict:
         open(arc, "wb").write(data)
         listing = subprocess.run(["7z", "l", "-slt", arc], capture_output=True, text=True).stdout
         members = [l[7:] for l in listing.splitlines() if l.startswith("Path = ")][1:]
-        want = [m for m in members if re.search(keep, m, re.I) and re.search(r"\.(wav|ogg|mp3|flac|aif|aiff|txt|pdf)$", m, re.I)]
+        want = [m for m in members if re.search(keep, m, re.I) and re.search(r"\.(wav|ogg|mp3|flac|aif|aiff|txt|pdf|csv)$", m, re.I)]
         kept = []
         if want:
             lst = os.path.join(tmp, "list.txt")
@@ -94,7 +119,7 @@ def save_file(data: bytes, path: str, keep: str) -> dict:
                 if os.path.isfile(src) and os.path.getsize(src) < 40 * 1024 * 1024:
                     dst = os.path.join(base, safe(m.replace("/", "__").replace("\\", "__")))
                     shutil.copy(src, dst)
-                    kept.append(dst)
+                    kept.append(maybe_flac(dst))
         shutil.rmtree(tmp, ignore_errors=True)
         return {"path": base, "bytes": len(data), "kept": kept, "all_members": members[:3000]}
     if len(data) > 60 * 1024 * 1024:
@@ -234,7 +259,9 @@ def freesound_page_text(item: str, manifest: list) -> None:
 
 
 def main() -> int:
+    global TRANSCODE
     cfg = json.load(open(sys.argv[1] if len(sys.argv) > 1 else "tools/fetch/sound_sources.json"))
+    TRANSCODE = bool(cfg.get("flac", False))
     out = cfg.get("out", "raw_assets/audio/fetched")
     os.makedirs(out, exist_ok=True)
     manifest: list = []

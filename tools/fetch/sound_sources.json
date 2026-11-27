@@ -1,26 +1,26 @@
 {
- "out": "raw_assets/audio/fetched/magnum",
- "opengameart": [],
+ "out": "raw_assets/audio/fetched/firearms",
+ "opengameart": ["https://opengameart.org/content/the-free-firearm-sound-library"],
+ "keep": "Master Sheet|/(1911|AK-47|AR-15|Bersa|Carl Gustav M45|Marlin 336|Model 12|Mosin Nagant|PPSh|Ruger Mark III|Savage 10 \\.300 Blackout|SKS|Tikka|Walther PPQ)/",
+ "flac": true,
  "commons": [],
- "freesound_pages": [
-  "Shark_Anthony/683186",
-  "Shark_Anthony/683175",
-  "DarkShroom/645316",
-  "Nox_Sound/541818",
-  "Jon285/34708",
-  "reishugo/346906",
-  "ser%C3%B8ut%C5%8Dnin--depriv%C9%99d/693125",
-  "ser%C3%B8ut%C5%8Dnin--depriv%C9%99d/677159",
-  "Dredile/177863",
-  "tkane0512/722902",
-  "ajoyce86/240698",
-  "acidsnowflake/402790",
-  "AugustSandberg/508745",
-  "e9118586020/567611",
-  "shelbyshark/501560"
- ],
+ "freesound_pages": [],
  "freesound_ids": [],
- "freesound_queries": [],
+ "freesound_queries": [
+  "suppressed pistol",
+  "silenced pistol gunshot",
+  "suppressor gunshot",
+  "suppressed rifle",
+  "suppressed 9mm",
+  "suppressed 308",
+  "grenade launcher",
+  "M79 grenade launcher",
+  "M203",
+  "40mm grenade",
+  "glock gunshot",
+  "pistol gunshot outdoor",
+  "submachine gun burst"
+ ],
  "per_query": 6,
- "manifest": "manifest_provenance.json"
+ "manifest": "manifest.json"
 }
