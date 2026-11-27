@@ -1,0 +1,825 @@
+{
+ "entries": [
+  {
+   "source": "opengameart",
+   "page": "https://opengameart.org/content/the-free-firearm-sound-library",
+   "title": "The Free Firearm Sound Library | OpenGameArt.org",
+   "author": "bart",
+   "license": "CC0",
+   "description": "  From  The Free Firearm Sound Library homepage : \n  The firearm sound library was the brainchild of a team of college students with a mutual passion for the audio and \u00a0visual arts. In November, 2013 we launched a Kickstarter campaign to develop an extensive open source firearm sound effects library, and on December 7, 2013 our project was funded by an incredible group of backers and we went into full tilt production. This website serves to connect our backers with our two libraries, as well as to give credit to the backers who made it all possible.  \n   Along with the availability of these sounds comes the need to understand their proper application. The metadata included in the sound files along with some instructional videos will help make these sounds serve you to their full potential.  \n   Our team holds CC0 NO RIGHTS RESERVED for this library. It may be used without royalty or credit (though we would love to hear how you've used our sounds) for any application, personal or professional. Have at it!  \n Please note that OGA is not affiliated with this project, and as such, we encourage you to visit their site so as to make sure you're getting the latest version of the files: \n  http://freefirearmsfx.com \u00a0 raw \u00a0 prepared  \n Also note that their website includes instructions along with the raw versions of the sound effects, which are not archived here. \n Big thanks to  their team  and all of their  Kickstarter supporters  for this amazing collection! \n",
+   "files": [
+    {
+     "path": "raw_assets/audio/fetched/firearms/oga_Prepared_SFX_Library",
+     "bytes": 193954738,
+     "kept": [
+      "raw_assets/audio/fetched/firearms/oga_Prepared_SFX_Library/Prepared_SFX_Library__1911__A_34P.flac",
+      "raw_assets/audio/fetched/firearms/oga_Prepared_SFX_Library/Prepared_SFX_Library__1911__A_42P.flac",
+      "raw_assets/audio/fetched/firearms/oga_Prepared_SFX_Library/Prepared_SFX_Library__AK-47__C_27P.flac",
+      "raw_assets/audio/fetched/firearms/oga_Prepared_SFX_Library/Prepared_SFX_Library__AK-47__C_28P.flac",
+      "raw_assets/audio/fetched/firearms/oga_Prepared_SFX_Library/Prepared_SFX_Library__AK-47__C_29P.flac",
+      "raw_assets/audio/fetched/firearms/oga_Prepared_SFX_Library/Prepared_SFX_Library__AK-47__C_31P.flac",
+      "raw_assets/audio/fetched/firearms/oga_Prepared_SFX_Library/Prepared_SFX_Library__AK-47__C_34P.flac",
+      "raw_assets/audio/fetched/firearms/oga_Prepared_SFX_Library/Prepared_SFX_Library__AK-47__C_36P.flac",
+      "raw_assets/audio/fetched/firearms/oga_Prepared_SFX_Library/Prepared_SFX_Library__AR-15__D_24P.flac",
+      "raw_assets/audio/fetched/firearms/oga_Prepared_SFX_Library/Prepared_SFX_Library__AR-15__D_32P.flac",
+      "raw_assets/audio/fetched/firearms/oga_Prepared_SFX_Library/Prepared_SFX_Library__Bersa__F_41P.flac",
+      "raw_assets/audio/fetched/firearms/oga_Prepared_SFX_Library/Prepared_SFX_Library__Bersa__F_47P.flac",
+      "raw_assets/audio/fetched/firearms/oga_Prepared_SFX_Library/Prepared_SFX_Library__Carl_Gustav_M45__G_20P.flac",
+      "raw_assets/audio/fetched/firearms/oga_Prepared_SFX_Library/Prepared_SFX_Library__Carl_Gustav_M45__G_22P.flac",
+      "raw_assets/audio/fetched/firearms/oga_Prepared_SFX_Library/Prepared_SFX_Library__Carl_Gustav_M45__G_24P.flac",
+      "raw_assets/audio/fetched/firearms/oga_Prepared_SFX_Library/Prepared_SFX_Library__Carl_Gustav_M45__G_31P.flac",
+      "raw_assets/audio/fetched/firearms/oga_Prepared_SFX_Library/Prepared_SFX_Library__Carl_Gustav_M45__G_33P.flac",
+      "raw_assets/audio/fetched/firearms/oga_Prepared_SFX_Library/Prepared_SFX_Library__Carl_Gustav_M45__G_35P.flac",
+      "raw_assets/audio/fetched/firearms/oga_Prepared_SFX_Library/Prepared_SFX_Library__Marlin_336__I_17P.flac",
+      "raw_assets/audio/fetched/firearms/oga_Prepared_SFX_Library/Prepared_SFX_Library__Marlin_336__I_22P.flac",
+      "raw_assets/audio/fetched/firearms/oga_Prepared_SFX_Library/Prepared_SFX_Library__Model_12__K_17P.flac",
+      "raw_assets/audio/fetched/firearms/oga_Prepared_SFX_Library/Prepared_SFX_Library__Model_12__K_22P.flac",
+      "raw_assets/audio/fetched/firearms/oga_Prepared_SFX_Library/Prepared_SFX_Library__Mosin_Nagant__M_21P.flac",
+      "raw_assets/audio/fetched/firearms/oga_Prepared_SFX_Library/Prepared_SFX_Library__Mosin_Nagant__M_26P.flac",
+      "raw_assets/audio/fetched/firearms/oga_Prepared_SFX_Library/Prepared_SFX_Library__PPSh__P_16P.flac",
+      "raw_assets/audio/fetched/firearms/oga_Prepared_SFX_Library/Prepared_SFX_Library__PPSh__P_18P.flac",
+      "raw_assets/audio/fetched/firearms/oga_Prepared_SFX_Library/Prepared_SFX_Library__PPSh__P_22P.flac",
+      "raw_assets/audio/fetched/firearms/oga_Prepared_SFX_Library/Prepared_SFX_Library__PPSh__P_30P.flac",
+      "raw_assets/audio/fetched/firearms/oga_Prepared_SFX_Library/Prepared_SFX_Library__PPSh__P_32P.flac",
+      "raw_assets/audio/fetched/firearms/oga_Prepared_SFX_Library/Prepared_SFX_Library__PPSh__P_34P.flac",
+      "raw_assets/audio/fetched/firearms/oga_Prepared_SFX_Library/Prepared_SFX_Library__Ruger_Mark_III__R_30P.flac",
+      "raw_assets/audio/fetched/firearms/oga_Prepared_SFX_Library/Prepared_SFX_Library__Ruger_Mark_III__R_35P.flac",
+      "raw_assets/audio/fetched/firearms/oga_Prepared_SFX_Library/Prepared_SFX_Library__Savage_10_.300_Blackout__T_17P.flac",
+      "raw_assets/audio/fetched/firearms/oga_Prepared_SFX_Library/Prepared_SFX_Library__Savage_10_.300_Blackout__T_27P.flac",
+      "raw_assets/audio/fetched/firearms/oga_Prepared_SFX_Library/Prepared_SFX_Library__SKS__U_14P.flac",
+      "raw_assets/audio/fetched/firearms/oga_Prepared_SFX_Library/Prepared_SFX_Library__SKS__U_19P.flac",
+      "raw_assets/audio/fetched/firearms/oga_Prepared_SFX_Library/Prepared_SFX_Library__Tikka__W_24P.flac",
+      "raw_assets/audio/fetched/firearms/oga_Prepared_SFX_Library/Prepared_SFX_Library__Tikka__W_29P.flac",
+      "raw_assets/audio/fetched/firearms/oga_Prepared_SFX_Library/Prepared_SFX_Library__Walther_PPQ__X_31P.flac",
+      "raw_assets/audio/fetched/firearms/oga_Prepared_SFX_Library/Prepared_SFX_Library__Walther_PPQ__X_39P.flac",
+      "raw_assets/audio/fetched/firearms/oga_Prepared_SFX_Library/Prepared_SFX_Library__Prepared_Master_Sheet.csv"
+     ],
+     "all_members": [
+      "Prepared SFX Library/1911/A_34P.wav",
+      "Prepared SFX Library/1911/A_42P.wav",
+      "Prepared SFX Library/1917/B_16P.wav",
+      "Prepared SFX Library/1917/B_24P.wav",
+      "Prepared SFX Library/AK-47/C_27P.wav",
+      "Prepared SFX Library/AK-47/C_28P.wav",
+      "Prepared SFX Library/AK-47/C_29P.wav",
+      "Prepared SFX Library/AK-47/C_31P.wav",
+      "Prepared SFX Library/AK-47/C_34P.wav",
+      "Prepared SFX Library/AK-47/C_36P.wav",
+      "Prepared SFX Library/AR-15/D_24P.wav",
+      "Prepared SFX Library/AR-15/D_32P.wav",
+      "Prepared SFX Library/Arisaka/E_18P.wav",
+      "Prepared SFX Library/Arisaka/E_25P.wav",
+      "Prepared SFX Library/Bersa/F_41P.wav",
+      "Prepared SFX Library/Bersa/F_47P.wav",
+      "Prepared SFX Library/Carl Gustav M45/G_20P.wav",
+      "Prepared SFX Library/Carl Gustav M45/G_22P.wav",
+      "Prepared SFX Library/Carl Gustav M45/G_24P.wav",
+      "Prepared SFX Library/Carl Gustav M45/G_31P.wav",
+      "Prepared SFX Library/Carl Gustav M45/G_33P.wav",
+      "Prepared SFX Library/Carl Gustav M45/G_35P.wav",
+      "Prepared SFX Library/CD/H_16P.wav",
+      "Prepared SFX Library/CD/H_21P.wav",
+      "Prepared SFX Library/Marlin 336/I_17P.wav",
+      "Prepared SFX Library/Marlin 336/I_22P.wav",
+      "Prepared SFX Library/Model 12/K_17P.wav",
+      "Prepared SFX Library/Model 12/K_22P.wav",
+      "Prepared SFX Library/Model 1894/L_17P.wav",
+      "Prepared SFX Library/Model 1894/L_23P.wav",
+      "Prepared SFX Library/Mosin Nagant/M_21P.wav",
+      "Prepared SFX Library/Mosin Nagant/M_26P.wav",
+      "Prepared SFX Library/Mossberg/N_26P.wav",
+      "Prepared SFX Library/Mossberg/N_30P.wav",
+      "Prepared SFX Library/Nova/O_17P.wav",
+      "Prepared SFX Library/Nova/O_21P.wav",
+      "Prepared SFX Library/PPSh/P_16P.wav",
+      "Prepared SFX Library/PPSh/P_18P.wav",
+      "Prepared SFX Library/PPSh/P_22P.wav",
+      "Prepared SFX Library/PPSh/P_30P.wav",
+      "Prepared SFX Library/PPSh/P_32P.wav",
+      "Prepared SFX Library/PPSh/P_34P.wav",
+      "Prepared SFX Library/Ruger Mark III/R_30P.wav",
+      "Prepared SFX Library/Ruger Mark III/R_35P.wav",
+      "Prepared SFX Library/Ruger Single Six/S_11P.wav",
+      "Prepared SFX Library/Ruger Single Six/S_14P.wav",
+      "Prepared SFX Library/Savage 10 .300 Blackout/T_17P.wav",
+      "Prepared SFX Library/Savage 10 .300 Blackout/T_27P.wav",
+      "Prepared SFX Library/SKS/U_14P.wav",
+      "Prepared SFX Library/SKS/U_19P.wav",
+      "Prepared SFX Library/Smith & Wesson 642/V_22P.wav",
+      "Prepared SFX Library/Smith & Wesson 642/V_27P.wav",
+      "Prepared SFX Library/Tikka/W_24P.wav",
+      "Prepared SFX Library/Tikka/W_29P.wav",
+      "Prepared SFX Library/Walther PPQ/X_31P.wav",
+      "Prepared SFX Library/Walther PPQ/X_39P.wav",
+      "Prepared SFX Library/desktop.ini",
+      "Prepared SFX Library/Prepared Master Sheet.csv",
+      "Prepared SFX Library/1911/.DS_Store",
+      "Prepared SFX Library/1917/.DS_Store",
+      "Prepared SFX Library/AK-47/.DS_Store",
+      "Prepared SFX Library/AR-15/.DS_Store",
+      "Prepared SFX Library/Arisaka/.DS_Store",
+      "Prepared SFX Library/Bersa/.DS_Store",
+      "Prepared SFX Library/Carl Gustav M45/.DS_Store",
+      "Prepared SFX Library/CD/.DS_Store",
+      "Prepared SFX Library/Marlin 336/.DS_Store",
+      "Prepared SFX Library/Model 12/.DS_Store",
+      "Prepared SFX Library/Model 1894/.DS_Store",
+      "Prepared SFX Library/Mosin Nagant/.DS_Store",
+      "Prepared SFX Library/Mossberg/.DS_Store",
+      "Prepared SFX Library/Nova/.DS_Store",
+      "Prepared SFX Library/PPSh/.DS_Store",
+      "Prepared SFX Library/Ruger Mark III/.DS_Store",
+      "Prepared SFX Library/Ruger Single Six/.DS_Store",
+      "Prepared SFX Library/Savage 10 .300 Blackout/.DS_Store",
+      "Prepared SFX Library/SKS/.DS_Store",
+      "Prepared SFX Library/Smith & Wesson 642/.DS_Store",
+      "Prepared SFX Library/Tikka/.DS_Store",
+      "Prepared SFX Library/Walther PPQ/.DS_Store",
+      "Prepared SFX Library/.DS_Store",
+      "Prepared SFX Library/Walther PPQ",
+      "Prepared SFX Library/Tikka",
+      "Prepared SFX Library/Smith & Wesson 642",
+      "Prepared SFX Library/SKS",
+      "Prepared SFX Library/Savage 10 .300 Blackout",
+      "Prepared SFX Library/Ruger Single Six",
+      "Prepared SFX Library/Ruger Mark III",
+      "Prepared SFX Library/PPSh",
+      "Prepared SFX Library/Nova",
+      "Prepared SFX Library/Mossberg",
+      "Prepared SFX Library/Mosin Nagant",
+      "Prepared SFX Library/Model 1894",
+      "Prepared SFX Library/Model 12",
+      "Prepared SFX Library/Marlin 336",
+      "Prepared SFX Library/CD",
+      "Prepared SFX Library/Carl Gustav M45",
+      "Prepared SFX Library/Bersa",
+      "Prepared SFX Library/Arisaka",
+      "Prepared SFX Library/AR-15",
+      "Prepared SFX Library/AK-47",
+      "Prepared SFX Library/1917",
+      "Prepared SFX Library/1911",
+      "Prepared SFX Library"
+     ],
+     "url": "https://opengameart.org/sites/default/files/Prepared%20SFX%20Library.7z"
+    }
+   ]
+  },
+  {
+   "source": "freesound",
+   "page": "https://freesound.org/people/Clutvh/sounds/627087/",
+   "id": "627087",
+   "author": "Clutvh",
+   "title": "silenced pistol shot by Clutvh",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "description": "",
+   "files": [
+    {
+     "url": "https://cdn.freesound.org/previews/627/627087_11511262-hq.mp3",
+     "path": "raw_assets/audio/fetched/firearms/fs_627087_silenced_pistol_shot_by_Clutvh.mp3",
+     "bytes": 65992
+    }
+   ]
+  },
+  {
+   "source": "freesound",
+   "page": "https://freesound.org/people/JustWatson64/sounds/866940/",
+   "id": "866940",
+   "author": "JustWatson64",
+   "title": "GunPstl PP7 pistol fire,  Suppressed, retro by JustWatson64",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "description": "",
+   "files": [
+    {
+     "url": "https://cdn.freesound.org/previews/866/866940_14366407-hq.mp3",
+     "path": "raw_assets/audio/fetched/firearms/fs_866940_GunPstl_PP7_pistol_fire_Suppressed_retro_by_JustWatson64.mp3",
+     "bytes": 30866
+    }
+   ]
+  },
+  {
+   "source": "freesound",
+   "page": "https://freesound.org/people/ser%C3%B8ut%C5%8Dnin--depriv%C9%99d/sounds/855656/",
+   "id": "855656",
+   "author": "ser%C3%B8ut%C5%8Dnin--depriv%C9%99d",
+   "title": "A silenced/suppressed handgun being shot once w/ phaser sounding trail // pretty metallic sounding by ser\u00f8ut\u014dnin--depriv\u0259d",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "description": "",
+   "files": [
+    {
+     "url": "https://cdn.freesound.org/previews/855/855656_7157894-hq.mp3",
+     "path": "raw_assets/audio/fetched/firearms/fs_855656_A_silenced_suppressed_handgun_being_shot_once_w_phaser_sound.mp3",
+     "bytes": 17429
+    }
+   ]
+  },
+  {
+   "source": "freesound",
+   "page": "https://freesound.org/people/qubodup/sounds/740120/",
+   "id": "740120",
+   "author": "qubodup",
+   "title": "Silenced SMG Three-Shot Burst by qubodup",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "description": "",
+   "files": [
+    {
+     "url": "https://cdn.freesound.org/previews/740/740120_71257-hq.mp3",
+     "path": "raw_assets/audio/fetched/firearms/fs_740120_Silenced_SMG_Three-Shot_Burst_by_qubodup.mp3",
+     "bytes": 12192
+    }
+   ]
+  },
+  {
+   "source": "freesound",
+   "page": "https://freesound.org/people/mnslugger20/sounds/242846/",
+   "id": "242846",
+   "author": "mnslugger20",
+   "title": "suppressed-submachinegun.wav by mnslugger20",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "description": "",
+   "files": [
+    {
+     "url": "https://cdn.freesound.org/previews/242/242846_4121395-hq.mp3",
+     "path": "raw_assets/audio/fetched/firearms/fs_242846_suppressed-submachinegun.wav_by_mnslugger20.mp3",
+     "bytes": 41010
+    }
+   ]
+  },
+  {
+   "source": "freesound",
+   "page": "https://freesound.org/people/craigsmith/sounds/675678/",
+   "id": "675678",
+   "author": "craigsmith",
+   "title": "S20-35 Pistol shots; ping; silencer?.wav by craigsmith",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "description": "",
+   "files": [
+    {
+     "url": "https://cdn.freesound.org/previews/675/675678_2524442-hq.mp3",
+     "path": "raw_assets/audio/fetched/firearms/fs_675678_S20-35_Pistol_shots_ping_silencer_.wav_by_craigsmith.mp3",
+     "bytes": 98688
+    }
+   ]
+  },
+  {
+   "source": "freesound",
+   "page": "https://freesound.org/people/morganpurkis/sounds/369781/",
+   "id": "369781",
+   "author": "morganpurkis",
+   "title": "Silenced Gunshot.wav by morganpurkis",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "description": "",
+   "files": [
+    {
+     "url": "https://cdn.freesound.org/previews/369/369781_5937039-hq.mp3",
+     "path": "raw_assets/audio/fetched/firearms/fs_369781_Silenced_Gunshot.wav_by_morganpurkis.mp3",
+     "bytes": 15757
+    }
+   ]
+  },
+  {
+   "source": "freesound",
+   "page": "https://freesound.org/people/mnslugger20/sounds/248204/",
+   "id": "248204",
+   "author": "mnslugger20",
+   "title": "Five seveN gun shot and silenced.wav by mnslugger20",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "description": "",
+   "files": [
+    {
+     "url": "https://cdn.freesound.org/previews/248/248204_4121395-hq.mp3",
+     "path": "raw_assets/audio/fetched/firearms/fs_248204_Five_seveN_gun_shot_and_silenced.wav_by_mnslugger20.mp3",
+     "bytes": 40031
+    }
+   ]
+  },
+  {
+   "source": "freesound",
+   "page": "https://freesound.org/people/mrrap4food/sounds/618995/",
+   "id": "618995",
+   "author": "mrrap4food",
+   "title": "Gun Silencer 2.mp3 by mrrap4food",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "description": "",
+   "files": [
+    {
+     "url": "https://cdn.freesound.org/previews/618/618995_781461-hq.mp3",
+     "path": "raw_assets/audio/fetched/firearms/fs_618995_Gun_Silencer_2.mp3_by_mrrap4food.mp3",
+     "bytes": 7304
+    }
+   ]
+  },
+  {
+   "source": "freesound",
+   "page": "https://freesound.org/people/areniporgen/sounds/693855/",
+   "id": "693855",
+   "author": "areniporgen",
+   "title": "FN FNX .45 Tactical (SilencerCo Osprey).mp3 by areniporgen",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "description": "",
+   "files": [
+    {
+     "url": "https://cdn.freesound.org/previews/693/693855_15072041-hq.mp3",
+     "path": "raw_assets/audio/fetched/firearms/fs_693855_FN_FNX_.45_Tactical_SilencerCo_Osprey_.mp3_by_areniporgen.mp3",
+     "bytes": 5530
+    }
+   ]
+  },
+  {
+   "source": "freesound",
+   "page": "https://freesound.org/people/fireballuke/sounds/166493/",
+   "id": "166493",
+   "author": "fireballuke",
+   "title": "Silenced Gun Firing - gunshots by fireballuke",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "description": "",
+   "files": [
+    {
+     "url": "https://cdn.freesound.org/previews/166/166493_2083114-hq.mp3",
+     "path": "raw_assets/audio/fetched/firearms/fs_166493_Silenced_Gun_Firing_-_gunshots_by_fireballuke.mp3",
+     "bytes": 95681
+    }
+   ]
+  },
+  {
+   "source": "freesound",
+   "page": "https://freesound.org/people/SubwaySandwitch420/sounds/539141/",
+   "id": "539141",
+   "author": "SubwaySandwitch420",
+   "title": "Assault rifle suppressor gunshot. by SubwaySandwitch420",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "description": "",
+   "files": [
+    {
+     "url": "https://cdn.freesound.org/previews/539/539141_10953720-hq.mp3",
+     "path": "raw_assets/audio/fetched/firearms/fs_539141_Assault_rifle_suppressor_gunshot._by_SubwaySandwitch420.mp3",
+     "bytes": 7356
+    }
+   ]
+  },
+  {
+   "source": "freesound",
+   "page": "https://freesound.org/people/areniporgen/sounds/827945/",
+   "id": "827945",
+   "author": "areniporgen",
+   "title": "Springfield Armory 1911 Operator (Suppressed) by areniporgen",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "description": "",
+   "files": [
+    {
+     "url": "https://cdn.freesound.org/previews/827/827945_15072041-hq.mp3",
+     "path": "raw_assets/audio/fetched/firearms/fs_827945_Springfield_Armory_1911_Operator_Suppressed_by_areniporgen.mp3",
+     "bytes": 18240
+    }
+   ]
+  },
+  {
+   "source": "freesound",
+   "page": "https://freesound.org/people/qubodup/sounds/182815/",
+   "id": "182815",
+   "author": "qubodup",
+   "title": "Silenced Sniper Rifle.flac by qubodup",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "description": "",
+   "files": [
+    {
+     "url": "https://cdn.freesound.org/previews/182/182815_71257-hq.mp3",
+     "path": "raw_assets/audio/fetched/firearms/fs_182815_Silenced_Sniper_Rifle.flac_by_qubodup.mp3",
+     "bytes": 208560
+    }
+   ]
+  },
+  {
+   "source": "freesound",
+   "page": "https://freesound.org/people/cedarstudios/sounds/148835/",
+   "id": "148835",
+   "author": "cedarstudios",
+   "title": ".22rifle gunside.mp3 by cedarstudios",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "description": "",
+   "files": [
+    {
+     "url": "https://cdn.freesound.org/previews/148/148835_2676248-hq.mp3",
+     "path": "raw_assets/audio/fetched/firearms/fs_148835_.22rifle_gunside.mp3_by_cedarstudios.mp3",
+     "bytes": 235118
+    }
+   ]
+  },
+  {
+   "source": "freesound",
+   "page": "https://freesound.org/people/areniporgen/sounds/737570/",
+   "id": "737570",
+   "author": "areniporgen",
+   "title": "MacMillan Tac-50A1-R2 Suppressed by areniporgen",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "description": "",
+   "files": [
+    {
+     "url": "https://cdn.freesound.org/previews/737/737570_15072041-hq.mp3",
+     "path": "raw_assets/audio/fetched/firearms/fs_737570_MacMillan_Tac-50A1-R2_Suppressed_by_areniporgen.mp3",
+     "bytes": 77136
+    }
+   ]
+  },
+  {
+   "source": "freesound",
+   "page": "https://freesound.org/people/areniporgen/sounds/828790/",
+   "id": "828790",
+   "author": "areniporgen",
+   "title": "SIG Sauer P226 (Suppressed) by areniporgen",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "description": "",
+   "files": [
+    {
+     "url": "https://cdn.freesound.org/previews/828/828790_15072041-hq.mp3",
+     "path": "raw_assets/audio/fetched/firearms/fs_828790_SIG_Sauer_P226_Suppressed_by_areniporgen.mp3",
+     "bytes": 49200
+    }
+   ]
+  },
+  {
+   "source": "freesound",
+   "page": "https://freesound.org/people/saranurm/sounds/774020/",
+   "id": "774020",
+   "author": "saranurm",
+   "title": "auto 9 by saranurm",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "description": "",
+   "files": [
+    {
+     "url": "https://cdn.freesound.org/previews/774/774020_16679475-hq.mp3",
+     "path": "raw_assets/audio/fetched/firearms/fs_774020_auto_9_by_saranurm.mp3",
+     "bytes": 72432
+    }
+   ]
+  },
+  {
+   "source": "freesound",
+   "page": "https://freesound.org/people/saranurm/sounds/774054/",
+   "id": "774054",
+   "author": "saranurm",
+   "title": "ratikka 9 by saranurm",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "description": "",
+   "files": [
+    {
+     "url": "https://cdn.freesound.org/previews/774/774054_16679475-hq.mp3",
+     "path": "raw_assets/audio/fetched/firearms/fs_774054_ratikka_9_by_saranurm.mp3",
+     "bytes": 81648
+    }
+   ]
+  },
+  {
+   "source": "freesound",
+   "page": "https://freesound.org/people/xFromarge1/sounds/520053/",
+   "id": "520053",
+   "author": "xFromarge1",
+   "title": "Grenade_Fire_Eplosion_04.wav by xFromarge1",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "description": "",
+   "files": [
+    {
+     "url": "https://cdn.freesound.org/previews/520/520053_6759617-hq.mp3",
+     "path": "raw_assets/audio/fetched/firearms/fs_520053_Grenade_Fire_Eplosion_04.wav_by_xFromarge1.mp3",
+     "bytes": 15828
+    }
+   ]
+  },
+  {
+   "source": "freesound",
+   "page": "https://freesound.org/people/LeMudCrab/sounds/163458/",
+   "id": "163458",
+   "author": "LeMudCrab",
+   "title": "Grenade Launcher by LeMudCrab",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "description": "",
+   "files": [
+    {
+     "url": "https://cdn.freesound.org/previews/163/163458_2263027-hq.mp3",
+     "path": "raw_assets/audio/fetched/firearms/fs_163458_Grenade_Launcher_by_LeMudCrab.mp3",
+     "bytes": 12054
+    }
+   ]
+  },
+  {
+   "source": "freesound",
+   "page": "https://freesound.org/people/ser%C3%B8ut%C5%8Dnin--depriv%C9%99d/sounds/725401/",
+   "id": "725401",
+   "author": "ser%C3%B8ut%C5%8Dnin--depriv%C9%99d",
+   "title": "Inserting a rocket into an RPG-7 rocket launcher; full sequence by ser\u00f8ut\u014dnin--depriv\u0259d",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "description": "",
+   "files": [
+    {
+     "url": "https://cdn.freesound.org/previews/725/725401_7157894-hq.mp3",
+     "path": "raw_assets/audio/fetched/firearms/fs_725401_Inserting_a_rocket_into_an_RPG-7_rocket_launcher_full_sequen.mp3",
+     "bytes": 201788
+    }
+   ]
+  },
+  {
+   "source": "freesound",
+   "page": "https://freesound.org/people/qubodup/sounds/162402/",
+   "id": "162402",
+   "author": "qubodup",
+   "title": "M203 Grenade Launcher 1 by qubodup",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "description": "",
+   "files": [
+    {
+     "url": "https://cdn.freesound.org/previews/162/162402_71257-hq.mp3",
+     "path": "raw_assets/audio/fetched/firearms/fs_162402_M203_Grenade_Launcher_1_by_qubodup.mp3",
+     "bytes": 11007
+    }
+   ]
+  },
+  {
+   "source": "freesound",
+   "page": "https://freesound.org/people/PedroGuyman/sounds/470709/",
+   "id": "470709",
+   "author": "PedroGuyman",
+   "title": "Futuristic Grenade Launcher by PedroGuyman",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "description": "",
+   "files": [
+    {
+     "url": "https://cdn.freesound.org/previews/470/470709_9816814-hq.mp3",
+     "path": "raw_assets/audio/fetched/firearms/fs_470709_Futuristic_Grenade_Launcher_by_PedroGuyman.mp3",
+     "bytes": 36687
+    }
+   ]
+  },
+  {
+   "source": "freesound",
+   "page": "https://freesound.org/people/The_Sound_Side/sounds/262436/",
+   "id": "262436",
+   "author": "The_Sound_Side",
+   "title": "Real explosions Real gunshots.wav by The_Sound_Side",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "description": "",
+   "files": [
+    {
+     "url": "https://cdn.freesound.org/previews/262/262436_989468-hq.mp3",
+     "path": "raw_assets/audio/fetched/firearms/fs_262436_Real_explosions_Real_gunshots.wav_by_The_Sound_Side.mp3",
+     "bytes": 1012464
+    }
+   ]
+  },
+  {
+   "source": "freesound",
+   "page": "https://freesound.org/people/qubodup/sounds/187542/",
+   "id": "187542",
+   "author": "qubodup",
+   "title": "M-327 Mortar Shots.flac by qubodup",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "description": "",
+   "files": [
+    {
+     "url": "https://cdn.freesound.org/previews/187/187542_71257-hq.mp3",
+     "path": "raw_assets/audio/fetched/firearms/fs_187542_M-327_Mortar_Shots.flac_by_qubodup.mp3",
+     "bytes": 73776
+    }
+   ]
+  },
+  {
+   "source": "freesound",
+   "page": "https://freesound.org/people/vabadus/sounds/151076/",
+   "id": "151076",
+   "author": "vabadus",
+   "title": "M406 HE shell explosion on gravel by vabadus",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "description": "",
+   "files": [
+    {
+     "url": "https://cdn.freesound.org/previews/151/151076_2732486-hq.mp3",
+     "path": "raw_assets/audio/fetched/firearms/fs_151076_M406_HE_shell_explosion_on_gravel_by_vabadus.mp3",
+     "bytes": 27139
+    }
+   ]
+  },
+  {
+   "source": "freesound",
+   "page": "https://freesound.org/people/Black_River_Phonogram/sounds/352909/",
+   "id": "352909",
+   "author": "Black_River_Phonogram",
+   "title": "Brook by Black_River_Phonogram",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "description": "",
+   "files": [
+    {
+     "url": "https://cdn.freesound.org/previews/352/352909_5548565-hq.mp3",
+     "path": "raw_assets/audio/fetched/firearms/fs_352909_Brook_by_Black_River_Phonogram.mp3",
+     "bytes": 612937
+    }
+   ]
+  },
+  {
+   "source": "freesound",
+   "page": "https://freesound.org/people/Sclolex/sounds/180503/",
+   "id": "180503",
+   "author": "Sclolex",
+   "title": "OldMachine.wav by Sclolex",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "description": "",
+   "files": [
+    {
+     "url": "https://cdn.freesound.org/previews/180/180503_985466-hq.mp3",
+     "path": "raw_assets/audio/fetched/firearms/fs_180503_OldMachine.wav_by_Sclolex.mp3",
+     "bytes": 320592
+    }
+   ]
+  },
+  {
+   "source": "freesound",
+   "page": "https://freesound.org/people/ChristmasKrumble666/sounds/801947/",
+   "id": "801947",
+   "author": "ChristmasKrumble666",
+   "title": "On Dead Air.wav by ChristmasKrumble666",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "description": "",
+   "files": [
+    {
+     "url": "https://cdn.freesound.org/previews/801/801947_5820974-hq.mp3",
+     "path": "raw_assets/audio/fetched/firearms/fs_801947_On_Dead_Air.wav_by_ChristmasKrumble666.mp3",
+     "bytes": 6915120
+    }
+   ]
+  },
+  {
+   "source": "freesound",
+   "page": "https://freesound.org/people/modularsamples/sounds/301879/",
+   "id": "301879",
+   "author": "modularsamples",
+   "title": "Roland HS-80 - I'm the one and only - C7 (96C6-HV0K.aif) by modularsamples",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "description": "",
+   "files": [
+    {
+     "url": "https://cdn.freesound.org/previews/301/301879_2050105-hq.mp3",
+     "path": "raw_assets/audio/fetched/firearms/fs_301879_Roland_HS-80_-_I_m_the_one_and_only_-_C7_96C6-HV0K.aif_by_mo.mp3",
+     "bytes": 242729
+    }
+   ]
+  },
+  {
+   "source": "freesound",
+   "page": "https://freesound.org/people/mrrap4food/sounds/618986/",
+   "id": "618986",
+   "author": "mrrap4food",
+   "title": "Gunshot from glock.mp3 by mrrap4food",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "description": "",
+   "files": [
+    {
+     "url": "https://cdn.freesound.org/previews/618/618986_781461-hq.mp3",
+     "path": "raw_assets/audio/fetched/firearms/fs_618986_Gunshot_from_glock.mp3_by_mrrap4food.mp3",
+     "bytes": 20587
+    }
+   ]
+  },
+  {
+   "source": "freesound",
+   "page": "https://freesound.org/people/db465/sounds/865987/",
+   "id": "865987",
+   "author": "db465",
+   "title": "glock_fire by db465",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "description": "",
+   "files": [
+    {
+     "url": "https://cdn.freesound.org/previews/865/865987_19132311-hq.mp3",
+     "path": "raw_assets/audio/fetched/firearms/fs_865987_glock_fire_by_db465.mp3",
+     "bytes": 17482
+    }
+   ]
+  },
+  {
+   "source": "freesound",
+   "page": "https://freesound.org/people/areniporgen/sounds/828786/",
+   "id": "828786",
+   "author": "areniporgen",
+   "title": "Glock 19X by areniporgen",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "description": "",
+   "files": [
+    {
+     "url": "https://cdn.freesound.org/previews/828/828786_15072041-hq.mp3",
+     "path": "raw_assets/audio/fetched/firearms/fs_828786_Glock_19X_by_areniporgen.mp3",
+     "bytes": 36336
+    }
+   ]
+  },
+  {
+   "source": "freesound",
+   "page": "https://freesound.org/people/ser%C3%B8ut%C5%8Dnin--depriv%C9%99d/sounds/855652/",
+   "id": "855652",
+   "author": "ser%C3%B8ut%C5%8Dnin--depriv%C9%99d",
+   "title": "A Glock handgun being shot 3x // punchy hollywood-esque sounding shots w/ airy forest reverb by ser\u00f8ut\u014dnin--depriv\u0259d",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "description": "",
+   "files": [
+    {
+     "url": "https://cdn.freesound.org/previews/855/855652_7157894-hq.mp3",
+     "path": "raw_assets/audio/fetched/firearms/fs_855652_A_Glock_handgun_being_shot_3x_punchy_hollywood-esque_soundin.mp3",
+     "bytes": 116006
+    }
+   ]
+  },
+  {
+   "source": "freesound",
+   "page": "https://freesound.org/people/_Linus_Sebastian/sounds/493871/",
+   "id": "493871",
+   "author": "_Linus_Sebastian",
+   "title": "ZM_094B_S06.wav by _Linus_Sebastian",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "description": "",
+   "files": [
+    {
+     "url": "https://cdn.freesound.org/previews/493/493871_10603899-hq.mp3",
+     "path": "raw_assets/audio/fetched/firearms/fs_493871_ZM_094B_S06.wav_by__Linus_Sebastian.mp3",
+     "bytes": 36480
+    }
+   ]
+  },
+  {
+   "source": "freesound",
+   "page": "https://freesound.org/people/MalikArsYasakani/sounds/833318/",
+   "id": "833318",
+   "author": "MalikArsYasakani",
+   "title": "Homemade Gunshots 01 by MalikArsYasakani",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "description": "",
+   "files": [
+    {
+     "url": "https://cdn.freesound.org/previews/833/833318_16860678-hq.mp3",
+     "path": "raw_assets/audio/fetched/firearms/fs_833318_Homemade_Gunshots_01_by_MalikArsYasakani.mp3",
+     "bytes": 69432
+    }
+   ]
+  },
+  {
+   "source": "freesound",
+   "page": "https://freesound.org/people/johanwestling/sounds/377789/",
+   "id": "377789",
+   "author": "johanwestling",
+   "title": "gun_9mm_15m_in_front_m10.wav by johanwestling",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "description": "",
+   "files": [
+    {
+     "url": "https://cdn.freesound.org/previews/377/377789_4817223-hq.mp3",
+     "path": "raw_assets/audio/fetched/firearms/fs_377789_gun_9mm_15m_in_front_m10.wav_by_johanwestling.mp3",
+     "bytes": 605400
+    }
+   ]
+  },
+  {
+   "source": "freesound",
+   "page": "https://freesound.org/people/johanwestling/sounds/377786/",
+   "id": "377786",
+   "author": "johanwestling",
+   "title": "gun_.22mm_7.5mm_9mm_close_single_shots_m10.wav by johanwestling",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "description": "",
+   "files": [
+    {
+     "url": "https://cdn.freesound.org/previews/377/377786_4817223-hq.mp3",
+     "path": "raw_assets/audio/fetched/firearms/fs_377786_gun_.22mm_7.5mm_9mm_close_single_shots_m10.wav_by_johanwestl.mp3",
+     "bytes": 3039984
+    }
+   ]
+  },
+  {
+   "source": "freesound",
+   "page": "https://freesound.org/people/Diboz/sounds/213925/",
+   "id": "213925",
+   "author": "Diboz",
+   "title": "pistol_riccochet.ogg by Diboz",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "description": "",
+   "files": [
+    {
+     "url": "https://cdn.freesound.org/previews/213/213925_3930831-hq.mp3",
+     "path": "raw_assets/audio/fetched/firearms/fs_213925_pistol_riccochet.ogg_by_Diboz.mp3",
+     "bytes": 61522
+    }
+   ]
+  },
+  {
+   "source": "freesound",
+   "page": "https://freesound.org/people/CraftyIndividual/sounds/418431/",
+   "id": "418431",
+   "author": "CraftyIndividual",
+   "title": "FNP90 burst.mp3 by CraftyIndividual",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "description": "",
+   "files": [
+    {
+     "url": "https://cdn.freesound.org/previews/418/418431_6481539-hq.mp3",
+     "path": "raw_assets/audio/fetched/firearms/fs_418431_FNP90_burst.mp3_by_CraftyIndividual.mp3",
+     "bytes": 57513
+    }
+   ]
+  }
+ ],
+ "errors": []
+}
