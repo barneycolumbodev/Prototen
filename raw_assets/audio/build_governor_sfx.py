@@ -90,9 +90,13 @@ def round_in():
 def write_all():
     w.OUT = out
     os.makedirs(out, exist_ok=True)
-    for v in (1, 2, 3):
-        w.save(f"governor_shot_{v}", shot(v))
-    w.save("governor_tail_1", tail(), -3)
+    # Since 2026-11-27 the shot and tail come from real recordings
+    # (build_real_guns_sfx.py); these synthesized ones are only written
+    # with SYNTH_SHOT=1 in the environment, for comparison.
+    if os.environ.get("SYNTH_SHOT"):
+        for v in (1, 2, 3):
+            w.save(f"governor_shot_{v}", shot(v))
+        w.save("governor_tail_1", tail(), -3)
     w.save("governor_lever_open_1", lever_open(), -2)
     w.save("governor_lever_close_1", lever_close(), -1)
     w.save("governor_round_in_1", round_in(), -4)

@@ -54,9 +54,13 @@ def write_all():
     out = sys.argv[1] if len(sys.argv) > 1 else "assets/audio/sfx"
     w.OUT = out
     os.makedirs(out, exist_ok=True)
-    for v in (1, 2, 3, 4):
-        w.save(f"mp5_shot_{v}", shot(v), -1)
-    w.save("mp5_tail_1", tail(), -8)
+    # Since 2026-11-27 the shot and tail come from real recordings
+    # (build_real_guns_sfx.py); these synthesized ones are only written
+    # with SYNTH_SHOT=1 in the environment, for comparison.
+    if os.environ.get("SYNTH_SHOT"):
+        for v in (1, 2, 3, 4):
+            w.save(f"mp5_shot_{v}", shot(v), -1)
+        w.save("mp5_tail_1", tail(), -8)
     paddle = w.click(0.04, (2300, 3600, 5400), 0.01, bright=2200)
     rock = w.band(w.noise(0.1), 800, 4600) * np.sin(np.pi * w.t(0.1) / 0.1) ** 2
     w.save("mp5_reload_start_1", w.at(0.18, (0, w.band(w.noise(0.13), 300, 2600) * np.hanning(int(0.13 * SR)) * 0.4)), -13)

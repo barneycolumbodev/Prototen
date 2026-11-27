@@ -32,3 +32,23 @@ func test_map_has_no_range_steel() -> void:
 	var post: SurfaceMaterial = SurfaceLibrary.shared().get_material(&"steel_post")
 	assert_eq(post.id, &"steel_post")
 	assert_ne(post.impact_sound, &"steel")
+
+
+## Audio pass 2026-11-27: every firearm, the player's and the enemies', fires its
+## own shot bank (real recordings, design §4.13), with a tail for the player's.
+func test_every_firearm_has_its_own_shot() -> void:
+	var player_guns: Array[String] = ["aug", "glock22", "governor", "m14p", "m32", "magnum44", "mg42", "mp5",
+		"saiga12k", "spas12"]
+	var seen: Dictionary = {}
+	for gun: String in player_guns:
+		var data: WeaponData = load("res://data/weapons/%s.tres" % gun) as WeaponData
+		var shot: StringName = Sfx.weapon_bank(data, &"shot")
+		assert_eq(String(shot), data.sound_prefix + "shot", "%s has its own shot bank" % gun)
+		assert_gt(Sfx.bank(shot).size(), 0, "%s shot loads" % gun)
+		assert_gt(Sfx.bank(Sfx.weapon_bank(data, &"tail")).size(), 0, "%s has a tail" % gun)
+		assert_false(seen.has(shot), "%s shares no bank" % gun)
+		seen[shot] = true
+	assert_gt(Sfx.bank(&"shot").size(), 0, "the Five-seveN's (the shared bank)")
+	for gun: String in ["type56", "smg", "pump"]:
+		var data: WeaponData = load("res://data/enemies/weapons/%s.tres" % gun) as WeaponData
+		assert_gt(Sfx.bank(StringName("enemy_" + data.sound_prefix + "shot")).size(), 0, "enemy %s shot loads" % gun)

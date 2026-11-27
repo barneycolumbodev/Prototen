@@ -50,9 +50,13 @@ def write_all():
     out = sys.argv[1] if len(sys.argv) > 1 else "assets/audio/sfx"
     w.OUT = out
     os.makedirs(out, exist_ok=True)
-    for v in (1, 2, 3):
-        w.save(f"m14_shot_{v}", shot(v))
-    w.save("m14_tail_1", tail(), -4)
+    # Since 2026-11-27 the shot and tail come from real recordings
+    # (build_real_guns_sfx.py); these synthesized ones are only written
+    # with SYNTH_SHOT=1 in the environment, for comparison.
+    if os.environ.get("SYNTH_SHOT"):
+        for v in (1, 2, 3):
+            w.save(f"m14_shot_{v}", shot(v))
+        w.save("m14_tail_1", tail(), -4)
     latch = w.click(0.05, (2000, 3300, 4900), 0.012, bright=2000)
     rock = w.band(w.noise(0.12), 700, 4200) * np.sin(np.pi * w.t(0.12) / 0.12) ** 2
     w.save("m14_reload_start_1", w.at(0.2, (0, w.band(w.noise(0.15), 250, 2200) * np.hanning(int(0.15 * SR)) * 0.4)), -12)

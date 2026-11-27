@@ -217,9 +217,13 @@ def write_all():
     out = sys.argv[1] if len(sys.argv) > 1 else "assets/audio/sfx"
     w.OUT = out
     os.makedirs(out, exist_ok=True)
-    for v in (1, 2, 3):
-        w.save(f"m32_shot_{v}", shot(v))
-    w.save("m32_tail_1", tail(), -4)
+    # Since 2026-11-27 the shot and tail come from real recordings
+    # (build_real_guns_sfx.py); these synthesized ones are only written
+    # with SYNTH_SHOT=1 in the environment, for comparison.
+    if os.environ.get("SYNTH_SHOT"):
+        for v in (1, 2, 3):
+            w.save(f"m32_shot_{v}", shot(v))
+        w.save("m32_tail_1", tail(), -4)
     w.save("m32_dry_fire_1", dry_fire(), -6)
     w.save("m32_reload_start_1", reload_start(), -5)
     w.save("m32_mag_out_1", cases_out(), -6)

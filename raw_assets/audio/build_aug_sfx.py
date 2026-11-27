@@ -64,9 +64,13 @@ def write_all():
     out = sys.argv[1] if len(sys.argv) > 1 else "assets/audio/sfx"
     w.OUT = out
     os.makedirs(out, exist_ok=True)
-    for v in (1, 2, 3, 4):
-        w.save(f"aug_shot_{v}", shot(v), -0.5)
-    w.save("aug_tail_1", tail(), -5)
+    # Since 2026-11-27 the shot and tail come from real recordings
+    # (build_real_guns_sfx.py); these synthesized ones are only written
+    # with SYNTH_SHOT=1 in the environment, for comparison.
+    if os.environ.get("SYNTH_SHOT"):
+        for v in (1, 2, 3, 4):
+            w.save(f"aug_shot_{v}", shot(v), -0.5)
+        w.save("aug_tail_1", tail(), -5)
     catch = w.click(0.04, (1900, 3100, 4700), 0.010, bright=1900)
     # Clear polymer magazine: a hollow knock and the loose rounds shifting inside.
     hollow = w.band(w.noise(0.09), 350, 2600) * w.env(0.09, 0.001, 0.025)

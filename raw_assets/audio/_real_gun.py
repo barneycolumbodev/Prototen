@@ -201,11 +201,29 @@ def shot_at(x, index, length, rel=0.5, gap=0.5):
     return seg.copy(), a
 
 
-def save(out_dir, name, x, peak_db, mono=False):
+def save(out_dir, name, x, peak_db, mono=False, level=None):
+    """`level` = (rms_db, window_s): set the loudness over the first `window_s`
+    (the level the sound it replaces was mixed at), then limit to `peak_db`."""
     x = x - x.mean(axis=0)
     if mono:
         x = x.mean(axis=1, keepdims=True)
-    x = limit(normalize(x, peak_db + 1.5), peak_db)
+    x = normalize(x, peak_db + 1.5)
+    y = limit(x, peak_db)
+    if level is not None:
+        # The limiter eats some of the gain a real shot's spike needs, so
+        # re-level a few times; at most 3 dB more than one pass, to keep the
+        # transient.
+        db, window = level
+        n = int(window * SR)
+        gain = 10 ** ((db - rms_db(x[:n])) / 20)
+        first = gain
+        for _ in range(4):
+            y = limit(x * gain, peak_db)
+            miss = db - rms_db(y[:n])
+            if abs(miss) < 0.2:
+                break
+            gain = min(gain * 10 ** (miss / 20), first * 10 ** (3 / 20))
+    x = y
     os.makedirs(out_dir, exist_ok=True)
     data = (np.clip(x, -1, 1) * 32767).astype(np.int16)
     if mono:

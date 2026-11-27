@@ -94,12 +94,16 @@ def write_all():
     out = sys.argv[1] if len(sys.argv) > 1 else "assets/audio/sfx"
     w.OUT = out
     os.makedirs(out, exist_ok=True)
-    for v in (1, 2, 3):
-        w.save(f"saiga_shot_{v}", shot(v))
-    w.save("saiga_tail_1", tail(), -3)
-    for v in (1, 2):
-        w.save(f"saiga_db_shot_{v}", db_shot(v))
-    w.save("saiga_db_tail_1", db_tail(), -4)
+    # Since 2026-11-27 the shot and tail come from real recordings
+    # (build_real_guns_sfx.py); these synthesized ones are only written
+    # with SYNTH_SHOT=1 in the environment, for comparison.
+    if os.environ.get("SYNTH_SHOT"):
+        for v in (1, 2, 3):
+            w.save(f"saiga_shot_{v}", shot(v))
+        w.save("saiga_tail_1", tail(), -3)
+        for v in (1, 2):
+            w.save(f"saiga_db_shot_{v}", db_shot(v))
+        w.save("saiga_db_tail_1", db_tail(), -4)
 
     # Reload beats (names match GunMechanism events through WeaponData.sound_prefix "saiga_").
     rustle = w.band(w.noise(0.22), 300, 2600) * np.sin(np.pi * w.t(0.22) / 0.22) ** 1.5

@@ -123,12 +123,16 @@ def write_all():
     os.makedirs(out, exist_ok=True)
     for v in (1, 2, 3):
         bolt = (0.018, w.click(0.05, (1600 + 80 * v, 2900, 4400), 0.012, bright=1700) * 0.5)
-        w.save(f"enemy_t56_shot_{v}", gun(v, 1.3, 200, 6000, 85, 0.08, mech=bolt), -2)
-        pump = (0.32, w.at(0.3, (0, w.click(0.06, (900, 1700, 2600), 0.03, bright=1000)),
-                           (0.16, w.click(0.07, (1200, 2200, 3300), 0.025, bright=1100))) * 0.6)
-        w.save(f"enemy_pump_shot_{v}", gun(v, 0.6, 90, 3500, 60, 0.12, sec=0.75, mech=pump), -1)
-        w.save(f"enemy_smg_shot_{v}", gun(v, 0.4, 300, 7000, 110, 0.05, sec=0.3,
-                                          mech=(0.012, w.click(0.04, (2400, 3800, 5600), 0.01) * 0.4)), -4)
+        # Since 2026-11-27 the shot and tail come from real recordings
+        # (build_real_guns_sfx.py); these synthesized ones are only written
+        # with SYNTH_SHOT=1 in the environment, for comparison.
+        if os.environ.get("SYNTH_SHOT"):
+            w.save(f"enemy_t56_shot_{v}", gun(v, 1.3, 200, 6000, 85, 0.08, mech=bolt), -2)
+            pump = (0.32, w.at(0.3, (0, w.click(0.06, (900, 1700, 2600), 0.03, bright=1000)),
+                               (0.16, w.click(0.07, (1200, 2200, 3300), 0.025, bright=1100))) * 0.6)
+            w.save(f"enemy_pump_shot_{v}", gun(v, 0.6, 90, 3500, 60, 0.12, sec=0.75, mech=pump), -1)
+            w.save(f"enemy_smg_shot_{v}", gun(v, 0.4, 300, 7000, 110, 0.05, sec=0.3,
+                                              mech=(0.012, w.click(0.04, (2400, 3800, 5600), 0.01) * 0.4)), -4)
         w.save(f"enemy_pain_{v}", grunt(v), -6)
         w.save(f"whizz_{v}", whizz(v != 3), -3)
     w.save("body_fall_1", body_fall(), -3)

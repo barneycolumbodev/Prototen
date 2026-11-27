@@ -23,10 +23,14 @@ def write_all():
     out = sys.argv[1] if len(sys.argv) > 1 else "assets/audio/sfx"
     w.OUT = out
     os.makedirs(out, exist_ok=True)
-    for v in (1, 2, 3):
-        slide = (0.008, w.click(0.035, (2100 + 90 * v, 3400, 5200), 0.008, bright=1900) * 0.45)
-        w.save(f"glock_shot_{v}", e.gun(v, 1.1, 260, 8000, 120, 0.045, sec=0.28, mech=slide), -2)
-    w.save("glock_tail_1", tail(), -8)
+    # Since 2026-11-27 the shot and tail come from real recordings
+    # (build_real_guns_sfx.py); these synthesized ones are only written
+    # with SYNTH_SHOT=1 in the environment, for comparison.
+    if os.environ.get("SYNTH_SHOT"):
+        for v in (1, 2, 3):
+            slide = (0.008, w.click(0.035, (2100 + 90 * v, 3400, 5200), 0.008, bright=1900) * 0.45)
+            w.save(f"glock_shot_{v}", e.gun(v, 1.1, 260, 8000, 120, 0.045, sec=0.28, mech=slide), -2)
+        w.save("glock_tail_1", tail(), -8)
     print(f"wrote glock sounds to {out}")
 
 

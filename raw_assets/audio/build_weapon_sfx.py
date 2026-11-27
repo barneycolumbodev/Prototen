@@ -115,9 +115,13 @@ def tail():
 
 def write_all():
     os.makedirs(OUT, exist_ok=True)
-    for v in (1, 2, 3):
-        save(f"shot_{v}", shot(v))
-    save("tail_1", tail(), -4)
+    # Since 2026-11-27 the shot and tail come from real recordings
+    # (build_real_guns_sfx.py); these synthesized ones are only written
+    # with SYNTH_SHOT=1 in the environment, for comparison.
+    if os.environ.get("SYNTH_SHOT"):
+        for v in (1, 2, 3):
+            save(f"shot_{v}", shot(v))
+        save("tail_1", tail(), -4)
     save("dry_fire_1", at(0.08, (0, click(0.05, (3800, 5600, 7900), 0.006))), -8)
     rustle = lambda sec: band(noise(sec), 300, 2500) * signal.windows.hann(int(sec * SR)) * (0.6 + 0.4 * np.sin(2 * np.pi * 23 * t(sec)))
     save("reload_start_1", rustle(0.22), -14)
